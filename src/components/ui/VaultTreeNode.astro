@@ -1,0 +1,55 @@
+---
+import { type VaultItem, isNestedGroup } from "@appTypes/content_context";
+
+interface Props {
+  item: VaultItem;
+  currentEntryId: string;
+  level: number;
+  classNames?: string;
+}
+
+const { item, currentEntryId, level, classNames } = Astro.props;
+
+const folder = isNestedGroup(item);
+const id = folder ? item.index.id : item.id;
+const isActive = currentEntryId === id;
+---
+
+<a
+  href={`/thejournal/${id}`}
+  aria-current={isActive ? "page" : undefined}
+  class:list={[
+    "flex items-center transition-all duration-200 ease-in-out",
+    "w-full py-3 pr-4",
+    "text-sm leading-snug tracking-wide select-none whitespace-normal",
+    classNames,
+    isActive ? "font-bold" : "font-medium",
+    isActive
+      ? "bg-primary/10 text-primary"
+      : "text-base-content/70 hover:bg-base-200 hover:text-base-content",
+    "border-r-4",
+    isActive ? "border-primary" : "border-transparent hover:border-primary/30",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset",
+  ]}
+  data-astro-prefetch="hover"
+>
+  <span>
+    {item.title}
+  </span>
+</a>
+
+{
+  folder && item.items.length > 0 && (
+    <ul class="flex flex-col">
+      {item.items.map((child) => (
+        <li>
+          <Astro.self
+            item={child}
+            currentEntryId={currentEntryId}
+            level={level + 1}
+          />
+        </li>
+      ))}
+    </ul>
+  )
+}

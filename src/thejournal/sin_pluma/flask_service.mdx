@@ -1,0 +1,463 @@
+---
+title: "The Flask API Service"
+pubDate: 2026-03-01
+description: "A technical overview of the Flask service that powers SinPluma. This document explains the API’s responsibilities, architecture, endpoint design, and its interaction with MySQL, Redis, and MinIO."
+author: "Alberto Duran"
+order: 3
+image: "../../assets/thejournal/stock/07.avif"
+tags: ["python", "flask", "rest api"]
+github: "SinPluma"
+---
+
+## 1. Purpose and role in the platform
+
+The Flask service is the canonical application API for SinPluma. It acts as the central layer where business rules live and where the platform enforces its data integrity.
+
+This service handles the core responsibilities of the system
+
+- user authentication and authorization
+- author and profile management
+- creation, editing, versioning, and publishing of notebooks and pages
+- media uploads used inside written content
+- lightweight search and read APIs
+- session and token lifecycle management, including revocation
+- coordination with supporting services such as the linguistics engine and infrastructure systems like MinIO, Redis, and MySQL
+
+Architecturally, the service functions as the brain of the platform. It enforces invariants, performs transactional updates, and exposes JSON endpoints consumed by the React SPA and any future external clients.
+
+---
+
+## 2. How the service is built - project layout and runtime
+
+### 2.1 Code layout
+
+A typical project structure looks like this
+
+```plaintext
+/flaskService
+  /app
+    /models      # SQLAlchemy models such as User, Notebook, Page, ImageMeta
+    /schemas     # Marshmallow schemas for request and response validation
+    /resources   # Flask-RESTful resources that define API endpoints
+    /auth        # JWT helpers, authentication decorators, token blacklist logic
+    /storage     # MinIO integration helpers
+    /db          # database engine and session configuration
+    /utils       # shared utilities such as pagination and error handling
+  wsgi.py        # gunicorn entry point
+  requirements.txt
+  config.py      # environment-driven configuration
+```
+
+### 2.2 Runtime and deployment
+
+The service runs inside containers and is designed for predictable deployment.
+
+- **WSGI server**  
+  The Flask application runs behind gunicorn. Multiple workers allow concurrent request handling.
+
+- **Containerization**  
+  The service is packaged as a Docker image. Development and staging typically run through Docker Compose, with Kubernetes available for larger deployments.
+
+- **Configuration**  
+  Environment variables define database endpoints, MinIO credentials, Redis connection details, and JWT secrets.
+
+---
+
+## 3. Core libraries and why they were chosen
+
+The service relies on a small set of focused libraries
+
+- **Flask**  
+  A lightweight microframework that keeps the API layer explicit and easy to reason about.
+
+- **Flask-RESTful**  
+  Adds structured resource routing using class-based endpoints.
+
+- **Flask-JWT-Extended**  
+  Manages access tokens, refresh tokens, and request authentication.
+
+- **Flask-SQLAlchemy with pymysql**  
+  Provides ORM support and connectivity to the MySQL InnoDB cluster.
+
+- **marshmallow and flask-marshmallow**  
+  Handle request validation and response serialization.
+
+- **MinIO integration layer**  
+  Provides S3-compatible object storage for media assets.
+
+- **flask-redis**  
+  Supplies Redis connectivity for caching and token management.
+
+- **bcrypt**  
+  Performs secure password hashing.
+
+- **gunicorn**  
+  A production-grade WSGI server that handles concurrency reliably.
+
+---
+
+## 4. Endpoint inventory - methods, paths, behavior and guarantees
+
+Exact route names can vary slightly across repositories. The following represents the canonical API semantics.
+
+### 4.1 Authentication and session
+
+```http
+POST /api/auth/register
+```
+
+Purpose  
+Create a new user account.
+
+Input
+
+```json
+{ "username", "email", "password" }
+```
+
+Behavior  
+The password is hashed with bcrypt and a User record is created inside a database transaction.
+
+Response  
+Returns the user object or a newly issued token depending on configuration.
+
+---
+
+```http
+POST /api/auth/login
+```
+
+Purpose  
+Authenticate a user and issue JWT access tokens.
+
+Input
+
+```json
+{ "email", "password" }
+```
+
+Behavior  
+Credentials are verified against the stored bcrypt hash. On success the service issues a JWT containing a unique token identifier and expiration time.
+
+---
+
+```http
+POST /api/auth/logout
+```
+
+Purpose  
+Invalidate a session token.
+
+Input  
+Authorization header containing the active JWT.
+
+Behavior  
+The token identifier is written to Redis as part of a blacklist entry with a matching expiration time.
+
+---
+
+```http
+POST /api/auth/refresh
+```
+
+Purpose  
+Exchange a refresh token for a new access token.
+
+---
+
+### 4.2 Users and profiles
+
+```http
+GET /api/users/{id}
+```
+
+Purpose  
+Retrieve public profile information.
+
+Authorization  
+Optional.
+
+Behavior  
+The service reads user metadata from MySQL and serializes it through marshmallow.
+
+---
+
+```http
+PUT /api/users/{id}
+```
+
+Purpose  
+Update profile information such as display name, biography, or avatar reference.
+
+Authorization  
+Required. The requesting user must match the profile owner.
+
+Behavior  
+Profile updates occur inside a transactional database write.
+
+---
+
+### 4.3 Notebooks and works
+
+This is the central content model of the platform.
+
+```http
+GET /api/notebooks
+```
+
+Purpose  
+List notebooks belonging to the current user or visible public notebooks.
+
+Query parameters may include
+
+- page
+- per_page
+- public
+
+---
+
+```http
+POST /api/notebooks
+```
+
+Purpose  
+Create a new notebook draft.
+
+Input
+
+```json
+{ "title", "description", "metadata" }
+```
+
+Behavior  
+The notebook record is inserted inside a database transaction. The created identifier is returned in the response.
+
+---
+
+```http
+GET /api/notebooks/{notebook_id}
+```
+
+Purpose  
+Retrieve notebook metadata and its list of pages.
+
+---
+
+```http
+DELETE /api/notebooks/{notebook_id}
+```
+
+Purpose  
+Remove a notebook or mark it as deleted through a soft-delete mechanism.
+
+---
+
+### 4.4 Pages and revisions
+
+```http
+GET /api/notebooks/{notebook_id}/pages/{page_id}
+```
+
+Purpose  
+Retrieve the content of a specific page. The request may return a draft or a published version.
+
+---
+
+```http
+POST /api/notebooks/{notebook_id}/pages
+```
+
+Purpose  
+Create a new page within a notebook.
+
+Input
+
+```json
+{ "title", "content", "order" }
+```
+
+---
+
+```http
+PUT /api/notebooks/{notebook_id}/pages/{page_id}
+```
+
+Purpose  
+Update page content. This endpoint supports normal saves and autosave operations.
+
+Input
+
+```json
+{
+  "content": "...",
+  "autosave": true
+}
+```
+
+---
+
+```http
+GET /api/pages/{id}/revisions
+```
+
+Purpose  
+Return the revision history for a page. This supports auditing and rollback.
+
+---
+
+### 4.5 Publish and unpublish
+
+```http
+POST /api/notebooks/{id}/publish
+```
+
+Purpose  
+Mark a notebook and its pages as publicly published.
+
+---
+
+```http
+POST /api/notebooks/{id}/unpublish
+```
+
+Purpose  
+Remove a notebook from public visibility.
+
+---
+
+### 4.6 Media uploads
+
+```http
+POST /api/uploads/images
+```
+
+Purpose  
+Upload an image used in profiles or embedded writing.
+
+Input  
+Multipart form data containing the file and optional metadata.
+
+Behavior  
+The service validates file size and MIME type, uploads the object to MinIO, and records metadata in the database.
+
+---
+
+### 4.7 Search and discovery
+
+```http
+GET /api/search?q=...
+```
+
+Purpose  
+Perform simple text search across content. The implementation typically relies on SQL LIKE queries.
+
+---
+
+### 4.8 Integrations and linguistics proxy
+
+```http
+GET /api/lin/sentiment?sent=...
+```
+
+Purpose  
+Forward a request to the separate linguistics service and return the result.
+
+---
+
+## 5. Communication with Redis, MinIO and the InnoDB cluster
+
+### 5.1 Redis - stored data and purpose
+
+Redis handles short lived and high frequency data.
+
+Stored items include
+
+- token blacklist entries based on JWT identifiers
+- small cached fragments such as frequently accessed author snippets
+- temporary counters used for rate limiting
+
+This keeps authentication checks fast while avoiding additional database reads.
+
+---
+
+### 5.2 MinIO - object storage
+
+MinIO stores binary assets associated with written content.
+
+Typical stored objects include
+
+- profile avatars
+- embedded images within notebooks or pages
+- other binary attachments referenced by the platform
+
+Transaction flow usually follows this order
+
+1. upload the file to MinIO
+2. create the metadata record in MySQL inside a transaction
+3. if the database write fails, mark the object for cleanup
+
+---
+
+### 5.3 InnoDB cluster - authoritative datastore
+
+MySQL serves as the transactional backbone of the platform.
+
+Stored entities include
+
+- users and credential records
+- notebooks and pages
+- revision history
+- metadata that references stored images
+
+Flask connects through SQLAlchemy using a connection URI that points to the MySQL Router layer.
+
+Example connection string
+
+```text
+mysql+pymysql://root:root@inno_router:6446/SinPluma
+```
+
+The router directs writes to the primary node and balances read traffic across replicas.
+
+---
+
+## 6. Operational and reliability patterns
+
+Several operational patterns improve reliability.
+
+- idempotency keys prevent duplicate side effects when requests are retried
+- connection pooling in SQLAlchemy is tuned to match the number of gunicorn workers
+- health endpoints expose readiness and liveness checks for orchestration systems
+
+---
+
+## 7. Security considerations
+
+Security controls are applied at several layers.
+
+- password hashing uses bcrypt
+- JWT tokens remain short lived and can be revoked through the Redis blacklist
+- input validation occurs through marshmallow schemas before reaching business logic
+- file validation verifies both file size and MIME type on the server
+
+---
+
+## 8. Why the Flask service depends on these components
+
+Each infrastructure component solves a distinct problem.
+
+- MySQL InnoDB cluster guarantees durability, transactional consistency, and revision history
+- MinIO stores binary assets outside the relational database, which improves performance and simplifies backups
+- Redis handles ephemeral authentication state with very low latency
+
+Together they allow the API layer to remain focused on business logic while delegating storage responsibilities to systems designed for those workloads.
+
+---
+
+## 9. Closing summary
+
+The Flask service operates as the central transactional API for SinPluma. It coordinates authentication, content management, publishing workflows, and integrations.
+
+Data integrity comes from the InnoDB cluster. Binary storage is handled by MinIO. Redis manages fast, temporary state such as token revocation.
+
+This separation keeps the architecture predictable. The Flask layer enforces the rules, the databases store the truth, and the infrastructure components each serve a clear role.

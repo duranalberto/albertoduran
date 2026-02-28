@@ -1,0 +1,46 @@
+---
+import "@styles/typography-bundle.css";
+
+const { class: className, ...props } = Astro.props;
+---
+
+<article
+  class:list={[
+    /* 1. Base */
+    "prose",
+    /* 2. Modifiers & Sizing (OSU: 18px-24px for comfort) */
+    "prose-base md:prose-lg lg:prose-xl",
+    /* 3. Layout (Constraint for line-length readability) */
+    "max-w-4xl mx-auto isolate overflow-visible wrap-break-word",
+    /* 4. Spacing (OSU: 1em-2em paragraph spacing) */
+    "prose-p:my-8 prose-headings:mt-12 prose-headings:mb-6",
+    /* 5. Typography & Hierarchy */
+    "prose-p:font-medium prose-p:leading-relaxed",
+    "prose-li:font-medium",
+    "prose-headings:font-display prose-headings:font-extrabold prose-headings:tracking-tight",
+    "prose-a:font-bold prose-a:no-underline prose-a:decoration-2 prose-a:underline-offset-4",
+    "prose-blockquote:not-italic prose-blockquote:rounded-r-lg prose-blockquote:py-4 prose-blockquote:px-6",
+    "prose-img:rounded-2xl prose-img:mx-auto",
+    /* 6. Colors */
+    "prose-a:text-primary",
+    "prose-code:text-secondary prose-code:bg-base-200 prose-code:rounded-md prose-code:px-2 prose-code:py-0.5",
+    "prose-blockquote:bg-base-200/50 prose-blockquote:border-l-primary",
+    "prose-img:bg-base-300 prose-img:shadow-xl",
+    /* 7. Effects & Transitions */
+    "prose-a:transition-all prose-code:before:content-none prose-code:after:content-none",
+    /* 8. States */
+    "hover:prose-a:underline active:prose-a:text-primary/70 touch-manipulation",
+
+    className,
+  ]}
+  {...props}
+>
+  <slot />
+</article>
+
+<style is:global>
+  /* Ensure standard font scaling for relative units */
+  .prose :where(h1, h2, h3, h4) {
+    scroll-margin-top: var(--scroll-padding, 6rem);
+  }
+</style>

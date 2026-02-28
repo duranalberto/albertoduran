@@ -1,0 +1,50 @@
+---
+import type { Experience } from "@appTypes/about";
+
+interface Props {
+  experience: Experience[];
+}
+
+const { experience } = Astro.props;
+---
+
+<ul
+  class="timeline timeline-vertical timeline-snap-icon experience-timeline max-md:timeline-compact w-full"
+>
+  {
+    experience.map((job, index) => (
+      <li>
+        {index !== 0 && <hr class="bg-border" />}
+
+        <div class="timeline-start md:text-end mb-10 px-4">
+          <time class="block font-mono text-xs tracking-wider text-neutral-content/80 mb-2">
+            {job.period}
+          </time>
+          <h3 class="font-display text-2xl font-black tracking-tighter text-base-content uppercase">
+            {job.company}
+          </h3>
+          <p class="mt-1 text-[10px] font-bold tracking-[0.2em] text-primary uppercase">
+            {job.location}
+          </p>
+        </div>
+
+        <div class="timeline-middle text-primary" aria-hidden="true">
+          <div class="h-4 w-4 rounded-full bg-primary ring-4 ring-base-100" />
+        </div>
+
+        <div class="timeline-end mb-10 px-4">
+          <h4 class="text-lg font-bold leading-tight text-base-content mb-4">
+            {job.role}
+          </h4>
+          <ul class="ml-4 list-disc list-outside space-y-3 text-sm leading-relaxed text-base-content/90 marker:text-primary">
+            {job.achievements.map((achievement) => (
+              <li class="pl-2">{achievement}</li>
+            ))}
+          </ul>
+        </div>
+
+        {index !== experience.length - 1 && <hr class="bg-border" />}
+      </li>
+    ))
+  }
+</ul>

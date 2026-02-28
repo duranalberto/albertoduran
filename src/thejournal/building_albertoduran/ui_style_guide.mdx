@@ -1,0 +1,423 @@
+---
+title: "UI Implementation & Component Guide"
+pubDate: 2026-03-01
+description: "Authoritative source of truth for UI implementation of albertoduran.com"
+author: "Alberto Duran"
+image: "../../assets/thejournal/stock/01.avif"
+tags: ["astro", "blogging"]
+order: 2
+---
+
+## Enforcement Directive
+
+This document is the authoritative source of truth for UI implementation in this project.
+
+1. **Strict Adherence:** Strictly follow all rules, constraints, and architectural principles defined here.
+2. **Aesthetic Priority:** Maintain a **clean and minimalistic** style in all UI generations.
+3. **Token Priority:** Prioritize design token usage, DaisyUI conventions, and structural integrity.
+4. **No Silent Overrides:** Break rules _only_ if explicitly and intentionally instructed. If instructed to override:
+   - State the overridden rule.
+   - Explain the architectural impact.
+   - Confirm intent, then proceed.
+
+---
+
+## Core Principles & Layout
+
+### Aesthetic: Clean & Minimalistic ("Less is More")
+
+- **Whitespace:** Use generous padding/margins. Avoid cluttered layouts.
+- **Visual Weight:** Favor thin borders and subtle shadows over heavy gradients/patterns.
+- **Typography:** Use weight and token colors (Content vs. Content-Secondary) for hierarchy, not just size.
+- **Interaction:** Animations must be subtle, smooth, and fast (150ms-200ms transitions).
+
+### Responsive Design & Breakpoints
+
+Enforce the use of tokens for adjusting design across viewports.
+
+- **Large Breakpoint:** Use `--breakpoint-lg` (CSS equivalent: `@media (min-width: 1024px)` or `lg:` modifier in Tailwind).
+- **Max Site Width:** Use `--breakpoint-2xl` (CSS equivalent: `@media (min-width: 1536px)` or `2xl:` modifier).
+- **Centering:** As a secondary measure for bounding maximum width on specific components, enforce `mx-auto` (e.g., `max-w-screen-2xl mx-auto`).
+
+### Single Source of Truth & Theme Awareness
+
+- **NEVER** hardcode Hex colors or Tailwind gray scales.
+- **ALWAYS** use DaisyUI semantic classes (`bg-base-200`, `text-base-content`) or CSS variables (`--color-*`).
+- Every component must automatically adapt to `dark` and `light` themes via these tokens.
+- See Global Theme Configuration section to see all the DaisyUI theme settings.
+
+---
+
+## Class Application & Ordering
+
+Directly apply CSS utility classes to HTML tags as the primary styling method. Do not abstract into custom CSS unless strictly necessary.
+
+**Tailwind/DaisyUI Class Ordering Convention:**
+To maintain readability and token efficiency, order classes logically:
+
+1. **DaisyUI Base:** (`btn`, `card`, `menu`)
+2. **DaisyUI Modifiers:** (`btn-primary`, `card-body`)
+3. **Layout & Display:** (`block`, `flex`, `grid`, `absolute`)
+4. **Spacing & Sizing:** (`w-full`, `max-w-md`, `p-4`, `m-2`)
+5. **Typography:** (`text-lg`, `font-bold`, `text-center`)
+6. **Colors & Backgrounds:** (`bg-base-100`, `text-base-content`)
+7. **Borders & Effects:** (`border`, `border-theme`, `shadow-sm`)
+8. **Responsive & States:** (`hover:bg-base-200`, `lg:p-8`, `focus-visible:ring`)
+
+Class logic extracted for clarity and strict ordering.
+Order: Base -> Modifiers -> Layout -> Spacing -> Typography -> Colors -> Borders -> States.
+
+---
+
+## Theme & Token Rules
+
+### Contrast & Semantic Pairing
+
+To ensure accessibility and visual harmony, always pair background semantic colors with their corresponding content tokens. Never use a base content color on a primary background.
+
+As example:
+
+| Color Name          | CSS Variable              | Usage                                                    |
+| :------------------ | :------------------------ | :------------------------------------------------------- |
+| **primary**         | `--color-primary`         | Primary brand color; main accent for the brand.          |
+| **primary-content** | `--color-primary-content` | Foreground content color to use strictly on **primary**. |
+
+> **Requirement:** If a component uses `bg-primary`, any text or icons within it **must** use `text-primary-content` to guarantee correct contrast ratios.
+
+---
+
+## Custom CSS & Overrides (Astro + Tailwind + DaisyUI)
+
+First, enforce the use of standard CSS classes. If complex design requires explicitly overriding DaisyUI structure, custom rules must be created under the following constraints:
+
+### Safe Customization Pattern
+
+Custom CSS helpers must complement the framework, not compete with it.
+
+- Keep rules **single-responsibility**.
+- Scope them to theme token alignment.
+- Avoid shorthand properties that override multiple CSS behaviors at once.
+- Always pair custom helpers with Tailwind directional utilities, never override them.
+
+### Component-Level Overrides
+
+If a component requires structural layout changes:
+
+- Implement them in a **component-scoped class** (e.g., inside an Astro `<style>` block).
+- Document _why_ the change is required.
+- **Guiding Question:** _Does this align the component with the theme system—or does it override how DaisyUI intended the component to behave?_ If it alters intended behavior, it must be scoped locally and carefully reviewed.
+
+---
+
+## What Must Be Avoided
+
+- **Clutter:** Crowding elements without sufficient whitespace padding.
+- **Hardcoded Values:** Hex colors or non-theme structural values.
+- **Inaccessibility:** Missing `aria-labels` or poor contrast ratios (e.g., using `text-base-content` on `bg-primary`).
+- **Poor Responsive Design:** Missing breakpoint rules or failing to cap widths with `--breakpoint-2xl` and `mx-auto`.
+
+---
+
+## PR Checklist
+
+- Is the design clean, minimalistic, and utilizing adequate whitespace?
+- Are HTML tags styled directly using the correct class ordering convention?
+- Are colors correctly paired for contrast (e.g., `primary` + `primary-content`)?
+- Does the visual check pass seamlessly in both Light and Dark themes?
+- Are structural overrides strictly component-scoped and not leaking globally?
+- Is the design fully responsive, respecting `lg` and `2xl` max-width breakpoints?
+- Are interactive elements keyboard accessible (`:focus-visible`)?
+
+---
+
+## Enforcement Philosophy
+
+The design system must be theme-driven, consistent, and predictable. If a new design requirement conflicts with these rules, **update the theme tokens**—not the individual components.
+
+Would you like me to create a reusable Astro component snippet that implements the primary/primary-content pairing and the max-width layout tokens?
+
+---
+
+## Configuration Files
+
+### Shared Theme Definitions
+
+`src/styles/theme.css`
+
+```css
+@theme {
+  --font-sans: "Montserrat", ui-sans-serif, system-ui;
+  --font-display: "NotoSansDisplay", sans-serif;
+  --font-mono: "FiraCode", ui-monospace, monospace;
+  --radius-selector: 1rem;
+  --radius-field: 0.25rem;
+  --radius-box: 0.5rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+  --dark-mode: selector([data-theme="dark"]);
+}
+```
+
+### Global Theme Configuration
+
+`src/styles/global.css`
+
+```css
+@import "tailwindcss";
+@import "./theme.css";
+
+@plugin "daisyui" {
+  themes: light, dark;
+  include:
+    "button", "card", "drawer", "navbar", "swap", "badge", "menu", "dropdown",
+    "divider", "timeline", "mockup";
+}
+
+@plugin "daisyui/theme" {
+  name: "dark";
+  color-scheme: dark;
+
+  --color-base-100: oklch(0.15 0.0001 263.28);
+  --color-base-200: oklch(0.2393 0.0001 263.28);
+  --color-base-300: oklch(0.3092 0.0001 263.28);
+  --color-base-content: oklch(0.928 0.0001 263.28);
+  --color-primary: oklch(0.5333 0.2151 28.1);
+  --color-primary-content: oklch(1 0.0001 263.28);
+  --color-secondary: oklch(0.7628 0.1626 69.36);
+  --color-secondary-content: oklch(0.15 0.0021 286.01);
+  --color-accent: oklch(0.8338 0.1248 66.87);
+  --color-accent-content: oklch(0.15 0.0021 286.01);
+  --color-neutral: oklch(0.285 0.0001 263.28);
+  --color-neutral-content: oklch(0.928 0.0001 263.28);
+  --color-info: oklch(0.6531 0.1348 242.7);
+  --color-info-content: oklch(1 0.0001 263.28);
+  --color-success: oklch(0.6629 0.1602 152.39);
+  --color-success-content: oklch(1 0.0001 263.28);
+  --color-warning: oklch(0.8358 0.1689 91.77);
+  --color-warning-content: oklch(0.15 0.0021 286.01);
+  --color-error: oklch(0.6307 0.194 29.43);
+  --color-error-content: oklch(1 0.0001 263.28);
+  --color-border: oklch(0.285 0.0001 263.28);
+}
+
+@plugin "daisyui/theme" {
+  name: "light";
+  color-scheme: light;
+
+  --color-base-100: oklch(1 0.0001 263.28);
+  --color-base-200: oklch(0.9551 0.0001 263.28);
+  --color-base-300: oklch(0.8945 0.0001 263.28);
+  --color-base-content: oklch(0.2221 0.0001 263.28);
+  --color-primary: oklch(0.5434 0.174 29.69);
+  --color-primary-content: oklch(1 0.0001 263.28);
+  --color-secondary: oklch(0.7628 0.1626 69.36);
+  --color-secondary-content: oklch(0.2221 0.0001 263.28);
+  --color-accent: oklch(0.8338 0.1248 66.87);
+  --color-accent-content: oklch(0.2221 0.0001 263.28);
+  --color-neutral: oklch(0.8576 0.0001 263.28);
+  --color-neutral-content: oklch(0.2221 0.0001 263.28);
+  --color-info: oklch(0.6531 0.1348 242.7);
+  --color-info-content: oklch(1 0.0001 263.28);
+  --color-success: oklch(0.6629 0.1602 152.39);
+  --color-success-content: oklch(1 0.0001 263.28);
+  --color-warning: oklch(0.8358 0.1689 91.77);
+  --color-warning-content: oklch(0.2221 0.0001 263.28);
+  --color-error: oklch(0.6307 0.194 29.43);
+  --color-error-content: oklch(1 0.0001 263.28);
+  --color-border: oklch(0.8576 0.0001 263.28);
+}
+```
+
+### Article Theme Configuration
+
+`src/styles/typography-bundle.css`
+
+```css
+@import "tailwindcss";
+@import "./theme.css";
+@plugin "@tailwindcss/typography";
+
+.prose {
+  font-family: var(--font-sans);
+  --tw-prose-body: var(--color-base-content);
+  --tw-prose-headings: var(--color-base-content);
+  --tw-prose-lead: var(--color-base-content);
+  --tw-prose-links: var(--color-primary);
+  --tw-prose-bold: var(--color-base-content);
+  --tw-prose-counters: var(--color-base-content);
+  --tw-prose-bullets: var(--color-base-content);
+  --tw-prose-hr: var(--color-base-300);
+  --tw-prose-quotes: var(--color-base-content);
+  --tw-prose-quote-borders: var(--color-primary);
+  --tw-prose-captions: var(--color-base-content);
+  --tw-prose-code: var(--color-secondary);
+  --tw-prose-pre-code: var(--color-base-content);
+  --tw-prose-pre-bg: var(--color-base-200);
+  --tw-prose-th-borders: var(--color-base-300);
+  --tw-prose-td-borders: var(--color-base-200);
+}
+```
+
+### Mockup Code Theme Configuration
+
+`src/styles/mockup-code.css`
+
+```css
+.mockup-code {
+  position: relative;
+  overflow: hidden;
+}
+
+.mockup-code .line {
+  display: block !important;
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+  padding-left: 3.5rem !important;
+  padding-right: 20px !important;
+  text-indent: -3.5rem !important;
+  line-height: 1.5 !important;
+}
+
+.mockup-code .line::before {
+  content: attr(data-line) !important;
+  display: inline-block !important;
+  width: 3.5rem !important;
+  min-width: 3.5rem !important;
+  padding-right: 1.25rem !important;
+  text-align: right !important;
+  font-size: 0.95em !important;
+  vertical-align: top !important;
+  user-select: none;
+  opacity: 0.4;
+}
+
+.mockup-code pre,
+.mockup-code code {
+  background: transparent !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+.mockup-code code::before,
+.mockup-code code::after {
+  content: none !important;
+}
+
+[data-theme="light"] .mockup-code {
+  background-color: #f0f2f4 !important;
+  border-color: #d1d5db !important;
+  color: #444c56;
+}
+
+[data-theme="light"] .mockup-code::before {
+  content: "";
+  opacity: 1 !important;
+  box-shadow:
+    1.2em 0 0 rgba(0, 0, 0, 0.1),
+    2.8em 0 0 rgba(0, 0, 0, 0.1),
+    4.4em 0 0 rgba(0, 0, 0, 0.1) !important;
+}
+
+[data-theme="dark"] .mockup-code {
+  background-color: #121212 !important;
+  border-color: #2a2a2a !important;
+  color: #e7e7e7;
+}
+
+[data-theme="dark"] .mockup-code span {
+  color: var(--shiki-dark) !important;
+  font-style: var(--shiki-dark-font-style) !important;
+  text-decoration: var(--shiki-dark-text-decoration) !important;
+}
+
+[data-theme="dark"] .mockup-code::before {
+  opacity: 1 !important;
+  box-shadow:
+    1.2em 0 0 rgba(160, 160, 160, 0.35),
+    2.8em 0 0 rgba(160, 160, 160, 0.35),
+    4.4em 0 0 rgba(160, 160, 160, 0.35) !important;
+}
+```
+
+### Custom Glass Design
+
+`src/styles/glass.css`
+
+```css
+.glass-surface {
+  --glass-border-fallback: rgba(0, 0, 0, 0.1);
+  --glass-bg-fallback: rgba(255, 255, 255, 0.5);
+
+  --glass-border-opacity: 0.15;
+  --glass-bg-opacity: 0.4;
+
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+
+  border: 1px solid var(--glass-border-fallback);
+  border-color: color-mix(
+    in srgb,
+    var(--color-base-content, #000),
+    transparent calc(100% - (var(--glass-border-opacity) * 100%))
+  );
+
+  background-color: var(--glass-bg-fallback);
+  background-color: color-mix(
+    in srgb,
+    var(--color-base-200, #fff),
+    transparent calc(100% - (var(--glass-bg-opacity) * 100%))
+  );
+
+  background-image: none !important;
+
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+
+  will-change: transform, box-shadow;
+  transition:
+    transform 0.4s cubic-bezier(0.25, 1, 0.5, 1),
+    box-shadow 0.4s ease,
+    border-color 0.3s ease;
+}
+
+:global([data-theme="dark"]) .glass-surface {
+  --glass-border-fallback: rgba(255, 255, 255, 0.1);
+  --glass-bg-fallback: rgba(0, 0, 0, 0.3);
+  --glass-border-opacity: 0.1;
+  --glass-bg-opacity: 0.25;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .glass-interactive:hover {
+    transform: translateY(-6px);
+    box-shadow:
+      0 20px 40px -10px rgba(0, 0, 0, 0.25),
+      0 0 0 1px color-mix(in srgb, var(--color-primary), transparent 85%);
+  }
+
+  .metric-card:hover {
+    transform: scale(1.03);
+  }
+}
+
+@media (pointer: coarse) {
+  .glass-interactive:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
+  }
+}
+
+.metric-card {
+  transition:
+    transform 0.3s ease,
+    background-color 0.3s ease;
+}
+
+.glass-surface :where(div, span, section) {
+  border-color: inherit;
+}
+```

@@ -1,0 +1,101 @@
+@import "tailwindcss";
+@import "./theme.css";
+
+@plugin "daisyui" {
+  themes: light, dark;
+  include:
+    "button", "card", "drawer", "navbar", "swap", "badge", "menu", "dropdown",
+    "divider", "timeline", "mockup", "footer";
+}
+
+@plugin "daisyui/theme" {
+  name: "dark";
+  color-scheme: dark;
+
+  --color-base-100: oklch(0.15 0.0001 263.28);
+  --color-base-200: oklch(0.2393 0.0001 263.28);
+  --color-base-300: oklch(0.3092 0.0001 263.28);
+  --color-base-content: oklch(0.928 0.0001 263.28);
+  --color-primary: oklch(0.5333 0.2151 28.1);
+  --color-primary-content: oklch(1 0.0001 263.28);
+  --color-secondary: oklch(0.7628 0.1626 69.36);
+  --color-secondary-content: oklch(0.15 0.0021 286.01);
+  --color-accent: oklch(0.8338 0.1248 66.87);
+  --color-accent-content: oklch(0.15 0.0021 286.01);
+  --color-neutral: oklch(0.285 0.0001 263.28);
+  --color-neutral-content: oklch(0.928 0.0001 263.28);
+  --color-info: oklch(0.6531 0.1348 242.7);
+  --color-info-content: oklch(1 0.0001 263.28);
+  --color-success: oklch(0.6629 0.1602 152.39);
+  --color-success-content: oklch(1 0.0001 263.28);
+  --color-warning: oklch(0.8358 0.1689 91.77);
+  --color-warning-content: oklch(0.15 0.0021 286.01);
+  --color-error: oklch(0.6307 0.194 29.43);
+  --color-error-content: oklch(1 0.0001 263.28);
+  --color-border: oklch(0.285 0.0001 263.28);
+}
+
+@plugin "daisyui/theme" {
+  name: "light";
+  color-scheme: light;
+
+  --color-base-100: oklch(1 0.0001 263.28);
+  --color-base-200: oklch(0.9551 0.0001 263.28);
+  --color-base-300: oklch(0.8945 0.0001 263.28);
+  --color-base-content: oklch(0.2221 0.0001 263.28);
+  --color-primary: oklch(0.5434 0.174 29.69);
+  --color-primary-content: oklch(1 0.0001 263.28);
+  --color-secondary: oklch(0.7628 0.1626 69.36);
+  --color-secondary-content: oklch(0.2221 0.0001 263.28);
+  --color-accent: oklch(0.8338 0.1248 66.87);
+  --color-accent-content: oklch(0.2221 0.0001 263.28);
+  --color-neutral: oklch(0.8576 0.0001 263.28);
+  --color-neutral-content: oklch(0.2221 0.0001 263.28);
+  --color-info: oklch(0.6531 0.1348 242.7);
+  --color-info-content: oklch(1 0.0001 263.28);
+  --color-success: oklch(0.6629 0.1602 152.39);
+  --color-success-content: oklch(1 0.0001 263.28);
+  --color-warning: oklch(0.8358 0.1689 91.77);
+  --color-warning-content: oklch(0.2221 0.0001 263.28);
+  --color-error: oklch(0.6307 0.194 29.43);
+  --color-error-content: oklch(1 0.0001 263.28);
+  --color-border: oklch(0.8576 0.0001 263.28);
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 6rem;
+}
+
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+article {
+  -webkit-text-size-adjust: 100%;
+  text-rendering: optimizeLegibility;
+}
+
+/* DaisyUI Overrides */
+
+.menu {
+  :where(li:not(.menu-title) > *:not(ul, details, .menu-title, .btn)),
+  :where(li:not(.menu-title) > details > summary:not(.menu-title)) {
+    border-radius: 0;
+  }
+}
+
+@media (width >= theme(--breakpoint-md)) {
+  .experience-timeline.timeline-vertical.timeline-snap-icon > li {
+    --timeline-col-start: minmax(0, 0.4fr);
+    --timeline-col-end: minmax(0, 1.6fr);
+  }
+}

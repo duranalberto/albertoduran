@@ -1,0 +1,118 @@
+---
+import "../styles/global.css";
+import { ClientRouter } from "astro:transitions";
+import Footer from "@components/common/Footer.astro";
+import Header from "@components/common/Header.astro";
+import FlexShell from "@layouts/FlexShell.astro";
+
+interface Props {
+  pageTitle: string;
+}
+
+const { pageTitle } = Astro.props;
+const hasHero = Astro.slots.has("hero");
+---
+
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+
+    <title>{pageTitle}</title>
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://site.api.espn.com" crossorigin />
+    <link rel="dns-prefetch" href="https://site.api.espn.com" />
+    <link
+      rel="preload"
+      href="/fonts/Montserrat.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/NotoSansDisplay.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/FiraCode.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+
+    <style>
+      @font-face {
+        font-family: "Montserrat";
+        src: url("/fonts/Montserrat.woff2") format("woff2");
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "NotoSansDisplay";
+        src: url("/fonts/NotoSansDisplay.woff2") format("woff2");
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "FiraCode";
+        src: url("/fonts/FiraCode.woff2") format("woff2");
+        font-display: swap;
+      }
+    </style>
+
+    <script is:inline>
+      const applyTheme = () => {
+        const theme = (() => {
+          if (
+            typeof localStorage !== "undefined" &&
+            localStorage.getItem("theme")
+          ) {
+            return localStorage.getItem("theme");
+          }
+          return window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "dark"
+            : "light";
+        })();
+
+        document.documentElement.setAttribute("data-theme", theme);
+      };
+
+      applyTheme();
+      document.addEventListener("astro:after-swap", applyTheme);
+    </script>
+
+    <script>
+      import { isBraveIOS } from "@utils/is_brave_ios";
+      if (isBraveIOS()) {
+        import("@utils/brave_ios_router_fix");
+      }
+    </script>
+    <ClientRouter />
+  </head>
+  <body
+    class="flex flex-col min-h-dvh bg-base-100 text-base-content selection:bg-primary/30"
+  >
+    <Header transition:persist />
+
+    {
+      hasHero ? (
+        <FlexShell class="py-0 md:py-0">
+          <slot name="hero" />
+        </FlexShell>
+      ) : (
+        <div class="py-2 md:py-4" aria-hidden="true" />
+      )
+    }
+
+    <main id="main-content" class="grow outline-none">
+      <slot />
+    </main>
+
+    <Footer transition:persist />
+  </body>
+</html>

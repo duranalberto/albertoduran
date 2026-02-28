@@ -1,0 +1,95 @@
+---
+import {
+  type CurrentSite,
+  getCurrentSite,
+  isTheJourneyPublication,
+  type Sites,
+  sitesManifest,
+} from "@appTypes/navigation";
+import AlbertoDuran from "@components/ui/AlbertoDuran.astro";
+import SVGIcon from "@components/ui/SVGIcon.astro";
+import ThemeToggle from "@components/ui/ThemeToggle.astro";
+import { ui } from "@data/icons";
+import NavDrawer from "./NavDrawer.astro";
+
+const currentPath = Astro.url.pathname.replace(/\/$/, "");
+const navSites: Sites[] = ["/profile", "/thejournal"];
+const currentSite: CurrentSite = getCurrentSite(currentPath);
+
+const getLinkClasses = (site: Sites) => {
+  const isActive = site === currentSite.site;
+  return [
+    "relative block py-2 px-1 font-display text-sm tracking-wide transition-colors duration-300 md:text-base",
+    isActive ? "text-primary" : "text-base-content/80",
+    "focus-visible:outline-none",
+  ].join(" ");
+};
+
+const getLineClasses = (site: Sites) => {
+  const isActive = site === currentSite.site;
+  return [
+    "block w-full h-full origin-left transition-transform duration-300 ease-out",
+    isActive
+      ? "scale-x-100 bg-primary"
+      : "scale-x-0 bg-primary/40 group-hover:scale-x-100",
+  ].join(" ");
+};
+---
+
+<div
+  class="drawer select-none sticky top-0 z-50 bg-base-100/90 backdrop-blur-md"
+>
+  <input id="main-drawer" type="checkbox" class="drawer-toggle" />
+
+  <div class="drawer-content flex flex-col">
+    <nav
+      class="navbar w-full max-w-screen-2xl mx-auto px-4 py-4 md:px-8 2xl:px-2"
+    >
+      <div class="flex-1 flex items-center gap-4">
+        <div
+          class:list={[
+            "flex-none",
+            isTheJourneyPublication(currentSite) ? "xl:hidden" : "lg:hidden",
+          ]}
+        >
+          <label
+            for="main-drawer"
+            class="btn btn-square btn-ghost focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            <span class="sr-only">Open Navigation Menu</span>
+            <SVGIcon icon={ui.menu} stroke="currentColor" strokeWidth={2} />
+          </label>
+        </div>
+
+        <AlbertoDuran />
+
+        <div class="hidden lg:flex items-center ml-8">
+          <ul class="flex gap-10">
+            {
+              navSites.map((site) => (
+                <li class="group relative">
+                  <a
+                    href={site}
+                    class={getLinkClasses(site)}
+                    data-astro-prefetch="load"
+                  >
+                    {sitesManifest[site].label}
+                    <span class="absolute bottom-1 left-0 h-0.5 w-full overflow-hidden pointer-events-none">
+                      <span class={getLineClasses(site)} />
+                    </span>
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+      </div>
+
+      <div class="flex-none flex items-center gap-4">
+        <ThemeToggle />
+      </div>
+    </nav>
+  </div>
+
+  <NavDrawer navSites={navSites} currentSite={currentSite} />
+</div>

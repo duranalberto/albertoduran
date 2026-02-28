@@ -1,0 +1,400 @@
+---
+title: "Equity Valuation Engine"
+pubDate: 2026-03-01
+description: "A modular system that extracts financial data, computes metrics, and runs several equity valuation models."
+author: "Alberto Duran"
+image: "../assets/thejournal/stock/06.avif"
+tags: ["project", "python", "yfinance", "valuation", "finance"]
+github: "equity-valuation-engine"
+---
+
+_A modular, data-driven framework for financial analysis and intrinsic valuation_
+
+---
+
+## Overview
+
+I built this project as a structured environment for equity valuation where financial data moves through a clear analytical pipeline that transforms raw financial inputs into normalized metrics and eventually into intrinsic value estimates produced by multiple valuation models.
+
+Most investors rely on spreadsheets when running valuation models. Spreadsheets work well for small calculations, yet they become fragile once the number of formulas grows and assumptions start spreading across many cells. Over time formulas become difficult to trace, calculations become harder to audit, and the logic behind a valuation becomes difficult to explain.
+
+I wanted a system where the entire chain from financial statements to valuation output remained explicit and reproducible. Instead of hiding assumptions inside spreadsheet formulas, the project expresses financial models directly in code where every step becomes visible and version controlled.
+
+The system loads financial data, validates the completeness of the dataset, constructs normalized financial metrics, and runs several valuation engines that estimate intrinsic value through different financial theories.
+
+The current implementation supports several valuation approaches including discounted cash flow valuation, earnings multiple valuation, and return on equity based valuation. Each valuation model consumes the same financial dataset, which keeps the comparison between models consistent.
+
+A command line interface orchestrates the workflow and allows the entire system to run through a single command, producing structured output that summarizes intrinsic value estimates and valuation gaps relative to the current market price.
+
+The resulting system behaves less like a spreadsheet and more like a financial analysis framework where assumptions remain transparent and valuation models become easy to extend.
+
+## High Level Goals
+
+Several engineering goals guided the design of this project and influenced the structure of the repository.
+
+The first goal focuses on transparency because financial models should remain understandable by reading the code rather than reverse engineering spreadsheet formulas. Every growth rate, discount factor, and valuation formula therefore appears explicitly inside the system.
+
+The second goal focuses on modular valuation engines. Each valuation method operates as an independent component that consumes the same financial dataset. This design allows different financial theories to coexist while remaining easy to compare.
+
+The third goal emphasizes reproducibility. Running the same valuation command with the same dataset should always produce the same output, which allows experiments with financial assumptions to remain consistent and traceable.
+
+The fourth goal emphasizes separation of concerns so that financial data loading, metric construction, valuation formulas, and user interfaces remain independent components that evolve without breaking the rest of the system.
+
+The fifth goal focuses on extensibility. A well structured architecture makes it easy to introduce additional valuation models such as dividend discount models or residual income valuation without rewriting existing code.
+
+Together these goals lead to a layered architecture that mirrors the logical structure of financial analysis.
+
+## System Architecture
+
+The architecture follows a staged pipeline where each layer transforms financial data into a higher level representation before passing it to the next stage.
+
+Raw financial inputs enter the system first. A metrics loader transforms these inputs into normalized financial datasets. Financial calculation modules derive growth rates and valuation inputs. Valuation engines consume those inputs and estimate intrinsic value. Finally the command line interface formats and prints the results.
+
+High level system flow
+
+```
+    Financial Data
+          │
+          ▼
+    Metrics Loader
+          │
+          ▼
+    Validation Layer
+          │
+          ▼
+    Financial Calculations
+          │
+          ▼
+    Valuation Engines
+          │
+          ▼
+    CLI Interface
+          │
+          ▼
+    Terminal Output
+```
+
+A more detailed structural view shows how the valuation engines branch from the shared financial calculations layer.
+
+```
+    Financial Data Inputs
+            │
+            ▼
+       Metrics Loader
+            │
+            ▼
+        Validation
+            │
+            ▼
+    Financial Calculations
+            │
+      ┌─────┼──────────────┐
+      ▼     ▼              ▼
+    DCF   PE Model      ROE Model
+      │     │              │
+      └─────┴───────┬──────┘
+                    ▼
+                CLI Output
+```
+
+This architecture ensures that all valuation models rely on the same underlying financial metrics while still remaining independent implementations.
+
+## Project Structure
+
+The repository structure reflects the architectural separation between orchestration logic, financial calculations, valuation models, and command line tooling.
+
+```
+src
+ ├ application
+ │   ├ metrics_loader
+ │   └ valuations
+ │        ├ dcf
+ │        ├ pe
+ │        └ roe
+ │
+ ├ calculations
+ │   ├ metrics_formulas.py
+ │   ├ dfc_formulas.py
+ │   └ common.py
+ │
+ └ cli
+     ├ main.py
+     └ presenters
+```
+
+Each directory represents a distinct responsibility within the valuation system.
+
+The application layer coordinates the execution of valuation workflows and connects financial metrics with valuation engines.
+
+The calculations directory contains reusable financial formulas such as growth rate estimations, discounting functions, and terminal value calculations.
+
+The valuations directory implements the different valuation strategies that translate financial metrics into intrinsic value estimates.
+
+The CLI directory provides the entry point for running valuations and formatting results for terminal output.
+
+This structure keeps financial logic separate from application flow and user interface concerns.
+
+## Metrics Loading Pipeline
+
+The metrics loading layer converts fragmented financial inputs into a structured dataset that valuation models can consume consistently.
+
+Financial information often arrives in scattered formats where revenue, earnings per share, free cash flow, dividends, and price data appear in separate collections. The metrics loader consolidates these values into a coherent structure that represents the financial history of the company.
+
+The loader also performs validation to ensure that the required financial values exist before valuation models attempt to run calculations. Missing financial data can easily produce misleading outputs if it flows silently through the system.
+
+Example structure of the metrics loader
+
+```python
+class MetricsLoader:
+
+    def load(self, stock_data):
+
+        self._validate(stock_data)
+
+        metrics = {
+            "revenue_series": stock_data.revenue,
+            "eps_series": stock_data.eps,
+            "fcf_series": stock_data.free_cash_flow,
+            "price": stock_data.price
+        }
+
+        return metrics
+```
+
+Conceptual pipeline of the metrics loader
+
+```
+    Raw Stock Data
+         │
+         ▼
+     Data Validation
+         │
+         ▼
+    Normalized Metrics
+         │
+         ▼
+    Valuation Inputs
+```
+
+By validating the dataset early in the pipeline the system prevents incomplete financial inputs from propagating into later stages of the valuation process.
+
+## Financial Calculations Layer
+
+The financial calculations layer acts as the mathematical core of the valuation engine where financial formulas transform raw historical data into derived indicators used by valuation models.
+
+Typical derived metrics include revenue growth rates, earnings growth rates, discount factors, profitability measures, and terminal value calculations.
+
+Because these formulas remain independent from application flow they can be reused across different valuation engines and tested independently.
+
+Example compound growth calculation
+
+```python
+def calculate_growth_rate(series):
+
+    first = series[0]
+    last = series[-1]
+    periods = len(series) - 1
+
+    return (last / first) ** (1 / periods) - 1
+```
+
+Example discounting function used in valuation models
+
+```python
+def discount(value, rate, year):
+
+    return value / ((1 + rate) ** year)
+```
+
+This layer isolates financial mathematics from system orchestration, which keeps the logic easy to test and easier to reason about when building new valuation models.
+
+## Discounted Cash Flow Valuation
+
+The discounted cash flow model estimates intrinsic value by projecting future free cash flows and discounting those cash flows back to present value using a required rate of return.
+
+The model begins with historical free cash flow data. From that data a growth rate can be estimated or provided manually depending on the assumptions used by the analyst.
+
+The system then projects future free cash flows across a specified forecast horizon. Each projected cash flow is discounted back to present value using a weighted average cost of capital or another discount rate.
+
+Example projection function
+
+```python
+def project_cash_flows(initial_fcf, growth, years):
+
+    flows = []
+
+    value = initial_fcf
+
+    for _ in range(years):
+        value = value * (1 + growth)
+        flows.append(value)
+
+    return flows
+```
+
+Example discounted valuation logic
+
+```python
+def discounted_value(cash_flows, wacc):
+
+    total = 0
+
+    for year, flow in enumerate(cash_flows, start=1):
+        total += flow / ((1 + wacc) ** year)
+
+    return total
+```
+
+Conceptual structure of the DCF model
+
+    Historical Free Cash Flow
+            │
+            ▼
+      Growth Estimation
+            │
+            ▼
+
+Future Cash Flow Projection
+│
+▼
+Discounting
+│
+▼
+Terminal Value
+│
+▼
+Intrinsic Equity Value
+
+The intrinsic value produced by the model equals the sum of discounted projected cash flows and the discounted terminal value representing the long term continuation of the business.
+
+## Price Earnings Valuation
+
+The price earnings valuation model estimates intrinsic value by projecting future earnings per share and applying a market multiple that reflects how the market may price those earnings.
+
+This model relies on the idea that stock prices eventually align with the earnings capacity of the underlying business, which means that projecting earnings growth combined with a realistic valuation multiple can provide a reasonable estimate of future price.
+
+Example earnings multiple valuation
+
+```python
+def pe_valuation(current_eps, growth, years, target_pe):
+
+    future_eps = current_eps * ((1 + growth) ** years)
+
+    future_price = future_eps * target_pe
+
+    return future_price
+```
+
+After estimating the future stock price the system may discount that value back to present value in order to compare it with the current market price.
+
+## Return on Equity Valuation
+
+The return on equity valuation model focuses on how effectively a company reinvests its earnings and compounds shareholder capital.
+
+Companies that maintain high return on equity while reinvesting a meaningful portion of their earnings often experience steady growth in intrinsic value.
+
+The model estimates equity growth as a function of profitability and retained earnings.
+
+Example calculation
+
+```python
+def equity_growth(roe, retention):
+
+    return roe * retention
+```
+
+This relationship highlights how the interaction between profitability and reinvestment strategy drives long term business value.
+
+## Command Line Interface
+
+The command line interface serves as the entry point that orchestrates the full valuation pipeline.
+
+Users supply a ticker symbol and the valuation model they wish to run. The CLI then coordinates data loading, metrics generation, valuation execution, and result presentation.
+
+Example command invocation
+
+```python
+python -m cli.main --ticker AAPL --model dcf
+```
+
+Internal execution flow of the CLI
+
+```
+    User Command
+        │
+        ▼
+    Argument Parser
+        │
+        ▼
+    Metrics Loader
+        │
+        ▼
+    Valuation Engine
+        │
+        ▼
+    Presenter Module
+        │
+        ▼
+    Terminal Output
+```
+
+Presenter modules convert raw valuation outputs into structured terminal output.
+
+Example CLI output
+
+```
+Ticker        AAPL
+DCF Value     182.44
+Market Price  165.30
+Margin Safety 9.3%
+```
+
+This interface allows the system to run easily from scripts or automation tools while keeping the user interaction minimal.
+
+## Engineering Decisions and Design Tradeoffs
+
+Several engineering decisions shaped the architecture of the project.
+
+The system intentionally avoids heavy frameworks and instead relies on simple Python modules that make financial logic easier to read, although this approach requires more explicit coordination between components.
+
+Financial formulas remain isolated in the calculations layer so that mathematical logic stays independent from application orchestration, which improves clarity and simplifies testing.
+
+Validation occurs early in the pipeline to prevent incomplete financial datasets from reaching valuation models, which prioritizes correctness over permissive execution.
+
+Each valuation engine operates independently without sharing internal state with other engines, which improves modularity but may duplicate intermediate calculations across models.
+
+The command line interface prioritizes simplicity and scriptability over graphical presentation, which keeps the system lightweight while leaving room for future visualization tools.
+
+## Why This Project Matters
+
+Equity valuation often lives in informal tools where calculations remain opaque and assumptions remain difficult to track.
+
+By structuring valuation as a software system the full analytical pipeline becomes transparent, reproducible, and testable in ways that spreadsheet based analysis rarely supports.
+
+Each valuation model becomes a clear implementation of a financial theory, and the shared dataset allows those theories to be compared using identical financial inputs.
+
+The project therefore functions both as a practical valuation tool and as an example of how disciplined software architecture can improve financial analysis.
+
+## Future Improvements
+
+Several enhancements could expand the capabilities of the system and deepen the analytical framework.
+
+Automatic financial data ingestion from external APIs would allow the system to evaluate companies directly from live financial statements.
+
+Scenario analysis could evaluate optimistic and pessimistic growth assumptions across valuation models in order to reveal how sensitive intrinsic value estimates are to changes in financial assumptions.
+
+Monte Carlo simulations could produce probability distributions of intrinsic value rather than single point estimates, which would better represent the uncertainty inherent in financial forecasting.
+
+Portfolio level analysis could extend the framework from evaluating individual companies to analyzing groups of securities within an investment portfolio.
+
+Visualization modules could also improve interpretability by displaying projected cash flows, valuation ranges, and sensitivity analyses through graphical outputs.
+
+## Closing Thoughts
+
+I built this project to explore how financial modeling benefits from structured software architecture where assumptions remain explicit and calculations remain reproducible.
+
+Valuation models always depend on uncertain forecasts about growth, profitability, and capital allocation, yet treating valuation as software exposes those assumptions clearly and makes experimentation far easier.
+
+The system now acts as a foundation for exploring financial models, testing different valuation approaches, and gradually expanding the analytical capabilities of the framework.
+
+By transforming valuation into a programmable workflow the project turns financial analysis into a process that is easier to understand, easier to extend, and far easier to maintain over time.

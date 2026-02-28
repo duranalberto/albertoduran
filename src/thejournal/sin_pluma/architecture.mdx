@@ -1,0 +1,216 @@
+---
+title: "System Architecture"
+pubDate: 2026-03-01
+description: "Built a microservices system using Flask, React.js, InnoDB Cluster, Minio, and Redis."
+order: 1
+author: "Alberto Duran"
+image: "../../assets/thejournal/stock/07.avif"
+tags: ["docker", "python", "react", "sql"]
+github: "SinPluma"
+---
+
+This publication isolates and expands the **System Architecture** section for SinPluma, presenting an organized, deeper explanation of each architectural element, the microservices, the runtime topology and how data flows end-to-end. The goal is to be technically precise while readable for non-specialists (e.g., technical recruiters evaluating system design and implementation competency).
+
+---
+
+## 1. Architecture overview (logical layers)
+
+SinPluma is implemented as a small collection of containerized services connected by HTTP and shared infrastructure components. Architecturally it maps to familiar layers:
+
+- **Edge / Gateway** — Nginx: routes traffic, terminates TLS, and exposes a single public surface for the SPA and APIs.
+- **API / Application** — Flask-based backend: primary domain logic (users, works, pages, uploads).
+- **Auxiliary Services** — Linguistics microservice: text analysis / sentiment endpoints.
+- **Storage & Persistence** — InnoDB Group Replication (MySQL) cluster + MySQL Router for transactional data; MinIO for object storage; Redis for ephemeral state.
+- **Orchestration & Local Runtime** — Docker Compose for reproducible local / demo deployments.
+- **Operational glue** — bootstrap scripts (MySQL Shell), configuration files and Dockerfiles that automate cluster creation and service wiring.
+
+The design deliberately favors **one authoritative transactional store** (MySQL InnoDB cluster) for critical content and user state, with specialized systems (MinIO, Redis) for media and caching.
+
+![SinPluma Architecture](../../assets/thejournal/pub/sinpluma_architecture.png)
+
+---
+
+## 2. Service catalog — responsibilities, stacks and key libraries
+
+Each element below is a distinct container/service in the repo. For each I list purpose, primary language/framework, important libraries and the main responsibilities.
+
+### 2.1 API / Application Service (Flask)
+
+- **Purpose:** Core domain API — authentication, user/profile management, notebooks/works, pages, publish/unpublish flows, simple search, and image upload integration.
+- **Language / Framework:** Python 3.8, Flask.
+- **Key libraries:** `Flask`, `Flask-RESTful`, `Flask-JWT-Extended` (JWT auth), `Flask-SQLAlchemy` + `pymysql` (DB access), `marshmallow` (validation/serialization), `Flask-Minio` (object storage), `flask-redis` (Redis), `bcrypt` (password hashing), `gunicorn` (WGI server).
+- **Data stores used:** MySQL (InnoDB cluster) via MySQL Router; MinIO for object blobs; Redis for token blacklist and short-lived caches.
+- **Notable endpoints (conceptual):**
+  - `POST /api/auth/login`, `POST /api/auth/register`
+  - `GET /api/notebooks`, `POST /api/notebooks`, `PUT /api/pages/{id}`
+  - `POST /api/uploads/images` → stores image to MinIO and persists reference in MySQL
+  - `GET /api/search?q=...` → SQL LIKE-based search
+- **Behavioral notes:** Transactional writes (create/publish) go to InnoDB cluster; the service connects to a Router endpoint so failover is transparent.
+
+### 2.2 Linguistics Service
+
+- **Purpose:** Lightweight NLP endpoints used by the editor (sentence-level sentiment / text features).
+- **Language / Framework:** Python, Flask.
+- **Key libraries:** `Flask`, `scikit-learn` (simple ML / feature transforms).
+- **Interaction pattern:** Polled or direct called via front-end through the API gateway path; stateless HTTP responses (no persistent backing store required).
+
+### 2.3 Front-end (React SPA)
+
+- **Purpose:** Editor and reader UI; Slate-based rich editor for authoring.
+- **Stack:** React, Redux, Slate editor, Material UI.
+- **Integration:** Calls API endpoints via Axios; uploads via signed or proxied endpoints; performs optimistic updates for UX responsiveness.
+
+### 2.4 MinIO (Object Storage)
+
+- **Purpose:** S3-compatible object store for images and other binary assets.
+- **Interaction:** Flask uses Flask-Minio to PUT/GET objects and store object metadata/URLs in MySQL.
+
+### 2.5 Redis
+
+- **Purpose:** Fast in-memory store for token blacklists (revoked JWT JTIs) and ephemeral caches.
+- **Interaction:** Flask-Redis integration; used during authentication checks to validate token revocation.
+
+### 2.6 MySQL InnoDB Cluster + MySQL Router
+
+- **Purpose:** Replicated, highly-available relational database for authoritative data (users, content metadata, revisions).
+- **Components:** Multiple MySQL server containers (Group Replication) + MySQL Router container exposing a single endpoint to apps.
+- **Automation:** A bootstrapping script (`create_cluster.py`) executed via MySQL Shell configures Group Replication, adds instances, and loads initial schema/data.
+- **Application connectivity:** Flask points to `mysql+pymysql://...@inno_router:6446/` — the Router routes traffic to the current primary/available nodes.
+
+### 2.7 Nginx (Edge / Reverse Proxy)
+
+- **Purpose:** Route traffic to SPA and API services, proxy linguistics path, static asset delivery, possible TLS termination (in production).
+- **Responsibilities:** Path-based routing, header injection for tracing, basic rate limiting / static caching rules.
+
+---
+
+## 3. Inter-service interaction and request flows
+
+This section explains how the services collaborate in common user-facing flows and how the system maintains correctness.
+
+### 3.1 Typical user request: create and save a draft
+
+1. **Client (browser)** → `POST /api/notebooks` to Nginx.
+2. **Nginx** proxies to Flask API.
+3. **Flask** validates input (marshmallow), begins a DB transaction via SQLAlchemy, writes notebook + initial page into InnoDB cluster (via MySQL Router).
+4. **Flask** returns success; front-end receives created resource id and updates UI.
+
+**Key guarantees:** The write is transactional (ACID) because the operation commits against the InnoDB cluster; if the commit fails, no partial state is visible.
+
+### 3.2 Image upload flow
+
+1. **Client** uploads image via `POST /api/uploads/images`.
+2. **Flask** receives multipart/form-data, writes object to MinIO (PUT) and obtains a stable object URL/key.
+3. **Flask** writes image metadata (object key, size, MIME) into MySQL (so object references are tracked transactionally).
+4. **Flask** returns object URL to client for embedding in the editor.
+
+**Key point:** Storing metadata in MySQL ensures referential integrity between content and media. If MinIO write fails, the DB transaction is aborted and no dangling references are stored.
+
+### 3.3 Linguistics (editor assistance)
+
+1. **Client** sends sentence to `GET /api/lin/sentiment?sent=...`.
+2. **Nginx** proxies to Linguistics service which returns a sentiment classification.
+3. **Client** shows inline sentiment feedback. No DB writes are required.
+
+### 3.4 Read / Search request
+
+- **Search:** `GET /api/search?q=term` executes a SQL `LIKE` query against MySQL (not a dedicated search index). This is synchronous and may be fine for small datasets but lacks relevance tuning and scale for large corpora.
+
+---
+
+## 4. InnoDB Cluster configuration & automation (detailed)
+
+The InnoDB Group Replication cluster is the backbone of SinPluma’s transactional state. The repository provides a scripted, reproducible bootstrapping approach intended for demo/local environments and to demonstrate operational competence.
+
+### 4.1 Topology & components
+
+- **Nodes:** Three MySQL server instances (in Docker Compose) configured with unique server IDs and Group Replication parameters.
+- **Router:** MySQL Router container provides a single logical endpoint for reads/writes and hides cluster member addresses from application code.
+- **Bootstrap helper:** A `mysqlsh` (MySQL Shell) container executes a Python script (`create_cluster.py`) that:
+  - Configures each MySQL instance to enable Group Replication features (GTID, binary logging, relay logs).
+  - Creates (or recovers) the cluster using `dba.createCluster(...)` if not present.
+  - Adds nodes to the cluster and waits for the group to reach a healthy state.
+  - Optionally loads seed SQL schema/data (e.g., `sinpluma.sql`) into the new cluster.
+
+### 4.2 Key configuration concerns (as implemented)
+
+- **GTID-based replication:** Ensures deterministic replay and simplifies recovery.
+- **transaction_write_set_extraction:** Enabled to support Group Replication conflict detection.
+- **unique server IDs + report_host:** Required for proper Group Replication communications in container networks.
+- **Router usage:** Applications connect to Router port (e.g., `6446`) to avoid direct cluster membership knowledge.
+- **Persistent volumes:** Compose mounts each node’s `/var/lib/mysql` to host directories so data persists across container restarts.
+
+### 4.3 Bootstrapping sequence
+
+1. Start MySQL containers (nodes) and wait for MySQL to accept connections.
+2. Run MySQL Shell `create_cluster.py`:
+   - Configure instances
+   - If no cluster exists, call `dba.createCluster("clusterName", options...)`
+   - Add secondary instances with `cluster.addInstance(...)`
+   - Wait until `cluster.status()` reports `primary` and `online` members.
+3. Start MySQL Router and write configuration that references the cluster.
+4. Application uses Router endpoint for all DB traffic.
+
+### 4.4 Backup & recovery approach (present/implicit)
+
+- **Schema / seed loading:** done by `create_cluster.py` with `sinpluma.sql` during bootstrap.
+- **Backups:** The repository demonstrates a basic operational understanding (references to `xtrabackup` / physical backups are suggested best-practices). For production, point-in-time recovery (PITR) and scheduled full/incremental backups were recommended.
+
+---
+
+## 5. Deployment, orchestration and local runtime
+
+### 5.1 Docker Compose as the orchestrator
+
+- The repo uses `docker-compose.yml` to describe and bring up the entire stack (Flask, Linguistics, React, MinIO, Redis, MySQL nodes, Router, Nginx).
+- Compose provides a reproducible demo environment — ideal for contests — and clarifies service wiring for reviewers.
+
+### 5.2 CI/CD & automation considerations
+
+- Bootstrap scripts are idempotent and intended to be executed by CI or operator runbooks.
+- For production, the architecture anticipates a migration to orchestrators (Kubernetes + Helm) or managed services for DB to handle multi-host resilience and scaling.
+
+---
+
+## 6. Security & operational controls in architecture
+
+- **Authentication:** JWT-based authentication using `Flask-JWT-Extended`.
+- **Token revocation:** Redis-backed blacklist ensures immediate token revocation semantics.
+- **Service-to-service security:** Nginx is the ingress point; for intra-cluster service auth, service tokens or network isolation were indicated as future hardening steps (mTLS, service identity).
+- **Data protection:** Media stored in MinIO; DB holds references but sensitive fields (passwords) use bcrypt hashing.
+
+---
+
+## 7. Observability & troubleshooting (how architecture supports ops)
+
+- **Failure isolation:** Router abstracts DB failover: applications reconnect to the single Router endpoint.
+- **Deterministic bootstrapping:** The MySQL Shell script makes recovery predictable; operators can re-run bootstrap logic if a node fails and needs rejoin.
+- **Logs & process visibility:** Each container (API, MySQL, Nginx, MinIO) emits logs that can be aggregated for diagnosis. Instrumentation is not exhaustive in the repo but the structure makes adding Prometheus metrics and tracing straightforward.
+
+---
+
+## 8. Architectural strengths & constraints (concise)
+
+**Strengths**
+
+- Clean separation of concerns (API, NLP, media, DB).
+- Strong transactional guarantees for critical state using InnoDB Group Replication.
+- Reproducible local deployment; scripted cluster automation demonstrates operational thinking.
+- Simple, pragmatic stacks (Flask, React, MinIO) that enable fast development and clear ownership.
+
+**Constraints**
+
+- Lack of an async event bus limits scalability for tasks like indexing, notifications and heavy background processing.
+- SQL LIKE-based search will not scale for large content sets; dedicated search engine advisable for growth.
+- Docker Compose-based DB cluster is suitable for demos but would require migration to an operator/managed service for production-grade operations.
+
+---
+
+## 9. Closing summary
+
+This System Architecture provides a focused, production-minded backbone for a collaborative writing SaaS:
+
+- Authoritative transactional data is protected by a replicated InnoDB cluster with scripted automation.
+- Media and ephemeral state are handled by specialized systems (MinIO, Redis), keeping the relational store focused and performant.
+- Nginx, Flask, and a separate linguistics service provide clear separation of responsibilities while keeping inter-service communication simple (HTTP).
+- The architecture trades off some scalability features (eventing, search index) in favor of simplicity and operational reproducibility — a pragmatic and defensible choice for a contest-winning project that demonstrates both engineering breadth and operational maturity.

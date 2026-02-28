@@ -1,0 +1,530 @@
+---
+title: "Content Collections Architecture"
+pubDate: 2026-03-07
+description: "An inside look at the journal content system. This article explains how Astro collections and a custom manifest builder transform MDX files into a structured knowledge base."
+author: "Alberto Duran"
+order: 3
+image: "../../../assets/thejournal/stock/01.avif"
+tags: ["astro", "typescript", "mdx", "static-sites"]
+---
+
+## The Problem This System Solves
+
+I wanted a journal that behaved like a small knowledge base. Articles live in folders. Some folders act like sections. Others behave like nested topics.
+
+The UI needs structure, navigation, ordering, and relationships between entries.
+
+Astro gives a strong base with content collections. The project adds a layer that builds a manifest. That manifest becomes the source of truth for the UI.
+
+The flow looks like this.
+
+```
+MDX Files
+   │
+   ▼
+Astro Content Collection
+   │
+   ▼
+getCollection("thejournal")
+   │
+   ▼
+loadManifest()
+   │
+   ├── entryManifest
+   ├── vaultsManifest
+   └── rawEntries
+   │
+   ▼
+UI pages read the manifest
+```
+
+Each stage adds structure.
+
+---
+
+## Step 1. The Content Lives as MDX Files
+
+Every journal entry lives under this directory.
+
+```
+src/thejournal/
+```
+
+Example structure.
+
+```
+src/thejournal
+│
+├── index.mdx
+│
+├── architecture
+│   ├── index.mdx
+│   ├── astro-content.mdx
+│   └── static-site-structure.mdx
+│
+└── javascript
+    ├── index.mdx
+    └── closures.mdx
+```
+
+Important convention.
+
+Every folder has an index.mdx. That file acts as the section root.
+
+This project calls those sections vaults.
+
+So the folder becomes a vault. The index file becomes the vault entry.
+
+---
+
+## Step 2. Astro Collections Register the Content
+
+Astro collections provide a typed content layer.
+
+The configuration lives in src/content.config.ts.
+
+```typescript
+import { glob } from "astro/loaders";
+import { defineCollection, z } from "astro:content";
+
+const thejournal = defineCollection({
+  loader: glob({
+    pattern: "**/*.mdx",
+    base: "./src/thejournal",
+  }),
+  schema: ({ image }) =>
+    z.object({
+      title: z.string(),
+      github: z.string().optional(),
+      image: image().optional(),
+      description: z.string().default("Without description available."),
+      pubDate: z.coerce.date(),
+      tags: z.array(z.string()).default([]),
+      order: z.number().default(100),
+    }),
+});
+
+export const collections = { thejournal };
+```
+
+This does several things.
+
+Astro scans all MDX files under src/thejournal.
+
+Each file becomes a typed entry.
+
+The schema enforces frontmatter structure.
+
+Example frontmatter.
+
+```
+---
+title: Astro Content Collections
+description: How Astro organizes content
+pubDate: 2025-01-01
+tags: [astro, content]
+order: 1
+---
+```
+
+Benefits of collections.
+
+- Schema validation
+- Type safety
+- Automatic content discovery
+- Unified loading through getCollection
+- Clear separation between code and content
+
+The project now has structured content. It still lacks hierarchy.
+
+That is where the manifest comes in.
+
+---
+
+## Step 3. The Manifest Builder
+
+The file `src/utils/thejournal_manifest.ts` builds the system that the UI actually uses.
+
+Its job is to transform raw entries into a navigable structure.
+
+The process begins here.
+
+```typescript
+const rawEntries = await getCollection("thejournal");
+```
+
+getCollection returns every journal entry with metadata and body.
+
+But the UI needs more information.
+
+Examples.
+
+- folder hierarchy
+- navigation order
+- previous and next article
+- vault grouping
+
+The manifest layer computes all of this.
+
+---
+
+## Step 4. What Is a Vault
+
+A vault represents a root directory inside the journal.
+
+Example.
+
+```
+src/thejournal/architecture
+```
+
+The file
+
+```
+src/thejournal/architecture/index.mdx
+```
+
+defines the vault entry.
+
+The rest of the files belong to that vault.
+
+```
+architecture
+├── index.mdx
+├── astro-content.mdx
+└── static-site-structure.mdx
+```
+
+The vault becomes a navigable tree.
+
+```
+Vault
+ │
+ ├── Index Article
+ ├── Article A
+ └── Article B
+```
+
+Nested folders create nested vault nodes.
+
+---
+
+## Step 5. Loading the Manifest
+
+The manifest loader returns three resources.
+
+```typescript
+export const [entryManifest, vaultsManifest, rawEntries] = await loadManifest();
+```
+
+Each one serves a different purpose.
+
+---
+
+### entryManifest
+
+This is a flat lookup table for all entries.
+
+Structure.
+
+```typescript
+Record<string, EntryContext>;
+```
+
+Example.
+
+```typescript
+{
+  "architecture/astro-content.mdx": EntryContext,
+  "architecture/static-site-structure.mdx": EntryContext
+}
+```
+
+Purpose.
+
+Fast access to entry metadata from an id.
+
+Used by routing, navigation, and article pages.
+
+The data is produced by this function.
+
+```typescript
+function mapEntryToContext(entry: JournalEntry): EntryContext;
+```
+
+It converts a raw Astro entry into a simplified context object.
+
+Fields include
+
+- id
+- filepath
+- title
+- description
+- tags
+- pubDate
+- readTime
+- vaultId
+
+Read time is calculated like this.
+
+```typescript
+const wordsPerMinute = 160;
+const words = entry.body?.trim().split(/\s+/).length;
+```
+
+---
+
+### vaultsManifest
+
+This object represents the journal structure.
+
+Type.
+
+```typescript
+Record<string, VaultContext>;
+```
+
+Each vault contains
+
+```
+VaultContext
+ │
+ ├── index
+ └── items
+```
+
+Example.
+
+```
+architecture
+│
+├── index.mdx
+├── astro-content.mdx
+└── static-site-structure.mdx
+```
+
+Becomes
+
+```
+VaultContext
+ │
+ ├── index
+ └── items[]
+```
+
+Nested folders become nested vault nodes.
+
+```
+Vault
+ │
+ ├── Entry
+ └── Subfolder
+     │
+     ├── index
+     └── items
+```
+
+The hierarchy is built here.
+
+```ts
+function buildNestedStructure(entries, currentPath);
+```
+
+It groups entries by subfolder and recursively builds the tree.
+
+Sorting is handled by
+
+```typescript
+function sortByOrderThenTitle(a, b);
+```
+
+Entries use the order field first. Title acts as a fallback.
+
+---
+
+### rawEntries
+
+This is the direct output of Astro.
+
+```typescript
+JournalEntry[]
+```
+
+Nothing is modified.
+
+The project keeps this list because sometimes the raw content is useful.
+
+Example use cases.
+
+- search indexing
+- feeds
+- analytics
+- building lists without hierarchy
+
+---
+
+## Step 6. Linking Articles
+
+Articles inside a vault get automatic navigation.
+
+The function responsible is
+
+```typescript
+linkVaultEntries(vault);
+```
+
+It walks through the vault tree and connects entries.
+
+```
+Entry A <-> Entry B <-> Entry C
+```
+
+Each entry receives
+
+```
+previous
+next
+```
+
+This powers the article footer navigation.
+
+---
+
+## Step 7. Path Resolution
+
+Pages often know only a URL path.
+
+The project needs to resolve that path into context data.
+
+That is the purpose of
+
+```typescript
+getContextFromPath();
+```
+
+Definition.
+
+```typescript
+export function getContextFromPath(path: string);
+```
+
+Return value.
+
+```typescript
+[EntryContext | null, VaultContext | null];
+```
+
+The function does three things.
+
+1. Normalize the URL path
+2. Locate the entry in the manifest
+3. Resolve its vault
+
+Example flow.
+
+```
+URL
+│
+▼
+/thejournal/architecture/astro-content
+│
+▼
+Normalize path
+│
+▼
+Find entry in entryManifest
+│
+▼
+Find vault in vaultsManifest
+```
+
+The page now has everything it needs.
+
+- entry metadata
+- vault structure
+- sibling entries
+- navigation links
+
+---
+
+## Step 8. How the UI Uses the Manifest
+
+The journal page loads the catalog like this.
+
+```ts
+const catalog = Object.values(entryManifest);
+```
+
+This creates a list of all entries.
+
+The UI components then consume the structured data.
+
+Typical flow.
+
+```
+entryManifest
+     │
+     ▼
+JournalGrid
+     │
+     ▼
+JournalCard
+```
+
+Vault navigation uses vaultsManifest.
+
+```
+vaultsManifest
+     │
+     ▼
+VaultTreeNode component
+```
+
+Each component receives preprocessed data. No expensive computation happens inside the UI.
+
+---
+
+## Full Lifecycle Summary
+
+The entire system works like this.
+
+```
+1. Author writes MDX files
+2. Astro collection loads the files
+3. getCollection returns typed entries
+4. loadManifest builds structured data
+5. entryManifest enables fast lookup
+6. vaultsManifest builds hierarchy
+7. linkVaultEntries connects navigation
+8. UI components consume the manifest
+```
+
+Or visually.
+
+```
+MDX Files
+   │
+   ▼
+Astro Collection
+   │
+   ▼
+getCollection()
+   │
+   ▼
+Manifest Builder
+   │
+   ├── entryManifest
+   ├── vaultsManifest
+   └── rawEntries
+   │
+   ▼
+UI Components
+```
+
+The result feels like a small content database built entirely at build time.
+
+Astro handles file discovery and typing.
+
+The manifest layer turns files into a navigable knowledge structure.
+
+The UI simply reads the final map.

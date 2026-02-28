@@ -1,0 +1,36 @@
+---
+import { type Certifications } from "@appTypes/about";
+
+interface Props {
+  certifications: Certifications[];
+}
+
+const { certifications } = Astro.props;
+---
+
+<ul class="flex flex-col gap-8">
+  {
+    certifications.map((cert) => (
+      <li class="flex flex-col gap-2">
+        <h3 class="font-display text-lg font-bold text-base-content leading-tight">
+          {cert.name}
+        </h3>
+
+        <a
+          href={cert.link}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-xs text-primary font-semibold inline-flex items-center gap-1 hover:gap-2 transition-all group"
+        >
+          View Credential
+          <span
+            class="transition-transform group-hover:translate-x-0.5"
+            aria-hidden="true"
+          >
+            →
+          </span>
+        </a>
+      </li>
+    ))
+  }
+</ul>

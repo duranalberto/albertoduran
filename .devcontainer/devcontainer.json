@@ -1,0 +1,63 @@
+{
+  "name": "albert_duran",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "./"
+  },
+  "remoteUser": "node",
+  // Inject Secrets: Load the .env file into the container
+  "runArgs": ["--env-file", ".devcontainer/.env"],
+  "customizations": {
+    "vscode": {
+      "settings": {
+        // Enforce 4-space indentation
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true,
+
+        // Editor Theme Setup (Requires FiraCode Font installed on host)
+        "editor.fontFamily": "'Fira Code', 'FiraCode Nerd Font', Consolas, 'Courier New', monospace",
+        "editor.fontLigatures": true,
+
+        // Terminal Setup (Requires FiraCode Nerd Font installed on host)
+        "terminal.integrated.fontFamily": "'FiraCode Nerd Font'",
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        "terminal.integrated.profiles.linux": {
+          "zsh": {
+            "path": "/bin/zsh"
+          }
+        }
+      },
+      "extensions": [
+        // --- UI & Aesthetics ---
+        "pkief.material-icon-theme",
+        "dunstontc.monokai-plusplus",
+
+        // --- Core Frameworks & Logic ---
+        "astro-build.astro-vscode",
+        "unifiedjs.vscode-mdx", // Added MDX support
+        "microsoft.vscode-typescript-next",
+        "dsznajder.es7-react-js-snippets",
+
+        // --- Styling & CSS ---
+        "bradlc.vscode-tailwindcss",
+
+        // --- Quality Assurance & Formatting ---
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "streetsidesoftware.code-spell-checker",
+        "davidanson.vscode-markdownlint",
+
+        // --- Source Control & Collaboration ---
+        "schmidsi.better-git-line-blame",
+        "mhutchie.git-graph",
+        "Fuzionix.file-tree-extractor",
+        "github.vscode-pull-request-github"
+      ]
+    }
+  },
+  // Install dependencies automatically after container creation
+  "postCreateCommand": "npm install",
+
+  // Expose Astro's default port
+  "forwardPorts": [4321]
+}

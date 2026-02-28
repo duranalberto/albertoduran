@@ -1,0 +1,403 @@
+---
+title: "Rendering codeblocks"
+pubDate: 2026-03-07
+description: "A review of the CodeBlock component used in the journal. This article explains Shiki syntax highlighting, DaisyUI mockup styles, and the advantages of build time highlighting."
+author: "Alberto Duran"
+order: 6
+image: "../../../assets/thejournal/stock/01.avif"
+tags: ["astro", "astro-rendering", "mdx", "static-sites", "daisyui", "shiki"]
+---
+
+## Why Code Blocks Deserve Special Attention
+
+Technical articles depend heavily on readable code blocks. Raw HTML produced from Markdown is functional but rarely pleasant to read.
+
+A typical Markdown code block becomes this.
+
+```html
+<pre><code>const x = 10</code></pre>
+```
+
+This project replaces that output with a richer component.
+
+File.
+
+```text
+src/components/ui/CodeBlock.astro
+```
+
+The component combines two tools.
+
+- Shiki for syntax highlighting
+- DaisyUI mockup code styles for visual presentation
+
+Both work during the build process. The result is static HTML with styling already applied.
+
+---
+
+## The Role of Shiki
+
+Shiki is a syntax highlighter built on top of the same engine used by VS Code.
+
+Instead of highlighting code in the browser, Shiki performs highlighting during the build.
+
+Diagram.
+
+```text
+Markdown code block
+        │
+        ▼
+MDX compiler
+        │
+        ▼
+Shiki highlighting
+        │
+        ▼
+Styled HTML tokens
+        │
+        ▼
+Static page output
+```
+
+Example input.
+
+```js
+const greet = (name) => {
+  console.log("Hello " + name);
+};
+```
+
+Shiki produces HTML with token level styling.
+
+```html
+<span class="line">
+  <span style="color:#C586C0">const</span>
+  <span style="color:#9CDCFE"> greet</span>
+</span>
+```
+
+Each token receives a color derived from a theme.
+
+---
+
+## Shiki Configuration in Astro
+
+Astro integrates Shiki directly through the MDX configuration.
+
+File.
+
+```text
+astro.config.mjs
+```
+
+Example configuration.
+
+```js
+import { defineConfig } from "astro/config";
+
+export default defineConfig({
+  markdown: {
+    shikiConfig: {
+      theme: "github-dark",
+      wrap: true,
+    },
+  },
+});
+```
+
+Key settings.
+
+- theme defines token colors
+- wrap enables long line wrapping
+
+Because highlighting runs during the build, the generated HTML already contains the color information.
+
+This eliminates the need for runtime JavaScript.
+
+---
+
+## Why Build Time Highlighting Matters
+
+Many documentation platforms highlight code after the page loads.
+
+A common example is highlight.js.
+
+Typical flow.
+
+```text
+HTML page loads
+      │
+      ▼
+highlight.js scans the DOM
+      │
+      ▼
+JavaScript parses code
+      │
+      ▼
+Tokens are highlighted
+```
+
+This approach introduces several drawbacks.
+
+- extra JavaScript
+- slower rendering
+- layout shifts during highlighting
+
+The journal system avoids this entirely.
+
+Build time flow.
+
+```text
+MDX file
+   │
+   ▼
+Astro build
+   │
+   ▼
+Shiki highlighting
+   │
+   ▼
+Static HTML
+   │
+   ▼
+Browser displays final result
+```
+
+From the reader perspective the code appears immediately.
+
+---
+
+## The DaisyUI Mockup Code Component
+
+Syntax colors alone do not create a good code block layout.
+
+The project uses DaisyUI mockup code styles to define the container appearance.
+
+The mockup component creates a layout similar to code editors.
+
+Example structure.
+
+```html
+<div class="mockup-code">
+  <pre data-prefix="$"><code>npm install</code></pre>
+</div>
+```
+
+The `mockup-code` class controls several visual elements.
+
+- padding
+- background color
+- border radius
+- line markers
+- code spacing
+
+This produces a container that resembles a terminal or editor window.
+
+Diagram.
+
+```text
+mockup-code container
+│
+├── line prefix
+├── code lines
+└── background styling
+```
+
+The result feels closer to a development environment than a plain text block.
+
+---
+
+## How Shiki and DaisyUI Work Together
+
+Shiki and DaisyUI handle different layers.
+
+Shiki manages token level color.
+
+DaisyUI manages the block level layout.
+
+Diagram.
+
+```text
+CodeBlock Component
+       │
+       ▼
+Shiki
+   │
+   └── token colors
+       │
+       ▼
+DaisyUI mockup-code
+   │
+   └── layout styling
+```
+
+Together they produce readable code blocks that match the site design.
+
+---
+
+## Theme Integration
+
+Both tools respond to the site theme.
+
+DaisyUI controls background colors through theme variables.
+
+Shiki controls token colors through its theme configuration.
+
+Diagram.
+
+```text
+Site Theme
+   │
+   ├── DaisyUI variables
+   │       │
+   │       ▼
+   │   Code block background
+   │
+   └── Shiki theme
+           │
+           ▼
+       Syntax token colors
+```
+
+This keeps code blocks visually consistent with the rest of the interface.
+
+---
+
+## Activating Custom Styles in the Journal Page
+
+The journal route imports additional styling.
+
+File.
+
+```text
+src/pages/thejournal/[...slug].astro
+```
+
+Import.
+
+```ts
+import "@styles/mockup-code.css";
+```
+
+This stylesheet extends the DaisyUI component with custom rules.
+
+It adjusts spacing, typography, and container behavior to match the journal layout.
+
+---
+
+## Overview of mockup-code.css
+
+File.
+
+```text
+@styles/mockup-code.css
+```
+
+The stylesheet modifies the base mockup component.
+
+Key responsibilities.
+
+### Code Container Layout
+
+The container rules control spacing and width.
+
+```css
+.mockup-code {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+```
+
+This separates code blocks from surrounding text.
+
+---
+
+### Line Spacing
+
+Readable code depends on proper line spacing.
+
+```css
+.mockup-code pre {
+  line-height: 1.6;
+}
+```
+
+This prevents dense code blocks.
+
+---
+
+### Horizontal Scrolling
+
+Long lines require scroll behavior.
+
+```css
+.mockup-code pre {
+  overflow-x: auto;
+}
+```
+
+Readers can scroll without breaking the layout.
+
+---
+
+### Font Consistency
+
+Code blocks must use a monospace font.
+
+```css
+.mockup-code code {
+  font-family: var(--font-mono);
+}
+```
+
+This keeps alignment predictable.
+
+---
+
+### Prefix Handling
+
+Some blocks use prefixes such as terminal prompts.
+
+```css
+.mockup-code pre[data-prefix]::before {
+  opacity: 0.5;
+}
+```
+
+The prefix appears visually distinct from the command.
+
+---
+
+## The Final Rendering Pipeline
+
+Putting everything together.
+
+```text
+MDX Article
+   │
+   ▼
+Markdown code block
+   │
+   ▼
+Shiki highlighting
+   │
+   ▼
+CodeBlock component
+   │
+   ▼
+DaisyUI mockup layout
+   │
+   ▼
+Custom CSS adjustments
+   │
+   ▼
+Static HTML output
+```
+
+All styling and highlighting exist before the browser loads the page.
+
+The user sees formatted code instantly.
+
+No client side processing occurs.
+
+This approach keeps the journal fast while still delivering polished technical content.

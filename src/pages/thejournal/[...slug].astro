@@ -1,0 +1,87 @@
+---
+import { type JournalEntry } from "@appTypes/content_context";
+import Article from "@components/sections/thejournal/Article.astro";
+import OnThisPage from "@components/sections/thejournal/OnThisPage.astro";
+import Pagination from "@components/sections/thejournal/Pagination.astro";
+import PublicationHeader from "@components/sections/thejournal/PublicationHeader.astro";
+import TableOfContent from "@components/sections/thejournal/TableOfContent.astro";
+import CodeBlock from "@components/ui/CodeBlock.astro";
+import HeadingAnchor from "@components/ui/HeadingAnchor.astro";
+import BaseLayout from "@layouts/BaseLayout.astro";
+import FlexShell from "@layouts/FlexShell.astro";
+import "@styles/mockup-code.css";
+import {
+  entryManifest,
+  rawEntries,
+  vaultsManifest,
+} from "@utils/thejournal_manifest";
+import { render } from "astro:content";
+
+export async function getStaticPaths() {
+  return rawEntries.map((entry) => ({
+    params: { slug: entry.id },
+    props: { post: entry },
+  }));
+}
+
+interface Props {
+  post: JournalEntry;
+}
+
+const { post } = Astro.props;
+const renderResult = await render(post);
+const entry = entryManifest[post.id];
+const vaultContext = vaultsManifest[entry.vaultId];
+const components: any = {
+  pre: CodeBlock,
+  h2: HeadingAnchor,
+  h3: HeadingAnchor,
+};
+const prevEntry = entry.previous ? entryManifest[entry.previous] : null;
+const nextEntry = entry.next ? entryManifest[entry.next] : null;
+const hasNavigation = prevEntry || nextEntry;
+---
+
+<BaseLayout pageTitle={entry.title}>
+  <FlexShell
+    class="flex flex-col items-start gap-4 lg:flex-row lg:gap-12 xl:gap-16"
+    py={12}
+    px={8}
+  >
+    {
+      vaultContext && (
+        <aside
+          class="hidden flex-none xl:block sticky top-24"
+          transition:name="article-sidebar-left"
+        >
+          <TableOfContent vault={vaultContext} currentEntryId={entry.id} />
+        </aside>
+      )
+    }
+
+    <div class="flex-1 min-w-0 w-full">
+      <PublicationHeader entry={entry} vaultContext={vaultContext} />
+
+      <main class="mt-8">
+        <Article transition:name="article-content">
+          <renderResult.Content components={components} />
+        </Article>
+
+        {
+          hasNavigation && (
+            <div class="mt-16 pt-8">
+              <Pagination prevEntry={prevEntry} nextEntry={nextEntry} />
+            </div>
+          )
+        }
+      </main>
+    </div>
+
+    <aside
+      class="hidden flex-none lg:block sticky top-24"
+      transition:name="article-sidebar-right"
+    >
+      <OnThisPage renderResult={renderResult} />
+    </aside>
+  </FlexShell>
+</BaseLayout>

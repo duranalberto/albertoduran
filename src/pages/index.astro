@@ -1,0 +1,56 @@
+---
+import { type EntryContext } from "@appTypes/content_context";
+import JournalGrid from "@components/common/JournalGrid.astro";
+import ProjectsGrid from "@components/common/ProjectsGrid.astro";
+import AtlasStats from "@components/sections/index/AtlasStats.astro";
+import IndexHero from "@components/sections/index/IndexHero.astro";
+import ProfileView from "@components/sections/index/ProfileView.astro";
+import Quote from "@components/sections/index/Quote.astro";
+import SectionHeader from "@components/ui/SectionHeader.astro";
+import about from "@data/about";
+import BaseLayout from "@layouts/BaseLayout.astro";
+import FlexShell from "@layouts/FlexShell.astro";
+import { entryManifest } from "@utils/thejournal_manifest";
+
+const publications: Set<string> = new Set([
+  "my_first_publication",
+  "building_albertoduran",
+  "building_albertoduran/fasteeer",
+]);
+
+const manifestMap = new Map(
+  Object.values(entryManifest).map((entry) => [entry.id, entry]),
+);
+
+const catalog = Array.from(publications)
+  .map((id) => manifestMap.get(id))
+  .filter((entry): entry is EntryContext => !!entry);
+
+const pageTitle = "Alberto Duran";
+---
+
+<BaseLayout pageTitle={pageTitle}>
+  <IndexHero slot="hero" transition:name="page-hero" />
+  <ProfileView />
+
+  <FlexShell>
+    <div class="flex flex-col gap-8">
+      <SectionHeader title="Projects" />
+      <ProjectsGrid projects={about.projects} />
+    </div>
+  </FlexShell>
+
+  <AtlasStats />
+
+  <FlexShell>
+    <div class="flex flex-col gap-8">
+      <SectionHeader
+        title="Stared Publications"
+        linkHref="/thejournal"
+        linkLabel="Read more in theJournal."
+      />
+      <JournalGrid catalog={catalog} />
+      <Quote />
+    </div>
+  </FlexShell>
+</BaseLayout>

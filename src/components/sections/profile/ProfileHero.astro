@@ -1,0 +1,92 @@
+---
+import Button from "@components/ui/Button.astro";
+import { social } from "@data/icons";
+
+const props = Astro.props;
+---
+
+<section class="py-12 lg:py-24 font-sans overflow-hidden" {...props}>
+  <div class="mx-auto max-w-screen-2xl">
+    <div class="grid items-end gap-12 grid-cols-1 lg:grid-cols-12">
+      <div class="flex flex-col items-start lg:col-span-8">
+        <div class="flex items-center gap-3 mb-6 select-none">
+          <span class="h-px w-8 bg-primary"></span>
+          <p
+            class="font-display text-xs font-bold uppercase tracking-[0.3em] text-primary md:text-sm"
+          >
+            Technical Roadmap
+          </p>
+        </div>
+
+        <h1
+          class="mb-8 font-black font-display text-5xl md:text-7xl lg:text-8xl"
+        >
+          <span class="text-primary">Alberto</span>
+          <span class="text-base-content">Duran</span><br />
+          <span class="text-primary">Software</span>
+          <span class="text-base-content">Engineer</span>
+        </h1>
+
+        <p
+          class="max-w-2xl mb-10 text-lg leading-relaxed text-neutral-content md:text-xl"
+        >
+          Results-oriented Software Engineer with experience designing,
+          optimizing and deploying web applications and enterprise solutions.
+          Analytical, results-driven engineer focused on scalable, maintainable
+          solutions that support business and user needs.
+        </p>
+
+        <div class="flex flex-wrap items-center gap-4">
+          <Button
+            icon={social.linked_in}
+            variant="btn-outline"
+            href="https://linkedin.com/in/duranalberto"
+            ariaLabel="LinkedIn Profile"
+            isExternal
+            class="w-32 border-base-300 hover:border-primary hover:bg-primary hover:text-primary-content group"
+          />
+
+          <Button
+            icon={social.github}
+            variant="btn-outline"
+            href="https://github.com/duranalberto"
+            ariaLabel="GitHub Profile"
+            isExternal
+            class="w-32 border-base-300 hover:border-primary hover:bg-primary hover:text-primary-content group"
+          />
+
+          <div class="flex justify-center lg:justify-start">
+            <div
+              class="badge badge-success badge-outline gap-2 px-4 py-3 font-medium border-2"
+            >
+              <span class="relative flex h-2 w-2">
+                <span
+                  class="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"
+                ></span>
+                <span
+                  class="relative inline-flex h-2 w-2 rounded-full bg-success"
+                ></span>
+              </span>
+              Open to New Opportunities
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-col justify-end lg:items-end lg:col-span-4">
+        <div class="flex flex-col lg:text-right">
+          <span
+            class="select-none font-display text-8xl font-black leading-none text-primary/15 md:text-9xl lg:text-[10rem]"
+          >
+            06+
+          </span>
+          <span
+            class="lg:mr-2 -mt-4 text-sm font-bold uppercase tracking-[0.2em] text-neutral-content opacity-90"
+          >
+            Years Experience
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

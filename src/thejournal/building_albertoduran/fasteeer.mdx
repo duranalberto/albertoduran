@@ -1,0 +1,438 @@
+---
+title: "How I Made Navigation Feel Instant"
+description: A deep dive into how prefetching, ClientRouter transitions, and browser resource hints like preload and preconnect improve the speed and perceived performance of albertoduran.com.
+tags: ["astro", "web-performance"]
+author: "Alberto Duran"
+image: "../../assets/thejournal/stock/01.avif"
+pubDate: 2026-03-08
+order: 4
+---
+
+## The goal. Make a static site feel instant
+
+When I started building **albertoduran.com**, I had a simple requirement.
+
+The site had to feel fast.
+
+Astro already helps a lot because everything is prebuilt and shipped as static files. That removes server rendering latency and reduces complexity. But navigation between pages can still feel slower than it should.
+
+Even static sites normally trigger a **full browser navigation cycle**.
+
+That means the browser still has to:
+
+- Resolve DNS
+- Open network connections
+- Download a new HTML document
+- Parse it
+- Discover resources
+- Fetch fonts, CSS, images
+
+All over again.
+
+So instead of relying on a single optimization, I combined several techniques:
+
+- Astro **ClientRouter**
+- Astro **link prefetching**
+- Browser **resource hints**
+- Static compression
+
+Each one removes a different delay in the loading pipeline.
+
+The result is subtle but important. The site feels responsive instead of reload-heavy.
+
+## The layout that makes everything work
+
+Most of the performance behavior is wired directly in the base layout.
+
+```astro
+<link rel="preconnect" href="https://site.api.espn.com" crossorigin />
+<link rel="dns-prefetch" href="https://site.api.espn.com" />
+
+<link
+  rel="preload"
+  href="/fonts/Montserrat.woff2"
+  as="font"
+  type="font/woff2"
+  crossorigin
+/>
+
+<link
+  rel="preload"
+  href="/fonts/NotoSansDisplay.woff2"
+  as="font"
+  type="font/woff2"
+  crossorigin
+/>
+
+<link
+  rel="preload"
+  href="/fonts/FiraCode.woff2"
+  as="font"
+  type="font/woff2"
+  crossorigin
+/>
+
+<ClientRouter />
+```
+
+This layout does three things early in the page lifecycle:
+
+1. Opens network connections to external APIs
+2. Starts downloading critical fonts
+3. Enables client side navigation
+
+None of these change the architecture of the site. They simply **help the browser start work earlier**.
+
+To understand why that matters, it helps to look at how a browser normally loads a page.
+
+## The default browser loading lifecycle
+
+A typical navigation follows a fairly rigid sequence.
+
+```
+User Click
+   │
+   ▼
+DNS Lookup
+   │
+   ▼
+Connection Setup
+   │
+   ▼
+HTML Request
+   │
+   ▼
+HTML Parsing
+   │
+   ▼
+Asset Discovery
+   │
+   ▼
+Asset Download
+   │
+   ▼
+Render
+```
+
+Several of these steps are unavoidable. What we can do is **shift them earlier** so the user never feels them.
+
+That is exactly what the techniques in this project try to do.
+
+## ClientRouter. Navigation without full page reloads
+
+Astro provides a small but powerful tool through `astro:transitions`.
+
+```astro
+<ClientRouter />
+```
+
+Once enabled, the router intercepts internal navigation and swaps page content instead of triggering a full reload.
+
+This changes the lifecycle of navigation in an important way.
+
+### Traditional navigation
+
+```
+User Click
+   │
+   ▼
+Browser unloads page
+   │
+   ▼
+New HTML downloaded
+   │
+   ▼
+Whole page rebuilt
+```
+
+### ClientRouter navigation
+
+```
+User Click
+   │
+   ▼
+Router intercepts
+   │
+   ▼
+Next page HTML fetched
+   │
+   ▼
+Content swapped
+   │
+   ▼
+Transition animation
+```
+
+The outer document never disappears.
+
+That allows persistent UI elements like the header and footer to stay mounted.
+
+```astro
+<Header transition:persist />
+<Footer transition:persist />
+```
+
+This avoids unnecessary layout reconstruction and gives the interface a much smoother feel.
+
+But navigation can still wait on network requests. That is where **prefetching** helps.
+
+## Astro prefetch. Loading pages before the click
+
+Astro supports prefetching through the `data-astro-prefetch` attribute.
+
+You can attach it to any link.
+
+In **albertoduran.com** it appears in navigation and cards.
+
+### Navbar example
+
+```astro
+<a href="/profile" data-astro-prefetch="load">
+  Profile
+</a>
+```
+
+### Card example
+
+```astro
+<Tag data-astro-prefetch="hover">
+```
+
+These attributes tell Astro when to start downloading the next page.
+
+Two strategies are used in this project.
+
+### Hover prefetch
+
+Prefetch begins when the user hovers a link.
+
+Lifecycle
+
+```
+Pointer Hover
+   │
+   ▼
+Page HTML fetched
+   │
+   ▼
+Stored in cache
+   │
+   ▼
+User clicks
+   │
+   ▼
+Router swaps instantly
+```
+
+By the time the click happens, the page is already downloaded.
+
+### Load prefetch
+
+Some links are extremely likely to be visited. Navigation items are a good example.
+
+For those, prefetching starts after the page finishes loading.
+
+```
+Page Load
+   │
+   ▼
+Important links prefetched
+   │
+   ▼
+User clicks later
+   │
+   ▼
+Instant navigation
+```
+
+This behavior is configured globally in the Astro config.
+
+```mjs
+prefetch: {
+  prefetchAll: false,
+  defaultStrategy: "tap"
+}
+```
+
+Keeping `prefetchAll` disabled prevents unnecessary downloads and keeps bandwidth usage predictable.
+
+Now navigation feels faster. But the first page render can still improve. That is where **resource hints** come in.
+
+## preload. Download critical assets early
+
+Fonts are notorious for slowing down rendering.
+
+Normally the browser only discovers fonts after parsing CSS. That means they start downloading relatively late.
+
+`preload` fixes that by declaring them directly in the HTML head.
+
+```astro
+<link
+  rel="preload"
+  href="/fonts/Montserrat.woff2"
+  as="font"
+  type="font/woff2"
+  crossorigin
+/>
+```
+
+Without preload the lifecycle looks like this.
+
+```
+HTML
+   │
+   ▼
+CSS downloaded
+   │
+   ▼
+Font discovered
+   │
+   ▼
+Font downloaded
+```
+
+With preload the browser begins the download immediately.
+
+```
+HTML parsed
+   │
+   ▼
+Font request starts
+   │
+   ▼
+CSS arrives
+   │
+   ▼
+Font already downloading
+```
+
+This reduces **flash of invisible text** and speeds up the first render.
+
+The layout also uses `font-display swap`, which ensures text appears immediately using fallback fonts until the real font finishes loading.
+
+## preconnect. Preparing a network connection early
+
+External APIs often add latency because the browser must establish a secure connection first.
+
+That involves several steps:
+
+- DNS lookup
+- TCP connection
+- TLS negotiation
+
+`preconnect` performs these steps before the request is made.
+
+```astro
+<link rel="preconnect" href="https://site.api.espn.com" crossorigin />
+```
+
+When the API request eventually happens, the connection already exists.
+
+### Preconnect lifecycle
+
+```
+Page Load
+   │
+   ▼
+Browser opens connection
+   │
+   ▼
+TLS handshake completes
+   │
+   ▼
+API request later
+   │
+   ▼
+Response arrives faster
+```
+
+This matters when the site depends on remote data sources.
+
+## dns-prefetch. Resolving domains early
+
+`dns-prefetch` is a lighter hint.
+
+Instead of opening a connection, it simply resolves the domain name ahead of time.
+
+```html
+<link rel="dns-prefetch" href="https://site.api.espn.com" />
+```
+
+The browser converts the domain into an IP address while the page loads.
+
+Later requests skip the DNS lookup entirely.
+
+### DNS prefetch lifecycle
+
+```
+Page Load
+   │
+   ▼
+DNS resolved
+   │
+   ▼
+Future request made
+   │
+   ▼
+Connection starts immediately
+```
+
+It is cheap to perform and safe even when the request might not happen.
+
+## How these techniques combine
+
+Each optimization removes a different piece of waiting time.
+
+| Technique    | What it improves                  |
+| ------------ | --------------------------------- |
+| ClientRouter | Removes full page reloads         |
+| Prefetch     | Downloads pages before navigation |
+| Preload      | Starts critical assets early      |
+| Preconnect   | Removes connection setup delay    |
+| DNS Prefetch | Avoids DNS lookup latency         |
+
+When combined, the navigation pipeline changes significantly.
+
+```
+Page Load
+   │
+   ▼
+Fonts preloaded
+DNS resolved
+Connections opened
+   │
+   ▼
+User hovers link
+   │
+   ▼
+Next page prefetched
+   │
+   ▼
+User clicks
+   │
+   ▼
+ClientRouter swaps content
+   │
+   ▼
+Transition animation
+```
+
+Most of the expensive work already happened before the click.
+
+## The real outcome. Perceived speed
+
+Performance improvements rarely come from one big trick.
+
+They come from **removing small delays everywhere**.
+
+On albertoduran.com this approach produces a few practical improvements.
+
+- Fonts render faster
+- External API calls start faster
+- Navigation avoids full reloads
+- Future pages load before the click
+- Layout elements stay mounted
+
+The site is still a static Astro build. That simplicity remains intact.
+
+The difference is that the browser now receives better instructions about what to do early. When those instructions match real user behavior, the interface stops feeling like page loads and starts feeling like an application.

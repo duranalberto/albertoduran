@@ -1,0 +1,31 @@
+---
+interface Props {
+  id?: string;
+  class?: string;
+  as?: "div" | "section" | "article" | "nav" | "main" | "header";
+  maxWidth?: string;
+  px?: number;
+  py?: number;
+}
+
+const {
+  id,
+  class: className,
+  as: Tag = "div",
+  maxWidth = "max-w-screen-2xl",
+  px = 8,
+  py = 24,
+} = Astro.props;
+
+const mobilePx = Math.floor(px / 2);
+const mobilePy = Math.floor(py / 2);
+
+const paddingClasses = `px-${mobilePx} py-${mobilePy} md:px-${px} md:py-${py} 2xl:px-2`;
+---
+
+<Tag
+  id={id}
+  class:list={["mx-auto w-full", maxWidth, paddingClasses, className]}
+>
+  <slot />
+</Tag>

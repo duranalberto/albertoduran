@@ -1,0 +1,108 @@
+---
+import type { EntryContext } from "@appTypes/content_context";
+import BaseCard from "@layouts/BaseCard.astro";
+import { vaultsManifest } from "@utils/thejournal_manifest";
+
+interface Props {
+  entry: EntryContext;
+}
+
+const { entry } = Astro.props;
+
+const isVault = !!entry.vaultId;
+const isVaultRoot = isVault && entry.id === entry.vaultId;
+const isVaultItem = isVault && entry.id !== entry.vaultId;
+
+const formattedDate = entry.pubDate
+  ? new Date(entry.pubDate).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    })
+  : null;
+
+const readTimeText = entry.readTime
+  ? `${entry.readTime} min${entry.readTime > 1 ? "s" : ""} read`
+  : null;
+---
+
+<BaseCard
+  href={`/thejournal/${entry.id}`}
+  image={entry.image}
+  title={entry.title}
+>
+  <div
+    slot="meta"
+    class="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest"
+  >
+    <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+      {/* Date: Styled as a subtle badge for primary recognition */}
+      {
+        formattedDate && (
+          <span class="rounded-sm bg-base-300 px-1.5 py-0.5 text-base-content whitespace-nowrap">
+            {formattedDate}
+          </span>
+        )
+      }
+
+      {/* Read Time: Styled as secondary content text */}
+      {
+        readTimeText && (
+          <span class="text-base-content/50 whitespace-nowrap font-medium lowercase tracking-normal">
+            {readTimeText}
+          </span>
+        )
+      }
+
+      {
+        isVaultItem && entry.vaultId && (
+          <>
+            <span
+              class="sm:block hidden h-1 w-1 rounded-full bg-base-content/20"
+              aria-hidden="true"
+            />
+            <span class="font-medium normal-case tracking-normal text-base-content/60">
+              In{" "}
+              <span class="italic">{vaultsManifest[entry.vaultId].title}</span>
+            </span>
+          </>
+        )
+      }
+
+      {
+        isVaultRoot && (
+          <div class="flex items-center gap-1.5">
+            <span
+              class="h-1.5 w-1.5 animate-pulse rounded-full bg-primary"
+              aria-hidden="true"
+            />
+            <span class="text-primary">Vault</span>
+          </div>
+        )
+      }
+    </div>
+  </div>
+
+  <p class="line-clamp-3 text-base leading-relaxed text-base-content/80">
+    {entry.description}
+  </p>
+
+  <div slot="footer" class="mt-auto flex flex-wrap items-center gap-2 pt-4">
+    {
+      entry.tags
+        .slice(0, 3)
+        .map((tag) => (
+          <span class="badge badge-ghost badge-sm border-base-300 font-medium py-2">
+            #{tag}
+          </span>
+        ))
+    }
+  </div>
+</BaseCard>
+
+<style>
+  /* Maintain layout stability for grid alignment */
+  p {
+    min-height: 4.875rem;
+  }
+</style>

@@ -1,0 +1,435 @@
+---
+title: "Building a Parallax effect"
+image: "../../assets/thejournal/stock/01.avif"
+description: "A practical walkthrough of creating a reusable Astro parallax layout and combining it with a build-time generated animated SVG ribbon background."
+tags: ["astro", "css", "svg", "parallax", "web animation"]
+pubDate: 2026-03-09
+author: "Alberto Duran"
+order: 6
+---
+
+## Why I Built This Parallax Layout
+
+I wanted a hero layout that could support different types of backgrounds.
+
+Sometimes that background is a responsive image.  
+Other times it is a procedural SVG animation.
+
+Instead of building a new hero every time, I created a **layout component that accepts any background through a slot**.
+
+That small decision made everything else easier.
+
+The same component now supports:
+
+- responsive images
+- animated SVG patterns
+- dynamic canvas or video backgrounds
+- anything that fits inside a slot
+
+The result is a **clean separation between layout and visual effects**.
+
+---
+
+## The Core Idea
+
+The layout does three things.
+
+1. Creates a **scroll based parallax container**
+2. Exposes a **named slot for background content**
+3. Keeps the foreground content above the background layer
+
+A simplified structure looks like this.
+
+```astro
+<section class="parallax-container">
+
+  <div class="parallax-bg-wrapper">
+    <div class="parallax-bg-content">
+      <slot name="background" />
+    </div>
+  </div>
+
+  <div class="content">
+    <slot />
+  </div>
+
+</section>
+```
+
+This structure matters.
+
+The background lives in a **separate stacking layer** so the animation never affects layout flow.
+
+Foreground content remains stable while the background moves.
+
+---
+
+## Creating the Parallax Layout Component
+
+The full Astro layout looks like this.
+
+```astro
+<section
+  class="parallax-container relative w-full overflow-hidden py-24 border-y shadow-sm bg-base-100 border-base-300 md:py-32"
+>
+  <div class="parallax-bg-wrapper absolute inset-0 z-0 pointer-events-none">
+    <div class="parallax-bg-content">
+      <slot name="background" />
+    </div>
+  </div>
+
+  <div class="relative z-10 mx-auto max-w-screen-2xl px-6 lg:px-12">
+    <slot />
+  </div>
+</section>
+```
+
+Three details make this reliable.
+
+### 1. Background isolation
+
+```css
+.parallax-container {
+  isolation: isolate;
+}
+```
+
+This creates a new stacking context.  
+It prevents blending issues when effects overlap.
+
+### 2. Absolute background layer
+
+```css
+.parallax-bg-wrapper {
+  position: absolute;
+  inset: 0;
+}
+```
+
+The wrapper fills the container completely.
+
+Foreground content sits above it using a higher `z-index`.
+
+### 3. Oversized background
+
+```css
+.parallax-bg-content {
+  inset: -20% 0;
+  height: 140%;
+}
+```
+
+This gives the background **extra vertical space**.
+
+Without this, the parallax motion would expose empty areas during scroll.
+
+---
+
+## The CSS That Drives the Parallax Effect
+
+Modern browsers support scroll driven animation.
+
+This is the core rule.
+
+```css
+.parallax-container {
+  view-timeline: --bg-parallax block;
+}
+```
+
+The container becomes a **scroll timeline source**.
+
+Then the background binds to that timeline.
+
+```css
+.parallax-bg-content {
+  animation: parallax-move linear both;
+  animation-timeline: --bg-parallax;
+  animation-range: entry 0% exit 100%;
+}
+```
+
+### What this does
+
+- animation starts when the element enters the viewport
+- animation ends when it exits
+- movement stays proportional to scroll
+
+The motion itself is simple.
+
+```css
+@keyframes parallax-move {
+  from {
+    transform: translateY(-20%) translateZ(0);
+  }
+  to {
+    transform: translateY(20%) translateZ(0);
+  }
+}
+```
+
+The translate range matches the extra height we added earlier.
+
+That symmetry avoids visible gaps.
+
+### Motion safety
+
+Reduced motion users should not see this animation.
+
+```css
+@media (prefers-reduced-motion: reduce) {
+  .parallax-bg-content {
+    animation: none;
+    transform: none;
+  }
+}
+```
+
+Accessibility matters more than visual effects.
+
+---
+
+## Using the Layout With a Responsive Image
+
+Once the layout exists, usage becomes very simple.
+
+```astro
+<ParallaxHero>
+
+  <picture slot="background">
+    <source media="(max-width: 767px)" srcset={mobileImg.src} />
+    <source media="(min-width: 768px)" srcset={desktopImg.src} />
+    <img src={desktopImg.src} alt="Estadio background" />
+  </picture>
+
+  <HeroContent />
+
+</ParallaxHero>
+```
+
+The background slot receives the image element.
+
+The layout takes care of:
+
+- clipping
+- scroll animation
+- layering
+- responsiveness
+
+The hero content remains clean.
+
+---
+
+## Generating the SVG Ribbon Background
+
+The animated ribbon background is generated **during build time**.
+
+Instead of writing one giant SVG manually, I assemble it from individual icons.
+
+The helper function looks like this.
+
+```ts
+export const generateRibbonSVGData = (icons, config) => {
+  const totalIconWidth = iconSize + gap;
+  const svgWidth = icons.length * totalIconWidth;
+
+  const innerContent = icons
+    .map((icon, index) => {
+      const x = index * totalIconWidth;
+
+      return `
+      <g transform="translate(${x}, ${y})">
+        <svg width="${iconSize}" height="${iconSize}">
+          ${scopedContent}
+        </svg>
+      </g>
+    `;
+    })
+    .join("");
+
+  return {
+    innerContent,
+    svgWidth,
+    svgHeight,
+  };
+};
+```
+
+Two things happen here.
+
+### SVG ID scoping
+
+```ts
+.replace(/id=["']([^"']+)["']/g, `id="${prefix}$1"`)
+```
+
+Many icons contain gradient or mask IDs.
+
+Without scoping, duplicated IDs would break rendering.
+
+### Positioning icons
+
+Each icon receives a horizontal translation.
+
+```ts
+const x = index * totalIconWidth;
+```
+
+This creates a long strip of icons.
+
+---
+
+## Turning the Icons Into an Infinite Ribbon
+
+The strip becomes an SVG pattern.
+
+```astro
+<pattern
+  id={patternId}
+  width={cleanWidth}
+  height={cleanHeight}
+  patternUnits="userSpaceOnUse"
+>
+  <g set:html={innerContent} />
+</pattern>
+```
+
+Then the pattern fills a rectangle.
+
+```astro
+<rect width="100%" height="100%" fill={`url(#${patternId})`} />
+```
+
+This makes the ribbon repeat infinitely.
+
+---
+
+## Creating the Animation
+
+The ribbon animation uses two layers.
+
+One moves left.  
+The other moves right.
+
+```css
+.move-right {
+  animation: slide-right var(--anim-speed) linear infinite;
+}
+
+.move-left {
+  animation: slide-left var(--anim-speed) linear infinite;
+}
+```
+
+The movement is simple translation.
+
+```css
+@keyframes slide-right {
+  to {
+    transform: translate3d(var(--strip-width), 0, 0.1px);
+  }
+}
+```
+
+The tiny `0.1px` Z value keeps the layer on the GPU.
+
+This prevents rendering jitter on some browsers.
+
+---
+
+## Alternating Strips With CSS Masks
+
+The ribbon background uses alternating rows.
+
+This creates a woven visual pattern.
+
+Masking handles the separation.
+
+```css
+mask-image: repeating-linear-gradient(
+  to bottom,
+  black 0px,
+  black ${cleanHeight}px,
+  transparent ${cleanHeight}px,
+  transparent ${cleanHeight * 2}px
+);
+```
+
+The result looks like this conceptually.
+
+```
+Row A   >>>>>>>>>>
+
+Row B   <<<<<<<<<<
+
+Row C   >>>>>>>>>>
+```
+
+Opposing motion gives depth without heavy animation cost.
+
+---
+
+## Combining the Ribbon With the Parallax Layout
+
+The final usage becomes extremely clean.
+
+```astro
+<ParallaxHero>
+  <StripBackground slot="background" />
+
+  <HeroContent />
+
+</ParallaxHero>
+```
+
+The ribbon component simply fills the background slot.
+
+Because the layout already handles:
+
+- absolute positioning
+- overflow clipping
+- scroll animation
+
+the ribbon automatically becomes part of the parallax layer.
+
+So the animation stack becomes:
+
+```
+Scroll movement
+        +
+SVG horizontal ribbon animation
+```
+
+Both effects run independently.
+
+The browser compositor handles them efficiently.
+
+---
+
+## Why This Pattern Works Well
+
+This architecture keeps responsibilities separate.
+
+**Parallax layout**
+
+- scroll animation
+- background isolation
+- responsive spacing
+
+**Ribbon component**
+
+- SVG generation
+- horizontal animation
+- visual styling
+
+That separation lets the same hero layout support:
+
+- images
+- animated SVG
+- canvas particles
+- gradients
+- video
+
+All without changing the layout itself.
+
+That flexibility is the real payoff.

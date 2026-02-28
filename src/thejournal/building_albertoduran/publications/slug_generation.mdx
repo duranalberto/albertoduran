@@ -1,0 +1,419 @@
+---
+title: "Page Generation and Navigation"
+pubDate: 2026-03-07
+description: "A look at the dynamic route that renders journal pages, builds navigation structures, and connects articles within vaults."
+author: "Alberto Duran"
+order: 4
+image: "../../../assets/thejournal/stock/01.avif"
+tags: ["astro", "astro-routing", "mdx", "static-sites"]
+---
+
+## Picking Up Where the Manifest Leaves Off
+
+The previous article explained how the project builds a manifest from the journal collection.
+
+The manifest converts raw MDX files into structured data.
+
+The next stage is rendering.
+
+Astro takes that structured data and turns it into static pages. Every journal article becomes a real page at build time.
+
+The core piece responsible for that is the dynamic route.
+
+```
+src/pages/thejournal/[...slug].astro
+```
+
+This file handles every journal page.
+
+---
+
+## How the Dynamic Route Works
+
+The file `[...slug].astro` acts as a catch-all route.
+
+Astro uses it to render every entry under `/thejournal`.
+
+Example URLs.
+
+```
+thejournal/architecture
+thejournal/architecture/astro-content
+thejournal/javascript/closures
+```
+
+Astro resolves these paths through a build step called `getStaticPaths`.
+
+A simplified version looks like this.
+
+```typescript
+export async function getStaticPaths() {
+  const paths = Object.values(entryManifest).map((entry) => ({
+    params: { slug: entry.slug.split("/") },
+  }));
+
+  return paths;
+}
+```
+
+This function tells Astro which pages must exist.
+
+Each entry in the manifest becomes a static route.
+
+Build output looks like this.
+
+```
+build/
+│
+├── thejournal
+│   ├── architecture
+│   │   ├── index.html
+│   │   └── astro-content/index.html
+│   │
+│   └── javascript
+│       └── closures/index.html
+```
+
+Once Astro knows the route, the page component loads the entry context.
+
+---
+
+## How the Entry Binding Happens
+
+The page receives the slug parameter.
+
+Example.
+
+```typescript
+const slug = Astro.params.slug?.join("/") ?? "";
+```
+
+That slug represents the path inside the journal.
+
+The page resolves the entry using the helper described in the previous article.
+
+```typescript
+const [entry, vault] = getContextFromPath(slug);
+```
+
+At this point the page has two things.
+
+1. EntryContext
+2. VaultContext
+
+```
+URL
+ │
+ ▼
+Slug parameter
+ │
+ ▼
+getContextFromPath()
+ │
+ ├── EntryContext
+ └── VaultContext
+```
+
+EntryContext contains the article metadata.
+
+VaultContext contains the navigation structure.
+
+The MDX component is then rendered.
+
+```typescript
+const { Content } = await entry.render();
+```
+
+The article now becomes HTML during the build.
+
+---
+
+## The Header Component
+
+Every journal page uses a shared header component.
+
+Its job is simple.
+
+It displays metadata from the MDX frontmatter.
+
+Typical fields.
+
+```
+title
+description
+pubDate
+tags
+readTime
+```
+
+Example usage inside the page.
+
+```typescript
+<JournalHeader
+  title={entry.title}
+  description={entry.description}
+  pubDate={entry.pubDate}
+  tags={entry.tags}
+/>
+```
+
+```
+EntryContext
+ │
+ ├── title
+ ├── description
+ ├── pubDate
+ └── tags
+ │
+ ▼
+Header Component
+ │
+ ▼
+Rendered HTML
+```
+
+Because the data already exists in the manifest, the header renders instantly.
+
+No runtime requests.
+
+---
+
+## MDX Metadata and Its Parameters
+
+Every journal entry contains frontmatter.
+
+Example.
+
+```
+---
+title: Astro Content Collections
+description: How Astro organizes content
+pubDate: 2025-01-01
+tags: [astro, content]
+order: 2
+github: https://github.com/example
+---
+```
+
+These values are validated by the schema defined in the collection.
+
+Fields.
+
+- title
+- description
+- pubDate
+- tags
+- order
+- github
+- image
+
+The important field for navigation is `order`.
+
+---
+
+## How the Order Parameter Works
+
+Entries inside a vault follow the `order` field.
+
+Lower values appear first.
+
+Example vault.
+
+```
+architecture
+│
+├── index.mdx       order 1
+├── astro-content   order 2
+└── routing         order 3
+```
+
+Result.
+
+```
+1  Architecture Overview
+2  Astro Content
+3  Routing
+```
+
+Subfolders follow the same rule.
+
+Example.
+
+```
+architecture
+│
+├── index.mdx
+├── rendering
+│   ├── index.mdx
+│   ├── hydration.mdx
+│   └── islands.mdx
+└── routing
+    ├── index.mdx
+    └── dynamic-routes.mdx
+```
+
+Important detail.
+
+The `index.mdx` inside a subfolder determines where the entire folder appears in the parent vault.
+
+```
+Parent Vault
+ │
+ ├── Entry A
+ ├── Rendering Vault
+ │    ├── index
+ │    ├── hydration
+ │    └── islands
+ │
+ └── Routing Vault
+      ├── index
+      └── dynamic-routes
+```
+
+So ordering works in two levels.
+
+1. Entry order inside a vault
+2. Subfolder position based on its index file
+
+---
+
+## Building the Table of Contents
+
+Vault pages contain a table of contents.
+
+The table is generated from the vault structure.
+
+Example vault tree.
+
+```
+Architecture
+ │
+ ├── Overview
+ ├── Astro Content
+ ├── Rendering
+ │    ├── Hydration
+ │    └── Islands
+ │
+ └── Routing
+      └── Dynamic Routes
+```
+
+This tree already exists inside `vaultsManifest`.
+
+The page component simply renders it.
+
+```
+<TableOfContents vault={vault} current={entry.id} />
+```
+
+---
+
+## Highlighting the Current Page
+
+The table highlights the current article.
+
+The logic compares the entry id.
+
+Simplified example.
+
+```typescript
+const isActive = item.id === currentEntryId;
+```
+
+If the ids match, the item receives an active style.
+
+```
+Table Node
+ │
+ ├── item.id
+ └── currentEntryId
+ │
+ ▼
+Compare
+ │
+ ▼
+Apply active class
+```
+
+The result is a navigation tree that always reflects the current page.
+
+---
+
+## Navigation Buttons Between Articles
+
+Each article shows previous and next buttons.
+
+Those links were already created during the manifest stage.
+
+Each EntryContext contains.
+
+```
+previous
+next
+```
+
+The page simply renders them.
+
+```typescript
+<ArticleNavigation
+  previous={entry.previous}
+  next={entry.next}
+/>
+```
+
+```
+Entry A
+ │
+ ├── previous null
+ └── next Entry B
+
+Entry B
+ │
+ ├── previous Entry A
+ └── next Entry C
+```
+
+Because these links exist at build time, the page does no computation.
+
+---
+
+## Why Everything Happens at Build Time
+
+The key design choice of this system is precomputation.
+
+The manifest builds structure.
+
+Astro builds the pages.
+
+Navigation, ordering, and the table of contents already exist when the site is deployed.
+
+Build flow.
+
+```
+MDX Files
+   │
+   ▼
+Astro Collection
+   │
+   ▼
+Manifest Builder
+   │
+   ├── entryManifest
+   └── vaultsManifest
+   │
+   ▼
+Dynamic Route Rendering
+   │
+   ▼
+Static HTML Pages
+```
+
+From the user perspective the site behaves like a simple static page.
+
+No client side script builds navigation.
+
+No runtime database queries.
+
+Everything is ready before the page loads.
+
+That is why the journal feels fast.

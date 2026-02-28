@@ -1,0 +1,164 @@
+---
+title: "Building albertoduran.com"
+pubDate: 2026-03-01
+description: "In this vault I will be sharing how I developed albertoduran.com"
+author: "Alberto Duran"
+image: "../../assets/thejournal/stock/01.avif"
+tags: ["astro", "blogging"]
+---
+
+High-performance personal portfolio and publishing platform built with **Astro**.  
+Static-first architecture with SPA-like navigation and structured long-form content support.
+
+---
+
+## ✨ Overview
+
+This project is designed to:
+
+- Deliver excellent performance and SEO
+- Provide seamless, SPA-like page transitions
+- Support single publications and vault of publication
+- Maintain strict architectural boundaries
+- Minimize client-side JavaScript
+
+---
+
+## 🧱 Architecture
+
+### Static-First Philosophy
+
+All content and layouts render as static HTML by default.  
+Client-side JavaScript is added **only when required**.
+
+| Layer       | Usage                                 |
+| ----------- | ------------------------------------- |
+| Static HTML | Default rendering mode                |
+| SSR         | When dynamic runtime data is required |
+
+This keeps bundle size small and performance high.
+
+---
+
+### 🚀 SPA-like Navigation
+
+The project uses Astro View Transitions to provide seamless internal navigation without full page reloads.
+
+#### Implementation Rules
+
+- `<ViewTransitions />` is included in the main layout.
+- Only missing assets are fetched on navigation.
+- Content is swapped during transitions.
+- Navigation, header, and footer remain visually stable.
+
+If a component needs state persistence across transitions:
+
+```astro
+<MyComponent transition:persist />
+```
+
+---
+
+## 🛠 Tech Stack
+
+### Core Frameworks
+
+- **Astro v5.17.x** – Routing, SSG, SSR
+- **Tailwind CSS v4.1.x** – Utility-first styling
+- **DaisyUI v5.5.x** – Component system for Tailwind
+
+### 📂 Project Structure
+
+```plaintext
+albertoduran/
+├─ public/
+│  ├─ fonts/
+│  └─ favicon.svg
+├─ src/
+│  ├─ assets/
+│  ├─ components/
+│  │  ├─ common/
+│  │  ├─ sections/
+│  │  │  ├─ index/
+│  │  │  ├─ profile/
+│  │  │  └─ thejournal/
+│  │  └─ ui/
+│  ├─ data/
+│  ├─ layouts/
+│  ├─ pages/
+│  │  ├─ thejournal/
+│  │  │  └─ [...slug].astro
+│  │  ├─ 404.astro
+│  │  ├─ index.astro
+│  │  ├─ profile.astro
+│  │  └─ thejournal.astro
+│  ├─ styles/
+│  ├─ thejournal/
+│  ├─ types/
+│  ├─ utils/
+│  │
+│  └─ content.config.ts
+│
+├─ astro.config.mjs
+├─ package.json
+└─ tsconfig.json
+```
+
+---
+
+## 🧭 Routing
+
+Routing is file-based and owned exclusively by `src/pages/`.
+
+| Route                             | File                         | Description                        |
+| --------------------------------- | ---------------------------- | ---------------------------------- |
+| `/`                               | `index.astro`                | About / Bio                        |
+| `/profile`                        | `profile.astro`              | Professional Profile               |
+| `/404`                            | `404.astro`                  | 404 error page                     |
+| `/thejournal`                     | `thejournal/index.astro`     | The Journal Home                   |
+| `/thejournal/[slug]`              | `thejournal/[...slug].astro` | Individual publication             |
+| `/thejournal/[vaultId]/[...slug]` | `thejournal/[...slug].astro` | A vault groups common publications |
+
+---
+
+## 📝 Frontmatter Schema
+
+Defined in:
+
+```
+src/content/config.ts
+```
+
+| Field         | Required | Description               |
+| ------------- | -------- | ------------------------- |
+| `title`       | Yes      | Display title             |
+| `pubDate`     | Yes      | Used for sorting          |
+| `description` | No       | Card preview              |
+| `image`       | No       | Image of the publication  |
+| `github`      | No       | Github repository         |
+| `tags`        | No       | Defaults to []            |
+| `order`       | No       | Default: 100 (for Vaults) |
+
+---
+
+## 🚢 Deployment
+
+### Hosting
+
+- Cloudflare Workers
+- Auto-deploy from `master` branch
+
+### DNS & SSL
+
+Managed via Cloudflare.
+
+---
+
+## Guiding Principles
+
+- Static-first
+- Minimal client JavaScript
+- Directory-driven content behavior
+- Strict build-time validation
+- SPA experience without SPA cost
+- Clear separation of concerns

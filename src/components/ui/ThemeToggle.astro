@@ -1,0 +1,72 @@
+---
+import { ui } from "@data/icons";
+import SVGIcon from "./SVGIcon.astro";
+---
+
+<theme-toggle>
+  <label
+    class="swap swap-rotate inline-flex items-center justify-center w-10 h-10 text-base-content transition-colors duration-200 hover:text-primary focus-within:outline-none cursor-pointer relative"
+  >
+    <input
+      type="checkbox"
+      id="theme-toggle-input"
+      class="absolute opacity-0 w-0 h-0 pointer-events-none"
+    />
+    <span class="sr-only">Toggle Dark or Light Mode</span>
+
+    <SVGIcon icon={ui.sun} class="swap-on w-5 h-5 fill-current" />
+    <SVGIcon icon={ui.moon} class="swap-off w-5 h-5 fill-current" />
+  </label>
+</theme-toggle>
+
+<script>
+  class ThemeToggle extends HTMLElement {
+    private input: HTMLInputElement | null = null;
+
+    connectedCallback() {
+      this.input = this.querySelector("#theme-toggle-input");
+      if (!this.input) return;
+
+      this.syncWithDOM();
+
+      this.input.addEventListener("change", this.handleChange);
+
+      this.addEventListener("click", (e) => {
+        if (this.input && e.target !== this.input) {
+          e.preventDefault();
+          this.input.checked = !this.input.checked;
+          this.input.dispatchEvent(new Event("change"));
+          this.input.focus({ preventScroll: true });
+        }
+      });
+
+      document.addEventListener("astro:after-swap", this.syncWithDOM);
+    }
+
+    private syncWithDOM = () => {
+      if (!this.input) return;
+      const currentTheme =
+        document.documentElement.getAttribute("data-theme") ||
+        localStorage.getItem("theme") ||
+        "light";
+      this.input.checked = currentTheme === "light";
+    };
+
+    private handleChange = () => {
+      if (!this.input) return;
+      const newTheme = this.input.checked ? "light" : "dark";
+
+      document.documentElement.setAttribute("data-theme", newTheme);
+      localStorage.setItem("theme", newTheme);
+    };
+
+    disconnectedCallback() {
+      this.input?.removeEventListener("change", this.handleChange);
+      document.removeEventListener("astro:after-swap", this.syncWithDOM);
+    }
+  }
+
+  if (!customElements.get("theme-toggle")) {
+    customElements.define("theme-toggle", ThemeToggle);
+  }
+</script>

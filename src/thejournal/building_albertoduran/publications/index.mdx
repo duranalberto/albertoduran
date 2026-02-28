@@ -1,0 +1,336 @@
+---
+title: "Inside the Publication System"
+description: "An overview of the journal architecture built with Astro, MDX, and a custom manifest system."
+pubDate: 2026-03-07
+author: "Alberto Duran"
+tags: ["astro", "mdx", "architecture", "static-sites"]
+order: 3
+image: "../../../assets/thejournal/stock/01.avif"
+---
+
+This journal is not a typical blog.
+
+It behaves more like a small documentation system or a personal knowledge base.
+
+Articles live in folders.  
+Folders represent topics.  
+Each topic can contain nested sections and related publications.
+
+The structure resembles documentation systems where content is grouped by subject rather than by date.
+
+The goal was straightforward.
+
+- keep publications as simple MDX files
+- organize knowledge using folders
+- automatically generate navigation
+- produce static pages that load instantly
+
+Astro provided the foundation. A small set of utilities builds the rest of the system.
+
+---
+
+## Why This Architecture Exists
+
+Most blogging systems flatten content.
+
+Posts appear as chronological lists. This works well for announcements or short articles.
+
+Technical publications require something different.
+
+A technical journal benefits from:
+
+- hierarchical navigation
+- grouped topics
+- ordered reading paths
+- structured sections
+- reusable layouts
+
+The journal addresses these needs with three main components.
+
+1. Astro content collections
+2. A manifest builder that understands folder structures
+3. Static page generation during the build process
+
+The result is a structured publication system without a database.
+
+---
+
+## The Core Pipeline
+
+The entire system works as a transformation pipeline.
+
+```text
+MDX Publications
+│
+▼
+Astro Content Collection
+│
+▼
+Manifest Builder
+│
+├── entryManifest
+├── vaultsManifest
+└── rawEntries
+│
+▼
+Dynamic Route
+[...slug].astro
+│
+▼
+MDX Rendering
+renderResult.Content
+│
+▼
+Article Layout
+│
+▼
+Static HTML Pages
+```
+
+Each stage converts raw content into a richer structure.
+
+By the end of the process, every publication becomes a fully rendered static page.
+
+---
+
+## Writing Publications
+
+Each article exists as an MDX file.
+
+They live inside the journal directory.
+
+```text
+src/thejournal
+```
+
+Folders organize the topics.
+
+```text
+src/thejournal
+│
+├── index.mdx
+│
+├── architecture
+│ ├── index.mdx
+│ └── astro-content.mdx
+│
+└── javascript
+├── index.mdx
+└── closures.mdx
+```
+
+Each folder represents a topic.
+
+The `index.mdx` file acts as the entry page for that section.
+
+These sections are called **vaults** inside the system.
+
+---
+
+## Astro Collections
+
+Astro scans the journal directory using a content collection.
+
+The configuration lives in:
+
+```text
+src/content.config.ts
+```
+
+The collection performs several tasks.
+
+- validates metadata
+- loads MDX entries
+- provides typed content access
+- exposes a consistent API
+
+This transforms raw files into structured content entries.
+
+---
+
+## The Manifest Builder
+
+Once the entries are loaded, a utility builds the journal structure.
+
+The manifest builder analyzes the folder hierarchy and metadata.
+
+It generates three resources.
+
+```text
+entryManifest
+vaultsManifest
+rawEntries
+```
+
+These resources allow the interface to understand:
+
+- the hierarchy of vaults
+- article navigation
+- ordering rules
+- contextual relationships
+
+The manifest becomes the source of truth for the entire journal.
+
+---
+
+## Static Page Generation
+
+All journal pages are rendered through a single dynamic route.
+
+```text
+src/pages/thejournal/[...slug].astro
+```
+
+During the build process Astro generates a page for every publication.
+
+```text
+/thejournal/architecture
+/thejournal/architecture/astro-content
+/thejournal/javascript/closures
+```
+
+Each page loads its corresponding entry from the manifest and renders it.
+
+No runtime database queries are required.
+
+---
+
+## MDX Rendering
+
+MDX articles are compiled into components.
+
+The page renders them using:
+
+```astro
+<renderResult.Content components={components} />
+```
+
+Markdown tokens become HTML elements.
+
+Custom components extend the rendering process.
+
+Examples include:
+
+- headings with anchor links
+- styled code blocks
+- typography aware layouts
+
+All transformations happen during the build.
+
+---
+
+## Prebuilt Navigation
+
+The journal also generates navigation elements at build time.
+
+These include:
+
+- table of contents
+- previous and next article links
+- vault navigation trees
+
+Because these elements are precomputed, the browser does not execute scripts to build them.
+
+The page arrives fully rendered.
+
+---
+
+## Advantages of This Approach
+
+This architecture keeps the system simple while supporting complex content structures.
+
+Benefits include:
+
+- fast page loading
+- minimal client side JavaScript
+- clear separation between content and layout
+- predictable navigation
+- easy authoring workflow
+
+Authors only write MDX files. The build process handles the rest.
+
+---
+
+## Articles in This Directory
+
+This series explains each part of the system in detail.
+
+### Content Collections Architecture
+
+A detailed explanation of the collection configuration and the manifest builder that organizes journal entries.
+
+Topics include:
+
+- thejournal collection
+- vault structure
+- entry and vault manifests
+- content discovery
+
+---
+
+### Page Generation and Navigation
+
+An exploration of the routing system that converts manifest entries into static pages.
+
+Topics include:
+
+- dynamic routing
+- slug resolution
+- vault navigation
+- article ordering
+- table of contents generation
+
+---
+
+### MDX Rendering with Astro
+
+A review of the rendering pipeline that converts MDX content into styled HTML.
+
+Topics include:
+
+- `renderResult.Content`
+- markdown token conversion
+- component overrides
+- the Article layout system
+- typography styling
+
+---
+
+### Rendering codeblocks
+
+An explanation of the code block system used throughout the journal.
+
+Topics include:
+
+- the CodeBlock component
+- Shiki syntax highlighting
+- DaisyUI mockup code styles
+- theme integration
+- build time highlighting
+
+---
+
+## A Small Publishing Engine
+
+Together these components form a compact publishing engine.
+
+```text
+Author writes MDX
+│
+▼
+Astro loads the collection
+│
+▼
+Manifest organizes the journal
+│
+▼
+Routes generate static pages
+│
+▼
+MDX renders into styled HTML
+│
+▼
+Publications ready to read
+```
+
+Everything begins with a folder of MDX files and ends as a structured, static journal.

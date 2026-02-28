@@ -1,0 +1,428 @@
+---
+title: "Product Tracker"
+pubDate: 2026-03-01
+description: "Async Scraper for Tracking E-commerce Listings and Price Changes."
+author: "Alberto Duran"
+image: "../assets/thejournal/stock/08.avif"
+tags: ["project", "python", "fastapi"]
+github: "MLScraper"
+---
+
+_A backend-focused system for tracking products, inventory movements, and operational events with reliability, auditability, and scalability in mind._
+
+---
+
+## Author’s Note
+
+MLScraper started as a practical tool for tracking product listings across several Mexican and international e-commerce sites. I wanted a way to monitor specific searches and receive alerts when new items appeared or when prices dropped meaningfully.
+
+Over time it grew into a small but well-structured system. It now crawls multiple retailers, keeps historical price data, and delivers notifications through Telegram and a lightweight web dashboard.
+
+This article explains how the project works, how the codebase is organized, the engineering tradeoffs behind its design, and what I would change in a future iteration.
+
+---
+
+## Overview
+
+MLScraper is a modular, asynchronous web scraper built to monitor product listings across multiple online retailers.
+
+The system performs four main tasks:
+
+- Crawl search result pages across supported marketplaces
+- Normalize extracted data into a shared `Article` model
+- Detect new listings and meaningful price drops
+- Notify users through Telegram and a small real-time dashboard
+
+The project is implemented in **Python 3** and relies on:
+
+- `aiohttp` for asynchronous HTTP requests
+- `FastAPI` and WebSockets for a lightweight dashboard
+- JSON files for simple, portable storage
+
+Each supported site is implemented as a provider module called a **Motor**. Adding support for a new store requires implementing a small parser and registering it with the system.
+
+---
+
+## Design Goals
+
+When designing MLScraper, I focused on a few practical principles.
+
+### Modularity
+
+Each marketplace implementation is isolated in its own **Motor** class. The core scraping engine remains generic while each provider focuses only on parsing its HTML.
+
+### Asynchronous Efficiency
+
+Network requests use `asyncio` and `aiohttp`. This allows multiple pages to be fetched concurrently without blocking the event loop.
+
+### Simple Persistence
+
+Results are stored as JSON files per search. This keeps the system easy to inspect and portable across environments.
+
+### Actionable Alerts
+
+The scraper triggers alerts for two meaningful events:
+
+- discovery of a **new listing**
+- detection of a **significant price drop** (currently ~14%)
+
+### Developer Ergonomics
+
+The project includes a small web interface and a development container to simplify testing and reproducibility.
+
+---
+
+## System Architecture
+
+At a high level the system contains three core layers:
+
+1. **Provider motors** that understand each website
+2. **Scraper orchestration logic** that coordinates crawling
+3. **Notification and visualization components**
+
+A simplified architecture diagram illustrates the flow:
+
+```ascii
++--------------------+        +-----------------+        +----------------------+
+| provider motors    | -----> | Scraper engine  | -----> | Local JSON storage   |
+| (amazon, ml, etc.) |        | (Motor orchestr)|        | (./data/*.json)      |
++--------------------+        +-----------------+        +----------------------+
+        |                            |
+        |                            +--> Notifier (utils/telegram.py) -> Telegram Bot
+        |                            |
+        |                            +--> Web API / WebSocket (FastAPI app.py) -> Browser UI
+```
+
+Each layer focuses on a specific responsibility, which keeps the system easier to extend and maintain.
+
+---
+
+## Repository Structure
+
+The repository is organized around clear functional boundaries.
+
+**Application layer**
+
+- `app.py` – FastAPI server, WebSocket manager, and dashboard integration
+
+**Scraping engine**
+
+- `scrapper.py` – coordinates scraping cycles across all motors
+- `scraper/motor.py` – base class implementing the generic scraping workflow
+- `scraper/article.py` – product data structures and price history
+- `scraper/stream.py` – container for active and finished listings
+
+**Provider implementations**
+
+Located under `provider/`:
+
+- `provider/mercado_libre/`
+- `provider/amazon/`
+- `provider/liverpool/`
+- `provider/palacio_de_hierro/`
+
+Each provider contains parsing logic tailored to that site.
+
+**Utilities**
+
+- `utils/file_manager.py`
+- `utils/headers.py`
+- `utils/telegram.py`
+- `utils/secret.py`
+
+**Frontend**
+
+- `static/` – minimal dashboard UI
+
+**Development environment**
+
+- `.devcontainer/` – container configuration for reproducible development
+
+---
+
+## Execution Flow
+
+A scraping cycle follows a consistent pipeline.
+
+1. Create an asynchronous HTTP session
+2. Request the initial search page
+3. Parse results using the provider motor
+4. Normalize extracted data into `Article` objects
+5. Compare results with stored history
+6. Detect new listings or price changes
+7. Persist updated state
+8. Trigger notification events
+
+Retry logic and exponential backoff handle temporary network failures.
+
+---
+
+## The Motor Abstraction
+
+The **Motor** class is the core abstraction behind the system.
+
+Every provider inherits from the base class defined in:
+
+```python
+scraper/motor.py
+```
+
+Providers implement a single method responsible for parsing a page:
+
+```python
+def scrape_page(self, body):
+```
+
+This method receives the raw HTTP response and must:
+
+1. Parse the HTML
+2. Extract product information
+3. Detect pagination
+
+The method returns:
+
+```python
+(items, next_url)
+```
+
+Where:
+
+- `items` is a list of parsed products
+- `next_url` represents the next page in the search results
+
+This design keeps the scraping engine generic while delegating site-specific logic to each provider.
+
+---
+
+## Data Model
+
+Each product listing is represented by an `Article` object.
+
+Example JSON representation:
+
+```json
+{
+  "search_term": "AZ amazon_usa - DK books",
+  "url": "https://www.amazon.com.mx/dp/1465482512/",
+  "identifier": "1465482512",
+  "title": "Zoology: Inside the Secret World of Animals",
+  "price": 825.57,
+  "datetime": "2024-11-16 07:23:23.193375",
+  "status": "active",
+  "history": [
+    {
+      "datetime": "2024-11-17 23:35:34.266925",
+      "price": 374.36
+    },
+    {
+      "datetime": "2024-11-15 11:08:11.463581",
+      "price": 378.75
+    }
+  ]
+}
+```
+
+Key characteristics:
+
+- Every article maintains a **price history**
+- Listings are marked as `active` or `finished`
+- The `identifier` field prevents duplicate entries across scrapes
+
+This structure allows the system to detect changes over time without relying on an external database.
+
+---
+
+## Persistence Strategy
+
+MLScraper intentionally uses a very simple persistence model.
+
+All results are written as JSON files inside:
+
+```bash
+./data/
+```
+
+Each search query produces its own file.
+
+This approach offers several advantages:
+
+- human-readable data
+- no database dependencies
+- easy debugging and portability
+
+The downside is limited scalability. Large datasets and concurrent writes would require a more robust storage layer.
+
+---
+
+## Notification System
+
+The system currently supports two notification channels.
+
+### Telegram Alerts
+
+Telegram integration lives in:
+
+```python
+utils/telegram.py
+```
+
+Two alert types exist.
+
+New listing detected:
+
+```python
+send_new_to_telegram(article)
+```
+
+Price drop detected:
+
+```python
+send_price_drop_to_telegram(article)
+```
+
+Messages include the product title, link, previous price, new price, and timestamp.
+
+A price drop notification triggers when the drop exceeds roughly **14%**.
+
+---
+
+### Web Dashboard
+
+MLScraper includes a minimal browser interface served through FastAPI.
+
+The server exposes:
+
+- static frontend assets
+- WebSocket endpoint `/ws/`
+
+The dashboard subscribes to the WebSocket stream and displays events in real time. When a new item appears, the interface also plays a notification sound.
+
+---
+
+## HTTP Strategy
+
+Web scraping systems often fail due to request blocking or unstable connections.
+
+To reduce this risk the scraper implements several defensive techniques.
+
+Requests include randomized browser headers generated by:
+
+```python
+utils/headers.py
+```
+
+These headers mimic common browser configurations by rotating modern user agent strings.
+
+The HTTP client also uses:
+
+- retry logic
+- exponential backoff
+- request timeouts
+
+These measures improve resilience against temporary failures and intermittent blocking.
+
+---
+
+## Engineering Tradeoffs
+
+Several architectural decisions were deliberate compromises between simplicity and capability.
+
+### JSON vs Database
+
+**Decision:** store data in JSON files.
+
+**Advantages**
+
+- zero external dependencies
+- easy inspection and debugging
+- portable across machines
+
+**Limitations**
+
+- poor performance with large datasets
+- no indexing or complex queries
+- unsafe with concurrent writers
+
+A future version will likely migrate to **SQLite or PostgreSQL**.
+
+---
+
+### HTML Scraping vs Official APIs
+
+**Decision:** parse HTML pages.
+
+**Advantages**
+
+- works with any public search page
+- no API authentication required
+- flexible across providers
+
+**Limitations**
+
+- fragile when site layouts change
+- requires maintenance when markup updates
+- sometimes conflicts with terms of service
+
+---
+
+### Async Scraping with Sync Notifications
+
+Scraping operations are asynchronous, but Telegram notifications use synchronous HTTP calls.
+
+In theory this could block the event loop if many alerts triggered simultaneously. In practice the alert volume is small enough that the simplicity was worth it.
+
+---
+
+### Single-Process Architecture
+
+All components run in a single process:
+
+- scraping engine
+- API server
+- notification logic
+
+This design keeps deployment simple and debugging straightforward.
+
+The tradeoff is limited scalability and weaker fault isolation.
+
+---
+
+## Why Build Something Like This
+
+MLScraper began as a practical tool, but it became a useful engineering exercise.
+
+The project touches several real-world concerns:
+
+- asynchronous networking
+- resilient scraping
+- modular architecture
+- event-driven notifications
+- containerized development
+
+It also solves a simple everyday problem. Tracking product listings manually across multiple stores quickly becomes tedious. Automating that workflow makes the process far more efficient.
+
+---
+
+## Potential Improvements
+
+Several areas could improve the system’s robustness and flexibility.
+
+- **Database Migration:** Replacing JSON storage with SQLite or PostgreSQL would enable indexing, faster queries, and safer concurrent writes.
+- **Async Notification Pipeline:** A queue-based notification system would decouple scraping from message delivery.
+- **Proxy and Headless Support:** Adding rotating proxies and optional Playwright integration would improve reliability against stricter anti-bot protections.
+- **Configurable Searches:** Moving search definitions to YAML or a database would allow configuration changes without editing code.
+- **Historical Analytics:** Price trend visualization could reveal patterns such as seasonal discounts or typical deal windows.
+- **Automated Tests:** Provider parsers should include tests using stored HTML snapshots to detect markup changes early.
+- **Distributed Scraping:** Motors could run as independent workers coordinated by a scheduler, allowing horizontal scaling.
+
+---
+
+## Final Thoughts
+
+MLScraper intentionally favors simplicity over architectural complexity.
+
+Even so, the combination of modular providers, asynchronous scraping, and lightweight persistence creates a system that is both flexible and practical.
+
+Adding a new provider usually requires writing a small parser and registering it with the generator. That simplicity makes experimentation easy.
+
+For me the project sits in a comfortable middle ground. It solves a real problem while remaining small enough to understand end to end. Like most useful tools, it keeps evolving as new ideas appear.

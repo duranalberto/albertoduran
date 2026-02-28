@@ -1,0 +1,148 @@
+---
+interface Props {
+  id?: string;
+  class?: string;
+  as?: string;
+  [key: string]: any;
+}
+
+const { id, class: className, as, ...rest } = Astro.props;
+const Tag = as || "h2";
+---
+
+<anchor-heading>
+  <Tag
+    id={id}
+    class:list={[
+      "group relative flex items-center gap-2 scroll-mt-24",
+      "font-display font-bold text-base-content",
+      className,
+    ]}
+    {...rest}
+  >
+    <slot />
+    {
+      id && (
+        <div class="relative inline-flex items-center">
+          <button
+            type="button"
+            aria-label="Copy link to section"
+            class:list={[
+              "btn btn-ghost btn-circle btn-sm",
+              "transition-all duration-200 lg:opacity-0 lg:group-hover:opacity-100",
+              "text-base-content focus-visible:opacity-100 hover:text-primary",
+            ]}
+            data-anchor-copy={id}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="pointer-events-none"
+            >
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+            </svg>
+          </button>
+          <span class="copy-status-badge hidden" data-anchor-feedback>
+            Copied!
+          </span>
+        </div>
+      )
+    }
+  </Tag>
+</anchor-heading>
+
+<style>
+  .copy-status-badge {
+    position: absolute;
+    bottom: 120%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0.25rem 0.6rem;
+    border-radius: var(--radius-field);
+    background-color: var(--color-success);
+    color: var(--color-success-content);
+    font-size: 0.7rem;
+    font-weight: 700;
+    white-space: nowrap;
+    z-index: 100;
+    pointer-events: none;
+    animation: tooltip-in 0.2s ease-out forwards;
+  }
+
+  .copy-status-badge.hidden {
+    display: none;
+  }
+
+  @keyframes tooltip-in {
+    from {
+      opacity: 0;
+      transform: translateX(-50%) translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  }
+</style>
+
+<script>
+  class AnchorHeading extends HTMLElement {
+    private timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    connectedCallback() {
+      const button =
+        this.querySelector<HTMLButtonElement>("[data-anchor-copy]");
+      if (button) {
+        button.addEventListener("click", (e) => this.handleCopy(e));
+      }
+    }
+
+    private handleCopy = async (e: MouseEvent) => {
+      const button = e.currentTarget as HTMLButtonElement;
+      const id = button.getAttribute("data-anchor-copy");
+      const feedback = this.querySelector<HTMLElement>(
+        "[data-anchor-feedback]",
+      );
+
+      if (!id || !feedback) return;
+
+      const url = new URL(window.location.href);
+      url.hash = id;
+
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(url.toString());
+        } else {
+          window.location.hash = id;
+        }
+        this.showFeedback(feedback, button);
+      } catch (err) {
+        console.error("Copy failed", err);
+      }
+    };
+
+    private showFeedback(feedback: HTMLElement, button: HTMLButtonElement) {
+      if (this.timeoutId) clearTimeout(this.timeoutId);
+
+      feedback.classList.remove("hidden");
+      button.classList.add("text-success", "scale-110");
+
+      this.timeoutId = setTimeout(() => {
+        feedback.classList.add("hidden");
+        button.classList.remove("text-success", "scale-110");
+      }, 2000);
+    }
+  }
+
+  if (!customElements.get("anchor-heading")) {
+    customElements.define("anchor-heading", AnchorHeading);
+  }
+</script>

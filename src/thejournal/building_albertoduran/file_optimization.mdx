@@ -1,0 +1,529 @@
+---
+title: "File Optimization Still Matters in Astro Projects"
+image: "../../assets/thejournal/stock/01.avif"
+description: Even with a great Astro setup, performance depends on how assets, CSS, images, and markup are optimized during the build process.
+tags: ["astro", "web-performance", "vite", "image-optimization"]
+pubDate: 2026-03-09
+author: "Alberto Duran"
+order: 5
+---
+
+## Even a well configured project can still be slow
+
+In the previous article I focused on navigation speed, using Prefetching, ClientRouter and Resource hints.
+
+Those techniques make navigation feel faster. They reduce waiting during user interaction.
+
+But they do not solve another problem.
+
+**File weight.**
+
+A project can still ship large HTML files, bloated CSS, heavy images, and unnecessary JavaScript.
+
+No routing trick will fix that.
+
+The second layer of performance work happens during the **build process and asset design**.
+
+That is where file optimization becomes critical. This article explains the main techniques used in the project.
+
+---
+
+## Build time optimization in Astro
+
+Astro performs most optimizations during build.
+
+Two tools handle most of the work in this project.
+
+- **Vite build optimizations**
+- **astro-compress**
+
+Both run automatically during `astro build`.
+
+The configuration looks like this.
+
+```js
+export default defineConfig({
+  integrations: [
+    compress({
+      CSS: true,
+      HTML: {
+        "html-minifier-terser": {
+          collapseWhitespace: true,
+          removeComments: true,
+          ignoreCustomFragments: [
+            /<pre[\s\S]*?<\/pre>/,
+            /<code[\s\S]*?<\/code>/,
+            /<kbd[\s\S]*?<\/kbd>/,
+          ],
+        },
+      },
+      JavaScript: true,
+      Image: false,
+    }),
+  ],
+  vite: {
+    build: {
+      minify: "esbuild",
+      cssMinify: true,
+      assetsInlineLimit: 8192,
+    },
+  },
+});
+```
+
+Each tool solves a different part of the problem.
+
+---
+
+## Vite minification during the build
+
+Astro uses **Vite** as its underlying build system.
+
+During the build step Vite performs several optimizations automatically.
+
+```js
+vite: {
+  build: {
+    minify: "esbuild",
+    cssMinify: true,
+    assetsInlineLimit: 8192,
+  }
+}
+```
+
+These options control how JavaScript, CSS, and assets are processed.
+
+### JavaScript minification
+
+The setting
+
+```js
+minify: "esbuild";
+```
+
+runs the **esbuild minifier** during compilation.
+
+The minifier performs several transformations.
+
+- removes whitespace
+- shortens variable names
+- removes unused code
+- compresses syntax
+
+Example transformation.
+
+Before build
+
+```js
+function calculateTotal(price, tax) {
+  const total = price + price * tax;
+  return total;
+}
+```
+
+After minification
+
+```js
+function t(e, r) {
+  return e + e * r;
+}
+```
+
+The browser downloads less code and parses it faster.
+
+---
+
+### CSS minification
+
+```js
+cssMinify: true;
+```
+
+removes whitespace, comments, and redundant rules from stylesheets.
+
+Example.
+
+Before
+
+```css
+.card {
+  padding: 16px;
+  background: white;
+}
+```
+
+After
+
+```css
+.card {
+  padding: 16px;
+  background: white;
+}
+```
+
+Small change individually.
+
+Huge impact across a large stylesheet.
+
+---
+
+### Asset inlining
+
+```js
+assetsInlineLimit: 8192;
+```
+
+Small assets under **8kb** are converted into base64 strings and embedded directly inside the bundle.
+
+Instead of downloading many tiny files, the browser loads them with the main bundle.
+
+This reduces HTTP requests.
+
+---
+
+## Astro-compress
+
+Vite handles JavaScript and CSS.
+
+`astro-compress` focuses on **HTML output and final asset compression**.
+
+Integration is straightforward.
+
+```js
+import compress from "astro-compress";
+
+integrations: [
+  compress({
+    CSS: true,
+    JavaScript: true,
+    HTML: {
+      "html-minifier-terser": {
+        collapseWhitespace: true,
+        removeComments: true,
+      },
+    },
+  }),
+];
+```
+
+It performs several tasks.
+
+- HTML minification
+- CSS compression
+- JavaScript compression
+- optional image compression
+
+The goal is simple.
+
+**Ship the smallest possible files to the browser.**
+
+---
+
+## Protecting code blocks with ignoreCustomFragments
+
+One detail required special handling.
+
+HTML minifiers aggressively collapse whitespace.
+
+That breaks **code blocks**.
+
+Indentation disappears and formatted code becomes unreadable.
+
+The project avoids that using `ignoreCustomFragments`.
+
+```js
+ignoreCustomFragments: [
+  /<pre[\s\S]*?<\/pre>/,
+  /<code[\s\S]*?<\/code>/,
+  /<kbd[\s\S]*?<\/kbd>/,
+];
+```
+
+This tells the minifier to skip specific HTML fragments.
+
+Lifecycle of the HTML minifier.
+
+```
+Generated HTML
+      │
+      ▼
+Minifier scans document
+      │
+      ▼
+Matches ignored fragments
+      │
+      ▼
+Skips formatting inside code blocks
+      │
+      ▼
+Minifies everything else
+```
+
+The result.
+
+- Clean HTML output
+- Preserved code formatting
+
+Which matters a lot on a technical blog.
+
+---
+
+## Why SVG icons are embedded directly in HTML
+
+Icons across the site use SVG.
+
+Instead of loading them as external images, they are rendered inline.
+
+Example usage.
+
+```astro
+<SVGIcon icon={skill_icon} class="h-20 w-20" />
+```
+
+Embedding SVGs directly provides several advantages.
+
+### 1. No network requests
+
+External images require additional HTTP requests.
+
+Inline SVG becomes part of the HTML document.
+
+```
+HTML Download
+   │
+   ▼
+SVG already available
+```
+
+No extra request.
+
+---
+
+### 2. Perfect scalability
+
+SVG uses vector paths.
+
+That means it scales without losing quality.
+
+```
+Small icon → large icon → same sharpness
+```
+
+Raster formats like PNG or JPG cannot do that.
+
+---
+
+### 3. CSS styling
+
+Inline SVG can be styled with CSS.
+
+Example.
+
+```css
+svg {
+  stroke: currentColor;
+}
+```
+
+Icons automatically adapt to themes and colors.
+
+---
+
+## Image optimization with Astro assets
+
+Large images can easily dominate page weight.
+
+Astro provides an excellent tool for this through **astro:assets**.
+
+Two helpers appear often in the project.
+
+- `getImage`
+- `Picture`
+
+Example from the hero component.
+
+```astro
+const mobileImg = await getImage({
+  src: backgroundImage,
+  width: 800,
+  height: 1200,
+  format: "webp",
+  quality: 70,
+});
+```
+
+This generates a **pre optimized image during build**.
+
+Then the `<picture>` element chooses the correct version.
+
+```astro
+<picture>
+  <source media="(max-width: 767px)" srcset={mobileImg.src} />
+  <source media="(min-width: 768px)" srcset={desktopImg.src} />
+  <img src={desktopImg.src} />
+</picture>
+```
+
+Lifecycle of responsive image loading.
+
+```
+Page loads
+   │
+   ▼
+Browser evaluates media queries
+   │
+   ▼
+Correct image selected
+   │
+   ▼
+Only required resolution downloaded
+```
+
+No wasted bandwidth.
+
+---
+
+### The Picture component for content images
+
+For regular UI images the project uses Astro's `Picture` component.
+
+Example from a card component.
+
+```astro
+<Picture
+  src={image}
+  widths={[250, 500, 800]}
+  formats={["webp"]}
+  sizes="(max-width: 480px) 250px, (max-width: 768px) 400px"
+/>
+```
+
+Astro generates multiple image versions.
+
+```
+250px image
+500px image
+800px image
+```
+
+The browser picks the right one depending on screen size.
+
+That keeps images crisp while avoiding oversized downloads.
+
+---
+
+## CSS splitting strategy
+
+CSS structure also affects performance.
+
+The project uses a simple rule.
+
+**Global styles for layout and base rules.  
+Component styles for specific features.**
+
+Example.
+
+```
+styles/
+  global.css
+  mockup-code.css
+  glass.css
+```
+
+Components import their own styles when needed.
+
+```ts
+import "@styles/glass.css";
+```
+
+This keeps styling modular.
+
+---
+
+## How Astro bundles CSS and JavaScript
+
+Astro performs automatic **page level bundling**.
+
+Every page only ships the CSS and JavaScript required for its components.
+
+Build pipeline.
+
+```
+Page imports components
+        │
+        ▼
+Astro analyzes dependencies
+        │
+        ▼
+Extracts required CSS and JS
+        │
+        ▼
+Creates optimized bundle for that page
+```
+
+If a component only appears on one page, its styles are not loaded anywhere else.
+
+---
+
+## Global and local assets working together
+
+The final architecture uses two layers.
+
+### Global assets
+
+Loaded everywhere.
+
+Examples.
+
+- global CSS
+- fonts
+- layout scripts
+- navigation styles
+
+These are stable and reused across the site.
+
+---
+
+### Local assets
+
+Loaded only when needed.
+
+Examples.
+
+- component CSS
+- feature scripts
+- page specific styles
+
+Astro merges them during the build.
+
+```
+Global CSS
+     │
+     ▼
+Component CSS
+     │
+     ▼
+Page bundle
+```
+
+The browser receives a single optimized bundle for the page being visited.
+
+That avoids unused styles and unnecessary JavaScript.
+
+---
+
+## Why these optimizations matter
+
+Modern frameworks often hide build complexity.
+
+That is good for developer experience. But performance still depends on **what the build produces**.
+
+This project focuses on three principles.
+
+- Minify everything that can be minified
+- Avoid unnecessary downloads
+- Only ship code required for each page
+
+Navigation optimizations make the site feel fast. File optimization ensures the browser has **less work to do in the first place**.
+
+Both layers together create the performance profile of the site.

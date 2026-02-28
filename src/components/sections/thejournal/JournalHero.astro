@@ -1,0 +1,47 @@
+---
+const props = Astro.props;
+---
+
+<section class="py-12 lg:py-24 font-sans overflow-hidden" {...props}>
+  <div class="mx-auto max-w-screen-2xl">
+    <div class="grid items-end gap-12 grid-cols-1 lg:grid-cols-12">
+      <div class="flex flex-col items-start lg:col-span-9">
+        <div class="flex items-center gap-3 mb-6 select-none">
+          <span class="h-px w-8 bg-primary"></span>
+          <p
+            class="font-display text-xs font-bold uppercase tracking-[0.3em] text-primary md:text-sm"
+          >
+            Thoughts on Code & Growth
+          </p>
+        </div>
+
+        <h1
+          class="mb-6 font-black font-display text-5xl md:text-7xl lg:text-8xl"
+        >
+          <span class="text-primary">The</span>
+          <span class="text-base-content">Journal.</span>
+        </h1>
+
+        <p
+          class="max-w-2xl text-lg leading-relaxed text-neutral-content md:text-xl"
+        >
+          Writing about technical challenges, life lessons, and the things that
+          keep me overthinking. Like a blog, but with a cooler name.
+        </p>
+      </div>
+
+      <div class="flex lg:justify-end lg:col-span-3">
+        <div class="py-2 pl-6 border-l-2 border-primary/20 flex flex-col">
+          <span
+            class="mb-1 text-xs font-bold uppercase tracking-widest text-neutral-content opacity-90"
+          >
+            Current Phase
+          </span>
+          <span class="font-display text-sm uppercase text-base-content">
+            Building & Documenting
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

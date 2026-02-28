@@ -1,0 +1,27 @@
+---
+import JournalGrid from "@components/common/JournalGrid.astro";
+import JournalHero from "@components/sections/thejournal/JournalHero.astro";
+import BaseLayout from "@layouts/BaseLayout.astro";
+import FlexShell from "@layouts/FlexShell.astro";
+import { entryManifest } from "@utils/thejournal_manifest";
+
+const catalog = Object.values(entryManifest);
+const pageTitle = "The Journal.";
+---
+
+<BaseLayout pageTitle={pageTitle}>
+  <JournalHero slot="hero" transition:name="page-hero" />
+
+  <FlexShell>
+    {
+      catalog.length === 0 && (
+        <div class="flex justify-center">
+          <div class="alert alert-info max-w-md">
+            <span>No publications found. check back later!</span>
+          </div>
+        </div>
+      )
+    }
+    <JournalGrid catalog={catalog} />
+  </FlexShell>
+</BaseLayout>

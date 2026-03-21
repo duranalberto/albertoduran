@@ -5,7 +5,10 @@ import SVGIcon from "@components/ui/SVGIcon.astro";
 import { ui } from "@data/icons";
 ---
 
-<BaseLayout pageTitle="404 - Page Not Found">
+<BaseLayout
+  pageTitle="404 - Page Not Found"
+  description="Don't enter this page!"
+>
   <main
     class="relative flex flex-col items-center justify-center min-h-dvh px-8 text-center bg-base-100 overflow-hidden isolate"
   >
@@ -19,7 +22,7 @@ import { ui } from "@data/icons";
     <div class="space-y-10 max-w-xl relative z-10">
       <div class="space-y-4">
         <span
-          class="inline-block text-base-content font-mono text-xs tracking-[0.4em] uppercase py-1 px-4 border border-base-content/20 rounded-full"
+          class="inline-block text-base-content text-xs tracking-[0.4em] uppercase py-1 px-4 border border-base-content/20 rounded-full"
         >
           Error Not Found
         </span>

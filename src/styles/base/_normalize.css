@@ -1,0 +1,29 @@
+/* =========================================================
+   BASE / NORMALIZATION
+   Foundational HTML-level resets and rendering fixes.
+   ========================================================= */
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    scrollbar-gutter: stable;
+    overscroll-behavior-y: none;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
+  :root {
+    color-scheme: light dark;
+  }
+
+  body {
+    overscroll-behavior-y: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}

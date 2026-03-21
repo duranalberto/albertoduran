@@ -1,0 +1,11 @@
+/* =========================================================
+   GPU / PERFORMANCE UTILITIES
+   Force GPU compositing layer for elements with known
+   transform animations to avoid paint-on-scroll jank.
+   ========================================================= */
+
+.layer-gpu {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  will-change: transform;
+}

@@ -5,35 +5,47 @@ interface Props {
   item: VaultItem;
   currentEntryId: string;
   level: number;
+  isStatic?: boolean;
   classNames?: string;
 }
 
-const { item, currentEntryId, level, classNames } = Astro.props;
+const {
+  item,
+  currentEntryId,
+  level,
+  isStatic = false,
+  classNames,
+} = Astro.props;
 
 const folder = isNestedGroup(item);
 const id = folder ? item.index.id : item.id;
 const isActive = currentEntryId === id;
+const href = `/thejournal/${id}/`;
 ---
 
 <a
-  href={`/thejournal/${id}`}
+  href={href}
   aria-current={isActive ? "page" : undefined}
+  data-state={isActive ? "active" : "inactive"}
   class:list={[
-    "flex items-center transition-all duration-200 ease-in-out",
-    "w-full py-3 pr-4",
-    "text-sm leading-snug tracking-wide select-none whitespace-normal",
+    "vault-tree-node journal-nav-item group flex items-center relative w-full py-2.5 pr-4",
+    "text-sm font-medium leading-snug select-none whitespace-normal",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-inset",
+    "nav-item py-2.5 pr-4 text-sm font-medium leading-snug whitespace-normal",
     classNames,
-    isActive ? "font-bold" : "font-medium",
-    isActive
-      ? "bg-primary/10 text-primary"
-      : "text-base-content/70 hover:bg-base-200 hover:text-base-content",
-    "border-r-4",
-    isActive ? "border-primary" : "border-transparent hover:border-primary/30",
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset",
   ]}
-  data-astro-prefetch="hover"
+  data-astro-prefetch
 >
-  <span>
+  {
+    isActive && !isStatic && (
+      <div
+        transition:name="toc_active_indicator"
+        class="absolute right-0 top-0 bottom-0 w-1 bg-primary z-20"
+      />
+    )
+  }
+
+  <span class="relative z-10 block w-full">
     {item.title}
   </span>
 </a>

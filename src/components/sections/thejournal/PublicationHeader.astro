@@ -14,7 +14,6 @@ const { entry, vaultContext } = Astro.props;
 
 const image = entry.image;
 const github = entry.github;
-
 const formattedDate = new Date(entry.pubDate).toLocaleDateString("en-US", {
   year: "numeric",
   month: "long",
@@ -25,15 +24,16 @@ const readTimeText = entry.readTime ? `${entry.readTime} min read` : null;
 ---
 
 <header
-  class="flex flex-col gap-8 mb-16 max-w-screen-2xl mx-auto contain-paint"
+  class="article-header-root flex flex-col gap-8 mb-8 md:mb-10 xl:mb-14 max-w-screen-2xl mx-auto contain-paint"
 >
   <div class="flex flex-col gap-4">
     {
       vaultContext && (
         <nav aria-label="Breadcrumb">
           <a
-            href={`/thejournal/${vaultContext.id}`}
-            class="badge badge-outline badge-primary inline-flex active:scale-95 items-center min-h-8 px-3 py-2 text-xs font-bold tracking-widest uppercase transition-colors hover:bg-primary hover:text-primary-content"
+            href={`/thejournal/${vaultContext.id}/`}
+            transition:name={`article-vault-button-${entry.vaultId}`}
+            class="badge badge-outline inline-flex active:scale-95 items-center min-h-8 px-3 py-2 text-xs font-bold tracking-widest uppercase transition-colors hover:bg-primary hover:text-primary-content"
           >
             {vaultContext.title}
           </a>
@@ -43,15 +43,15 @@ const readTimeText = entry.readTime ? `${entry.readTime} min read` : null;
 
     <h1
       id="article-header"
+      transition:name={`article-title`}
       class="font-display block text-4xl font-black text-base-content md:text-5xl lg:text-7xl"
-      transition:name="article-title"
     >
       {entry.title}
     </h1>
 
     <div
       class="flex flex-wrap items-center gap-x-6 gap-y-4 text-sm font-medium text-neutral-content"
-      transition:name="article-meta"
+      transition:name={`article-metadata`}
     >
       <div class="flex items-center gap-2 whitespace-nowrap">
         <SVGIcon icon={ui.calendar} class="size-4 text-neutral-content/70" />
@@ -102,47 +102,24 @@ const readTimeText = entry.readTime ? `${entry.readTime} min read` : null;
 
   {
     image && (
-      <div class="image-container rounded-box relative w-full overflow-hidden border border-base-300 bg-base-200 shadow-sm layer-gpu">
+      <div
+        class="article-image-wrapper rounded-box relative w-full overflow-hidden border border-base-300 bg-base-200 shadow-sm layer-gpu"
+        transition:name={`article-image-${image.src}`}
+      >
         <Picture
           src={image}
           alt={entry.title}
-          widths={[500, 800, 1000, 1200]}
-          formats={["webp"]}
-          sizes="(max-width: 1536px) 100vw, 1536px"
+          widths={[500, 800, 1000, 1200, 1500]}
+          formats={["avif", "webp"]}
+          sizes="(max-width: 1024px) 100vw, (max-width: 1536px) calc(100vw - 36rem), 900px"
+          quality={80}
           loading="eager"
           fetchpriority="high"
-          decoding="sync"
-          class="w-full h-full select-none object-cover transition-transform duration-500 hover:scale-105 motion-safe:will-change-transform"
+          decoding="async"
+          class="article-featured-img w-full h-full select-none object-cover transition-transform duration-500 hover:scale-105 motion-safe:will-change-transform"
           draggable={false}
         />
       </div>
     )
   }
 </header>
-
-<style>
-  .image-container {
-    aspect-ratio: 21 / 9;
-  }
-
-  @supports not (aspect-ratio: 21/9) {
-    .image-container {
-      position: relative;
-      padding-top: 42.85%;
-    }
-    .image-container :global(img) {
-      position: absolute;
-      top: 0;
-      left: 0;
-    }
-  }
-
-  .layer-gpu {
-    transform: translateZ(0);
-    backface-visibility: hidden;
-  }
-
-  .touch-manipulation {
-    touch-action: manipulation;
-  }
-</style>

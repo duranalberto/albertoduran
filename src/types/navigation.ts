@@ -1,4 +1,4 @@
-export type Sites = "/" | "/profile" | "/thejournal";
+export type Sites = "/" | "/profile/" | "/thejournal/";
 
 export interface SiteManifest {
   label: string;
@@ -10,11 +10,11 @@ export const sitesManifest: Record<Sites, SiteManifest> = {
     label: "AlbertoDuran",
     title: "I am Alberto Duran, Welcome to my site!",
   },
-  "/profile": {
+  "/profile/": {
     label: "Professional Profile",
     title: "Alberto Duran | Software Engineer",
   },
-  "/thejournal": {
+  "/thejournal/": {
     label: "TheJournal.",
     title: "TheJournal - Insights & Documentation",
   },
@@ -27,11 +27,11 @@ export interface CurrentSite {
 }
 
 export const getCurrentSite = (path: string): CurrentSite => {
-  const normalizedPath = path.replace(/\/$/, "") || "/";
-  const specificSites: Exclude<Sites, "/">[] = ["/thejournal", "/profile"];
-  const match = specificSites.find(
-    (site) => normalizedPath === site || normalizedPath.startsWith(`${site}/`),
-  );
+  const normalizedPath = path.endsWith("/") ? path : `${path}/`;
+
+  const specificSites: Exclude<Sites, "/">[] = ["/thejournal/", "/profile/"];
+
+  const match = specificSites.find((site) => normalizedPath.startsWith(site));
 
   const site: Sites = match ?? "/";
   const isRoot = normalizedPath === site;
@@ -44,5 +44,5 @@ export const getCurrentSite = (path: string): CurrentSite => {
 };
 
 export const isTheJourneyPublication = (current: CurrentSite) => {
-  return current.site === "/thejournal" && !current.isRoot;
+  return current.site === "/thejournal/" && !current.isRoot;
 };

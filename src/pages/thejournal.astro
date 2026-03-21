@@ -5,14 +5,31 @@ import BaseLayout from "@layouts/BaseLayout.astro";
 import FlexShell from "@layouts/FlexShell.astro";
 import { entryManifest } from "@utils/thejournal_manifest";
 
-const catalog = Object.values(entryManifest);
+const byNewestPubDate = (a: { pubDate: Date }, b: { pubDate: Date }) =>
+  b.pubDate.getTime() - a.pubDate.getTime();
+
+const allEntries = Object.values(entryManifest);
+
+const firstHalf = allEntries
+  .filter((e) => !e.vaultId || e.id === e.vaultId)
+  .sort(byNewestPubDate);
+
+const secondHalf = allEntries
+  .filter((e) => e.vaultId && e.id !== e.vaultId)
+  .sort(byNewestPubDate);
+
+const catalog = [...firstHalf, ...secondHalf];
+
 const pageTitle = "The Journal.";
 ---
 
-<BaseLayout pageTitle={pageTitle}>
-  <JournalHero slot="hero" transition:name="page-hero" />
+<BaseLayout
+  pageTitle={pageTitle}
+  description="Like a blog, but with a cooler name"
+>
+  <JournalHero slot="hero" />
 
-  <FlexShell>
+  <FlexShell class="pb-14">
     {
       catalog.length === 0 && (
         <div class="flex justify-center">

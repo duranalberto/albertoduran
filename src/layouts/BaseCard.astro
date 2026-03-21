@@ -21,7 +21,6 @@ const linkAttrs = href
       href,
       target: isExternal ? "_blank" : undefined,
       rel: isExternal ? "noopener noreferrer" : undefined,
-      "data-astro-prefetch": "hover",
     }
   : {};
 ---
@@ -29,13 +28,13 @@ const linkAttrs = href
 <Tag
   {...linkAttrs}
   class:list={[
-    "group block w-full h-full transition-all duration-200",
+    "group block w-full h-full",
     href &&
-      "rounded-box focus-visible:outline-primary focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-95 transition-transform",
+      "rounded-box focus-visible:outline-primary focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-95 transition-transform duration-200",
   ]}
 >
   <div
-    class="card card-border flex h-full flex-col overflow-hidden bg-base-200 text-base-content shadow-sm transition-all duration-200 will-change-transform group-hover:-translate-y-1 group-hover:shadow-xl"
+    class="card card-border flex h-full flex-col overflow-hidden bg-base-200 text-base-content shadow-sm transition-[transform,box-shadow] duration-200 will-change-transform group-hover:-translate-y-1 group-hover:shadow-xl"
   >
     {
       image && (
@@ -46,14 +45,13 @@ const linkAttrs = href
           >
             {title?.charAt(0)}
           </div>
-
           <Picture
             src={image}
             alt={imageAlt}
-            widths={[250, 500, 800]}
-            quality={60}
-            formats={["webp"]}
-            sizes="(max-width: 480px) 250px, (max-width: 768px) 400px"
+            widths={[250, 400, 500, 800]}
+            formats={["avif", "webp"]}
+            sizes="(max-width: 480px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 500px"
+            quality={65}
             loading="lazy"
             decoding="async"
             class="absolute inset-0 h-full w-full select-none object-cover transition-transform duration-200 group-hover:scale-105"
@@ -88,7 +86,7 @@ const linkAttrs = href
         {
           href && (
             <span
-              class="text-primary -translate-x-2 font-bold opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100"
+              class="text-primary -translate-x-2 font-bold opacity-0 transition-[transform,opacity] duration-200 group-hover:translate-x-0 group-hover:opacity-100"
               aria-hidden="true"
             >
               &rarr;

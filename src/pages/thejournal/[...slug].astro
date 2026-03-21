@@ -1,15 +1,19 @@
 ---
-import { type JournalEntry } from "@appTypes/content_context";
 import Article from "@components/sections/thejournal/Article.astro";
 import OnThisPage from "@components/sections/thejournal/OnThisPage.astro";
+import OnThisPageContent from "@components/sections/thejournal/OnThisPageContent.astro";
 import Pagination from "@components/sections/thejournal/Pagination.astro";
 import PublicationHeader from "@components/sections/thejournal/PublicationHeader.astro";
-import TableOfContent from "@components/sections/thejournal/TableOfContent.astro";
+import VaultExplorer from "@components/sections/thejournal/VaultExplorer.astro";
+import VaultNavContent from "@components/sections/thejournal/VaultNavContent.astro";
 import CodeBlock from "@components/ui/CodeBlock.astro";
 import HeadingAnchor from "@components/ui/HeadingAnchor.astro";
+import HeadingAnchorH3 from "@components/ui/HeadingAnchorH3.astro";
+import ProseTable from "@components/ui/ProseTable.astro";
+import SVGIcon from "@components/ui/SVGIcon.astro";
+import { ui } from "@data/icons";
 import BaseLayout from "@layouts/BaseLayout.astro";
 import FlexShell from "@layouts/FlexShell.astro";
-import "@styles/mockup-code.css";
 import {
   entryManifest,
   rawEntries,
@@ -24,64 +28,202 @@ export async function getStaticPaths() {
   }));
 }
 
-interface Props {
-  post: JournalEntry;
-}
-
 const { post } = Astro.props;
 const renderResult = await render(post);
 const entry = entryManifest[post.id];
 const vaultContext = vaultsManifest[entry.vaultId];
-const components: any = {
+
+const components = {
   pre: CodeBlock,
   h2: HeadingAnchor,
-  h3: HeadingAnchor,
+  h3: HeadingAnchorH3,
+  table: ProseTable,
 };
+
 const prevEntry = entry.previous ? entryManifest[entry.previous] : null;
 const nextEntry = entry.next ? entryManifest[entry.next] : null;
 const hasNavigation = prevEntry || nextEntry;
+
+const headings = renderResult.headings.filter(
+  (h) => h.depth > 1 && h.depth <= 3,
+);
+
+const SIDEBAR_LEFT_WIDTH = "18rem";
+const SIDEBAR_RIGHT_WIDTH = "16rem";
+
+const vaultModalTitleId = "vault-modal-title";
+const otpModalTitleId = "otp-modal-title";
 ---
 
-<BaseLayout pageTitle={entry.title}>
-  <FlexShell
-    class="flex flex-col items-start gap-4 lg:flex-row lg:gap-12 xl:gap-16"
-    py={12}
-    px={8}
-  >
-    {
-      vaultContext && (
-        <aside
-          class="hidden flex-none xl:block sticky top-24"
-          transition:name="article-sidebar-left"
-        >
-          <TableOfContent vault={vaultContext} currentEntryId={entry.id} />
-        </aside>
-      )
-    }
-
-    <div class="flex-1 min-w-0 w-full">
-      <PublicationHeader entry={entry} vaultContext={vaultContext} />
-
-      <main class="mt-8">
-        <Article transition:name="article-content">
-          <renderResult.Content components={components} />
-        </Article>
-
+<BaseLayout
+  pageTitle={entry.title}
+  description={entry.description}
+  image={entry.image}
+>
+  <div class="journal-root xl:pb-14">
+    <div class="journal-content flex-1">
+      <FlexShell
+        class="journal-shell xl:flex xl:items-start xl:gap-12 py-4 px-4 lg:pb-8"
+        py={0}
+      >
         {
-          hasNavigation && (
-            <div class="mt-16 pt-8">
-              <Pagination prevEntry={prevEntry} nextEntry={nextEntry} />
-            </div>
+          vaultContext && (
+            <aside
+              class="journal-sidebar sidebar-left hidden xl:block shrink-0"
+              transition:name="sidebar-left"
+            >
+              <div class="journal-sidebar-panel">
+                <VaultExplorer
+                  vault={vaultContext}
+                  currentEntryId={entry.id}
+                  expandedWidth={SIDEBAR_LEFT_WIDTH}
+                />
+              </div>
+            </aside>
           )
         }
-      </main>
+        <div
+          class="journal-main-content w-full flex-1 min-w-0 flex flex-col mt-4"
+          transition:name="thejournal-main"
+        >
+          <PublicationHeader entry={entry} vaultContext={vaultContext} />
+
+          <div class="flex-1 break-words" transition:name="thejournal-article">
+            <Article>
+              <renderResult.Content components={components} />
+            </Article>
+
+            {
+              hasNavigation && (
+                <div class="mt-14">
+                  <Pagination prevEntry={prevEntry} nextEntry={nextEntry} />
+                </div>
+              )
+            }
+          </div>
+          <nav
+            class="dock-wrapper xl:hidden z-30"
+            aria-label="Article navigation dock"
+            transition:name="thejournal-navigation-mobile"
+          >
+            <div class="dock-inner">
+              <div class="join dock-join">
+                {
+                  vaultContext && (
+                    <label
+                      for="vault-modal-toggle"
+                      class="btn btn-ghost join-item dock-btn"
+                      aria-label="Open Vault Explorer"
+                    >
+                      <SVGIcon
+                        icon={ui.vault}
+                        class="size-5 pointer-events-none"
+                        aria-hidden="true"
+                      />
+                      <span class="dock-btn-label">{ui.vault.text}</span>
+                    </label>
+                  )
+                }
+
+                <label
+                  for="otp-modal-toggle"
+                  class="btn btn-ghost join-item dock-btn"
+                  aria-label="Open Table of Contents"
+                >
+                  <SVGIcon
+                    icon={ui.onThisPage}
+                    class="size-5 pointer-events-none"
+                    aria-hidden="true"
+                  />
+                  <span class="dock-btn-label">{ui.onThisPage.text}</span>
+                </label>
+              </div>
+            </div>
+          </nav>
+        </div>
+
+        <aside
+          class="journal-sidebar sidebar-right hidden xl:block shrink-0"
+          transition:name="sidebar-right"
+        >
+          <div class="journal-sidebar-panel">
+            <OnThisPage
+              headings={headings}
+              expandedWidth={SIDEBAR_RIGHT_WIDTH}
+            />
+          </div>
+        </aside>
+      </FlexShell>
+    </div>
+  </div>
+
+  <Fragment slot="overlays">
+    <input type="checkbox" id="vault-modal-toggle" class="modal-toggle" />
+    <div
+      class="modal modal-bottom sm:modal-middle"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={vaultModalTitleId}
+    >
+      <div class="modal-box p-0 flex flex-col max-h-[85dvh] sm:max-w-sm">
+        <div
+          class="flex items-center justify-between px-4 py-3 border-b border-base-content/10 shrink-0"
+        >
+          <span
+            id={vaultModalTitleId}
+            class="text-xs font-bold uppercase tracking-widest text-base-content/60"
+          >
+            Vault Explorer
+          </span>
+          <label
+            for="vault-modal-toggle"
+            class="btn btn-ghost btn-sm btn-circle"
+            aria-label="Close Vault Explorer"
+          >
+            ✕
+          </label>
+        </div>
+        <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4">
+          {
+            vaultContext && (
+              <VaultNavContent vault={vaultContext} currentEntryId={entry.id} />
+            )
+          }
+        </div>
+      </div>
+      <label class="modal-backdrop" for="vault-modal-toggle">Close</label>
     </div>
 
-    <aside
-      class="hidden flex-none lg:block sticky top-24"
-      transition:name="article-sidebar-right"
+    <input type="checkbox" id="otp-modal-toggle" class="modal-toggle" />
+    <div
+      class="modal modal-bottom sm:modal-middle"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={otpModalTitleId}
     >
-      <OnThisPage renderResult={renderResult} />
-    </aside>
-  </FlexShell>
+      <div class="modal-box p-0 flex flex-col max-h-[85dvh] sm:max-w-sm">
+        <div
+          class="flex items-center justify-between px-4 py-3 border-b border-base-content/10 shrink-0"
+        >
+          <span
+            id={otpModalTitleId}
+            class="text-xs font-bold uppercase tracking-widest text-base-content/60"
+          >
+            On This Page
+          </span>
+          <label
+            for="otp-modal-toggle"
+            class="btn btn-ghost btn-sm btn-circle"
+            aria-label="Close Table of Contents"
+          >
+            ✕
+          </label>
+        </div>
+        <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4">
+          <OnThisPageContent headings={headings} />
+        </div>
+      </div>
+      <label class="modal-backdrop" for="otp-modal-toggle">Close</label>
+    </div>
+  </Fragment>
 </BaseLayout>

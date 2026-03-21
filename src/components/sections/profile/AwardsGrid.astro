@@ -11,7 +11,12 @@ const { awards } = Astro.props;
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
   {
     awards.map((award) => (
-      <div class="card card-border bg-base-200 text-base-content rounded-box shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-xl flex flex-col items-start p-6 will-change-transform">
+      <!--
+        transition-[transform,box-shadow] instead of transition-all.
+        transition-all on bg-base-200 text-base-content would animate both
+        background and text color on theme switch (200ms visible lag).
+      -->
+      <div class="card card-border bg-base-200 text-base-content rounded-box shadow-sm transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-xl flex flex-col items-start p-6 will-change-transform">
         <h3 class="font-display text-lg font-bold leading-tight">
           {award.title}
         </h3>

@@ -1,118 +1,129 @@
 ---
-import "../styles/global.css";
-import { ClientRouter } from "astro:transitions";
 import Footer from "@components/common/Footer.astro";
 import Header from "@components/common/Header.astro";
 import FlexShell from "@layouts/FlexShell.astro";
+import { Font, getImage } from "astro:assets";
+import { ClientRouter } from "astro:transitions";
+import "../styles/global.css";
+import kirby from "@assets/thejournal/pub/kirby.jpg";
 
 interface Props {
   pageTitle: string;
+  description?: string;
+  image?: ImageMetadata;
 }
 
-const { pageTitle } = Astro.props;
+const {
+  pageTitle,
+  description = "Visit albertoduran.com",
+  image = kirby,
+} = Astro.props;
+
 const hasHero = Astro.slots.has("hero");
+const optimizedImage = await getImage({ src: image, format: "webp" });
+
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+const socialImageURL = new URL(optimizedImage.src, Astro.site);
 ---
 
 <!doctype html>
-<html lang="en" data-theme="light">
+<html lang="en" class="no-js" data-theme="light">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="generator" content={Astro.generator} />
-
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
     <title>{pageTitle}</title>
 
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="preconnect" href="https://site.api.espn.com" crossorigin />
-    <link rel="dns-prefetch" href="https://site.api.espn.com" />
-    <link
-      rel="preload"
-      href="/fonts/Montserrat.woff2"
-      as="font"
-      type="font/woff2"
-      crossorigin
+    <meta
+      name="theme-color"
+      id="meta-theme-color"
+      content="#ffffff"
+      transition:persist
     />
-    <link
-      rel="preload"
-      href="/fonts/NotoSansDisplay.woff2"
-      as="font"
-      type="font/woff2"
-      crossorigin
-    />
-    <link
-      rel="preload"
-      href="/fonts/FiraCode.woff2"
-      as="font"
-      type="font/woff2"
-      crossorigin
-    />
-
-    <style>
-      @font-face {
-        font-family: "Montserrat";
-        src: url("/fonts/Montserrat.woff2") format("woff2");
-        font-display: swap;
-      }
-      @font-face {
-        font-family: "NotoSansDisplay";
-        src: url("/fonts/NotoSansDisplay.woff2") format("woff2");
-        font-display: swap;
-      }
-      @font-face {
-        font-family: "FiraCode";
-        src: url("/fonts/FiraCode.woff2") format("woff2");
-        font-display: swap;
-      }
-    </style>
 
     <script is:inline>
-      const applyTheme = () => {
-        const theme = (() => {
-          if (
-            typeof localStorage !== "undefined" &&
-            localStorage.getItem("theme")
-          ) {
+      (() => {
+        const stored = (() => {
+          try {
             return localStorage.getItem("theme");
+          } catch {
+            return null;
           }
-          return window.matchMedia("(prefers-color-scheme: dark)").matches
-            ? "dark"
-            : "light";
         })();
+        const theme =
+          stored ??
+          (window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "dark"
+            : "light");
 
-        document.documentElement.setAttribute("data-theme", theme);
-      };
+        const root = document.documentElement;
+        root.setAttribute("data-theme", theme);
+        root.style.setProperty("color-scheme", theme);
+        root.classList.remove("no-js");
 
-      applyTheme();
-      document.addEventListener("astro:after-swap", applyTheme);
+        const meta = document.getElementById("meta-theme-color");
+        if (meta) {
+          meta.setAttribute(
+            "content",
+            theme === "dark" ? "#121212" : "#ffffff",
+          );
+        }
+      })();
     </script>
 
-    <script>
-      import { isBraveIOS } from "@utils/is_brave_ios";
-      if (isBraveIOS()) {
-        import("@utils/brave_ios_router_fix");
-      }
-    </script>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalURL} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={socialImageURL} />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="/favicon.svg"
+      transition:persist
+    />
+
+    <Font cssVariable="--font-noto-sans-display" preload />
+    <Font cssVariable="--font-inter" preload />
+    <Font cssVariable="--font-lora" />
+    <Font cssVariable="--font-fira-code" />
     <ClientRouter />
   </head>
+
   <body
     class="flex flex-col min-h-dvh bg-base-100 text-base-content selection:bg-primary/30"
   >
-    <Header transition:persist />
-
+    <Header />
     {
       hasHero ? (
-        <FlexShell class="py-0 md:py-0">
+        <FlexShell class="py-0 md:py-0" transition:name="page-hero">
           <slot name="hero" />
         </FlexShell>
       ) : (
-        <div class="py-2 md:py-4" aria-hidden="true" />
+        <div transition:name="page-hero" aria-hidden="true" />
       )
     }
 
-    <main id="main-content" class="grow outline-none">
+    <main
+      id="main-content"
+      class="grow outline-none"
+      transition:name="page-main"
+      transition:animate="fade"
+    >
       <slot />
     </main>
 
-    <Footer transition:persist />
+    <Footer />
+    <slot name="overlays" />
+
+    <script>
+      import "@utils/theme_manager";
+    </script>
   </body>
 </html>

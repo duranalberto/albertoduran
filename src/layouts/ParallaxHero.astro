@@ -1,7 +1,14 @@
+---
+
+---
+
 <section
-  class="parallax-container relative w-full overflow-hidden py-24 border-y shadow-sm bg-base-100 border-base-300 md:py-32"
+  class="parallax-container relative w-full py-24 border-y shadow-sm bg-base-100 border-base-300 md:py-32"
 >
-  <div class="parallax-bg-wrapper absolute inset-0 z-0 pointer-events-none">
+  <div
+    class="parallax-bg-wrapper absolute inset-0 z-0 pointer-events-none"
+    aria-hidden="true"
+  >
     <div class="parallax-bg-content">
       <slot name="background" />
     </div>
@@ -11,70 +18,3 @@
     <slot />
   </div>
 </section>
-
-<style>
-  .parallax-container {
-    view-timeline: --bg-parallax block;
-    isolation: isolate;
-  }
-
-  .parallax-bg-wrapper {
-    height: 100%;
-    width: 100%;
-  }
-
-  .parallax-bg-content {
-    position: absolute;
-
-    inset: -20% 0;
-
-    width: 100%;
-    height: 140%;
-
-    backface-visibility: hidden;
-    transform: translateY(-20%) translateZ(0);
-
-    will-change: transform;
-    pointer-events: none;
-  }
-
-  .parallax-bg-content :global(img) {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-
-    filter: blur(0.5px);
-
-    backface-visibility: hidden;
-    object-position: center center;
-    transition: opacity 0.3s ease-in;
-  }
-
-  @supports (animation-timeline: scroll()) {
-    @media (prefers-reduced-motion: no-preference) {
-      .parallax-bg-content {
-        animation: parallax-move linear both;
-        animation-timeline: --bg-parallax;
-        animation-range: entry 0% exit 100%;
-      }
-    }
-  }
-
-  @keyframes parallax-move {
-    from {
-      transform: translateY(-20%) translateZ(0);
-    }
-    to {
-      transform: translateY(20%) translateZ(0);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .parallax-bg-content {
-      animation: none !important;
-      transform: none !important;
-      inset: 0;
-      height: 100%;
-    }
-  }
-</style>

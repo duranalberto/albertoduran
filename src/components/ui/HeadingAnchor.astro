@@ -1,4 +1,7 @@
 ---
+import SVGIcon from "@components/ui/SVGIcon.astro";
+import { ui } from "@data/icons";
+
 interface Props {
   id?: string;
   class?: string;
@@ -14,130 +17,106 @@ const Tag = as || "h2";
   <Tag
     id={id}
     class:list={[
-      "group relative flex items-center gap-2 scroll-mt-24",
+      "group relative flex items-center gap-3 scroll-mt-24",
       "font-display font-bold text-base-content",
       className,
     ]}
     {...rest}
   >
     <slot />
+
     {
       id && (
-        <div class="relative inline-flex items-center">
+        <span class="relative inline-flex items-center shrink-0">
           <button
             type="button"
-            aria-label="Copy link to section"
             class:list={[
-              "btn btn-ghost btn-circle btn-sm",
-              "transition-all duration-200 lg:opacity-0 lg:group-hover:opacity-100",
-              "text-base-content focus-visible:opacity-100 hover:text-primary",
+              "anchor-trigger",
+              "inline-flex items-center justify-center shrink-0",
+              "w-9 h-9 rounded-md cursor-pointer",
+              "text-base-content/40 hover:text-primary",
+              "transition-colors duration-200",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+              "bg-transparent border-0",
             ]}
-            data-anchor-copy={id}
+            aria-label="Copy link to section"
+            data-anchor-trigger
+            data-state="idle"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="pointer-events-none"
+            <span class="anchor-icon anchor-icon-link" aria-hidden="true">
+              <SVGIcon icon={ui.link} width={18} height={18} />
+            </span>
+
+            <span
+              class="anchor-icon anchor-icon-check text-success"
+              aria-hidden="true"
             >
-              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-            </svg>
+              <SVGIcon icon={ui.check} width={18} height={18} />
+            </span>
           </button>
-          <span class="copy-status-badge hidden" data-anchor-feedback>
-            Copied!
-          </span>
-        </div>
+
+          <span
+            class="sr-only"
+            role="status"
+            aria-live="polite"
+            data-anchor-feedback
+          />
+        </span>
       )
     }
   </Tag>
 </anchor-heading>
 
-<style>
-  .copy-status-badge {
-    position: absolute;
-    bottom: 120%;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 0.25rem 0.6rem;
-    border-radius: var(--radius-field);
-    background-color: var(--color-success);
-    color: var(--color-success-content);
-    font-size: 0.7rem;
-    font-weight: 700;
-    white-space: nowrap;
-    z-index: 100;
-    pointer-events: none;
-    animation: tooltip-in 0.2s ease-out forwards;
-  }
-
-  .copy-status-badge.hidden {
-    display: none;
-  }
-
-  @keyframes tooltip-in {
-    from {
-      opacity: 0;
-      transform: translateX(-50%) translateY(4px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
-  }
-</style>
-
 <script>
   class AnchorHeading extends HTMLElement {
-    private timeoutId: ReturnType<typeof setTimeout> | null = null;
+    private resetTimer: ReturnType<typeof setTimeout> | null = null;
 
     connectedCallback() {
-      const button =
-        this.querySelector<HTMLButtonElement>("[data-anchor-copy]");
-      if (button) {
-        button.addEventListener("click", (e) => this.handleCopy(e));
+      const trigger = this.querySelector<HTMLButtonElement>(
+        "[data-anchor-trigger]",
+      );
+      if (trigger) {
+        trigger.addEventListener("click", (e) => this.handleCopy(e));
       }
     }
 
-    private handleCopy = async (e: MouseEvent) => {
-      const button = e.currentTarget as HTMLButtonElement;
-      const id = button.getAttribute("data-anchor-copy");
+    private handleCopy = async (e: MouseEvent): Promise<void> => {
+      const trigger = e.currentTarget as HTMLButtonElement;
+      const heading = this.querySelector<HTMLElement>("[id]");
       const feedback = this.querySelector<HTMLElement>(
         "[data-anchor-feedback]",
       );
 
-      if (!id || !feedback) return;
+      if (!heading?.id) return;
 
       const url = new URL(window.location.href);
-      url.hash = id;
+      url.hash = heading.id;
 
       try {
         if (navigator.clipboard && window.isSecureContext) {
           await navigator.clipboard.writeText(url.toString());
         } else {
-          window.location.hash = id;
+          window.location.hash = heading.id;
         }
-        this.showFeedback(feedback, button);
-      } catch (err) {
-        console.error("Copy failed", err);
-      }
+        this.showCopied(trigger, feedback);
+      } catch {}
     };
 
-    private showFeedback(feedback: HTMLElement, button: HTMLButtonElement) {
-      if (this.timeoutId) clearTimeout(this.timeoutId);
+    private showCopied(
+      trigger: HTMLButtonElement,
+      feedback: HTMLElement | null,
+    ): void {
+      if (this.resetTimer) clearTimeout(this.resetTimer);
 
-      feedback.classList.remove("hidden");
-      button.classList.add("text-success", "scale-110");
+      trigger.dataset.state = "copied";
+      trigger.setAttribute("aria-label", "Link copied!");
+      if (feedback) feedback.textContent = "Copied!";
 
-      this.timeoutId = setTimeout(() => {
-        feedback.classList.add("hidden");
-        button.classList.remove("text-success", "scale-110");
+      this.resetTimer = setTimeout(() => {
+        trigger.dataset.state = "idle";
+        trigger.setAttribute("aria-label", "Copy link to section");
+        if (feedback) feedback.textContent = "";
+        this.resetTimer = null;
       }, 2000);
     }
   }

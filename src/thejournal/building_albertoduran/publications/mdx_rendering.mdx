@@ -152,8 +152,8 @@ Default HTML tag
    │
 Override exists
    │
- ├─ yes → custom component
- └─ no  → normal HTML
+   ├─ yes → custom component
+   └─ no  → normal HTML
 ```
 
 This mechanism allows the project to introduce custom behavior without changing article content.
@@ -189,10 +189,10 @@ renderResult.Content
        slot
         │
         ▼
-Article layout
+  Article layout
         │
         ▼
-Styled HTML
+    Styled HTML
 ```
 
 The article layout does not transform the content. Its role is structural and stylistic.
@@ -215,7 +215,7 @@ Example.
 
 ```ts
 <article class="typography">
-  <slot />
+   <slot />
 </article>
 ```
 
@@ -276,14 +276,14 @@ Rendering flow.
 
 ```text
 Markdown code fence
-   │
-   ▼
+      │
+      ▼
 Token type code block
-   │
-   ▼
+      │
+      ▼
 Mapped to CodeBlock
-   │
-   ▼
+      │
+      ▼
 Styled code container
 ```
 

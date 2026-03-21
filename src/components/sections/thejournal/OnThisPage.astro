@@ -1,194 +1,29 @@
 ---
-import { type RenderResult } from "astro:content";
+import SidebarBase from "@components/common/SidebarBase.astro";
+import OnThisPageContent from "@components/sections/thejournal/OnThisPageContent.astro";
+import { ui } from "@data/icons";
+import type { MarkdownHeading } from "astro";
 
-interface Props {
-  renderResult: RenderResult;
+export interface Props {
+  headings: MarkdownHeading[];
+  expandedWidth?: string;
 }
 
-const { renderResult } = Astro.props;
-const headings = renderResult.headings.filter(
-  (h) => h.depth > 1 && h.depth <= 3,
-);
+const { headings, expandedWidth = "16rem" } = Astro.props;
+
+if (headings.length === 0) return null;
 ---
 
-{
-  headings && headings.length > 0 && (
-    <on-this-page class="hidden lg:block">
-      <nav
-        id="toc-nav"
-        class="not-prose sticky top-24 w-64 max-w-64"
-        aria-label="Table of contents"
-      >
-        <h2 class="px-2 mb-4 text-xs font-semibold tracking-wide uppercase text-neutral-content/60">
-          On This Page
-        </h2>
-
-        <ul class="relative ml-0.5 border-l border-base-300">
-          {headings.map((h) => (
-            <li class="list-none">
-              <a
-                href={`#${h.slug}`}
-                data-otc-link
-                class:list={[
-                  "block -ml-0.5 border-l-2 border-transparent transition-all duration-200 hover:text-primary",
-                  h.depth === 2 ? "py-1.5 pl-4 text-sm" : "py-1 pl-8 text-xs",
-                  "text-neutral-content/70",
-                ]}
-              >
-                {h.text}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </nav>
-    </on-this-page>
-  )
-}
+<SidebarBase
+  title="On This Page"
+  icon={ui.onThisPage}
+  badgeCount={headings.length}
+  expandedWidth={expandedWidth}
+  side="right"
+>
+  <OnThisPageContent headings={headings} tracked={true} compact={true} />
+</SidebarBase>
 
 <script>
-  class OnThisPageContainer extends HTMLElement {
-    private sections: {
-      id: string;
-      link: HTMLAnchorElement;
-      el: HTMLElement;
-    }[] = [];
-    private scrollTimeout: number | null = null;
-
-    // Control Flags
-    private isLocked = false;
-    private userHasInteracted = false;
-
-    connectedCallback() {
-      const links = this.querySelectorAll<HTMLAnchorElement>("[data-otc-link]");
-      if (!links.length) return;
-
-      this.sections = Array.from(links)
-        .map((link) => {
-          const id = link.getAttribute("href")?.replace("#", "");
-          return {
-            id: id || "",
-            link,
-            el: id ? document.getElementById(id) : null,
-          };
-        })
-        .filter(
-          (
-            item,
-          ): item is { id: string; link: HTMLAnchorElement; el: HTMLElement } =>
-            item.el !== null,
-        );
-
-      this.init();
-    }
-
-    private init() {
-      // --- 1. Handle Direct URL Entry (Hash) ---
-      const currentHash = window.location.hash.replace("#", "");
-      if (currentHash) {
-        this.setActive(currentHash);
-        this.isLocked = true; // Lock logic so the browser's initial "jump" doesn't trigger auto-select
-        this.userHasInteracted = true;
-      }
-
-      // --- 2. Click Listener ---
-      this.sections.forEach(({ link, id }) => {
-        link.addEventListener("click", () => {
-          this.isLocked = true;
-          this.userHasInteracted = true;
-          this.setActive(id);
-        });
-      });
-
-      // --- 3. Unlock Logic (Intentional Interaction) ---
-      // This breaks the lock when the user actually uses their hardware to scroll
-      const unlock = () => {
-        this.isLocked = false;
-      };
-      window.addEventListener("wheel", unlock, { passive: true });
-      window.addEventListener("touchstart", unlock, { passive: true });
-      window.addEventListener(
-        "keydown",
-        (e) => {
-          if (
-            ["ArrowUp", "ArrowDown", "PageUp", "PageDown", " "].includes(e.key)
-          )
-            unlock();
-        },
-        { passive: true },
-      );
-
-      // --- 4. Debounced Scroll Listener ---
-      window.addEventListener(
-        "scroll",
-        () => {
-          if (this.scrollTimeout) window.clearTimeout(this.scrollTimeout);
-
-          this.scrollTimeout = window.setTimeout(() => {
-            this.handleScroll();
-          }, 60);
-        },
-        { passive: true },
-      );
-    }
-
-    private handleScroll() {
-      // Only proceed if user isn't currently locked (clicked/initial hash)
-      if (this.isLocked) return;
-
-      const scrollPosition = window.scrollY;
-
-      // Prevent logic from running until the user physically moves the page
-      // (This fixes the "wrong highlight on load" issue)
-      if (!this.userHasInteracted && scrollPosition > 0) {
-        this.userHasInteracted = true;
-      }
-      if (!this.userHasInteracted) return;
-
-      // Case: Absolute Top (Clean up)
-      if (scrollPosition < 50) {
-        this.setActive(null);
-        return;
-      }
-
-      // Case: Absolute Bottom (Last element fallback)
-      const windowHeight = window.innerHeight;
-      const bodyHeight = document.documentElement.scrollHeight;
-      // If we are within 15px of the very bottom
-      if (windowHeight + scrollPosition >= bodyHeight - 15) {
-        const lastSection = this.sections[this.sections.length - 1];
-        if (lastSection) this.setActive(lastSection.id);
-        return;
-      }
-
-      // Case: Standard Detection
-      // Find the element that has crossed the 25% viewport threshold
-      const detectionPoint = scrollPosition + windowHeight * 0.25;
-      let activeId = "";
-
-      for (const section of this.sections) {
-        if (section.el.offsetTop <= detectionPoint) {
-          activeId = section.id;
-        } else {
-          break;
-        }
-      }
-
-      if (activeId) this.setActive(activeId);
-    }
-
-    private setActive(activeId: string | null) {
-      this.sections.forEach(({ id, link }) => {
-        const isActive = id === activeId;
-        link.classList.toggle("text-primary", isActive);
-        link.classList.toggle("border-primary", isActive);
-        link.classList.toggle("font-bold", isActive);
-        link.classList.toggle("text-neutral-content/70", !isActive);
-        link.classList.toggle("border-transparent", !isActive);
-      });
-    }
-  }
-
-  if (!customElements.get("on-this-page")) {
-    customElements.define("on-this-page", OnThisPageContainer);
-  }
+  import "@utils/on_this_page.ts";
 </script>

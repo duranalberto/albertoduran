@@ -1,0 +1,74 @@
+/* =========================================================
+   TOUCH / HOVER HARDENING
+   Prevents sticky hover states on touch devices. On iOS/Android,
+   :hover persists after tap unless explicitly reset. These rules
+   revert hover-applied visual effects when no fine pointer is present.
+   ========================================================= */
+
+@media (hover: none) {
+  a:hover:not(:active):not([data-state]),
+  button:hover:not(:active),
+  label:hover:not(:active),
+  summary:hover:not(:active),
+  .btn:hover:not(:active),
+  .card:hover:not(:active),
+  .link:hover:not(:active),
+  .badge:hover:not(:active) {
+    color: inherit;
+    box-shadow: none;
+    text-decoration: none;
+  }
+
+  .glass-interactive:hover:not(:active),
+  .card:hover:not(:active),
+  .group:hover .group-hover\:-translate-y-1:not(:active),
+  .group:hover .group-hover\:scale-x-100:not(:active) {
+    transform: none !important;
+  }
+
+  .group:hover .group-hover\:opacity-100:not(:active),
+  .lg\:group-hover\:opacity-100:hover:not(:active) {
+    opacity: inherit !important;
+  }
+
+  .group:hover .group-hover\:text-primary:not(:active) {
+    color: inherit;
+  }
+
+  .hover\:gap-2:hover:not(:active) {
+    gap: 0.25rem;
+  }
+
+  img:hover {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+a,
+button,
+label,
+summary,
+[role="button"],
+.badge,
+nav a,
+.navbar a,
+.menu a,
+.nav-item,
+.vault-tree-node,
+.onthispage-link,
+.footer a,
+[data-astro-prefetch] {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+a:focus:not(:focus-visible) {
+  outline: none;
+  text-decoration: none;
+}
+
+.card a:focus:not(:focus-visible),
+.card-title:focus:not(:focus-visible) {
+  outline: none;
+  text-decoration: none;
+}

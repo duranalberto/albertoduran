@@ -1,0 +1,84 @@
+/* =========================================================
+   DAISYUI THEMES
+   Custom dark and light theme token definitions.
+   All colors use OKLCH for perceptual uniformity.
+   ========================================================= */
+
+@plugin "daisyui/theme" {
+  name: "dark";
+  color-scheme: dark;
+
+  --color-base-100: oklch(0.15 0.0001 263.28);
+  --color-base-200: oklch(0.2393 0.0001 263.28);
+  --color-base-300: oklch(0.3092 0.0001 263.28);
+  --color-base-content: oklch(0.928 0.0001 263.28);
+
+  --color-primary: oklch(0.5333 0.2151 28.1);
+  --color-primary-content: oklch(1 0.0001 263.28);
+
+  --color-secondary: oklch(0.7628 0.1626 69.36);
+  --color-secondary-content: oklch(0.15 0.0021 286.01);
+
+  --color-accent: oklch(0.8338 0.1248 66.87);
+  --color-accent-content: oklch(0.15 0.0021 286.01);
+
+  --color-neutral: oklch(0.285 0.0001 263.28);
+  --color-neutral-content: oklch(0.928 0.0001 263.28);
+
+  --color-info: oklch(0.6531 0.1348 242.7);
+  --color-info-content: oklch(1 0.0001 263.28);
+
+  --color-success: oklch(0.6629 0.1602 152.39);
+  --color-success-content: oklch(1 0.0001 263.28);
+
+  --color-warning: oklch(0.8358 0.1689 91.77);
+  --color-warning-content: oklch(0.15 0.0021 286.01);
+
+  --color-error: oklch(0.6307 0.194 29.43);
+  --color-error-content: oklch(1 0.0001 263.28);
+
+  --color-border: oklch(0.285 0.0001 263.28);
+
+  --glass-bg-fallback: rgba(0, 0, 0, 0.25);
+
+  --shadow-md-opacity: 0.28;
+  --shadow-sm-opacity: 0.12;
+}
+
+@plugin "daisyui/theme" {
+  name: "light";
+  color-scheme: light;
+
+  --color-base-100: oklch(1 0.0001 263.28);
+  --color-base-200: oklch(0.9551 0.0001 263.28);
+  --color-base-300: oklch(0.8945 0.0001 263.28);
+  --color-base-content: oklch(0.2221 0.0001 263.28);
+
+  --color-primary: oklch(0.5434 0.174 29.69);
+  --color-primary-content: oklch(1 0.0001 263.28);
+
+  --color-secondary: oklch(0.7628 0.1626 69.36);
+  --color-secondary-content: oklch(0.2221 0.0001 263.28);
+
+  --color-accent: oklch(0.8338 0.1248 66.87);
+  --color-accent-content: oklch(0.2221 0.0001 263.28);
+
+  --color-neutral: oklch(0.8576 0.0001 263.28);
+  --color-neutral-content: oklch(0.2221 0.0001 263.28);
+
+  --color-info: oklch(0.6531 0.1348 242.7);
+  --color-info-content: oklch(1 0.0001 263.28);
+
+  --color-success: oklch(0.6629 0.1602 152.39);
+  --color-success-content: oklch(1 0.0001 263.28);
+
+  --color-warning: oklch(0.8358 0.1689 91.77);
+  --color-warning-content: oklch(0.2221 0.0001 263.28);
+
+  --color-error: oklch(0.6307 0.194 29.43);
+  --color-error-content: oklch(1 0.0001 263.28);
+
+  --color-border: oklch(0.8576 0.0001 263.28);
+
+  --glass-bg-fallback: rgba(255, 255, 255, 0.4);
+}

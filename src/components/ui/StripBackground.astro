@@ -10,10 +10,10 @@ interface Props {
 }
 
 const {
-  iconSize = 40,
-  gap = 48,
-  speed = "30s",
-  opacity = "opacity-30",
+  iconSize = 50,
+  gap = 58,
+  speed = "45s",
+  opacity = "opacity-20",
 } = Astro.props;
 
 const skillsList = Object.values(skills);
@@ -23,8 +23,8 @@ const { innerContent, svgWidth, svgHeight } = generateRibbonSVGData(
   { iconSize, gap, verticalPadding: 24 },
 );
 
-const cleanWidth = Math.ceil(svgWidth);
-const cleanHeight = Math.ceil(svgHeight);
+const cleanWidth = Math.ceil(svgWidth / 2) * 2;
+const cleanHeight = Math.ceil(svgHeight / 2) * 2;
 
 const patternId = `ribbon-${Math.random().toString(36).substring(2, 9)}`;
 ---
@@ -50,13 +50,12 @@ const patternId = `ribbon-${Math.random().toString(36).substring(2, 9)}`;
         height={cleanHeight}
         patternUnits="userSpaceOnUse"
       >
-        <g set:html={innerContent} />
+        <g set:html={innerContent} shape-rendering="optimizeSpeed" />
       </pattern>
     </defs>
   </svg>
-
   <div
-    class="absolute inset-0 w-full h-full isolation-auto transform-gpu"
+    class="absolute inset-0 w-full h-full isolation-auto transform-gpu mask-container"
     style={{
       "mask-image": `repeating-linear-gradient(to bottom, black 0px, black ${cleanHeight}px, transparent ${cleanHeight}px, transparent ${cleanHeight * 2}px)`,
       "-webkit-mask-image": `repeating-linear-gradient(to bottom, black 0px, black ${cleanHeight}px, transparent ${cleanHeight}px, transparent ${cleanHeight * 2}px)`,
@@ -65,7 +64,7 @@ const patternId = `ribbon-${Math.random().toString(36).substring(2, 9)}`;
     <div
       class="move-right layer-gpu absolute top-0 bottom-0"
       style={{
-        left: `-${cleanWidth}px`,
+        left: "0px",
         width: `calc(100% + ${cleanWidth * 2}px)`,
         "--strip-width": `${cleanWidth}px`,
         "--anim-speed": speed,
@@ -76,9 +75,8 @@ const patternId = `ribbon-${Math.random().toString(36).substring(2, 9)}`;
       </svg>
     </div>
   </div>
-
   <div
-    class="absolute inset-0 w-full h-full isolation-auto transform-gpu"
+    class="absolute inset-0 w-full h-full isolation-auto transform-gpu mask-container"
     style={{
       "mask-image": `repeating-linear-gradient(to bottom, transparent 0px, transparent ${cleanHeight}px, black ${cleanHeight}px, black ${cleanHeight * 2}px)`,
       "-webkit-mask-image": `repeating-linear-gradient(to bottom, transparent 0px, transparent ${cleanHeight}px, black ${cleanHeight}px, black ${cleanHeight * 2}px)`,
@@ -99,53 +97,3 @@ const patternId = `ribbon-${Math.random().toString(36).substring(2, 9)}`;
     </div>
   </div>
 </div>
-
-<style>
-  .ribbon-viewport {
-    contain: strict;
-    isolation: isolate;
-    perspective: 1000px;
-    transform: translateZ(0);
-  }
-
-  .layer-gpu {
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-    -webkit-transform-style: preserve-3d;
-    transform-style: preserve-3d;
-    will-change: transform;
-    -webkit-perspective: 1000;
-  }
-
-  .move-right {
-    animation: slide-right var(--anim-speed) linear infinite;
-  }
-  .move-left {
-    animation: slide-left var(--anim-speed) linear infinite;
-  }
-
-  @keyframes slide-right {
-    from {
-      transform: translate3d(0, 0, 0);
-    }
-    to {
-      transform: translate3d(var(--strip-width), 0, 0.1px);
-    }
-  }
-
-  @keyframes slide-left {
-    from {
-      transform: translate3d(0, 0, 0);
-    }
-    to {
-      transform: translate3d(calc(var(--strip-width) * -1), 0, 0.1px);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .move-right,
-    .move-left {
-      animation: none;
-    }
-  }
-</style>

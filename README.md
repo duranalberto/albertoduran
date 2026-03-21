@@ -1,23 +1,20 @@
 # albertoduran — Portfolio & Blog
 
-A high-performance personal portfolio and blog built with **Astro 5** and **DaisyUI**. This project is engineered for a seamless, "SPA-feel" experience using Astro View Transitions while maintaining the SEO benefits of a static site.
-
-> [!IMPORTANT]
-> **AI Contributors**: You must read and follow the [AI Usage Protocol](./docs/AI_PROTOCOL.md) before proposing changes. This project enforces a strict "One Commit Rule" and mandatory testing tiers.
+A high-performance personal portfolio and blog built with **Astro 6** and **DaisyUI5**. This project is engineered for a seamless, "SPA-feel" experience using Astro View Transitions while maintaining the SEO benefits of a static site.
 
 ---
 
 ## 🛠 Tech Stack
 
-- **Framework:** [Astro v5.1](https://astro.build/) (Static/SSR Hybrid)
-- **Styling:** [Tailwind CSS v3.4](https://tailwindcss.com/) + [DaisyUI v5.5](https://daisyui.com/)
-- **Deployment:** [Cloudflare Workers](https://pages.cloudflare.com/)
+- **Framework:** [Astro v56](https://astro.build/) (Static)
+- **Styling:** [Tailwind CSS](https://tailwindcss.com/) + [DaisyUI](https://daisyui.com/)
+- **Deployment:** [Cloudflare Workers](https://workers.cloudflare.com/)
 
 ---
 
 ## 📂 Project Architecture
 
-The project follows a modular "Islands" architecture to minimize client-side JavaScript.
+The site is rendered at built time. The site delivers a ready to use html pages. Javascript are used to enhance the experience, but not mandatory for the visitor to see the content.
 
 **Project Directory Structure:**
 
@@ -30,33 +27,17 @@ The project follows a modular "Islands" architecture to minimize client-side Jav
 └─ src/
    ├─ assets/               # Images assets
    ├─ components/           # Astro components
-   │  ├─ common/
-   │  ├─ sections/
-   │  │  ├─ index/
-   │  │  ├─ profile/
-   │  │  └─ thejournal/
    │  └─ ui/
    ├─ data/
    ├─ layouts/              # Base Astro templates with ViewTransitions
    ├─ pages/                # File-based routing (Standard Astro)
    │  └─ thejournal/        # thejournal ...slug astro file
-   ├─ styles/
+   ├─ styles/               # Tailwind + DaisyUI setup. DaisyUI overrides and general rules.
    ├─ thejournal/           # MDX Files (For blog-like site "the journal")
    │  └─ a_vault/           # Each sub-directory in thejournal is considering a vault
    ├─ types/                # Custom Type definitions (No 'any' allowed)
    └─ utils/
 ```
-
----
-
-## 📖 Documentation Suite
-
-For detailed information on how to develop and contribute, refer to the `/docs` directory:
-
-1. **[Project Context](./docs/PROJECT_CONTEXT.md)**: High-level overview and stack versions.
-2. **[AI Protocol](./docs/AI_PROTOCOL.md)**: Mandatory rules for AI-assisted development.
-3. **[Git Workflow](./docs/GIT_WORKFLOW.md)**: Naming conventions and the "One Commit Rule".
-4. **[Environment Setup](./docs/ENVIRONMENT_SETUP.md)**: DevContainer and system dependencies.
 
 ---
 
@@ -90,8 +71,8 @@ All commands are run from the root of the project, from a terminal:
 
 ## ⚖️ Development Rules
 
-- **SPA Experience:** All internal links must use View Transitions. Check `TECHNICAL_STACK.md` for `astro:after-swap` hooks.
-- **No "any":** TypeScript must be strictly typed. Use `src/types/vendor.d.ts` for missing 3rd-party types.
+- **SPA Experience:** All internal links must use View Transitions.
+- **No "any":** TypeScript must be strictly typed. Use `src/types/type.ts` for types.
 - **Atomic Commits:** One feature per branch, squashed into **one single commit** before merging to `dev`.
 - **UI Consistency:** Always prefer DaisyUI components over custom Tailwind utilities.
 
@@ -104,5 +85,3 @@ All commands are run from the root of the project, from a terminal:
 - [ ] **CI Test Automation**: GitHub Actions for every PR (Urgent).
 - [ ] **Contact Form**: Preact Island with Cloudflare Turnstile.
 - [ ] **Analytics**: Privacy-focused tracking via Plausible.
-
-For more details, see **[Roadmap](./docs/ROADMAP.md)**.

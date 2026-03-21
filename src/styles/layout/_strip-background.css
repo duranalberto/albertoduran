@@ -1,0 +1,54 @@
+/* =========================================================
+   STRIP BACKGROUND
+   Animated icon ribbon used in ProfileView/StripBackground.astro.
+   Two rows scroll in opposite directions using CSS keyframes.
+   ========================================================= */
+
+.ribbon-viewport {
+  contain: strict;
+  isolation: isolate;
+}
+
+.mask-container {
+  transform: translateZ(0);
+}
+
+.move-right {
+  animation: slide-right var(--anim-speed) linear infinite;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+.move-left {
+  animation: slide-left var(--anim-speed) linear infinite;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+@keyframes slide-right {
+  from {
+    transform: translate3d(calc(var(--strip-width) * -1), 0, 0);
+  }
+  to {
+    transform: translate3d(0px, 0, 0);
+  }
+}
+
+@keyframes slide-left {
+  from {
+    transform: translate3d(0px, 0, 0);
+  }
+  to {
+    transform: translate3d(calc(var(--strip-width) * -1), 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .move-right,
+  .move-left {
+    animation: none;
+    will-change: auto;
+  }
+}

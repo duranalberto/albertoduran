@@ -90,6 +90,7 @@ Custom CSS helpers must complement the framework, not compete with it.
 - Scope them to theme token alignment.
 - Avoid shorthand properties that override multiple CSS behaviors at once.
 - Always pair custom helpers with Tailwind directional utilities, never override them.
+- CSS custom classes must be added to the global.css styles and dependencies rules.
 
 ### Component-Level Overrides
 
@@ -104,7 +105,7 @@ If a component requires structural layout changes:
 ## What Must Be Avoided
 
 - **Clutter:** Crowding elements without sufficient whitespace padding.
-- **Hardcoded Values:** Hex colors or non-theme structural values.
+- **Hardcoded Values:** Hex colors or non-theme structural values, refer theme variables.
 - **Inaccessibility:** Missing `aria-labels` or poor contrast ratios (e.g., using `text-base-content` on `bg-primary`).
 - **Poor Responsive Design:** Missing breakpoint rules or failing to cap widths with `--breakpoint-2xl` and `mx-auto`.
 
@@ -117,7 +118,7 @@ If a component requires structural layout changes:
 - [ ] Are colors correctly paired for contrast (e.g., `primary` + `primary-content`)?
 - [ ] Does the visual check pass seamlessly in both Light and Dark themes?
 - [ ] Are structural overrides strictly component-scoped and not leaking globally?
-- [ ] Is the design fully responsive, respecting `lg` and `2xl` max-width breakpoints?
+- [ ] Is the design fully responsive and using the tailwind and daisyui breakpoints?
 - [ ] Are interactive elements keyboard accessible (`:focus-visible`)?
 
 ---
@@ -127,3 +128,30 @@ If a component requires structural layout changes:
 The design system must be theme-driven, consistent, and predictable. If a new design requirement conflicts with these rules, **update the theme tokens**—not the individual components.
 
 Would you like me to create a reusable Astro component snippet that implements the primary/primary-content pairing and the max-width layout tokens?
+
+---
+
+## Implementation strategies
+
+### Glassmorphism implementation
+
+To ensure a flawless "Glassmorphism" effect on iOS and prevent the PublicationHeader or dock-wrapper from ghosting through the modal backdrop, we need to establish a strict Z-index stacking context.
+
+On WebKit (Safari), backdrop-filter can sometimes create a new stacking context that makes elements with sticky or fixed positioning behave unpredictably.
+
+### Z-Index Audit & Layering Strategy
+
+We will organize the layers from bottom to top as follows:
+
+Level 0: Main Content (Article, Pagination).
+
+Level 10: Sticky Sidebars (Desktop only).
+
+Level 20: PublicationHeader (Sticky top).
+
+Level 30: dock-wrapper (Sticky bottom).
+
+Level 40: .modal (The container and backdrop).
+
+Level 50: .modal-box (The actual content card).
+No fluff—this is a drop-in replacement with only necessary changes.

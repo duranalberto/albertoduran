@@ -27,7 +27,7 @@ const readTimeText = entry.readTime
 ---
 
 <BaseCard
-  href={`/thejournal/${entry.id}`}
+  href={`/thejournal/${entry.id}/`}
   image={entry.image}
   title={entry.title}
 >
@@ -36,7 +36,6 @@ const readTimeText = entry.readTime
     class="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest"
   >
     <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-      {/* Date: Styled as a subtle badge for primary recognition */}
       {
         formattedDate && (
           <span class="rounded-sm bg-base-300 px-1.5 py-0.5 text-base-content whitespace-nowrap">
@@ -45,7 +44,6 @@ const readTimeText = entry.readTime
         )
       }
 
-      {/* Read Time: Styled as secondary content text */}
       {
         readTimeText && (
           <span class="text-base-content/50 whitespace-nowrap font-medium lowercase tracking-normal">
@@ -99,10 +97,3 @@ const readTimeText = entry.readTime
     }
   </div>
 </BaseCard>
-
-<style>
-  /* Maintain layout stability for grid alignment */
-  p {
-    min-height: 4.875rem;
-  }
-</style>

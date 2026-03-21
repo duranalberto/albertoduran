@@ -7,12 +7,14 @@ import {
 import type { Sites } from "@appTypes/navigation";
 import { getCollection } from "astro:content";
 
-const site: Sites = "/thejournal";
+const site: Sites = "/thejournal/";
 
 function normalizeFilePath(filePath?: string): string {
   if (!filePath) return "";
 
-  const marker = `src${site}/`;
+  const cleanSite = site.endsWith("/") ? site.slice(0, -1) : site;
+  const marker = `src${cleanSite}/`;
+
   const index = filePath.indexOf(marker);
 
   if (index === -1) {
@@ -28,6 +30,74 @@ function getVaultDirectory(filepath?: string): string | null {
   const parts = filepath.split("/");
 
   return parts.length > 1 ? parts[0] : null;
+}
+
+function stripMdxContent(body: string): {
+  prose: string;
+  codeLines: number;
+} {
+  let content = body;
+  let codeLines = 0;
+
+  // Remove fenced code blocks; accumulate non-fence lines for code read-time
+  content = content.replace(/```[\s\S]*?```/g, (match) => {
+    const lines = match.split("\n");
+    // Subtract the two fence lines (opening ```lang and closing ```)
+    codeLines += Math.max(0, lines.length - 2);
+    return " ";
+  });
+
+  // Remove import / export statements at line start
+  content = content.replace(/^(import|export)\s[^\n]*/gm, "");
+
+  // Remove self-closing and opening JSX/MDX component tags (PascalCase)
+  content = content.replace(/<[A-Z][A-Za-z0-9]*[^>]*\/?>/g, " ");
+  // Remove closing JSX/MDX component tags
+  content = content.replace(/<\/[A-Z][A-Za-z0-9]*>/g, " ");
+
+  // Remove HTML tags (lowercase)
+  content = content.replace(/<[a-z][^>]*\/?>/g, " ");
+  content = content.replace(/<\/[a-z][^>]+>/g, " ");
+
+  // Remove inline code spans (single backtick, no newlines)
+  content = content.replace(/`[^`\n]+`/g, " ");
+
+  // Keep link text, drop URL: [text](url) → text
+  content = content.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+
+  // Remove image markdown entirely
+  content = content.replace(/!\[[^\]]*\]\([^)]+\)/g, " ");
+
+  // Remove heading markers
+  content = content.replace(/^#{1,6}\s+/gm, "");
+
+  // Remove bold / italic markers (2-3 chars: **, __, ***, etc.)
+  content = content.replace(/[*_]{1,3}/g, "");
+
+  // Remove blockquote markers
+  content = content.replace(/^>\s*/gm, "");
+
+  // Remove horizontal rules
+  content = content.replace(/^[-*_]{3,}\s*$/gm, "");
+
+  return { prose: content, codeLines };
+}
+
+function measureReadTime(entry: JournalEntry): number {
+  const body = entry.body?.trim() ?? "";
+  if (!body) return 0;
+
+  const { prose, codeLines } = stripMdxContent(body);
+
+  const wordsPerMinute = 200;
+  const codeLinesPerMinute = 40;
+
+  const proseWords = prose.trim().split(/\s+/).filter(Boolean).length;
+
+  const totalMinutes =
+    proseWords / wordsPerMinute + codeLines / codeLinesPerMinute;
+
+  return Math.max(1, Math.ceil(totalMinutes));
 }
 
 function addEntryToList(
@@ -103,15 +173,44 @@ async function loadManifest(): Promise<
       continue;
     }
 
+    if (!rootIndex.image) {
+      throw new Error(
+        `[thejournal] Vault root entry "${rootIndex.id}" is missing a required image. ` +
+          `Every vault root index (${vaultId}/index.mdx) must declare an image in its frontmatter.`,
+      );
+    }
+
     vaultsManifest[vaultId] = {
       id: vaultId,
       title: rootIndex.title,
       order: rootIndex.order,
       index: rootIndex,
       items: buildNestedStructure(entries, vaultId),
+      itemCount: entries.length,
     };
 
     linkVaultEntries(vaultsManifest[vaultId]);
+  }
+
+  for (const [id, entry] of Object.entries(entryManifest)) {
+    const isStandalone = !entry.vaultId;
+    const isVaultRoot = !!entry.vaultId && entry.id === entry.vaultId;
+    const isVaultChild = !!entry.vaultId && entry.id !== entry.vaultId;
+
+    if (isStandalone || isVaultRoot) {
+      if (!entry.image) {
+        throw new Error(
+          `[thejournal] Entry "${id}" is missing a required image. ` +
+            `${isStandalone ? "Standalone publications" : "Vault root indexes"} ` +
+            `must declare an image in their frontmatter.`,
+        );
+      }
+    } else if (isVaultChild && !entry.image) {
+      const vault = vaultsManifest[entry.vaultId];
+      if (vault?.index?.image) {
+        entry.image = vault.index.image;
+      }
+    }
   }
 
   return [entryManifest, vaultsManifest, rawEntries];
@@ -169,14 +268,14 @@ function buildNestedStructure(
   return items.sort(sortByOrderThenTitle);
 }
 
-function measureReadTime(entry: JournalEntry): number {
-  const wordsPerMinute = 160;
-  const words = entry.body?.trim().split(/\s+/).length;
-  return words ? Math.ceil(words / wordsPerMinute) : 0;
-}
-
 function mapEntryToContext(entry: JournalEntry): EntryContext {
   const normalizedPath = normalizeFilePath(entry.filePath);
+  if (entry.data.updatePubDate && !entry.data.pubDate) {
+    throw new Error(
+      `[thejournal] Entry "${entry.id}" has updatePubDate set but is missing pubDate. ` +
+        `updatePubDate requires pubDate to be present.`,
+    );
+  }
 
   return {
     id: entry.id,
@@ -188,6 +287,7 @@ function mapEntryToContext(entry: JournalEntry): EntryContext {
     description: entry.data.description,
     tags: entry.data.tags,
     pubDate: entry.data.pubDate,
+    updatedDate: entry.data.updatePubDate,
     order: entry.data.order ?? 100,
     vaultId: "",
   };
@@ -205,10 +305,8 @@ export const [entryManifest, vaultsManifest, rawEntries] = await loadManifest();
 export function getContextFromPath(
   path: string,
 ): [EntryContext | null, VaultContext | null] {
-  const id = path.startsWith(`${site}/`)
-    ? path.replace(`${site}/`, "")
-    : path.replace(/^\//, "");
-
+  const cleanSite = site.replace(/\/$/, "");
+  const id = path.replace(new RegExp(`^${cleanSite}/?`), "").replace(/\/$/, "");
   const entry = entryManifest[id] ?? null;
   const vaultId = entry?.vaultId || getVaultDirectory(id);
   const vault = vaultId ? (vaultsManifest[vaultId] ?? null) : null;

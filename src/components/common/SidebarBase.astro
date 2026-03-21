@@ -1,0 +1,96 @@
+---
+import SVGIcon from "@components/ui/SVGIcon.astro";
+
+interface Props {
+  title: string;
+  icon: any;
+  badgeCount?: number;
+  class?: string;
+  expandedWidth?: string;
+  side?: "left" | "right";
+}
+
+const {
+  title,
+  icon,
+  badgeCount,
+  class: className,
+  expandedWidth = "18rem",
+  side = "left",
+} = Astro.props;
+---
+
+<details
+  open
+  class:list={[
+    "group flex flex-col flex-1 min-h-0 overflow-hidden w-full",
+    "transition-[max-width] duration-400 ease-in-out",
+    "rounded-box border border-base-content/10 bg-base-100 shadow-sm relative",
+    side === "right" ? "ms-auto items-end" : "me-auto items-start",
+    className,
+  ]}
+  style={`max-width: var(--sidebar-width, ${expandedWidth});`}
+>
+  <summary
+    class:list={[
+      "flex h-14 w-full cursor-pointer list-none items-center",
+      "hover:bg-base-200/50 transition-colors duration-200",
+      "relative overflow-hidden p-0 m-0 shrink-0",
+      side === "right" ? "justify-end" : "justify-start",
+    ]}
+  >
+    <div
+      class:list={[
+        "flex items-center justify-center w-14 h-14 shrink-0 z-20",
+        side === "right" ? "order-last" : "order-first",
+      ]}
+    >
+      <SVGIcon
+        icon={icon}
+        class="size-5 opacity-70 transition-opacity duration-200 group-open:opacity-40"
+      />
+    </div>
+
+    <div
+      class:list={[
+        "content-container flex-1 flex items-center justify-between min-w-0 overflow-hidden",
+        "transition-opacity duration-500",
+        "opacity-0 w-0 group-open:opacity-100 group-open:w-auto",
+        side === "right"
+          ? "flex-row-reverse group-open:pr-4"
+          : "group-open:pl-4",
+      ]}
+    >
+      <h3
+        class:list={[
+          "truncate text-sm font-semibold opacity-70",
+          side === "right" && "text-right",
+        ]}
+      >
+        {title}
+      </h3>
+      {
+        badgeCount !== undefined && (
+          <span class="badge badge-sm badge-ghost opacity-50 group-not-open:hidden group-open:mx-2">
+            {badgeCount}
+          </span>
+        )
+      }
+    </div>
+  </summary>
+
+  <div
+    class:list={[
+      "internal-lock flex flex-col flex-1 min-h-0 overflow-hidden",
+      "transition-opacity duration-500",
+      "group-not-open:pointer-events-none group-not-open:opacity-0",
+    ]}
+    style={`width: ${expandedWidth};`}
+  >
+    <div
+      class="sidebar-scroll-area flex-1 min-h-0 pb-4 transition-opacity duration-300 opacity-0 group-open:opacity-100"
+    >
+      <slot />
+    </div>
+  </div>
+</details>

@@ -1,0 +1,43 @@
+/* =========================================================
+   JOURNAL NAV ITEMS
+   Shared active/inactive/touched states used by both
+   VaultTreeNode and OnThisPage nav links.
+   ========================================================= */
+
+.nav-item[data-state="active"],
+.nav-item[data-state="touched"] {
+  color: var(--color-base-content);
+  background-color: var(--color-base-200);
+}
+
+.nav-item[data-state="inactive"] {
+  color: color-mix(in oklab, var(--color-base-content) 70%, transparent);
+  background-color: transparent;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .nav-item:hover {
+    color: var(--color-base-content);
+    background-color: var(--color-base-200);
+  }
+}
+
+.nav-item,
+.vault-tree-node,
+.onthispage-link {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  text-decoration: none !important;
+  transition: none !important;
+}
+
+@media (min-width: theme(--breakpoint-xl)) {
+  .onthispage-link[data-state="active"] {
+    border-left-color: var(--color-primary) !important;
+  }
+
+  .onthispage-link[data-state="inactive"],
+  .onthispage-link[data-state="touched"] {
+    border-left-color: transparent;
+  }
+}

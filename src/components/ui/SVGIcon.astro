@@ -21,6 +21,7 @@ const fill = icon.fill ?? "currentColor";
 const strokeLinecap = icon.strokeLinecap ?? "round";
 const strokeLinejoin = icon.strokeLinejoin ?? "round";
 const text = label ?? icon.text;
+const ariaHidden = text ? undefined : true;
 ---
 
 <svg
@@ -35,8 +36,8 @@ const text = label ?? icon.text;
   stroke-linecap={strokeLinecap}
   stroke-linejoin={strokeLinejoin}
   xmlns="http://www.w3.org/2000/svg"
-  role="img"
-  aria-hidden={text ? "false" : "true"}
+  role={text ? "img" : undefined}
+  aria-hidden={ariaHidden}
 >
   {text && <title>{text}</title>}
   <Fragment set:html={icon.content} />

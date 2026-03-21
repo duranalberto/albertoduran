@@ -1,0 +1,37 @@
+---
+import type { MarkdownHeading } from "astro";
+
+interface Props {
+  headings: MarkdownHeading[];
+  tracked?: boolean;
+  compact?: boolean;
+}
+
+const { headings, tracked = false, compact = false } = Astro.props;
+---
+
+<nav class:list={[tracked && "onthispage-nav"]} aria-label="On this page">
+  <ul class="w-full p-0 flex flex-col">
+    {
+      headings.map((h) => (
+        <li>
+          <a
+            href={`#${h.slug}`}
+            title={h.text}
+            data-state="inactive"
+            class:list={[
+              "onthispage-link nav-item flex items-center relative w-full",
+              "pr-4 border-l-0 xl:border-l-4 border-transparent",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-inset",
+              h.depth === 3
+                ? ["pl-8 text-[0.75rem]", compact ? "py-1" : "py-2"]
+                : ["pl-4 text-sm font-medium", compact ? "py-1" : "py-2.5"],
+            ]}
+          >
+            <span class="block truncate w-full">{h.text}</span>
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</nav>

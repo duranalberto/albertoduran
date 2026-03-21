@@ -11,42 +11,47 @@ const { prevEntry, nextEntry } = Astro.props;
 
 <nav
   aria-label="Journal entry navigation"
-  class="flex flex-col gap-6 mt-24 pt-12 border-t border-base-300"
+  class="w-full max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4"
 >
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    {
-      prevEntry ? (
-        <a
-          href={`/thejournal/${prevEntry.id}`}
-          class="group flex flex-col justify-between h-full p-6 text-left"
-        >
-          <span class="text-xs font-semibold uppercase text-neutral-content opacity-90 group-hover:text-primary">
+  {
+    prevEntry ? (
+      <a
+        href={`/thejournal/${prevEntry.id}/`}
+        class="pagination-card card bg-base-100 border border-base-200 shadow-sm group"
+        data-astro-prefetch
+      >
+        <div class="card-body p-6 flex flex-col items-start text-left">
+          <span class="pagination-label text-xs font-bold tracking-wider uppercase text-base-content/50 mb-2 flex items-center gap-2">
             &larr; Previous
           </span>
-          <span class="mt-4 font-display text-lg font-semibold text-base-content group-hover:text-primary">
+          <span class="font-display text-lg font-semibold text-base-content line-clamp-2">
             {prevEntry.title}
           </span>
-        </a>
-      ) : (
-        <div />
-      )
-    }
-    {
-      nextEntry ? (
-        <a
-          href={`/thejournal/${nextEntry.id}`}
-          class="group flex flex-col justify-between h-full p-6 text-right"
-        >
-          <span class="text-xs font-semibold uppercase text-neutral-content opacity-90 group-hover:text-primary">
+        </div>
+      </a>
+    ) : (
+      <div class="hidden md:block" aria-hidden="true" />
+    )
+  }
+
+  {
+    nextEntry ? (
+      <a
+        href={`/thejournal/${nextEntry.id}/`}
+        class="pagination-card card bg-base-100 border border-base-200 shadow-sm group"
+        data-astro-prefetch
+      >
+        <div class="card-body p-6 flex flex-col items-end text-right">
+          <span class="pagination-label text-xs font-bold tracking-wider uppercase text-base-content/50 mb-2 flex items-center gap-2">
             Next &rarr;
           </span>
-          <span class="mt-4 font-display text-lg font-semibold text-base-content group-hover:text-primary">
+          <span class="font-display text-lg font-semibold text-base-content line-clamp-2">
             {nextEntry.title}
           </span>
-        </a>
-      ) : (
-        <div />
-      )
-    }
-  </div>
+        </div>
+      </a>
+    ) : (
+      <div class="hidden md:block" aria-hidden="true" />
+    )
+  }
 </nav>

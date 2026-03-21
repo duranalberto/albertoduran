@@ -2,6 +2,7 @@ export interface Icon {
   text: string;
   viewBox: string;
   content: string;
+  isFile?: boolean;
   width?: number | string;
   height?: number | string;
   fill?: string;

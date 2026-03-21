@@ -18,6 +18,7 @@ export interface EntryContext extends BaseContext {
   readTime: number;
   tags: string[];
   pubDate: Date;
+  updatedDate?: Date;
   filepath: string;
   vaultId: string;
 }
@@ -32,6 +33,7 @@ export type VaultItem = EntryContext | NestedGroup;
 export interface VaultContext extends BaseContext {
   index: EntryContext;
   items: VaultItem[];
+  itemCount: number;
 }
 
 export const isNestedGroup = (item: VaultItem): item is NestedGroup =>

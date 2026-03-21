@@ -29,8 +29,13 @@ const catalog = Array.from(publications)
 const pageTitle = "Alberto Duran";
 ---
 
-<BaseLayout pageTitle={pageTitle}>
-  <IndexHero slot="hero" transition:name="page-hero" />
+<BaseLayout
+  pageTitle={pageTitle}
+  description="Hi! You’ve found my tiny space in the digital
+            world. Feel free to explore: whether it’s for recruiting or reading my
+            publications"
+>
+  <IndexHero slot="hero" />
   <ProfileView />
 
   <FlexShell>
@@ -42,11 +47,11 @@ const pageTitle = "Alberto Duran";
 
   <AtlasStats />
 
-  <FlexShell>
+  <FlexShell class="pb-14">
     <div class="flex flex-col gap-8">
       <SectionHeader
         title="Stared Publications"
-        linkHref="/thejournal"
+        linkHref="/thejournal/"
         linkLabel="Read more in theJournal."
       />
       <JournalGrid catalog={catalog} />

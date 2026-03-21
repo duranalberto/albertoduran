@@ -1,4 +1,5 @@
 ---
+import image from "@assets/thejournal/stock/05.avif";
 import ProjectsGrid from "@components/common/ProjectsGrid.astro";
 import AwardsGrid from "@components/sections/profile/AwardsGrid.astro";
 import CertificationsList from "@components/sections/profile/CertificationsList.astro";
@@ -6,27 +7,30 @@ import EducationList from "@components/sections/profile/EducationList.astro";
 import ExperienceTimeline from "@components/sections/profile/ExperienceTimeline.astro";
 import ProfileHero from "@components/sections/profile/ProfileHero.astro";
 import SkillsGrid from "@components/sections/profile/SkillsGrid.astro";
+import SectionHeader from "@components/ui/SectionHeader.astro";
 import AboutMetadata from "@data/about";
 import BaseLayout from "@layouts/BaseLayout.astro";
 import FlexShell from "@layouts/FlexShell.astro";
 
 const pageTitle = "Alberto Duran | Software Engineer";
-
-const SECTION_HEADER =
-  "block w-full border-b pb-4 mb-8 md:mb-12 font-display text-xs md:text-sm font-bold uppercase tracking-widest text-primary border-primary/20";
 ---
 
-<BaseLayout pageTitle={pageTitle}>
-  <ProfileHero slot="hero" transition:name="page-hero" />
+<BaseLayout
+  pageTitle={pageTitle}
+  description="Results-oriented Software Engineer with experience designing,
+          optimizing and deploying web applications and enterprise solutions."
+  image={image}
+>
+  <ProfileHero slot="hero" />
 
-  <FlexShell class="flex flex-col gap-16 md:gap-24 lg:gap-32">
+  <FlexShell class="flex flex-col gap-16 md:gap-24 lg:gap-32 pb-14">
     <section id="skills" class="w-full">
-      <h2 class={SECTION_HEADER}>Technical Skills</h2>
+      <SectionHeader title="Technical Skills" />
       <SkillsGrid skills={AboutMetadata.skills} />
     </section>
 
     <section id="experience" class="w-full">
-      <h2 class={SECTION_HEADER}>Professional Experience</h2>
+      <SectionHeader title="Professional Experience" />
       <ExperienceTimeline experience={AboutMetadata.experience} />
     </section>
 
@@ -35,23 +39,23 @@ const SECTION_HEADER =
       class="grid grid-cols-1 gap-16 md:grid-cols-2 lg:gap-24"
     >
       <div class="w-full">
-        <h2 class={SECTION_HEADER}>Education</h2>
+        <SectionHeader title="Education" />
         <EducationList education={AboutMetadata.education} />
       </div>
 
       <div class="w-full">
-        <h2 class={SECTION_HEADER}>Certifications</h2>
+        <SectionHeader title="Certifications" />
         <CertificationsList certifications={AboutMetadata.certifications} />
       </div>
     </section>
 
     <section id="awards" class="w-full">
-      <h2 class={SECTION_HEADER}>Honors & Awards</h2>
+      <SectionHeader title="Honors & Awards" />
       <AwardsGrid awards={AboutMetadata.awards} />
     </section>
 
     <section id="projects" class="w-full">
-      <h2 class={SECTION_HEADER}>Selected Projects</h2>
+      <SectionHeader title="Selected Projects" />
       <ProjectsGrid />
     </section>
   </FlexShell>

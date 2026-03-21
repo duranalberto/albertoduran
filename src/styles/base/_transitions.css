@@ -1,0 +1,41 @@
+/* =========================================================
+   ASTRO VIEW TRANSITIONS
+   Rules for Astro ClientRouter / View Transitions API.
+   ========================================================= */
+
+[data-astro-transition="fade"]::view-transition-old(root),
+[data-astro-transition="fade"]::view-transition-new(root) {
+  transform: none !important;
+  mix-blend-mode: normal !important;
+}
+
+[data-astro-transition="fade"]::view-transition-old(root) {
+  object-fit: none !important;
+  object-position: top !important;
+}
+
+::view-transition-group(active-line) {
+  animation-duration: 0.18s;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html.vt-freeze-scroll {
+  overflow: hidden !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+    mix-blend-mode: normal !important;
+  }
+
+  ::view-transition-group(active-line) {
+    animation: none !important;
+  }
+
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0.01ms !important;
+  }
+}

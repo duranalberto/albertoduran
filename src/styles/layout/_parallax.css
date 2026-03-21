@@ -1,0 +1,75 @@
+/* =========================================================
+   PARALLAX LAYOUT
+   Used by ParallaxHero.astro.
+   ========================================================= */
+
+.parallax-container {
+  position: relative;
+  isolation: isolate;
+  view-timeline-name: --parallax;
+  view-timeline-axis: block;
+}
+
+.parallax-bg-wrapper {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.parallax-bg-content {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -10%;
+  height: 120%;
+
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.parallax-bg-content > *,
+.parallax-bg-content > picture,
+.parallax-bg-content > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.parallax-bg-content > picture > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  display: block;
+}
+
+@supports (view-timeline-name: --x) {
+  @media (prefers-reduced-motion: no-preference) {
+    .parallax-bg-content {
+      will-change: transform;
+      animation: parallax-shift linear both;
+      animation-timeline: --parallax;
+      animation-range: cover 0% cover 100%;
+    }
+  }
+}
+
+@keyframes parallax-shift {
+  from {
+    transform: translate3d(0, -10%, 0);
+  }
+  to {
+    transform: translate3d(0, 10%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .parallax-bg-content {
+    animation: none !important;
+    top: 0;
+    height: 100%;
+    transform: none !important;
+    will-change: auto;
+  }
+}

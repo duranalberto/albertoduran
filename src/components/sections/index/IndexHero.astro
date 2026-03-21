@@ -1,6 +1,5 @@
 ---
-import Button from "@components/ui/Button.astro";
-import { social } from "@data/icons";
+import SocialTire from "@components/ui/SocialTire.astro";
 const props = Astro.props;
 ---
 
@@ -20,19 +19,23 @@ const props = Astro.props;
         <h1
           class="mb-8 font-black font-display text-5xl md:text-7xl lg:text-8xl select-none"
         >
-          <span class="text-primary">Alberto</span>
-          <span class="text-base-content">Duran</span>
+          <span class="text-primary" transition:name="hero-title-first"
+            >Alberto</span
+          ><span transition:name="hero-title-second" class="text-base-content"
+            >Duran</span
+          >
         </h1>
 
         <div
           class="max-w-2xl mb-10 text-lg leading-relaxed text-neutral-content lg:text-xl"
+          transition:name="hero-description"
         >
           <p class="mb-6">
             I’m glad you’re here! You’ve found my tiny space in the digital
             world. Feel free to explore: whether it’s for recruiting, reading my
             publications in
             <a
-              href="/thejournal"
+              href="/thejournal/"
               class="font-bold text-primary decoration-primary/30 hover:underline"
             >
               TheJournal.
@@ -45,7 +48,7 @@ const props = Astro.props;
             <span class="not-italic font-bold text-primary">Hiring?</span>
             Skip the small talk and head straight to my
             <a
-              href="/profile"
+              href="/profile/"
               class="font-bold underline decoration-primary/50 transition-colors hover:text-primary"
             >
               Professional Profile
@@ -54,41 +57,7 @@ const props = Astro.props;
           </p>
         </div>
 
-        <div class="flex flex-wrap items-center gap-6">
-          <Button
-            icon={social.linked_in}
-            variant="btn-outline"
-            href="https://linkedin.com/in/duranalberto"
-            ariaLabel="LinkedIn Profile"
-            isExternal
-            class="w-32 border-base-300 hover:border-primary hover:bg-primary hover:text-primary-content group"
-          />
-
-          <Button
-            icon={social.github}
-            variant="btn-outline"
-            href="https://github.com/duranalberto"
-            ariaLabel="GitHub Profile"
-            isExternal
-            class="w-32 border-base-300 hover:border-primary hover:bg-primary hover:text-primary-content group"
-          />
-
-          <div class="select-none">
-            <div
-              class="badge badge-success badge-outline gap-2 px-4 py-3 font-medium border-2"
-            >
-              <span class="relative flex h-2 w-2">
-                <span
-                  class="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"
-                ></span>
-                <span
-                  class="relative inline-flex h-2 w-2 rounded-full bg-success"
-                ></span>
-              </span>
-              Open to New Opportunities
-            </div>
-          </div>
-        </div>
+        <SocialTire />
       </div>
 
       <div class="hidden relative lg:block lg:col-span-4">

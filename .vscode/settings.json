@@ -1,0 +1,87 @@
+{
+  // --- Editor Layout & Aesthetics ---
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.stickyScroll.enabled": true,
+  "editor.guides.indentation": true,
+  "editor.guides.bracketPairs": false,
+  "editor.bracketPairColorization.enabled": true,
+  "explorer.compactFolders": false,
+
+  // --- Terminal Environment (Fixes Astro host binding in DevContainer) ---
+  "terminal.integrated.env.linux": {
+    "HOST": "0.0.0.0"
+  },
+
+  // --- Word Wrap (Breaks code if longer than UI) ---
+  "editor.wordWrap": "on",
+  "editor.wrappingIndent": "indent",
+
+  // --- Code Quality & Formatting ---
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.organizeImports": "explicit"
+  },
+
+  // --- Language Specific Formatters ---
+  "[astro]": {
+    "editor.defaultFormatter": "astro-build.astro-vscode"
+  },
+  "[mdx]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[typescript]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[javascript]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[json]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[jsonc]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+
+  // --- Language & Framework Support ---
+  "files.associations": {
+    "*.css": "tailwindcss",
+    "*.mdx": "mdx"
+  },
+  "js/ts.suggest.autoImports": true,
+  "js/ts.updateImportsOnFileMove.enabled": "always",
+  "emmet.includeLanguages": {
+    "astro": "html",
+    "mdx": "html"
+  },
+
+  // --- Tailwind CSS Configuration (v4 optimized) ---
+  "tailwindCSS.includeLanguages": {
+    "astro": "html",
+    "mdx": "markdown"
+  },
+  "tailwindCSS.classAttributes": ["class", "className", "classList", "ngClass"],
+  "tailwindCSS.experimental.functions": ["clsx", "cva", "tw", "cn"],
+
+  // --- Prettier Configuration (Matching 2-space standard) ---
+  "prettier.tabWidth": 2,
+  "prettier.useTabs": false,
+
+  // --- JSON Schema Trust Fix (Markdownlint) ---
+  "json.schemas": [
+    {
+      "fileMatch": [".markdownlint.json"],
+      "url": "https://raw.githubusercontent.com/DavidAnson/markdownlint/v0.40.0/schema/markdownlint-config-schema.json"
+    }
+  ],
+
+  // --- Spell Checker (cSpell) ---
+  "cSpell.ignorePaths": ["node_modules", "dist", ".astro", ".devcontainer"],
+  "cSpell.customDictionaries": {
+    "project-words": {
+      "name": "dictionary",
+      "path": "${workspaceFolder}/.vscode/dictionary.txt",
+      "addWords": true
+    }
+  },
+
+  // --- Explorer & File Management ---
+  "files.exclude": {
+    "**/.astro": false,
+    "**/dist": true,
+    "**/node_modules": true,
+    "**/.eslintcache": true
+  }
+}

@@ -1,7 +1,7 @@
 ---
-title: "MySQL InnoDB Cluster"
+title: "High availability with MySQL InnoDB Cluster in Sin Pluma"
 pubDate: 2026-03-01
-description: "How the MySQL **InnoDB Group Replication** cluster is used as the transactional backbone."
+description: "How Sin Pluma bootstraps a three-node MySQL InnoDB Cluster, handles automatic failover, manages the schema, and what production hardening looks like beyond the demo environment."
 author: "Alberto Duran"
 image: "../../assets/thejournal/stock/07.avif"
 order: 4
@@ -9,189 +9,234 @@ tags: ["databases", "MySQL", "InnoDB", "cluster"]
 github: "SinPluma"
 ---
 
-This focused publication documents the MySQL **InnoDB Group Replication** cluster used as the transactional backbone for SinPluma. It explains every part of the cluster, what the cluster achieves (guarantees and capabilities), how it is automated (bootstrap and provisioning), the failover and recovery strategy, and the overall architecture and operational considerations.
-
-![SinPluma UI](../../assets/thejournal/pub/sinpluma_08.png)
+Running a single MySQL container is fine until it isn't. The moment that container restarts, your database is unavailable and your API is returning 500s. Sin Pluma sidesteps that problem by running MySQL InnoDB Cluster with three nodes and a router in front of them. When one node goes down, the cluster elects a new primary and the router updates its routing table automatically. The API keeps working. This post covers how the cluster is set up, how the schema is structured, what happens at boot time, and what production hardening beyond the demo environment looks like.
 
 ---
 
-## 1. What the cluster is and what it achieves
+## What the cluster achieves
 
-The InnoDB Cluster (MySQL Group Replication + MySQL Router) is the canonical, ACID transactional layer for SinPluma. Its primary goals are:
+The InnoDB Cluster is the canonical ACID transactional layer for Sin Pluma. Its goals are specific and worth naming up front.
 
-- **High availability (HA):** tolerate node failure without losing the ability to serve transactional reads/writes.
-- **Transactional consistency:** maintain ACID guarantees for critical entities (users, notebooks, pages, revisions).
-- **Automatic failover / primary election:** if the primary fails, the cluster elects a new primary automatically so applications can continue to operate (subject to routing).
-- **Simplified application connectivity:** MySQL Router presents a single logical endpoint for the application, removing the need for the app to manage multiple host addresses.
-- **Durability & recoverability:** combined with persistent storage and backups, the cluster supports point-in-time recovery and physical/incremental backups.
+**High availability** means the system tolerates node failure without losing the ability to serve reads and writes. A three-node cluster can survive one node going down; the two remaining nodes still form a majority.
 
-In short: the cluster provides a resilient, strongly-consistent relational store suitable for editorial history and user state where correctness is more important than absolute write throughput.
+**Transactional consistency** provides ACID guarantees for critical entities: users, notebooks, pages, and their relationships. Content you write is content that persists correctly, even if a node fails mid-transaction.
 
----
+**Automatic failover** means operators don't need to intervene when the primary fails. The group elects a new primary and MySQL Router updates its routing table. The application's connection string never changes.
 
-## 2. Cluster components — detailed breakdown
-
-### 2.1 MySQL Server instances (Group members)
-
-- **Role:** run `mysqld` with Group Replication enabled. Each instance holds a copy of the dataset and participates in group consensus for replication.
-- **Key configuration elements (examples present in the project):**
-  - `gtid_mode = ON` and `enforce_gtid_consistency = ON` — ensures global transaction identifiers for deterministic replication.
-  - `binlog_format = ROW` — required for Group Replication and precise data propagation.
-  - `log_slave_updates = ON` — allows relay of group-applied transactions to replicas.
-  - `transaction_write_set_extraction` enabled — used by the group replication mechanism for conflict detection.
-  - Unique `server_id` and `report_host` per instance — required for proper group communication in container networks.
-- **Persistence:** `/var/lib/mysql` is mounted to host directories or volumes so databases survive container restarts.
-
-### 2.2 MySQL Router
-
-- **Role:** lightweight proxy/routing layer that exposes logical endpoints for applications:
-  - a single read-write endpoint (routes to the current primary)
-  - one or more read-only endpoints (to route to replicas) if configured
-- **Benefits:** Applications (Flask/SQLAlchemy) connect to `inno_router:6446` (example in SinPluma); Router performs topology-aware routing and hides cluster membership changes.
-
-### 2.3 MySQL Shell scripting (automation helper)
-
-- **Role:** the project uses `mysqlsh` and a Python script (`create_cluster.py`) to automate:
-  - instance configuration (`dba.configureInstance(...)`)
-  - cluster creation (`dba.createCluster(...)`)
-  - adding instances (`cluster.addInstance(...)`)
-  - cluster recovery and health checks
-  - optional schema/bootstrap data loading (e.g., `sinpluma.sql`)
-- **Why Shell:** MySQL Shell exposes the `dba` and `cluster` APIs that wrap the complex sequence of steps needed to reliably form a Group Replication cluster.
-
-### 2.4 Backup tooling & operators (recommended / referenced)
-
-- The project references physical backup best practices (e.g., Percona XtraBackup) for consistent snapshotting of InnoDB data and enabling PITR when combined with binary log archiving.
+**Simplified application connectivity** comes from MySQL Router presenting a single logical endpoint. Flask connects to `inno_router:6446` and never needs to know which node is currently primary.
 
 ---
 
-## 3. Cluster architecture & topology
+## Cluster components
 
-A minimal production-like topology used in the project:
+The cluster runs four MySQL-related containers, all on the `cluster_network` internal network.
 
-- **Three MySQL nodes** (recommended minimum for quorum)
-  - Provide sufficient majority for failover decisions and avoid split-brain scenarios.
-- **MySQL Router** deployed as a separate process/container
-  - Presents a single write endpoint and optional read endpoints.
-- **Applications** (Flask) connect to the Router; they do not connect directly to individual MySQL nodes.
+```mermaid
+graph TB
+  App[Flask API] -->|port 6446 read-write| Router[MySQL Router]
+  Router -->|primary writes| N1[inno_server_01]
+  Router -->|secondary reads| N2[inno_server_02]
+  Router -->|secondary reads| N3[inno_server_03]
+  N1 <-->|group replication| N2
+  N1 <-->|group replication| N3
+  N2 <-->|group replication| N3
+  Shell[inno_shell] -->|bootstrap once| N1
 
-**Topology considerations**
+  classDef node fill:#4A90D9,stroke:#2C5F8A,color:white
+  classDef router fill:#F5A623,stroke:#C07D10,color:black
+  classDef shell fill:#7ED321,stroke:#5A9A18,color:black
+  classDef app fill:#9B59B6,stroke:#7D3C98,color:white
+  class N1,N2,N3 node
+  class Router router
+  class Shell shell
+  class App app
+```
 
-- The cluster commonly runs in **single-primary mode** (one writable primary, others members that replicate), which simplifies conflict semantics.
-- Read scaling is achieved by configuring Router read-only endpoints to route read traffic to replicas.
-- For geographically distributed deployments, be cautious: Group Replication assumes reasonably low-latency networks; cross-region latency impacts commit acknowledgement times.
+**MySQL Server instances** run `mysqld` with Group Replication enabled. Each instance holds a full copy of the dataset and participates in group consensus for replication. Key configuration elements include `gtid_mode = ON` and `enforce_gtid_consistency = ON` for deterministic replication, `binlog_format = ROW` required by Group Replication, `log_slave_updates = ON` to relay group-applied transactions, `transaction_write_set_extraction` enabled for conflict detection, and unique `server_id` plus `report_host` per instance for proper group communication inside container networks. Each node's `/var/lib/mysql` mounts to a Docker volume so data survives container restarts.
 
----
+**MySQL Router** is a lightweight proxy that exposes logical endpoints: port 6446 for read-write traffic (routes to the current primary), and port 6447 for read-only traffic (load-balanced across replicas). Applications connect to the Router and never need to manage individual node addresses or failover logic.
 
-## 4. Automation — how the cluster is provisioned and bootstrapped
-
-SinPluma's repository provides deterministic automation intended for demo and local/CI environments. The automation covers instance configuration, cluster creation, Router setup and initial schema load.
-
-### 4.1 Steps performed by automation (high level)
-
-1. **Start MySQL server containers** with base CNF files mounted (one per node).
-2. **Wait for MySQL to become available** (check TCP port and accept connections).
-3. **Run MySQL Shell script (`create_cluster.py`)** which:
-   - Calls `dba.configureInstance(instance)` to apply Group Replication runtime configuration and create necessary accounts.
-   - Executes `dba.createCluster(clusterName, options)` if there is no existing cluster; this bootstraps the first primary.
-   - Runs `cluster.addInstance()` for each subsequent node to join them to the group.
-   - Optionally runs a SQL seed script (e.g., `sinpluma.sql`) once the cluster is healthy.
-4. **Start MySQL Router** and write router config referencing the cluster.
-5. **Application start**: apps connect to the Router's logical endpoint; the router performs discovery and proxies to the appropriate member.
-
-### 4.2 Idempotency & recovery behavior
-
-- The `create_cluster.py` script checks cluster status and can **recover** an existing cluster rather than blindly recreating it. This makes rerunning the automation tolerable and supports predictable recovery workflows.
-- Automation enforces a deterministic ordering in Compose: servers → shell bootstrap → router → application.
-
-### 4.3 Where automation lives
-
-- **Docker Compose** orchestrates the lifecycle locally (perfect for demo/CI).
-- **MySQL Shell** script is the core of DB automation (inside a helper container).
-- For production, the same script logic maps well to Ansible or an operator-based approach (MySQL Operator for Kubernetes).
+**MySQL Shell** (`inno_shell`) is the bootstrap container. It runs MySQL Shell's Python API (`dba`, `cluster`) to configure instances, create the cluster, and add nodes. This is not a long-running service. It starts, does its work, and exits.
 
 ---
 
-## 5. Failover, election and recovery strategy
+## The schema
 
-### 5.1 Failover mechanics (how failover occurs)
+The schema SQL lives at `innodbCluster/sinpluma.sql`. It defines seven tables plus seed data.
 
-- **Group Replication** maintains a group view and gossip-style membership. If the primary node fails or becomes unreachable, the remaining members detect the failure.
-- **Primary election:** the group elects a new primary based on group view and configured failover policies (majority/quorum rules).
-- **Router role:** MySQL Router updates its routing tables (or uses discovery) so the application's logical endpoint now points to the newly elected primary.
+```mermaid
+erDiagram
+  user {
+    int user_id PK
+    varchar username
+    varchar email
+    varchar password
+    datetime user_created
+  }
+  notebook {
+    int notebook_id PK
+    int user_id FK
+    int genre_id FK
+    varchar title
+    text resume
+  }
+  page {
+    int page_id PK
+    int notebook_id FK
+    varchar title
+    json content
+    int position
+  }
+  genre {
+    int genre_id PK
+    varchar name
+  }
+  reading {
+    int reading_id PK
+    int user_id FK
+    int notebook_id FK
+  }
+  tags {
+    int tag_id PK
+    varchar name
+  }
+  has_tags {
+    int notebook_id FK
+    int tag_id FK
+  }
 
-### 5.2 Ensuring a safe failover (quorum & split-brain avoidance)
+  user ||--o{ notebook : "writes"
+  notebook ||--o{ page : "contains"
+  notebook }o--|| genre : "categorized by"
+  user ||--o{ reading : "follows"
+  notebook ||--o{ reading : "followed by"
+  notebook ||--o{ has_tags : "tagged with"
+  tags ||--o{ has_tags : "applied to"
+```
 
-- **Quorum requirement:** Group Replication uses majority decisions. If a majority can't be formed (network partition), the minority side will not accept writes — preventing split-brain.
-- **Single-primary mode:** reduces conflict surface; replicas do not accept writes unless promoted.
-- **Network partition handling:** if network partitions occur, only the partition with majority can progress; the minority waits for rejoining.
-
-### 5.3 Application-level resilience
-
-- **Router + client retry:** Application drivers should implement retry/backoff for transient connection errors. Using Router minimizes the need for host switching logic in application code.
-- **Idempotency:** Where operations may be retried (e.g., due to transient DB failover), idempotency keys or safe retry semantics are recommended for application endpoints.
-- **Transaction boundaries:** Short-lived transactions are preferred to reduce the window of failed commits during failover.
-
-### 5.4 Recovery & rejoin
-
-- **Automatic rejoin:** when a failed node comes back, Group Replication performs state transfer (incremental or full) to bring it back in sync.
-- **State transfer methods:** Depending on gap size, the member may fetch missing transactions via the group and apply them, or require a more substantial recovery flow.
-- **Operator interventions:** Some recovery cases (corrupt data, missing binary logs) may require manual steps (re-cloning, re-seeding).
-
----
-
-## 6. Backups, PITR and schema migrations
-
-### 6.1 Backups & PITR
-
-- **Physical backups:** Use tools like `xtrabackup` (Percona) for consistent physical snapshots of InnoDB data while the cluster is online.
-- **Binary log archival:** Archive binary logs so you can replay transactions after restoring a snapshot (enables Point-In-Time Recovery).
-- **Recommended cadence:** periodic full backups + frequent incremental backups + binlog archiving.
-
-### 6.2 Schema migrations
-
-- **Safe schema changes:** follow expand-contract pattern for zero-downtime migrations (e.g., add nullable columns or new indexes concurrently, backfill, then switch).
-- **Migration tooling:** manage migrations with a version-controlled tool (Flyway, Liquibase, Alembic) executed as part of CI/CD with pre-migration checks.
-
----
-
-## 7. Monitoring, observability and operational controls
-
-- **Metrics to collect:**
-  - Group replication state (`group_replication_primary_member`, `group_replication_flow_control_paused`).
-  - Replication lag and apply times.
-  - InnoDB metrics: buffer pool usage, checkpoint age, dirty pages.
-  - Binary log disk usage and retention.
-- **Tools:**
-  - MySQL Exporter (Prometheus) + Grafana dashboards.
-  - `performance_schema` / `sys` schema for detailed diagnostics.
-  - Alerts on replication state changes, disk pressure, high apply latency, or loss of majority.
-- **Runbooks:** operators should have procedures for:
-  - Safe node replacement
-  - Emergency failover (if automatic election does not complete)
-  - Restore from backup and re-seed cluster members
+A few design notes. The `page.content` column uses MySQL's native JSON type, which stores Slate's document tree without a separate serialization step. The `reading` table is a simple join: one row per user-notebook follow relationship. The `tags` and `has_tags` tables are defined but have no API coverage yet. The schema seeds ten genres on import so the frontend has data from the first boot.
 
 ---
 
-## 8. Operational tradeoffs & constraints
+## Cluster automation and bootstrapping
 
-- **Operational complexity:** Group Replication + Router is more operationally involved than a single instance; however, it yields HA and stronger guarantees.
-- **Performance considerations:** Synchronous replication semantics (or semi-sync behavior) mean write latencies reflect group commit times; keep transaction sizes small and tune flow control.
-- **Network sensitivity:** Group Replication relies on low-latency, reliable networking — multi-region deployments need careful design.
-- **Scaling model:** Best suited for read-mostly scaling (read replicas); for write-heavy workloads horizontal sharding or different architectures may be required.
+The bootstrap logic lives in `innodbCluster/mysql_shell/create_cluster.py`. The script handles two scenarios: first boot (create the cluster from scratch) and restart after all nodes were stopped (reboot an existing cluster).
+
+### Steps the automation performs
+
+1. Start MySQL server containers with base CNF files mounted, one per node.
+2. Wait for MySQL to become available, checking TCP port and connection acceptance.
+3. Run the MySQL Shell script, which configures each instance with `dba.configureInstance()`, creates the cluster with `dba.createCluster()` if none exists, adds secondary nodes with `cluster.addInstance()`, and optionally loads the SQL seed file once the cluster is healthy.
+4. Start MySQL Router with configuration referencing the cluster metadata schema.
+5. Application connects to the Router's logical endpoint; the router performs discovery and proxies to the appropriate member.
+
+```python
+import mysqlsh
+
+def create_cluster():
+    shell = mysqlsh.globals.shell
+    shell.connect('root:password@inno_server_01:3306')
+    dba = mysqlsh.globals.dba
+
+    try:
+        cluster = dba.get_cluster()
+        print("Cluster already exists, recovering")
+        cluster.rejoin_instance('root:password@inno_server_02:3306')
+        cluster.rejoin_instance('root:password@inno_server_03:3306')
+    except:
+        cluster = dba.create_cluster('sinPlumaCluster')
+        cluster.add_instance('root:password@inno_server_02:3306',
+                             {'recoveryMethod': 'clone'})
+        cluster.add_instance('root:password@inno_server_03:3306',
+                             {'recoveryMethod': 'clone'})
+        print("Cluster created with 3 members")
+
+create_cluster()
+```
+
+The script is idempotent. It checks cluster status first and can recover an existing cluster rather than blindly recreating it. This makes rerunning the automation tolerable and supports predictable recovery workflows.
+
+The `recoveryMethod: 'clone'` option tells MySQL to use the clone plugin when adding a node, which copies the primary's data directly rather than replaying the binary log from scratch. For a fresh cluster, this is fast.
+
+The entrypoint script (`entrypoint.sh`) waits for all three MySQL nodes to be healthy using connection probes before running the Python bootstrap. This ordering is critical; the shell script must not attempt cluster creation before the nodes accept connections.
 
 ---
 
-## 9. Recommended hardening & next steps for production
+## Failover mechanics
 
-- **Operator / managed DB:** consider MySQL Operator (Kubernetes) or managed MySQL for enterprise-grade lifecycle management.
-- **Automated PITR pipelines:** centralize binlog collection and backup retention policies.
-- **Prometheus + Grafana + Alerting:** build dashboards and set SLOs for replication health and availability.
-- **Chaos testing:** regularly simulate node failures and network partitions to validate automation and runbooks.
-- **Secure service-to-service:** use network-level controls and enforce least-privilege DB accounts; consider encrypting replication channels and data-at-rest.
+Group Replication maintains a group view and gossip-style membership. If the primary node fails or becomes unreachable, the remaining members detect the failure and elect a new primary based on majority rules.
+
+The quorum requirement is central to safety. Group Replication uses majority decisions. If a network partition occurs, only the partition with a majority can continue accepting writes. The minority side stops accepting writes rather than risk split-brain. With three nodes, the cluster tolerates one failure and maintains majority with two.
+
+MySQL Router updates its routing table after detecting the new primary. Flask's connection pool reconnects transparently. From the application's perspective, nothing changes.
+
+**Application-level resilience** complements the cluster's built-in failover. The application driver should implement retry and backoff for transient connection errors. Using Router minimizes the need for host-switching logic in application code. Short-lived transactions reduce the window of failed commits during failover.
 
 ---
 
-## 10. Closing summary
+## Recovery and rejoin
 
-The InnoDB Cluster in SinPluma is the project's central reliability mechanism: a scripted, reproducible Group Replication topology combined with MySQL Router gives the application transactional correctness, failover capability, and simplified connectivity. The repository's automation (MySQL Shell scripts, CNF templates, Router config and compose wiring) demonstrates practical operational capability — bootstrapping, seeding, and recovering a multi-node cluster in a repeatable manner. With complementary operational tooling (backups, monitoring, migration workflows) the cluster is a robust foundation for a writing platform where data integrity and availability are paramount.
+When a failed node comes back, Group Replication performs state transfer to bring it back in sync. The method depends on how much it missed: if the gap is small, the node fetches missing transactions from the group and applies them. If the gap is large or the binary logs are no longer available, the node performs a clone from the current primary.
+
+Some recovery cases require operator intervention: corrupt data, missing binary logs, or a cluster that lost quorum entirely. The `create_cluster.py` script handles the clean automation cases; manual steps (re-cloning, re-seeding) cover edge cases.
+
+---
+
+## Backups and schema migrations
+
+**Physical backups** for InnoDB use tools like Percona XtraBackup for consistent snapshots while the cluster is online. Binary log archival enables point-in-time recovery: restore a snapshot, replay transactions from the binary logs up to the moment before the incident.
+
+A recommended backup cadence is periodic full backups, frequent incremental backups, and continuous binary log archiving. For the demo environment the `sinpluma.sql` file serves as the schema baseline; in production, proper backup pipelines would replace this.
+
+**Schema migrations** should follow the expand-contract pattern for zero-downtime changes. Add nullable columns or new indexes first, backfill data, then switch the application. Version-controlled migration tools like Alembic or Flyway are the natural fit for the SQLAlchemy-based Flask service. Applying migrations as part of CI/CD with pre-migration health checks prevents schema drift.
+
+---
+
+## Monitoring and observability
+
+The cluster produces several signals worth watching.
+
+Group replication state is observable through the `performance_schema` tables: `group_replication_primary_member` shows which node holds the primary role, and `group_replication_flow_control_paused` indicates backpressure. InnoDB metrics expose buffer pool usage, checkpoint age, and dirty page counts. Binary log disk usage and retention need active monitoring to prevent disk exhaustion.
+
+For a production setup, MySQL Exporter with Prometheus and Grafana dashboards is the standard approach. Alerts on replication state changes, disk pressure, high apply latency, or loss of majority provide the early warning needed before incidents become outages.
+
+Operators need runbooks for three scenarios: safe node replacement, emergency failover if automatic election doesn't complete, and restore from backup with cluster reseed.
+
+---
+
+## Developer workflow
+
+For local development, resetting the database means stopping the containers and removing their volumes.
+
+```bash
+docker-compose down -v
+docker-compose up
+```
+
+The `-v` flag removes named volumes. On the next `up`, the initialization sequence runs again: nodes start fresh, `inno_shell` imports the schema and bootstraps the cluster, and the router starts accepting connections. The process takes 60 to 90 seconds because group replication has a warm-up period before reporting as healthy.
+
+To inspect cluster state without restarting, connect to any node through MySQL Shell.
+
+```bash
+docker exec -it inno_server_01 mysqlsh
+\connect root@localhost:3306
+dba.get_cluster().status()
+```
+
+The `status()` call returns a JSON object showing which node is primary, which are secondaries, and whether each member is online. It's the fastest way to verify the cluster is healthy after a restart or a simulated failure.
+
+---
+
+## Production hardening and next steps
+
+The demo environment demonstrates operational competence. Moving to production requires a few more pieces.
+
+**Kubernetes MySQL Operator** handles database lifecycle management at production scale: automated upgrades, backup scheduling, and cluster topology management. Docker Compose is not suitable for multi-host resilience.
+
+**Secure service-to-service networking** means enforcing least-privilege database accounts, encrypting replication channels between nodes, and encrypting data at rest. The current demo uses password authentication over internal Docker networks, which is acceptable for local development.
+
+**Chaos testing** validates the automation and runbooks. Regularly simulating node failures and network partitions before incidents occur is the only way to trust failover behavior under real conditions.
+
+**Automated PITR pipelines** centralize binary log collection and backup retention policies. Without this, a corruption event in production has no clean recovery path.
+
+The architecture's design anticipates these additions. The scripted bootstrap logic maps well to Ansible or operator-based approaches; the logic is the same, just the execution environment changes.

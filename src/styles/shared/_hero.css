@@ -1,0 +1,103 @@
+/* =========================================================
+   SHARED HERO LAYOUT
+   Consistent spacing, typography scale, and View Transition
+   stability tokens shared across IndexHero, ProfileHero,
+   and JournalHero. Keeps all three pages visually coherent
+   during Astro View Transitions.
+   ========================================================= */
+
+.hero-section {
+  padding-block: 3rem;
+  overflow: hidden;
+}
+
+@media (min-width: theme(--breakpoint-lg)) {
+  .hero-section {
+    padding-block: 6rem;
+  }
+}
+
+.hero-heading {
+  font-family: var(--font-display);
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+  word-break: break-word;
+}
+
+.hero-description {
+  max-width: 42rem;
+  line-height: 1.75;
+  contain: layout;
+}
+
+.hero-rotating-text {
+  display: block;
+  min-height: 2.4em;
+  min-height: 2lh;
+  contain: layout;
+}
+
+@media (min-width: theme(--breakpoint-sm)) {
+  .hero-rotating-text {
+    min-height: 2.8em;
+  }
+}
+
+@media (min-width: theme(--breakpoint-lg)) {
+  .hero-rotating-text {
+    min-height: 3em;
+  }
+}
+
+.hero-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  user-select: none;
+  margin-bottom: 1.5rem;
+}
+
+.hero-eyebrow-line {
+  height: 1px;
+  width: 2rem;
+  background-color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.hero-eyebrow-label {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+  color: var(--color-primary);
+}
+
+@media (min-width: theme(--breakpoint-md)) {
+  .hero-eyebrow-label {
+    font-size: 0.875rem;
+  }
+}
+
+/* ── View Transition: stable layout for morphing elements ─── */
+/*
+ * Elements that participate in cross-page View Transitions need
+ * layout containment to avoid triggering reflows in adjacent
+ * sections during the animation. This applies to the h1 title
+ * spans, the lateral panel, and the social tier.
+ */
+[transition\:name^="hero-title-"],
+[transition\:name^="hero-lateral"],
+[transition\:name^="social-tier"] {
+  contain: layout;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-rotating-text,
+  .hero-description {
+    animation: none !important;
+    transition: none !important;
+  }
+}

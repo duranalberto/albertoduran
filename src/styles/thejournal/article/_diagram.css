@@ -1,0 +1,241 @@
+/* =========================================================
+   DIAGRAM RENDERING
+   Styles for .mermaid-diagram-container wrapping pre-rendered
+   SVG diagrams. The SVG contains embedded <style> with dual
+   light/dark theme support via [data-theme] selectors.
+   ========================================================= */
+
+.mermaid-diagram-container {
+  display: block;
+  width: 100%;
+  overflow: auto;
+  overscroll-behavior-x: contain;
+}
+
+.mermaid-diagram-container svg {
+  display: block;
+  width: 100% !important;
+  min-width: 100%;
+  height: auto !important;
+  max-width: none !important;
+  overflow: visible;
+  background-color: transparent !important;
+}
+
+.mermaid-diagram-container svg foreignObject,
+.mermaid-diagram-container svg foreignObject > div {
+  overflow: visible;
+}
+
+.mermaid-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-error);
+  background-color: color-mix(in oklab, var(--color-error) 10%, transparent);
+  color: var(--color-error);
+  padding: 1rem;
+  border-radius: var(--radius-box);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.875rem;
+  margin: 2rem 0;
+  min-height: 3rem;
+}
+
+.diagram-wrapper {
+  margin-block: 2rem;
+  border-radius: var(--radius-box);
+  border: 1px solid
+    color-mix(in oklab, var(--color-base-content) 10%, transparent);
+  overflow: hidden;
+  background-color: var(--color-base-100);
+}
+
+.diagram-wrapper > .mermaid-diagram-container {
+  padding: 1.25rem 1rem 1rem;
+  border-bottom: 1px solid
+    color-mix(in oklab, var(--color-base-content) 8%, transparent);
+}
+
+.diagram-expand-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 1rem;
+  min-height: 44px;
+  background-color: transparent;
+  color: color-mix(in oklab, var(--color-base-content) 40%, transparent);
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .diagram-expand-bar:hover {
+    background-color: color-mix(
+      in oklab,
+      var(--color-base-200) 70%,
+      transparent
+    );
+    color: var(--color-base-content);
+  }
+}
+
+.diagram-expand-bar:active {
+  background-color: var(--color-base-200);
+  color: var(--color-base-content);
+}
+
+.diagram-expand-bar:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.diagram-popover {
+  margin: auto;
+  padding: 0;
+  border: none;
+  width: min(95vw, 1400px);
+  height: min(90dvh, 900px);
+  height: min(calc(90dvh - env(safe-area-inset-bottom, 0px)), 900px);
+  background-color: var(--color-base-100);
+  border-radius: var(--radius-box);
+  border: 1px solid
+    color-mix(in oklab, var(--color-base-content) 10%, transparent);
+  box-shadow:
+    0 25px 50px -12px rgb(0 0 0 / 0.4),
+    0 0 0 1px color-mix(in oklab, var(--color-base-content) 6%, transparent);
+  overflow: hidden;
+  transform-origin: center center;
+}
+
+.diagram-popover::backdrop {
+  background-color: rgb(0 0 0 / 0.5);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
+
+@starting-style {
+  .diagram-popover:popover-open {
+    opacity: 0;
+    scale: 0.97;
+  }
+}
+
+.diagram-popover:popover-open {
+  opacity: 1;
+  scale: 1;
+  transition:
+    opacity 0.2s ease,
+    scale 0.2s ease,
+    display 0.2s ease allow-discrete,
+    overlay 0.2s ease allow-discrete;
+}
+
+.diagram-popover-inner {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.diagram-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.625rem 0.75rem 0.625rem 1.25rem;
+  border-bottom: 1px solid
+    color-mix(in oklab, var(--color-base-content) 8%, transparent);
+  background-color: var(--color-base-200);
+  flex-shrink: 0;
+}
+
+.diagram-popover-title {
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--color-base-content) 50%, transparent);
+}
+
+.diagram-popover-scroll {
+  flex: 1;
+  min-height: 0;
+  display: block;
+
+  overflow: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-x pan-y;
+  -webkit-overflow-scrolling: touch;
+
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+
+  padding: 1.5rem;
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 1.5rem));
+}
+
+.diagram-popover-scroll .mermaid-diagram-container {
+  display: block;
+  min-width: max-content;
+  min-height: max-content;
+  margin: auto;
+  overflow: visible;
+  box-sizing: border-box;
+}
+
+.diagram-popover-scroll .mermaid-diagram-container svg {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: max-content;
+  min-height: max-content;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .diagram-expand-bar,
+  .diagram-popover:popover-open {
+    transition: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .diagram-wrapper,
+  .diagram-popover-header,
+  .diagram-popover {
+    border-width: 2px;
+  }
+}
+
+[data-theme="dark"] .mermaid-diagram-container .attributeBoxOdd {
+  fill: var(--color-base-200) !important;
+}
+
+[data-theme="dark"] .mermaid-diagram-container .attributeBoxEven {
+  fill: var(--color-base-300) !important;
+}
+
+/* Entity title box also uses a hardcoded light fill in dark theme */
+[data-theme="dark"] .mermaid-diagram-container .entityBox {
+  fill: var(--color-base-300) !important;
+}
+
+/* Relationship label box background */
+[data-theme="dark"] .mermaid-diagram-container .relationshipLabelBox {
+  fill: var(--color-base-200) !important;
+}

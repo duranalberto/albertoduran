@@ -1,0 +1,142 @@
+---
+import type { EntryContext, VaultContext } from "@appTypes/content_context";
+import Button from "@components/ui/primitive/Button.astro";
+import SVGIcon from "@components/ui/primitive/SVGIcon.astro";
+import { social, ui } from "@data/icons";
+import { Picture } from "astro:assets";
+
+interface Props {
+  entry: EntryContext;
+  vaultContext?: VaultContext | undefined;
+}
+
+const { entry, vaultContext } = Astro.props;
+
+const image = entry.image;
+const github = entry.github;
+
+const calendarIcon = ui.calendar;
+const clockIcon = ui.clock;
+const tagIcon = ui.tag;
+const githubIcon = social.github;
+
+if (!calendarIcon || !clockIcon || !tagIcon) {
+  throw new Error(
+    "Required article header icons (calendar, clock, or tag) are missing from @data/icons",
+  );
+}
+
+const formattedDate = new Date(entry.pubDate).toLocaleDateString("en-US", {
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+});
+
+const readTimeText = entry.readTime ? `${entry.readTime} min read` : null;
+---
+
+<header
+  class="article-header-root mx-auto mb-10 flex w-full max-w-screen-2xl flex-col gap-8 contain-paint md:mb-14 xl:mb-20"
+>
+  <div class="flex flex-col gap-6">
+    {
+      vaultContext && (
+        <nav aria-label="Breadcrumb">
+          <a
+            href={`/thejournal/${vaultContext.id}/`}
+            transition:name={`article-vault-button-${entry.vaultId}`}
+            class="badge badge-outline h-auto min-h-8 px-3 py-2 text-xs font-bold tracking-widest uppercase transition-all hover:bg-primary hover:text-primary-content active:scale-95"
+          >
+            {vaultContext.title}
+          </a>
+        </nav>
+      )
+    }
+
+    <h1
+      id="article-header"
+      transition:name="article-title"
+      class="font-display block text-4xl font-black leading-tight text-base-content md:text-5xl lg:text-6xl"
+    >
+      {entry.title}
+    </h1>
+
+    <div
+      class="flex flex-wrap items-center justify-between gap-6 pb-2 text-sm font-medium text-neutral-content/80"
+      transition:name="article-metadata"
+    >
+      <div class="flex flex-wrap items-center gap-x-8 gap-y-4">
+        <div class="flex items-center gap-2.5 whitespace-nowrap">
+          <SVGIcon icon={calendarIcon} class="size-4 opacity-70" />
+          <time datetime={entry.pubDate.toISOString()}>
+            {formattedDate}
+          </time>
+        </div>
+
+        {
+          readTimeText && (
+            <div class="flex items-center gap-2.5 whitespace-nowrap">
+              <SVGIcon icon={clockIcon} class="size-4 opacity-70" />
+              <span>{readTimeText}</span>
+            </div>
+          )
+        }
+
+        {
+          entry.tags.length > 0 && (
+            <div class="flex items-center gap-2.5">
+              <SVGIcon icon={tagIcon} class="size-4 opacity-70" />
+              <div class="flex flex-wrap items-center gap-x-3">
+                {entry.tags.map((tag) => (
+                  <span class="transition-colors hover:text-primary cursor-default">
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )
+        }
+      </div>
+
+      {
+        github && githubIcon && (
+          <div class="w-full sm:w-auto">
+            <Button
+              icon={githubIcon}
+              label="Repository"
+              variant="btn-outline"
+              href={`https://github.com/duranalberto/${github}`}
+              ariaLabel="Project repository"
+              isExternal
+              class="group h-10 w-full border-base-300 transition-all hover:border-primary hover:bg-primary hover:text-primary-content sm:h-9 sm:w-auto"
+            />
+          </div>
+        )
+      }
+    </div>
+  </div>
+
+  {
+    image && (
+      <div
+        class="article-image-container group relative overflow-hidden shadow-2xl layer-gpu md:rounded-box"
+        transition:name={`article-image-${image.src}`}
+      >
+        <Picture
+          src={image}
+          alt={entry.title}
+          widths={[640, 1024, 1536, 2048]}
+          formats={["avif", "webp"]}
+          sizes="100vw"
+          quality={85}
+          loading="eager"
+          fetchpriority="high"
+          decoding="async"
+          class="article-featured-img select-none transition-transform duration-700 ease-out group-hover:scale-105"
+          draggable={false}
+        />
+        <div class="article-image-overlay pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/10 md:rounded-box" />
+      </div>
+    )
+  }
+</header>

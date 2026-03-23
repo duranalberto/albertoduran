@@ -1,0 +1,206 @@
+/* =========================================================
+   JOURNAL PROSE TYPOGRAPHY (Standalone & Isolated)
+   Replaces @tailwindcss/typography entirely.
+   Font: Montserrat (sans-serif editorial) via --font-reading token.
+   ========================================================= */
+@layer typography {
+  .prose-journal {
+    color: var(--color-base-content);
+    font-family: var(--font-reading);
+    /* Montserrat is a tighter sans-serif: reduce letter-spacing and
+       word-spacing vs the previous Lora serif values */
+    line-height: 1.85;
+    letter-spacing: 0.01em;
+    word-spacing: 0.03em;
+
+    /* Responsive base text sizing */
+    font-size: 1rem;
+  }
+
+  @media (min-width: 768px) {
+    .prose-journal {
+      font-size: 1.0625rem;
+    }
+  }
+  @media (min-width: 1024px) {
+    .prose-journal {
+      font-size: 1.125rem;
+    }
+  }
+
+  /* ── Max-width constraint on the article element itself ───────────────── */
+  /*
+   * FIXED: The previous rule targeted `.prose-container` which does not exist
+   * anywhere in the component tree. The max-width constraint was silently
+   * never applied. The article renders as <article class="prose-journal …">
+   * so the constraint belongs on `.prose-journal` direct children that are
+   * block-level prose nodes, not on a wrapper class.
+   *
+   * The w-full + max-w-4xl on Article.astro handles the outer container.
+   * Inner prose elements (p, lists, headings) are naturally constrained by
+   * the parent's width; no additional max-width rule is required here.
+   * Removing the dead selector eliminates confusing dead CSS.
+   */
+
+  /* ── Headings ────────────────────────────────────────────────────────────── */
+  .prose-journal
+    :where(h1, h2, h3, h4, h5, h6):not(.not-prose, .not-prose *, svg *) {
+    color: var(--color-base-content);
+    font-family: var(--font-display);
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    line-height: 1.2;
+  }
+
+  .prose-journal :where(h1):not(.not-prose, .not-prose *, svg *) {
+    font-size: 2.25em;
+    margin-top: 0;
+    margin-bottom: 0.888em;
+  }
+  .prose-journal :where(h2):not(.not-prose, .not-prose *, svg *) {
+    font-size: 1.5em;
+    margin-top: 2em;
+    margin-bottom: 1em;
+  }
+  .prose-journal :where(h3):not(.not-prose, .not-prose *, svg *) {
+    font-size: 1.25em;
+    margin-top: 1.6em;
+    margin-bottom: 0.6em;
+  }
+  .prose-journal :where(h4):not(.not-prose, .not-prose *, svg *) {
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+    font-size: 1em;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    opacity: 0.75;
+  }
+
+  /* ── Content Elements ────────────────────────────────────────────────────── */
+  .prose-journal :where(p, ul, ol):not(.not-prose, .not-prose *, svg *) {
+    margin-block: 1.25em;
+  }
+
+  .prose-journal :where(li):not(.not-prose, .not-prose *, svg *) {
+    margin-block: 0.5em;
+  }
+
+  .prose-journal :where(ul):not(.not-prose, .not-prose *, svg *) {
+    list-style-type: disc;
+    padding-inline-start: 1.625em;
+  }
+
+  .prose-journal :where(ol):not(.not-prose, .not-prose *, svg *) {
+    list-style-type: decimal;
+    padding-inline-start: 1.625em;
+  }
+
+  .prose-journal :where(ul li):not(.not-prose, .not-prose *, svg *)::marker {
+    color: var(--color-primary);
+  }
+  .prose-journal :where(ol li):not(.not-prose, .not-prose *, svg *)::marker {
+    color: var(--color-primary);
+    font-weight: 600;
+  }
+
+  /* ── Inline Typography ───────────────────────────────────────────────────── */
+  .prose-journal :where(a):not(.not-prose, .not-prose *, svg *) {
+    color: var(--color-primary);
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-color: color-mix(
+      in oklab,
+      var(--color-primary) 40%,
+      transparent
+    );
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 0.2em;
+    /* FIXED: transition:all animates layout properties and color-scheme.
+       Scope to only the properties that visually change on hover. */
+    transition:
+      color 150ms ease,
+      text-decoration-color 150ms ease;
+  }
+
+  .prose-journal :where(strong, b):not(.not-prose, .not-prose *, svg *) {
+    color: var(--color-base-content);
+    font-weight: 700;
+  }
+
+  /* Inline Code */
+  .prose-journal :where(code):not(.not-prose, .not-prose *, svg *, pre code) {
+    color: var(--color-secondary);
+    background: color-mix(
+      in oklab,
+      var(--color-secondary) 12%,
+      var(--color-base-200)
+    );
+    padding: 0.15rem 0.4rem;
+    border-radius: 0.375rem;
+    font-size: 0.875em;
+    font-weight: 500;
+    font-family: var(--font-mono);
+  }
+
+  /* ── Block Elements ──────────────────────────────────────────────────────── */
+
+  /* Code Blocks */
+  .prose-journal :where(pre):not(.not-prose, .not-prose *, svg *) {
+    background-color: var(--color-base-200);
+    color: var(--color-base-content);
+    font-family: var(--font-mono);
+    font-size: 0.875em;
+    line-height: 1.714;
+    margin-block: 1.714em;
+    border-radius: var(--radius-box, 0.5rem);
+    padding: 1.14em;
+    overflow-x: auto;
+  }
+
+  /* Reset inline code styles inside a pre tag */
+  .prose-journal :where(pre code):not(.not-prose, .not-prose *, svg *) {
+    background-color: transparent;
+    color: inherit;
+    border-radius: 0;
+    padding: 0;
+    font-size: inherit;
+    font-weight: inherit;
+  }
+
+  /* Blockquote */
+  .prose-journal :where(blockquote):not(.not-prose, .not-prose *, svg *) {
+    position: relative;
+    border-left: 3px solid var(--color-primary);
+    border-radius: 0 var(--radius-box, 0.5rem) var(--radius-box, 0.5rem) 0;
+    padding: 1.5rem 1.75rem 1.5rem 2.25rem;
+    background: color-mix(in oklab, var(--color-base-200) 55%, transparent);
+    font-style: italic;
+    margin-block: 2em;
+    color: var(--color-base-content);
+    quotes: none;
+  }
+
+  .prose-journal
+    :where(blockquote p):not(.not-prose, .not-prose *, svg *)::before,
+  .prose-journal
+    :where(blockquote p):not(.not-prose, .not-prose *, svg *)::after {
+    content: none !important;
+  }
+
+  /* Horizontal Rule */
+  .prose-journal :where(hr):not(.not-prose, .not-prose *, svg *) {
+    border-color: var(--color-base-300);
+    border-top-width: 1px;
+    margin-block: 3em;
+  }
+
+  /* Images / Media */
+  .prose-journal :where(img, video):not(.not-prose, .not-prose *, svg *) {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin-block: 2em;
+    border-radius: 0.75rem;
+    box-shadow: 0 20px 40px rgb(0 0 0 / 0.12);
+  }
+}

@@ -1,428 +1,268 @@
 ---
-title: "Product Tracker"
+title: "Building a multi-source ecommerce price tracker with Python and FastAPI"
 pubDate: 2026-03-01
-description: "Async Scraper for Tracking E-commerce Listings and Price Changes."
+description: "How I built a modular price tracker that monitors hundreds of listings across Amazon, Mercado Libre, Liverpool, and Palacio de Hierro with async scraping, WebSockets, and Telegram alerts."
 author: "Alberto Duran"
 image: "../assets/thejournal/stock/08.avif"
-tags: ["project", "python", "fastapi"]
+tags: ["project", "python", "fastapi", "scraping"]
 github: "MLScraper"
 ---
 
-_A backend-focused system for tracking products, inventory movements, and operational events with reliability, auditability, and scalability in mind._
+I built this thing to stop losing money. The idea was simple enough: track a few products across a couple of stores, get notified when something drops in price. Then I blinked and it was monitoring hundreds of items across four platforms, pushing Telegram alerts for any drop over 14%, and streaming live updates to a browser dashboard. This post is the architecture tour I wish I'd had before I started.
 
 ---
 
-## Author’s Note
+## The problem with manual tracking
 
-MLScraper started as a practical tool for tracking product listings across several Mexican and international e-commerce sites. I wanted a way to monitor specific searches and receive alerts when new items appeared or when prices dropped meaningfully.
+If you've ever tried to catch a good deal on Amazon.com.mx or Mercado Libre, you already know the issue. Prices shift throughout the day. A listing that was MXN $450 in the morning might jump to $680 by evening, or disappear entirely. Manually refreshing pages doesn't scale beyond two or three products, and it certainly doesn't give you history.
 
-Over time it grew into a small but well-structured system. It now crawls multiple retailers, keeps historical price data, and delivers notifications through Telegram and a lightweight web dashboard.
-
-This article explains how the project works, how the codebase is organized, the engineering tradeoffs behind its design, and what I would change in a future iteration.
+What I needed was a system that fetches data automatically, remembers what it saw before, and tells me when something worth acting on happens. The piece that's easy to underestimate is the "remembers what it saw before" part. Without that, you can't detect changes, you can't compute price drops, and you can't tell the difference between a new listing and one that's been there for weeks.
 
 ---
 
-## Overview
+## System overview
 
-MLScraper is a modular, asynchronous web scraper built to monitor product listings across multiple online retailers.
+The whole system follows a single pipeline. Each provider fetches its pages, the results get normalized into a shared data model, that model is persisted to disk, and then two output channels do their job: a FastAPI web server serves a live dashboard, and a Telegram bot fires alerts when something meaningful happens.
 
-The system performs four main tasks:
+```mermaid
+flowchart LR
+    A[Search Terms\n+ Store URLs] --> B[Motor / Scraper Engine]
+    B --> C[Fetch HTML or JSON]
+    C --> D[Parse + Normalize]
+    D --> E[Detect Changes]
+    E --> F[Persist to JSON]
+    F --> G[FastAPI Dashboard]
+    F --> H[Telegram Alerts]
+    G --> I[WebSocket\nLive Updates]
 
-- Crawl search result pages across supported marketplaces
-- Normalize extracted data into a shared `Article` model
-- Detect new listings and meaningful price drops
-- Notify users through Telegram and a small real-time dashboard
+    classDef input fill:#6096BA,stroke:#333,stroke-width:2px,color:#fff
+    classDef process fill:#A3C4BC,stroke:#333,stroke-width:2px,color:#222
+    classDef output fill:#F4A261,stroke:#333,stroke-width:2px,color:#222
 
-The project is implemented in **Python 3** and relies on:
-
-- `aiohttp` for asynchronous HTTP requests
-- `FastAPI` and WebSockets for a lightweight dashboard
-- JSON files for simple, portable storage
-
-Each supported site is implemented as a provider module called a **Motor**. Adding support for a new store requires implementing a small parser and registering it with the system.
-
----
-
-## Design Goals
-
-When designing MLScraper, I focused on a few practical principles.
-
-### Modularity
-
-Each marketplace implementation is isolated in its own **Motor** class. The core scraping engine remains generic while each provider focuses only on parsing its HTML.
-
-### Asynchronous Efficiency
-
-Network requests use `asyncio` and `aiohttp`. This allows multiple pages to be fetched concurrently without blocking the event loop.
-
-### Simple Persistence
-
-Results are stored as JSON files per search. This keeps the system easy to inspect and portable across environments.
-
-### Actionable Alerts
-
-The scraper triggers alerts for two meaningful events:
-
-- discovery of a **new listing**
-- detection of a **significant price drop** (currently ~14%)
-
-### Developer Ergonomics
-
-The project includes a small web interface and a development container to simplify testing and reproducibility.
-
----
-
-## System Architecture
-
-At a high level the system contains three core layers:
-
-1. **Provider motors** that understand each website
-2. **Scraper orchestration logic** that coordinates crawling
-3. **Notification and visualization components**
-
-A simplified architecture diagram illustrates the flow:
-
-```
-+--------------------+        +-----------------+        +----------------------+
-| provider motors    | -----> | Scraper engine  | -----> | Local JSON storage   |
-| (amazon, ml, etc.) |        | (Motor orchestr)|        | (./data/*.json)      |
-+--------------------+        +-----------------+        +----------------------+
-        |                            |
-        |                            +--> Notifier (utils/telegram.py) -> Telegram Bot
-        |                            |
-        |                            +--> Web API / WebSocket (FastAPI app.py) -> Browser UI
+    class A input
+    class B,C,D,E,F process
+    class G,H,I output
 ```
 
-Each layer focuses on a specific responsibility, which keeps the system easier to extend and maintain.
+Each store has its own adapter (what I call a "motor"), but they all share the same base class and lifecycle. Add a new store, implement one method, and the rest of the system handles it automatically. That composability is what made this project actually maintainable as it grew.
 
 ---
 
-## Repository Structure
+## The Motor base class
 
-The repository is organized around clear functional boundaries.
+Every scraper in this project extends `Motor`, an abstract base class that handles all the plumbing so the individual adapters only have to worry about one thing: parsing a page.
 
-**Application layer**
-
-- `app.py` – FastAPI server, WebSocket manager, and dashboard integration
-
-**Scraping engine**
-
-- `scrapper.py` – coordinates scraping cycles across all motors
-- `scraper/motor.py` – base class implementing the generic scraping workflow
-- `scraper/article.py` – product data structures and price history
-- `scraper/stream.py` – container for active and finished listings
-
-**Provider implementations**
-
-Located under `provider/`:
-
-- `provider/mercado_libre/`
-- `provider/amazon/`
-- `provider/liverpool/`
-- `provider/palacio_de_hierro/`
-
-Each provider contains parsing logic tailored to that site.
-
-**Utilities**
-
-- `utils/file_manager.py`
-- `utils/headers.py`
-- `utils/telegram.py`
-- `utils/secret.py`
-
-**Frontend**
-
-- `static/` – minimal dashboard UI
-
-**Development environment**
-
-- `.devcontainer/` – container configuration for reproducible development
-
----
-
-## Execution Flow
-
-A scraping cycle follows a consistent pipeline.
-
-1. Create an asynchronous HTTP session
-2. Request the initial search page
-3. Parse results using the provider motor
-4. Normalize extracted data into `Article` objects
-5. Compare results with stored history
-6. Detect new listings or price changes
-7. Persist updated state
-8. Trigger notification events
-
-Retry logic and exponential backoff handle temporary network failures.
-
----
-
-## The Motor Abstraction
-
-The **Motor** class is the core abstraction behind the system.
-
-Every provider inherits from the base class defined in:
+The base class owns the HTTP session, the retry logic with exponential backoff, pagination, state management, and file persistence. The subclass only implements `scrape_page(body)`, which receives the raw HTML and a URL, and returns a list of extracted items plus the next page URL if one exists.
 
 ```python
-scraper/motor.py
+class Motor(ABC):
+    @abstractmethod
+    def scrape_page(self, body: dict) -> Tuple[List[Any], Optional[str]]:
+        """Must return a list of items and the URL for the next page (or None)."""
+        pass
 ```
 
-Providers implement a single method responsible for parsing a page:
+This is the Template Method pattern applied to web scraping. The algorithm stays fixed in `Motor.scrape()`: fetch the page, call `scrape_page`, process the results, follow pagination, save state. What changes per provider is only the parsing logic inside `scrape_page`. Adding Liverpool support meant writing about 40 lines of JSON parsing. The retry logic, file writes, and change detection came free.
+
+---
+
+## Data modeling
+
+Getting the data model right was the most important design decision. Current prices are almost useless without context. What matters is _change_ over time.
+
+### The Article dataclass
+
+Every tracked product is an `Article`. The core fields are `identifier`, `title`, `price`, `url`, `status`, and `datetime`. But the part that earns its keep is `history`, a list of `ArticleHistory` entries that records every change.
 
 ```python
-def scrape_page(self, body):
+@dataclass
+class Article:
+    search_term: str
+    identifier: str
+    title: str
+    price: float
+    url: Optional[str] = None
+    datetime: str = field(default_factory=lambda: str(datetime_lib.now()))
+    status: Status = Status.none
+    history: List[ArticleHistory] = field(default_factory=list)
+    last_updated: Optional[str] = None
 ```
 
-This method receives the raw HTTP response and must:
+The `identifier` is the stable key. For Amazon, it's the ASIN. For Mercado Libre, it's the MLM ID. As long as that stays the same across scrapes, the system can correctly match a newly scraped item to its historical record and detect whether the price changed.
 
-1. Parse the HTML
-2. Extract product information
-3. Detect pagination
+The `update()` method on `Article` compares incoming data to the current state. If something changed, it creates a new `ArticleHistory` entry and prepends it to the list. The dashboard and the Telegram alert logic both read from `history[0]` to get the previous value.
 
-The method returns:
+### Article status lifecycle
+
+An article moves through states as the scraper runs. A listing that appears in results is `active`. One that was active before but no longer appears in the latest scrape gets moved to `finished`. The `Stream` class manages these collections and handles the transitions.
+
+```mermaid
+stateDiagram-v2
+    [*] --> active : First seen in scrape
+    active --> active : Price or title updated
+    active --> finished : No longer in results
+    finished --> active : Reappears in scrape
+
+    classDef activeState fill:#A3C4BC,stroke:#333,stroke-width:2px,color:#222
+    classDef finishedState fill:#E9C46A,stroke:#333,stroke-width:2px,color:#222
+    class active activeState
+    class finished finishedState
+```
+
+---
+
+## Async scraping and concurrency
+
+Scraping is I/O-bound work. You spend most of the time waiting for a server to respond, not doing computation. That makes it a perfect fit for `asyncio`.
+
+The `Scrapper` class launches all motors concurrently using `asyncio.gather`. While one motor is waiting for Amazon's response, another is parsing a Mercado Libre page, and a third is writing its results to disk. On a typical cycle with five motors active, this cuts total runtime from a sequential sum to roughly the time of the slowest single provider.
 
 ```python
-(items, next_url)
+tasks = [
+    motor.scrape(caller=self._broadcast, silent=True)
+    for motor in self.motors
+]
+await asyncio.gather(*tasks)
 ```
 
-Where:
-
-- `items` is a list of parsed products
-- `next_url` represents the next page in the search results
-
-This design keeps the scraping engine generic while delegating site-specific logic to each provider.
+Inside each `Motor`, the `_fetch` method uses `aiohttp` with a shared `ClientSession` and a timeout of 45 seconds. Failed requests retry up to three times with exponential backoff (0.5s, then 1s, then 2s). The header rotation in `utils/headers.py` picks a random browser profile per session to reduce fingerprinting.
 
 ---
 
-## Data Model
+## Provider adapters
 
-Each product listing is represented by an `Article` object.
+Each platform has its own parsing strategy. They share the base class but differ significantly in how they expose data.
 
-Example JSON representation:
+### Mercado Libre
 
-```json
-{
-  "search_term": "AZ amazon_usa - DK books",
-  "url": "https://www.amazon.com.mx/dp/1465482512/",
-  "identifier": "1465482512",
-  "title": "Zoology: Inside the Secret World of Animals",
-  "price": 825.57,
-  "datetime": "2024-11-16 07:23:23.193375",
-  "status": "active",
-  "history": [
-    {
-      "datetime": "2024-11-17 23:35:34.266925",
-      "price": 374.36
-    },
-    {
-      "datetime": "2024-11-15 11:08:11.463581",
-      "price": 378.75
-    }
-  ]
-}
-```
+Mercado Libre's search results come as standard HTML. `BeautifulSoup` finds the result container (`ui-search-results`), iterates over the list items, and extracts the title, price, and URL from specific CSS classes. Pagination comes from a `andes-pagination__link` anchor with a "Siguiente" title attribute.
 
-Key characteristics:
+The trickiest part is building clean product URLs. Raw listing URLs contain tracking parameters and redirects. The adapter extracts the MLM identifier using a regex and reconstructs a canonical URL, either as an `articulo.mercadolibre.com.mx` link or a catalog URL depending on the ID prefix.
 
-- Every article maintains a **price history**
-- Listings are marked as `active` or `finished`
-- The `identifier` field prevents duplicate entries across scrapes
+### Amazon
 
-This structure allows the system to detect changes over time without relying on an external database.
+Amazon returns HTML too, but the structure is more defensive. Result cards use `data-component-type="s-search-result"` as the reliable selector, and the ASIN sits in the `data-asin` attribute on the container element. Price lives in `span.a-price span.a-offscreen`, stripped of currency symbols and commas before conversion to float. Any item without a price gets skipped entirely.
+
+### Liverpool
+
+Liverpool is built on Next.js, and all the product data is embedded as JSON inside a `<script id="__NEXT_DATA__">` tag. No HTML parsing needed. The motor reads that JSON blob directly, pulls from `query.data.mainContent.records`, and maps each record's `allMeta` object to the normalized item structure. Page count comes from the same JSON.
+
+### Palacio de Hierro
+
+This one is the most complex. The frontend uses a Constructor.io search API internally. The motor loads the initial HTML page only to extract an API key and configuration from embedded `data-*` attributes. It then calls the Constructor REST endpoint directly to get structured JSON results, bypassing the need to parse the rendered HTML grid entirely.
 
 ---
 
-## Persistence Strategy
+## Parsing techniques and selector design
 
-MLScraper intentionally uses a very simple persistence model.
+The biggest reliability lesson from this project is to target stable structural attributes over visual ones. CSS classes that look like `a-price-whole` or `ui-search-price__second-line` are presentation details. They change when the site redesigns. Attributes like `data-asin`, `data-component-type`, and element IDs baked into app state are functional. They tend to be more stable.
 
-All results are written as JSON files inside:
+For Mercado Libre, the fallback chain looks like this: try the standard pagination anchor class first, then fall back to looking for a `next` button wrapper if the first selector misses. This makes the parser survive minor HTML reshuffles.
 
-```bash
-./data/
-```
+For Amazon, skipping items without prices is deliberate. Sponsored listings and ads sometimes appear in the result set with incomplete data. Rather than crashing or storing a zero-price record, the adapter silently discards them.
 
-Each search query produces its own file.
+Defensive practices that paid off:
 
-This approach offers several advantages:
-
-- human-readable data
-- no database dependencies
-- easy debugging and portability
-
-The downside is limited scalability. Large datasets and concurrent writes would require a more robust storage layer.
+- Always check for `None` before calling `.get_text()` on a tag.
+- Use `re.sub(r'[^\d.]', '', raw_price.replace(',', ''))` for price strings that mix currency symbols, commas, and whitespace.
+- Wrap every item-level parse in a `try/except` so one broken listing doesn't abort the whole page.
 
 ---
 
-## Notification System
+## State management and persistence
 
-The system currently supports two notification channels.
+The system stores all state in JSON files, one per motor, in a `./data/` directory. Each file is a flat array of serialized `Article` objects. When the motor starts, it loads from this file to restore the full history from previous runs. When a scrape cycle completes, it writes the updated state back.
 
-### Telegram Alerts
+The file write is async via `asyncio.get_running_loop().run_in_executor()`, which offloads the blocking file operation to a thread pool without blocking the event loop. On a small dataset this barely matters, but it's the correct pattern.
 
-Telegram integration lives in:
+Change detection works like this: after fetching all items for a search term, the motor compares the new result set to the articles currently in the `active` stream. Any article that was active before but isn't in the new results gets moved to `finished`. Any article in the new results that wasn't tracked before gets added as `active` and flagged as new. Articles that appear in both get an `update()` call that checks whether the title or price changed.
+
+---
+
+## Real-time backend with FastAPI and WebSockets
+
+The FastAPI application runs a background scraping loop alongside the web server using a lifespan context manager. When the app starts, it creates an async task for `Scrapper.run()`, which cycles every 400 seconds. When it shuts down, the task gets cancelled.
 
 ```python
-utils/telegram.py
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    scraping_task = asyncio_create_task(scrapper.run())
+    yield
+    scraping_task.cancel()
 ```
 
-Two alert types exist.
+There are two public endpoints. `GET /api/search` returns the full current snapshot: all active articles per motor, ready for the frontend to render. `WebSocket /ws/` is the live channel. Any time a scrape cycle finishes, or a new item appears, or a price drops, the server pushes a JSON message to every connected client.
 
-New listing detected:
+The `ConnectionManager` maintains a list of active WebSocket connections and broadcasts to all of them. If a client disconnects mid-broadcast, the exception gets caught silently and that connection is removed from the list.
+
+---
+
+## Telegram integration
+
+Telegram notifications run as a side effect of the broadcast pipeline. When a new article is detected, `send_new_to_telegram` formats a message with the product title, price, and URL, then sends it to a configured chat ID via the Bot API. When an update is detected, `send_price_drop_to_telegram` only fires if the price dropped by 14% or more.
+
+The 14% threshold was chosen empirically. Below that, the noise-to-signal ratio was too high. The calculation is straightforward:
 
 ```python
-send_new_to_telegram(article)
+percent_change = ((new_value - last_value) / abs(last_value)) * 100
+if percent_change <= -14:
+    send_price_drop_to_telegram(element)
 ```
 
-Price drop detected:
-
-```python
-send_price_drop_to_telegram(article)
-```
-
-Messages include the product title, link, previous price, new price, and timestamp.
-
-A price drop notification triggers when the drop exceeds roughly **14%**.
+Messages use Telegram's HTML parse mode, which means you can include `<b>` bold tags, `<a>` links, and `<s>` strikethrough for the old price. The alert format shows the old price with strikethrough, the new price in bold, the savings amount, and the percentage. It reads clearly in a notification preview without opening the chat.
 
 ---
 
-### Web Dashboard
+## Reliability and resilience
 
-MLScraper includes a minimal browser interface served through FastAPI.
+Scraping fails constantly in practice, and the system has to treat that as normal, not exceptional.
 
-The server exposes:
+At the network level, every fetch retries up to three times with exponential backoff. Status codes like 403 or 500 get logged and the item is skipped, but they don't crash the motor. Each motor runs in its own async task inside `asyncio.gather`, so one provider timing out doesn't block the others.
 
-- static frontend assets
-- WebSocket endpoint `/ws/`
+At the parsing level, every item is wrapped in `try/except`. A malformed price, a missing tag, or a structural change in the site's HTML will fail that item silently and move on to the next. The motor logs the error if debug mode is on, but it doesn't surface to the user.
 
-The dashboard subscribes to the WebSocket stream and displays events in real time. When a new item appears, the interface also plays a notification sound.
-
----
-
-## HTTP Strategy
-
-Web scraping systems often fail due to request blocking or unstable connections.
-
-To reduce this risk the scraper implements several defensive techniques.
-
-Requests include randomized browser headers generated by:
-
-```python
-utils/headers.py
-```
-
-These headers mimic common browser configurations by rotating modern user agent strings.
-
-The HTTP client also uses:
-
-- retry logic
-- exponential backoff
-- request timeouts
-
-These measures improve resilience against temporary failures and intermittent blocking.
+The `ConnectionManager.broadcast` method also wraps each send in a try/except. A disconnected WebSocket client won't interrupt the broadcast to the remaining connected clients.
 
 ---
 
-## Engineering Tradeoffs
+## Deployment
 
-Several architectural decisions were deliberate compromises between simplicity and capability.
+The Dockerfile uses `python:3.14.2-slim`, copies the requirements, installs them, and runs `app.py` with `uvicorn` on port 80. The `data/` directory for JSON files needs to be a mounted volume in production, otherwise it gets wiped on every container restart.
 
-### JSON vs Database
+In development, the same code runs locally without Docker. `uvicorn_run(app, host="0.0.0.0", port=80)` is the entry point. The `static/` folder is mounted as a StaticFiles route at `/`, so the frontend is served directly by FastAPI without a separate web server.
 
-**Decision:** store data in JSON files.
-
-**Advantages**
-
-- zero external dependencies
-- easy inspection and debugging
-- portable across machines
-
-**Limitations**
-
-- poor performance with large datasets
-- no indexing or complex queries
-- unsafe with concurrent writers
-
-A future version will likely migrate to **SQLite or PostgreSQL**.
+The always-on scraping loop is the piece that makes this an _application_ rather than a script. The frontend never needs to trigger a scrape. It connects via WebSocket, receives the current state on load, and then listens for push events. The browser is always looking at fresh data.
 
 ---
 
-### HTML Scraping vs Official APIs
+## Design decisions and trade-offs
 
-**Decision:** parse HTML pages.
+**Why JSON files instead of a database?** For a single-user tool running on one machine, the overhead of a database is real and the benefit is minimal. JSON files are easy to inspect, easy to back up, and have zero setup cost. The trade-off is that concurrent writes are unsafe, but since all writes go through a single async task, there's no actual concurrency issue here.
 
-**Advantages**
+**Why provider adapters?** Each store is genuinely different. One returns JSON, one needs API calls, two need HTML parsing. A single monolithic scraper would need conditionals everywhere. Separate adapters keep each parsing strategy isolated and testable. Adding a new store means creating a new file, not modifying shared code.
 
-- works with any public search page
-- no API authentication required
-- flexible across providers
+**Why WebSockets instead of polling?** The interval-based polling in the frontend (every 5 seconds via `setInterval`) already existed early in the project. WebSockets replaced it for the real-time update path because push beats pull for event-driven data. The REST endpoint still exists as a fallback and for the initial load.
 
-**Limitations**
-
-- fragile when site layouts change
-- requires maintenance when markup updates
-- sometimes conflicts with terms of service
+**What complexity was skipped?** There's no authentication, no rate limiting, no multi-user support, and no observability beyond logging to stdout. These are real gaps for a production service, but this project was built to scratch a personal itch, not to handle traffic.
 
 ---
 
-### Async Scraping with Sync Notifications
+## Limitations and future improvements
 
-Scraping operations are asynchronous, but Telegram notifications use synchronous HTTP calls.
+The JSON storage approach doesn't scale past a few thousand articles per file. A SQLite database would be a minimal change with significant gains in query flexibility and write safety. The `Article.update()` method currently only tracks price and title changes. Adding inventory or seller changes would require extending `ArticleHistory`.
 
-In theory this could block the event loop if many alerts triggered simultaneously. In practice the alert volume is small enough that the simplicity was worth it.
+The HTML selectors for Mercado Libre and Amazon are the most fragile part of the system. Both sites update their markup regularly, and there's no automated way to detect when a selector breaks other than noticing that a motor stops returning results. Adding a monitoring check that alerts when a motor returns zero results for three consecutive cycles would catch this early.
 
----
+The frontend is functional but minimal. There's no charting of price history, no filtering by price range, no way to mute a specific search term from the UI. All of those are straightforward additions given the data already being stored.
 
-### Single-Process Architecture
-
-All components run in a single process:
-
-- scraping engine
-- API server
-- notification logic
-
-This design keeps deployment simple and debugging straightforward.
-
-The tradeoff is limited scalability and weaker fault isolation.
+Supporting more providers is the most obvious extension. The `Motor` base class is genuinely reusable. Any store with a browsable category page or a search endpoint can be added with a new file in `provider/`.
 
 ---
 
-## Why Build Something Like This
+## Wrapping up
 
-MLScraper began as a practical tool, but it became a useful engineering exercise.
+The core ideas here aren't specific to price tracking. The adapter pattern for isolating provider differences, the shared data model for consistent change detection, async I/O for parallel scraping, and WebSockets for pushing state instead of polling it: these are general patterns for any system that aggregates data from multiple external sources.
 
-The project touches several real-world concerns:
+The price tracker was the excuse. The patterns are what stuck.
 
-- asynchronous networking
-- resilient scraping
-- modular architecture
-- event-driven notifications
-- containerized development
-
-It also solves a simple everyday problem. Tracking product listings manually across multiple stores quickly becomes tedious. Automating that workflow makes the process far more efficient.
-
----
-
-## Potential Improvements
-
-Several areas could improve the system’s robustness and flexibility.
-
-- **Database Migration:** Replacing JSON storage with SQLite or PostgreSQL would enable indexing, faster queries, and safer concurrent writes.
-- **Async Notification Pipeline:** A queue-based notification system would decouple scraping from message delivery.
-- **Proxy and Headless Support:** Adding rotating proxies and optional Playwright integration would improve reliability against stricter anti-bot protections.
-- **Configurable Searches:** Moving search definitions to YAML or a database would allow configuration changes without editing code.
-- **Historical Analytics:** Price trend visualization could reveal patterns such as seasonal discounts or typical deal windows.
-- **Automated Tests:** Provider parsers should include tests using stored HTML snapshots to detect markup changes early.
-- **Distributed Scraping:** Motors could run as independent workers coordinated by a scheduler, allowing horizontal scaling.
-
----
-
-## Final Thoughts
-
-MLScraper intentionally favors simplicity over architectural complexity.
-
-Even so, the combination of modular providers, asynchronous scraping, and lightweight persistence creates a system that is both flexible and practical.
-
-Adding a new provider usually requires writing a small parser and registering it with the generator. That simplicity makes experimentation easy.
-
-For me the project sits in a comfortable middle ground. It solves a real problem while remaining small enough to understand end to end. Like most useful tools, it keeps evolving as new ideas appear.
+If you want to extend this, the cleanest starting point is `provider/generator.py`, where all active motors are registered. Add a new motor class, import it there, and the rest of the system picks it up automatically on the next run.

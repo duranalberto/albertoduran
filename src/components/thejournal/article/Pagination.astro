@@ -1,0 +1,74 @@
+---
+import { type EntryContext } from "@appTypes/content_context";
+
+interface Props {
+  prevEntry: EntryContext | null;
+  nextEntry: EntryContext | null;
+}
+
+const { prevEntry, nextEntry } = Astro.props;
+
+const cardClasses =
+  "group card bg-base-100 border border-base-200 shadow-sm transition-[transform,border-color,box-shadow] duration-200 hover:border-primary hover:shadow-md active:scale-95 will-change-transform";
+const labelClasses =
+  "pagination-label flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-base-content/50 transition-colors duration-200 group-hover:text-primary";
+---
+
+<nav
+  aria-label="Journal entry navigation"
+  class="mx-auto grid w-full max-w-4xl grid-cols-1 gap-4 md:grid-cols-2"
+>
+  {
+    prevEntry ? (
+      <a
+        href={`/thejournal/${prevEntry.id}/`}
+        class={cardClasses}
+        data-astro-prefetch
+      >
+        <div class="card-body flex flex-col items-start p-6 text-left">
+          <span class={labelClasses}>
+            <span
+              class="transition-transform duration-200 group-hover:-translate-x-1"
+              aria-hidden="true"
+            >
+              &larr;
+            </span>
+            Previous
+          </span>
+          <span class="font-display line-clamp-2 text-lg font-semibold text-base-content">
+            {prevEntry.title}
+          </span>
+        </div>
+      </a>
+    ) : (
+      <div class="hidden md:block" aria-hidden="true" />
+    )
+  }
+
+  {
+    nextEntry ? (
+      <a
+        href={`/thejournal/${nextEntry.id}/`}
+        class={cardClasses}
+        data-astro-prefetch
+      >
+        <div class="card-body flex flex-col items-end p-6 text-right">
+          <span class={labelClasses}>
+            Next
+            <span
+              class="transition-transform duration-200 group-hover:translate-x-1"
+              aria-hidden="true"
+            >
+              &rarr;
+            </span>
+          </span>
+          <span class="font-display line-clamp-2 text-lg font-semibold text-base-content">
+            {nextEntry.title}
+          </span>
+        </div>
+      </a>
+    ) : (
+      <div class="hidden md:block" aria-hidden="true" />
+    )
+  }
+</nav>

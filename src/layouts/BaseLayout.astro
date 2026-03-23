@@ -1,23 +1,19 @@
 ---
-import Footer from "@components/common/Footer.astro";
-import Header from "@components/common/Header.astro";
+import Footer from "@components/layout/Footer.astro";
+import Header from "@components/layout/Header.astro";
 import FlexShell from "@layouts/FlexShell.astro";
 import { Font, getImage } from "astro:assets";
 import { ClientRouter } from "astro:transitions";
-import "../styles/global.css";
+import "@styles/global.css";
 import kirby from "@assets/thejournal/pub/kirby.jpg";
+import type { SiteManifest } from "@appTypes/navigation";
 
 interface Props {
-  pageTitle: string;
-  description?: string;
+  siteManifest: SiteManifest;
   image?: ImageMetadata;
 }
 
-const {
-  pageTitle,
-  description = "Visit albertoduran.com",
-  image = kirby,
-} = Astro.props;
+const { siteManifest, image = kirby } = Astro.props;
 
 const hasHero = Astro.slots.has("hero");
 const optimizedImage = await getImage({ src: image, format: "webp" });
@@ -34,7 +30,7 @@ const socialImageURL = new URL(optimizedImage.src, Astro.site);
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
-    <title>{pageTitle}</title>
+    <title>{siteManifest.pageTitle}</title>
 
     <meta
       name="theme-color"
@@ -73,12 +69,12 @@ const socialImageURL = new URL(optimizedImage.src, Astro.site);
       })();
     </script>
 
-    <meta name="description" content={description} />
+    <meta name="description" content={siteManifest.pageTitle} />
     <link rel="canonical" href={canonicalURL} />
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonicalURL} />
-    <meta property="og:title" content={pageTitle} />
-    <meta property="og:description" content={description} />
+    <meta property="og:title" content={siteManifest.pageTitle} />
+    <meta property="og:description" content={siteManifest.description} />
     <meta property="og:image" content={socialImageURL} />
     <meta name="twitter:card" content="summary_large_image" />
 
@@ -89,9 +85,9 @@ const socialImageURL = new URL(optimizedImage.src, Astro.site);
       transition:persist
     />
 
-    <Font cssVariable="--font-noto-sans-display" preload />
-    <Font cssVariable="--font-inter" preload />
-    <Font cssVariable="--font-lora" />
+    <Font cssVariable="--font-display" preload />
+    <Font cssVariable="--font-sans" preload />
+    <Font cssVariable="--font-reading" />
     <Font cssVariable="--font-fira-code" />
     <ClientRouter />
   </head>
@@ -123,7 +119,7 @@ const socialImageURL = new URL(optimizedImage.src, Astro.site);
     <slot name="overlays" />
 
     <script>
-      import "@utils/theme_manager";
+      import "@runtime/managers/theme_manager";
     </script>
   </body>
 </html>

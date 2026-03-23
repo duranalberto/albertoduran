@@ -7,22 +7,23 @@
    Load order:
      1. Framework imports (Tailwind, plugins)
      2. Theme tokens (Tailwind @theme, DaisyUI themes)
-     3. Base layer (normalization, transitions, theme-init)
+     3. Base layer (normalization, transitions)
      4. Utilities (sr-only, js states, gpu, touch, misc)
-     5. Components (DaisyUI overrides, glass, modal, code)
-     6. Layout (parallax, strip-bg, journal partials)
+     5. Shared (DaisyUI overrides, glass)
+     6. Layout (parallax)
+     7. UI components (strip-bg, mdx overrides)
+     8. Page-specific (index, thejournal)
    ========================================================= */
 
 /* ─── 1. FRAMEWORK ─────────────────────────────────────── */
 @import "tailwindcss";
-@plugin "@tailwindcss/typography";
 
 /* ─── 2. DAISYUI COMPONENTS ────────────────────────────── */
 @plugin "daisyui" {
   themes: light, dark;
   include:
     "button", "card", "navbar", "swap", "badge", "menu", "dropdown", "timeline",
-    "mockup", "footer", "modal", "join", "alert", "link", "table";
+    "mockup", "footer", "modal", "join", "alert", "link", "table", "textrotate";
 }
 
 /* ─── 3. THEME TOKENS ──────────────────────────────────── */
@@ -32,7 +33,6 @@
 /* ─── 4. BASE ───────────────────────────────────────────── */
 @import "./base/_normalize.css";
 @import "./base/_transitions.css";
-@import "./base/_theme-init.css";
 
 /* ─── 5. UTILITIES ─────────────────────────────────────── */
 @import "./utilities/_js-states.css";
@@ -40,19 +40,27 @@
 @import "./utilities/_touch-hover.css";
 @import "./utilities/_misc.css";
 
-/* ─── 6. COMPONENTS ─────────────────────────────────────── */
-@import "./components/_daisyui-overrides.css";
-@import "./components/_glass.css";
-@import "./components/_heading-anchor.css";
-@import "./components/_code-block.css";
-@import "./components/_diagram.css";
-@import "./components/_prose-table.css";
+/* ── 6. SHARED ─────────────────────────────────────────────── */
+@import "./shared/_daisyui-overrides.css";
+@import "./shared/_glass.css";
+@import "./shared/_hero.css";
 
 /* ─── 7. LAYOUT ─────────────────────────────────────────── */
 @import "./layout/_parallax.css";
-@import "./layout/_strip-background.css";
-@import "./layout/_journal-layout.css";
-@import "./layout/_journal-nav.css";
-@import "./layout/_journal-modal.css";
-@import "./layout/_journal-header.css";
-@import "./layout/_journal-prose.css";
+
+/* ─── 8. UI ──────────────────────────────────────────────── */
+@import "./ui/display/_strip-background.css";
+@import "./ui/mdx/_heading-anchor.css";
+@import "./ui/mdx/_code-block.css";
+@import "./ui/mdx/_prose-table.css";
+
+/* ─── 9. PAGE — INDEX ───────────────────────────────────── */
+@import "./index/_hero-panel.css";
+
+/* ─── 10. PAGE — THEJOURNAL ─────────────────────────────── */
+@import "./thejournal/article/_layout.css";
+@import "./thejournal/article/_nav.css";
+@import "./thejournal/article/_dock.css";
+@import "./thejournal/article/_header.css";
+@import "./thejournal/article/_typography.css";
+@import "./thejournal/article/_diagram.css";

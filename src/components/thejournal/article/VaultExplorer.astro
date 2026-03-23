@@ -1,0 +1,37 @@
+---
+import type { VaultContext } from "@appTypes/content_context";
+import { ui } from "@data/icons";
+import SidebarBase from "./SidebarBase.astro";
+import VaultTreeNode from "./VaultTreeNode.astro";
+
+interface Props {
+  vault: VaultContext;
+  currentEntryId: string;
+  expandedWidth?: string;
+}
+
+const { vault, currentEntryId, expandedWidth = "18rem" } = Astro.props;
+---
+
+<SidebarBase
+  title="Vault Explorer"
+  icon={ui.vault}
+  badgeCount={vault.itemCount}
+  expandedWidth={expandedWidth}
+  side="left"
+>
+  <ul class="menu menu-sm w-full p-0">
+    {
+      [vault.index, ...vault.items].map((item) => (
+        <li>
+          <VaultTreeNode
+            item={item}
+            currentEntryId={currentEntryId}
+            level={0}
+            isStatic={false}
+          />
+        </li>
+      ))
+    }
+  </ul>
+</SidebarBase>

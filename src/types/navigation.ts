@@ -1,24 +1,10 @@
-export type Sites = "/" | "/profile/" | "/thejournal/";
+export type Sites = "/" | "/profile/" | "/thejournal/" | "404";
 
 export interface SiteManifest {
   label: string;
-  title: string;
+  pageTitle: string;
+  description: string;
 }
-
-export const sitesManifest: Record<Sites, SiteManifest> = {
-  "/": {
-    label: "AlbertoDuran",
-    title: "I am Alberto Duran, Welcome to my site!",
-  },
-  "/profile/": {
-    label: "Professional Profile",
-    title: "Alberto Duran | Software Engineer",
-  },
-  "/thejournal/": {
-    label: "TheJournal.",
-    title: "TheJournal - Insights & Documentation",
-  },
-};
 
 export interface CurrentSite {
   site: Sites;

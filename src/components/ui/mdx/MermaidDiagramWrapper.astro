@@ -1,0 +1,129 @@
+---
+/**
+ * MermaidDiagramWrapper.astro
+ *
+ * MDX component replacement for `.mermaid-diagram-container` divs.
+ *
+ * Uses the Popover API — zero JavaScript, CSS-only toggle via popovertarget.
+ *
+ * No-JS architecture note:
+ *   Both the inline diagram and the popover copy are rendered at build time.
+ *   The popover copy has its <style> block stripped to reduce HTML size —
+ *   the inline copy's styles are sufficient since both SVGs share the same
+ *   theme CSS. The popover SVG root ID is suffixed with `-expanded` to avoid
+ *   duplicate IDs in the same document.
+ */
+
+interface Props {
+  class?: string;
+  [key: string]: unknown;
+}
+
+const { class: className, ...rest } = Astro.props;
+
+const isDiagram =
+  className?.split(" ").includes("mermaid-diagram-container") ?? false;
+
+const popoverId = `diagram-popover-${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
+
+const diagramHtml = await Astro.slots.render("default");
+
+// Strip the embedded <style> block from the popover copy to reduce HTML size.
+// The inline copy already carries the full scoped CSS for both light/dark themes.
+// Both SVGs share the same mermaid-<stableId> CSS scope so the inline styles
+// apply correctly to the popover SVG as well.
+const popoverDiagramHtml = diagramHtml.replace(
+  /<style[^>]*>[\s\S]*?<\/style>/i,
+  "",
+);
+
+// Detect diagram type from the SVG data attribute or first mermaid keyword
+// for a more descriptive popover title.
+const diagramTypeMatch = diagramHtml.match(/data-diagram-type="([^"]+)"/);
+const firstKeyword = diagramHtml.match(
+  /class="[^"]*\b(flowchart|sequence|gantt|classDiagram|stateDiagram|erDiagram|journey|gitGraph|kanban|timeline|pie)\b/i,
+);
+const diagramType = diagramTypeMatch?.[1] ?? firstKeyword?.[1] ?? null;
+const popoverTitle = diagramType
+  ? `${diagramType.charAt(0).toUpperCase() + diagramType.slice(1)} · Expanded`
+  : "Diagram · Expanded";
+
+const popoverTitleId = `${popoverId}-title`;
+---
+
+{
+  isDiagram ? (
+    <div class="diagram-wrapper not-prose">
+      <div class={className} {...rest} set:html={diagramHtml} />
+
+      <button
+        type="button"
+        class="diagram-expand-bar"
+        popovertarget={popoverId}
+        popovertargetaction="show"
+        aria-label="Expand diagram"
+        aria-haspopup="dialog"
+      >
+        <svg
+          viewBox="0 0 16 16"
+          width="13"
+          height="13"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <polyline points="1,5 1,1 5,1" />
+          <polyline points="11,1 15,1 15,5" />
+          <polyline points="15,11 15,15 11,15" />
+          <polyline points="5,15 1,15 1,11" />
+        </svg>
+        <span>Expand</span>
+      </button>
+
+      <div
+        id={popoverId}
+        popover="auto"
+        role="dialog"
+        aria-labelledby={popoverTitleId}
+        class="diagram-popover"
+      >
+        <div class="diagram-popover-inner">
+          <div class="diagram-popover-header">
+            <span id={popoverTitleId} class="diagram-popover-title">
+              {popoverTitle}
+            </span>
+            <button
+              type="button"
+              class="btn btn-ghost btn-sm btn-circle"
+              popovertarget={popoverId}
+              popovertargetaction="hide"
+              aria-label="Close diagram"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                aria-hidden="true"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="diagram-popover-scroll">
+            <div class={className} {...rest} set:html={popoverDiagramHtml} />
+          </div>
+        </div>
+      </div>
+    </div>
+  ) : (
+    <div class={className} {...rest} set:html={diagramHtml} />
+  )
+}

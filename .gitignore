@@ -25,10 +25,6 @@ build/
 .env.test.local
 .env.production.local
 
-# IDE - VS Code
-.vscode/*
-!.vscode/extensions.json
-.vscode/settings.json
 
 # IDE - Linux container / general
 .DS_Store
@@ -46,3 +42,4 @@ coverage/
 
 # Other files
 ./gitignore
+.cache/mermaid

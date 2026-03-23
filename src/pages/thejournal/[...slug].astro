@@ -1,24 +1,26 @@
 ---
-import Article from "@components/sections/thejournal/Article.astro";
-import OnThisPage from "@components/sections/thejournal/OnThisPage.astro";
-import OnThisPageContent from "@components/sections/thejournal/OnThisPageContent.astro";
-import Pagination from "@components/sections/thejournal/Pagination.astro";
-import PublicationHeader from "@components/sections/thejournal/PublicationHeader.astro";
-import VaultExplorer from "@components/sections/thejournal/VaultExplorer.astro";
-import VaultNavContent from "@components/sections/thejournal/VaultNavContent.astro";
-import CodeBlock from "@components/ui/CodeBlock.astro";
-import HeadingAnchor from "@components/ui/HeadingAnchor.astro";
-import HeadingAnchorH3 from "@components/ui/HeadingAnchorH3.astro";
-import ProseTable from "@components/ui/ProseTable.astro";
-import SVGIcon from "@components/ui/SVGIcon.astro";
-import { ui } from "@data/icons";
-import BaseLayout from "@layouts/BaseLayout.astro";
-import FlexShell from "@layouts/FlexShell.astro";
+import Article from "@components/thejournal/article/Article.astro";
+import type { SiteManifest } from "@appTypes/navigation";
+import OnThisPage from "@components/thejournal/article/OnThisPage.astro";
+import OnThisPageContent from "@components/thejournal/article/OnThisPageContent.astro";
+import Pagination from "@components/thejournal/article/Pagination.astro";
+import PublicationHeader from "@components/thejournal/article/PublicationHeader.astro";
+import VaultExplorer from "@components/thejournal/article/VaultExplorer.astro";
+import VaultNavContent from "@components/thejournal/article/VaultNavContent.astro";
+import CodeBlock from "@components/ui/mdx/CodeBlock.astro";
+import HeadingAnchor from "@components/ui/mdx/HeadingAnchor.astro";
+import HeadingAnchorH3 from "@components/ui/mdx/HeadingAnchorH3.astro";
+import ProseTable from "@components/ui/mdx/ProseTable.astro";
+import MermaidDiagramWrapper from "@components/ui/mdx/MermaidDiagramWrapper.astro";
+import SVGIcon from "@components/ui/primitive/SVGIcon.astro";
 import {
   entryManifest,
   rawEntries,
   vaultsManifest,
-} from "@utils/thejournal_manifest";
+} from "@content/processors/thejournal";
+import { ui } from "@data/icons";
+import BaseLayout from "@layouts/BaseLayout.astro";
+import FlexShell from "@layouts/FlexShell.astro";
 import { render } from "astro:content";
 
 export async function getStaticPaths() {
@@ -30,19 +32,37 @@ export async function getStaticPaths() {
 
 const { post } = Astro.props;
 const renderResult = await render(post);
+
 const entry = entryManifest[post.id];
-const vaultContext = vaultsManifest[entry.vaultId];
+
+if (!entry) {
+  return Astro.redirect("/404");
+}
+
+const vaultContext = entry.vaultId ? vaultsManifest[entry.vaultId] : undefined;
+
+const vaultIcon = ui.vault;
+const otpIcon = ui.onThisPage;
+
+if (!vaultIcon || !otpIcon) {
+  throw new Error(
+    "Required UI icons (vault/onThisPage) are missing from @data/icons",
+  );
+}
 
 const components = {
   pre: CodeBlock,
   h2: HeadingAnchor,
   h3: HeadingAnchorH3,
   table: ProseTable,
+  div: MermaidDiagramWrapper,
 };
 
-const prevEntry = entry.previous ? entryManifest[entry.previous] : null;
-const nextEntry = entry.next ? entryManifest[entry.next] : null;
-const hasNavigation = prevEntry || nextEntry;
+const prevEntry = entry.previous
+  ? (entryManifest[entry.previous] ?? null)
+  : null;
+const nextEntry = entry.next ? (entryManifest[entry.next] ?? null) : null;
+const hasNavigation = !!(prevEntry || nextEntry);
 
 const headings = renderResult.headings.filter(
   (h) => h.depth > 1 && h.depth <= 3,
@@ -53,13 +73,19 @@ const SIDEBAR_RIGHT_WIDTH = "16rem";
 
 const vaultModalTitleId = "vault-modal-title";
 const otpModalTitleId = "otp-modal-title";
+const siteManifest: SiteManifest = {
+  description: entry.description,
+  pageTitle: entry.title,
+  label: entry.title,
+};
+
+const layoutProps = {
+  siteManifest,
+  ...(entry.image ? { image: entry.image } : {}),
+};
 ---
 
-<BaseLayout
-  pageTitle={entry.title}
-  description={entry.description}
-  image={entry.image}
->
+<BaseLayout {...layoutProps}>
   <div class="journal-root xl:pb-14">
     <div class="journal-content flex-1">
       <FlexShell
@@ -82,6 +108,7 @@ const otpModalTitleId = "otp-modal-title";
             </aside>
           )
         }
+
         <div
           class="journal-main-content w-full flex-1 min-w-0 flex flex-col mt-4"
           transition:name="thejournal-main"
@@ -101,6 +128,7 @@ const otpModalTitleId = "otp-modal-title";
               )
             }
           </div>
+
           <nav
             class="dock-wrapper xl:hidden z-30"
             aria-label="Article navigation dock"
@@ -110,38 +138,41 @@ const otpModalTitleId = "otp-modal-title";
               <div class="join dock-join">
                 {
                   vaultContext && (
-                    <label
-                      for="vault-modal-toggle"
+                    <button
+                      type="button"
                       class="btn btn-ghost join-item dock-btn"
                       aria-label="Open Vault Explorer"
+                      onclick="document.getElementById('vault-modal-toggle').checked = true"
                     >
                       <SVGIcon
-                        icon={ui.vault}
+                        icon={vaultIcon}
                         class="size-5 pointer-events-none"
                         aria-hidden="true"
                       />
-                      <span class="dock-btn-label">{ui.vault.text}</span>
-                    </label>
+                      <span class="dock-btn-label">{vaultIcon.text}</span>
+                    </button>
                   )
                 }
 
-                <label
-                  for="otp-modal-toggle"
+                <button
+                  type="button"
                   class="btn btn-ghost join-item dock-btn"
                   aria-label="Open Table of Contents"
+                  onclick="document.getElementById('otp-modal-toggle').checked = true"
                 >
                   <SVGIcon
-                    icon={ui.onThisPage}
+                    icon={otpIcon}
                     class="size-5 pointer-events-none"
                     aria-hidden="true"
                   />
-                  <span class="dock-btn-label">{ui.onThisPage.text}</span>
-                </label>
+                  <span class="dock-btn-label">{otpIcon.text}</span>
+                </button>
               </div>
             </div>
           </nav>
         </div>
 
+        {/* SIDEBAR RIGHT */}
         <aside
           class="journal-sidebar sidebar-right hidden xl:block shrink-0"
           transition:name="sidebar-right"
@@ -158,7 +189,12 @@ const otpModalTitleId = "otp-modal-title";
   </div>
 
   <Fragment slot="overlays">
-    <input type="checkbox" id="vault-modal-toggle" class="modal-toggle" />
+    <input
+      type="checkbox"
+      id="vault-modal-toggle"
+      class="modal-toggle"
+      aria-hidden="true"
+    />
     <div
       class="modal modal-bottom sm:modal-middle"
       role="dialog"
@@ -175,13 +211,14 @@ const otpModalTitleId = "otp-modal-title";
           >
             Vault Explorer
           </span>
-          <label
-            for="vault-modal-toggle"
+          <button
+            type="button"
             class="btn btn-ghost btn-sm btn-circle"
             aria-label="Close Vault Explorer"
+            onclick="document.getElementById('vault-modal-toggle').checked = false"
           >
             ✕
-          </label>
+          </button>
         </div>
         <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4">
           {
@@ -191,10 +228,20 @@ const otpModalTitleId = "otp-modal-title";
           }
         </div>
       </div>
-      <label class="modal-backdrop" for="vault-modal-toggle">Close</label>
+      <button
+        type="button"
+        class="modal-backdrop"
+        aria-label="Close Vault Explorer"
+        onclick="document.getElementById('vault-modal-toggle').checked = false"
+      ></button>
     </div>
 
-    <input type="checkbox" id="otp-modal-toggle" class="modal-toggle" />
+    <input
+      type="checkbox"
+      id="otp-modal-toggle"
+      class="modal-toggle"
+      aria-hidden="true"
+    />
     <div
       class="modal modal-bottom sm:modal-middle"
       role="dialog"
@@ -211,19 +258,25 @@ const otpModalTitleId = "otp-modal-title";
           >
             On This Page
           </span>
-          <label
-            for="otp-modal-toggle"
+          <button
+            type="button"
             class="btn btn-ghost btn-sm btn-circle"
             aria-label="Close Table of Contents"
+            onclick="document.getElementById('otp-modal-toggle').checked = false"
           >
             ✕
-          </label>
+          </button>
         </div>
         <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4">
           <OnThisPageContent headings={headings} />
         </div>
       </div>
-      <label class="modal-backdrop" for="otp-modal-toggle">Close</label>
+      <button
+        type="button"
+        class="modal-backdrop"
+        aria-label="Close Table of Contents"
+        onclick="document.getElementById('otp-modal-toggle').checked = false"
+      ></button>
     </div>
   </Fragment>
 </BaseLayout>

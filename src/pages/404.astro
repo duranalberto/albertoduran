@@ -1,14 +1,12 @@
 ---
+import { sitesManifest } from "@data/site_manifest";
 import BaseLayout from "@layouts/BaseLayout.astro";
-import Button from "@components/ui/Button.astro";
-import SVGIcon from "@components/ui/SVGIcon.astro";
+import Button from "@components/ui/primitive/Button.astro";
+import SVGIcon from "@components/ui/primitive/SVGIcon.astro";
 import { ui } from "@data/icons";
 ---
 
-<BaseLayout
-  pageTitle="404 - Page Not Found"
-  description="Don't enter this page!"
->
+<BaseLayout siteManifest={sitesManifest["404"]}>
   <main
     class="relative flex flex-col items-center justify-center min-h-dvh px-8 text-center bg-base-100 overflow-hidden isolate"
   >
@@ -56,7 +54,7 @@ import { ui } from "@data/icons";
           class="group flex items-center gap-3 text-xs font-bold uppercase tracking-[0.2em] text-base-content/60 transition-colors py-2"
         >
           <SVGIcon
-            icon={ui.arrowLeft}
+            icon={ui.arrowLeft!}
             class="size-4 transition-transform group-hover:-translate-x-2"
           />
           Go Back

@@ -1,0 +1,82 @@
+---
+import IndexHeroPanel from "@components/index/IndexHeroPanel.astro";
+import SocialTire from "@components/ui/primitive/SocialTire.astro";
+const props = Astro.props;
+---
+
+<section class="hero-section relative overflow-hidden" {...props}>
+  <div class="max-w-screen-2xl mx-auto">
+    <div class="grid grid-cols-1 lg:grid-cols-12 items-center gap-12 lg:gap-16">
+      <div class="flex flex-col items-start gap-8 lg:col-span-7">
+        <div class="hero-eyebrow" aria-hidden="true">
+          <span class="hero-eyebrow-line"></span>
+          <p class="hero-eyebrow-label">Software Engineer</p>
+        </div>
+
+        <h1
+          class="hero-heading font-display text-5xl md:text-7xl lg:text-8xl select-none w-full"
+        >
+          <span class="text-primary" transition:name="hero-title-first"
+            >Alberto</span
+          ><wbr /><span
+            transition:name="hero-title-second"
+            class="text-base-content">Duran</span
+          >
+        </h1>
+
+        <div
+          class="hero-description text-lg leading-relaxed text-neutral-content lg:text-xl"
+          transition:name="hero-description-index"
+        >
+          <span
+            class="hero-rotating-text text-rotate font-display font-black text-xl sm:text-2xl lg:text-3xl text-base-content duration-[40000ms]"
+          >
+            <span>
+              <span>💫 I am a daydreamer</span>
+              <span>📚 Always learning something new</span>
+              <span>🦊 Atlas FC fan, even if they win</span>
+              <span>🦑 Playing Splatoon online matches</span>
+              <span>🍕 ? with 🥫, zero 🍍🤮. Perfection! 🤌</span>
+              <span>🩷 Kirby is the GOAT, no debate</span>
+            </span>
+          </span>
+
+          <p class="mt-6">
+            I'm glad you're here! You've found my tiny space in the digital
+            world. Feel free to explore: whether it's for recruiting, reading my
+            publications in
+            <a
+              href="/thejournal/"
+              class="font-bold text-primary decoration-primary/30 hover:underline"
+            >
+              TheJournal.
+            </a> or just looking around. ✨
+          </p>
+
+          <p
+            class="mt-6 pl-6 border-l-2 border-primary/30 italic text-base-content/90"
+          >
+            <span class="not-italic font-bold text-primary">Hiring?</span>
+            Skip the small talk and head straight to my
+            <a
+              href="/profile/"
+              class="font-bold underline decoration-primary/50 transition-colors hover:text-primary"
+            >
+              Professional Profile
+            </a>
+            to see my technical skills and experience.
+          </p>
+        </div>
+
+        <SocialTire />
+      </div>
+
+      <div
+        class="hidden lg:flex lg:col-span-5 lg:items-center"
+        transition:name="hero-lateral-index"
+      >
+        <IndexHeroPanel />
+      </div>
+    </div>
+  </div>
+</section>

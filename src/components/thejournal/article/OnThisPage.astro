@@ -1,0 +1,29 @@
+---
+import SidebarBase from "./SidebarBase.astro";
+import OnThisPageContent from "./OnThisPageContent.astro";
+import { ui } from "@data/icons";
+import type { MarkdownHeading } from "astro";
+
+export interface Props {
+  headings: MarkdownHeading[];
+  expandedWidth?: string;
+}
+
+const { headings, expandedWidth = "16rem" } = Astro.props;
+
+if (headings.length === 0) return null;
+---
+
+<SidebarBase
+  title="On This Page"
+  icon={ui.onThisPage}
+  badgeCount={headings.length}
+  expandedWidth={expandedWidth}
+  side="right"
+>
+  <OnThisPageContent headings={headings} tracked={true} compact={true} />
+</SidebarBase>
+
+<script>
+  import "@runtime/elements/on-this-page";
+</script>

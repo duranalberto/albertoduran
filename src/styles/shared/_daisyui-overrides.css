@@ -1,0 +1,12 @@
+/* =========================================================
+   DAISYUI COMPONENT OVERRIDES
+   Targeted corrections to DaisyUI defaults where the
+   design system intentionally diverges from library behavior.
+   ========================================================= */
+
+@media (width >= theme(--breakpoint-md)) {
+  .experience-timeline.timeline-vertical.timeline-snap-icon > li {
+    --timeline-col-start: minmax(0, 0.4fr);
+    --timeline-col-end: minmax(0, 1.6fr);
+  }
+}

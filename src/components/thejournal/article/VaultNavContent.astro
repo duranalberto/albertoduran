@@ -1,0 +1,26 @@
+---
+import { type VaultContext } from "@appTypes/content_context";
+import VaultTreeNode from "./VaultTreeNode.astro";
+
+interface Props {
+  vault: VaultContext;
+  currentEntryId: string;
+}
+
+const { vault, currentEntryId } = Astro.props;
+---
+
+<ul class="menu menu-sm w-full p-0">
+  {
+    [vault.index, ...vault.items].map((item) => (
+      <li>
+        <VaultTreeNode
+          item={item}
+          currentEntryId={currentEntryId}
+          level={0}
+          isStatic={true}
+        />
+      </li>
+    ))
+  }
+</ul>

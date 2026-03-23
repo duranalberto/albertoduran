@@ -1,0 +1,287 @@
+---
+import backgroundImage from "@assets/atlas/atlas_background.jpg";
+import srcImage from "@assets/atlas/atlas_logo.png";
+import ParallaxHero from "@layouts/ParallaxHero.astro";
+import GlassPanel from "@components/ui/primitive/GlassPanel.astro";
+import { Picture, getImage } from "astro:assets";
+import { getEntry } from "astro:content";
+
+const entry = await getEntry("atlasData", "current-match");
+const buildData = entry?.data;
+
+// Format date at build time using Mexico City timezone
+const formatDateMXTime = (isoDate: string): string => {
+  if (!isoDate || isoDate === "--") return "--";
+  try {
+    const date = new Date(isoDate);
+    if (isNaN(date.getTime())) return isoDate;
+
+    return new Intl.DateTimeFormat("en-US", {
+      day: "numeric",
+      month: "short",
+      weekday: "short",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: "America/Mexico_City",
+    }).format(date);
+  } catch {
+    return isoDate;
+  }
+};
+
+const formattedDateAtBuild = buildData?.rawDate
+  ? formatDateMXTime(buildData.rawDate)
+  : "--";
+
+const mobileAvif = await getImage({
+  src: backgroundImage,
+  width: 640,
+  height: 960,
+  format: "avif",
+  quality: 65,
+});
+
+const mobileWebp = await getImage({
+  src: backgroundImage,
+  width: 640,
+  height: 960,
+  format: "webp",
+  quality: 70,
+});
+
+const desktopAvif = await getImage({
+  src: backgroundImage,
+  width: 1920,
+  height: 810,
+  format: "avif",
+  quality: 70,
+});
+
+const desktopWebp = await getImage({
+  src: backgroundImage,
+  width: 1920,
+  height: 810,
+  format: "webp",
+  quality: 75,
+});
+---
+
+<ParallaxHero>
+  <picture slot="background">
+    <source
+      media="(max-width: 767px)"
+      srcset={mobileAvif.src}
+      type="image/avif"
+      width="640"
+      height="960"
+    />
+    <source
+      media="(max-width: 767px)"
+      srcset={mobileWebp.src}
+      type="image/webp"
+      width="640"
+      height="960"
+    />
+    <source
+      media="(min-width: 768px)"
+      srcset={desktopAvif.src}
+      type="image/avif"
+      width="1920"
+      height="810"
+    />
+    <source
+      media="(min-width: 768px)"
+      srcset={desktopWebp.src}
+      type="image/webp"
+      width="1920"
+      height="810"
+    />
+    <img
+      src={desktopWebp.src}
+      alt=""
+      aria-hidden="true"
+      loading="lazy"
+      fetchpriority="low"
+      decoding="async"
+      width="1920"
+      height="810"
+    />
+  </picture>
+
+  <div
+    class="flex flex-col lg:flex-row items-stretch justify-center gap-8 lg:gap-10 max-w-7xl mx-auto px-4 w-full"
+  >
+    <div class="flex items-center justify-center w-full lg:w-[35%]">
+      <Picture
+        src={srcImage}
+        alt="Atlas FC"
+        widths={[200, 400, 800]}
+        formats={["avif", "webp"]}
+        sizes="(max-width: 1024px) 50vw, 448px"
+        quality={85}
+        loading="lazy"
+        fetchpriority="low"
+        class="max-w-full h-auto object-contain select-none contour-solid"
+        draggable="false"
+        decoding="async"
+      />
+    </div>
+
+    <atlas-schedule class="flex flex-col gap-8 lg:gap-10 w-full lg:w-[65%]">
+      <div id="match-content" class="flex flex-col gap-8 lg:gap-10 w-full">
+        <!-- Stats Cards: Standing, Record, Points -->
+        <GlassPanel
+          as="section"
+          class="flex flex-col w-full overflow-hidden"
+        >
+          <div class="flex flex-col gap-0 w-full">
+            <div
+              class="metric-card flex items-end justify-between py-4 px-8 min-w-0 transition-transform duration-300 hover:scale-[1.03]"
+            >
+              <span
+                class="text-xs uppercase tracking-widest font-bold opacity-60"
+                >Current Standing</span
+              >
+              <span id="stat-standing" class="text-2xl text-right font-semibold"
+                >{buildData?.standing || "--"}</span
+              >
+            </div>
+            <div
+              class="metric-card flex items-end justify-between py-4 px-8 border-t border-base-content/10 transition-transform duration-300 hover:scale-[1.03]"
+            >
+              <span
+                class="text-xs uppercase tracking-widest font-bold opacity-60"
+                >Record</span
+              >
+              <span id="stat-record" class="text-xl text-right"
+                >{buildData?.record || "--"}</span
+              >
+            </div>
+            <div
+              class="metric-card flex items-end justify-between py-4 px-8 border-t border-base-content/10 transition-transform duration-300 hover:scale-[1.03]"
+            >
+              <span
+                class="text-xs uppercase tracking-widest font-bold opacity-60"
+                >Total Points</span
+              >
+              <span id="stat-points" class="text-2xl text-right font-semibold"
+                >{buildData?.points ?? "--"}</span
+              >
+            </div>
+          </div>
+        </GlassPanel>
+
+        <!-- Match Details: Teams, Date, Stadium -->
+        <GlassPanel
+          as="section"
+          class="flex flex-col lg:flex-row w-full overflow-hidden"
+        >
+          <div class="metric-card flex-2 py-8 px-8 transition-transform duration-300 hover:scale-[1.03]">
+            <div
+              class="flex flex-col text-3xl font-extrabold uppercase md:text-5xl"
+            >
+              <span
+                id="home-team"
+                class={buildData?.homeTeam?.toLowerCase().includes("atlas")
+                  ? "text-primary"
+                  : ""}
+              >
+                {buildData?.homeTeam || "--"}
+              </span>
+              <span class="text-lg opacity-30 my-2">VS</span>
+              <span
+                id="away-team"
+                class={buildData?.awayTeam?.toLowerCase().includes("atlas")
+                  ? "text-primary"
+                  : ""}
+              >
+                {buildData?.awayTeam || "--"}
+              </span>
+            </div>
+          </div>
+
+          <div
+            class="metric-card flex-1 flex flex-col gap-6 p-8 border-t lg:border-t-0 lg:border-l border-base-content/10 bg-base-content/5 transition-transform duration-300 hover:scale-[1.03]"
+          >
+            <div>
+              <span class="block text-xs font-bold uppercase opacity-60"
+                >Date</span
+              >
+              <span
+                id="match-date"
+                data-raw={buildData?.rawDate}
+                class="text-lg font-bold"
+              >
+                {formattedDateAtBuild}
+              </span>
+            </div>
+            <div>
+              <span class="block text-xs font-bold uppercase opacity-60"
+                >Stadium</span
+              >
+              <span id="match-stadium" class="text-base font-bold"
+                >{buildData?.stadium || "--"}</span
+              >
+              <span id="match-city" class="block text-xs opacity-40 uppercase"
+                >{buildData?.city || "--"}</span
+              >
+            </div>
+          </div>
+        </GlassPanel>
+      </div>
+    </atlas-schedule>
+  </div>
+</ParallaxHero>
+
+<script>
+  /**
+   * atlas-schedule-client.ts
+   *
+   * Enhances the match date display for users NOT in Mexico City timezone.
+   * The date is pre-rendered at build time in Mexico City time as a fallback.
+   * This script only runs if JavaScript is available and converts the display
+   * to the user's local timezone without changing the underlying data.
+   */
+  class AtlasSchedule extends HTMLElement {
+    connectedCallback() {
+      this.updateDateDisplay();
+    }
+
+    private formatToUserLocale(isoDate: string): string {
+      if (!isoDate || isoDate === "--") return "--";
+      try {
+        const date = new Date(isoDate);
+        if (isNaN(date.getTime())) return isoDate;
+
+        const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const simplifiedZone =
+          userTimezone.split("/").pop()?.replace(/_/g, " ") || userTimezone;
+
+        return (
+          new Intl.DateTimeFormat("en-US", {
+            day: "numeric",
+            month: "short",
+            weekday: "short",
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true,
+          }).format(date) + ` (${simplifiedZone})`
+        );
+      } catch (e) {
+        return isoDate;
+      }
+    }
+
+    private updateDateDisplay() {
+      const dateEl = this.querySelector("#match-date") as HTMLElement;
+      if (dateEl?.dataset.raw) {
+        dateEl.textContent = this.formatToUserLocale(dateEl.dataset.raw);
+      }
+    }
+  }
+
+  if (typeof window !== "undefined" && !customElements.get("atlas-schedule")) {
+    customElements.define("atlas-schedule", AtlasSchedule);
+  }
+</script>

@@ -11,27 +11,27 @@ import { skills as icons } from "@data/icons";
 const skills: Skills[] = [
   {
     category: "Languages",
-    skills_icons: [icons.js, icons.ts, icons.python, icons.java],
+    skills_icons: [icons.js!, icons.ts!, icons.python!, icons.java!],
   },
   {
     category: "Frameworks & Libraries",
     skills_icons: [
-      icons.react,
-      icons.preact,
-      icons.oracle_jet,
-      icons.fastapi,
-      icons.astro,
+      icons.react!,
+      icons.preact!,
+      icons.oracle_jet!,
+      icons.fastapi!,
+      icons.astro!,
     ],
   },
   {
     category: "DevOps & Platforms",
     skills_icons: [
-      icons.docker,
-      icons.git,
-      icons.jenkins,
-      icons.jira,
-      icons.oracle_infrastructure,
-      icons.oracle_apex,
+      icons.docker!,
+      icons.git!,
+      icons.jenkins!,
+      icons.jira!,
+      icons.oracle_infrastructure!,
+      icons.oracle_apex!,
     ],
   },
 ];

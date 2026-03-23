@@ -8,9 +8,10 @@ const get_content_from_file = (fileName: string): string => {
     const filePath = path.join(directoryPath, `${fileName}.svg`);
 
     const svgString = fs.readFileSync(filePath, "utf-8");
+
     const match = svgString.match(/<svg[^>]*>([\s\S]*?)<\/svg>/i);
 
-    return match ? match[1].trim() : "";
+    return match?.[1]?.trim() ?? "";
   } catch (error) {
     console.error(`Could not read SVG file: ${fileName}.svg`, error);
     return "";

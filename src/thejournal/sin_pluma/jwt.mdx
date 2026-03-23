@@ -1,310 +1,284 @@
 ---
-title: "JWT Usage & Lifecycle"
+title: "JWT in practice: access, refresh, and revocation in Sin Pluma"
 pubDate: 2026-03-01
-description: "Using JWTs as authentication and session management"
+description: "A detailed walkthrough of Sin Pluma's JWT implementation: token structure, full lifecycle, the Redis blacklist, the Axios refresh queue, storage trade-offs, and security best practices."
 author: "Alberto Duran"
 image: "../../assets/thejournal/stock/07.avif"
 order: 5
-tags: ["JWT"]
+tags: ["JWT", "authentication", "security"]
 github: "SinPluma"
 ---
 
-This focused publication documents exactly **how SinPluma uses JSON Web Tokens (JWTs)** for authentication and session management: why JWTs were chosen, the full lifecycle (request → issuance → client storage → request use → server validation → refresh → revocation), and how Redis-based blacklisting interacts with JWT statelessness. It closes with security notes and recommended best practices.
-
-![SinPluma UI](../../assets/thejournal/pub/sinpluma_07.png)
+Pure JWT authentication has a well-known problem: you can't revoke a token before it expires. Once a user logs out on the client, the token is gone from their browser, but anyone who captured it earlier can keep using it for the rest of its lifetime. Sin Pluma addresses this by combining JWT with a Redis blacklist, getting most of the benefits of stateless auth while still supporting real logout semantics. This post traces the full lifecycle from login through token refresh to logout, and explains where the security trade-offs land.
 
 ---
 
-## 1. Why JWTs are used
+## Why JWT
 
-SinPluma uses JWTs because they provide:
+Sin Pluma uses JWTs for three specific reasons.
 
-- **Compact, self-contained claims** (identity, roles, expiry) that services can verify without a DB round-trip.
-- **Standardized, language-agnostic tokens** easy to generate/validate across microservices.
-- **Decoupled authentication**: client holds proof of authentication and sends it with each request (no server session store required for basic validation).
+**Compact, self-contained claims.** Identity, roles, and expiry all live inside the token. Services can verify authenticity without a database round-trip on every request.
 
-In practice SinPluma uses two token types:
+**Standardized and language-agnostic.** JWTs are easy to generate and validate across multiple services using well-audited libraries. The linguistics microservice and the main Flask API both understand the same token format.
 
-- **Access token (short-lived JWT)** — sent with each API request to prove identity and rights.
-- **Refresh token (longer-lived JWT or opaque token)** — used only to obtain new access tokens without re-authenticating user credentials.
+**Decoupled authentication.** The client holds proof of authentication and sends it with each request. No server-side session store is required for basic validation.
 
 ---
 
-## 2. JWT structure (recap)
+## JWT structure
 
-A standard JWT has three dot-separated parts:
+A standard JWT has three dot-separated parts: header, payload, and signature.
 
 ```
 HEADER.PAYLOAD.SIGNATURE
 ```
 
-- **Header:** algorithm (e.g., `HS256`) and token type `JWT`.
-- **Payload (claims):** `sub` (subject/user id), `exp` (expiry), `iat` (issued at), `jti` (unique token id), optional `roles` or `scopes`.
-- **Signature:** HMAC or RSA signature over header+payload using server secret/private key.
+The **header** contains the algorithm (`HS256` in Sin Pluma's case) and the token type.
 
-Example claim set (conceptual):
+The **payload** contains claims. Sin Pluma's access tokens include `sub` (the user ID), `exp` (expiry timestamp), `iat` (issued at), and `jti` (a unique token identifier used for revocation).
 
 ```json
 {
   "sub": "user:12345",
   "iss": "sinpluma.api",
-  "aud": "sinpluma_clients",
   "iat": 1600000000,
-  "exp": 1600003600,
-  "jti": "c9f1a8b6-...",
-  "roles": ["author"]
+  "exp": 1600000900,
+  "jti": "c9f1a8b6-4e2d-11ec-81d3-0242ac130003"
 }
 ```
 
-SinPluma includes a **JTI** (JWT ID) claim so tokens can be uniquely identified for revocation.
+The **signature** is an HMAC over the header and payload using the server's `JWT_SECRET_KEY`. Tampering with any part of the token invalidates the signature.
+
+The `jti` claim is the most important piece for revocation. Without a unique identifier on each token, there's no way to distinguish one token from another in the Redis blacklist.
 
 ---
 
-## 3. Full lifecycle — step by step
+## Token model
 
-### 3.1 Authentication request (how a JWT is requested)
+Sin Pluma uses two tokens per session, configured in `config/settings.py`.
 
-- **Client action:** User submits credentials (email/password) to:
+```python
+ACCESS_EXPIRES = timedelta(minutes=15)
+REFRESH_EXPIRES = timedelta(days=30)
 
-```
-POST /api/auth/login
-Content-Type: application/json
-{ "email": "...", "password": "..." }
-```
-
-- **Server checks:** validate credentials (bcrypt check), apply any rate limiting.
-- **If valid:** server creates an access token and a refresh token and returns them in the response body (or sets cookie for refresh token).
-
-Server response (conceptual):
-
-```json
-{
-  "access_token": "<JWT.access>",
-  "refresh_token": "<JWT.refresh>",
-  "expires_in": 900
-}
+JWT_ACCESS_TOKEN_EXPIRES = ACCESS_EXPIRES
+JWT_REFRESH_TOKEN_EXPIRES = REFRESH_EXPIRES
 ```
 
----
+The **access token** is short-lived and proves identity on every API request. It expires after 15 minutes. Flask-JWT-Extended reads these values and signs tokens accordingly.
 
-### 3.2 Token creation (on server)
+The **refresh token** is longer-lived and can only be used at one endpoint to get a new access token. It expires after 30 days. Sending it to any other endpoint returns 401.
 
-- **Access token properties:**
-  - Short TTL (e.g., 10–30 minutes).
-  - Contains identity claims and minimal authorization claims (`roles`, `permissions`).
-  - Signed using server secret (HS256) or private key (RS256).
-  - `jti` included.
-
-- **Refresh token properties:**
-  - Longer TTL (e.g., days/weeks) or managed as opaque token.
-  - Can be a JWT (with its own `jti`) or an opaque random token stored server-side.
-  - If JWT refresh tokens are used, they also include `jti` for revocation tracking.
-
-Token creation is typically done with a library such as `Flask-JWT-Extended`, which abstracts issuance and claim embedding.
+The `JWT_SECRET_KEY` is loaded from an environment variable and never appears in source code.
 
 ---
 
-### 3.3 How the client stores tokens
+## Login flow
 
-Common approaches and SinPluma considerations:
+```mermaid
+sequenceDiagram
+  participant B as Browser
+  participant N as Nginx
+  participant F as Flask
+  participant D as MySQL
 
-- **Access token — in memory or short-lived storage**
-  - Preferred: store in memory (JS variable / Redux store) to minimize XSS exposure.
-  - On page refresh it is lost, but the client can use the refresh token to obtain a new access token.
+  B->>N: POST /api/user/login {username, password}
+  N->>F: POST /user/login
+  F->>D: SELECT * FROM user WHERE username = ?
+  D-->>F: user row
+  F->>F: bcrypt.checkpw(password, hash)
+  F-->>N: 200 {access_token, refresh_token}
+  N-->>B: 200 {access_token, refresh_token}
+  B->>B: localStorage.setItem + Redux dispatch
+```
 
-- **Refresh token — HttpOnly cookie (recommended)**
-  - Best practice: store the refresh token in an **HttpOnly, Secure cookie** so JavaScript cannot read it (mitigates XSS).
-  - Cookies can be protected with `SameSite` attributes to reduce CSRF risk.
+The login resource fetches the user by username, verifies the password with bcrypt, and creates both tokens using Flask-JWT-Extended.
 
-- **Alternative (less secure) approaches**
-  - Storing tokens in `localStorage` or non-HttpOnly cookies — not recommended for refresh tokens due to XSS risk.
+```python
+class Login(Resource):
+    def post(self):
+        data = login_schema.load(request.json)
+        user = User.query.filter_by(username=data['username']).first()
+        if not user or not bcrypt.checkpw(data['password'].encode(), user.password.encode()):
+            return {'message': 'Invalid credentials'}, 401
 
-The SinPluma demo environment may store tokens in local storage for simplicity, but production recommendations favor HttpOnly cookies for refresh tokens and short-lived in-memory access tokens.
+        access_token = create_access_token(identity=user.user_id)
+        refresh_token = create_refresh_token(identity=user.user_id)
+        return {'access_token': access_token, 'refresh_token': refresh_token}, 200
+```
+
+The frontend stores both tokens and calls `startSession()` from `Session.js`, which parses the access token to extract the user ID and username, then dispatches a Redux action to mark the session as authenticated.
 
 ---
 
-### 3.4 How tokens are sent to the server
+## How tokens are sent to the server
 
-- **Access token:** included in each API request:
+Every outgoing API request includes the access token in the Authorization header.
 
 ```
 Authorization: Bearer <access_token>
 ```
 
-Typically added automatically via an Axios interceptor.
+The Axios interceptor in `Api.js` adds this header automatically on every request. The server never sees a request to a protected endpoint without the Authorization header present.
 
-- **Refresh flow:** when the access token expires, the client calls:
+For the refresh flow, the refresh token is sent to a single endpoint.
 
 ```
-POST /api/auth/refresh
+POST /api/user/token/refresh
+Authorization: Bearer <refresh_token>
 ```
-
-- If refresh token is in HttpOnly cookie, the request automatically includes it.
-- If refresh token is returned to client JS, it is included in the POST body.
 
 ---
 
-### 3.5 Server validation of incoming JWTs
+## Server validation on every request
 
-When a request arrives with `Authorization: Bearer <jwt>`:
+When a request arrives with `Authorization: Bearer <jwt>`, Flask-JWT-Extended runs through a validation sequence.
 
-1. Parse token (split header.payload.signature).
-2. Verify signature using secret or public key. If invalid → reject (401).
-3. Validate standard claims:
-   - `exp` (not expired)
-   - `nbf` (not before)
-   - `iss` / `aud` if configured
-   - `iat` sanity checks
-4. Check token replay / revocation:
-   - Extract `jti`
-   - Query Redis blacklist
-   - If found → reject (401/403)
-5. Authorize action:
-   - Validate `roles`/`scopes` against endpoint requirements.
+1. Parse the token: split header, payload, and signature.
+2. Verify the signature using the server secret. If invalid, return 401.
+3. Validate standard claims: `exp` (not expired), `nbf` (not before if set), `iss` and `aud` if configured.
+4. Extract the `jti` and query the Redis blacklist. If the key exists, return 401.
+5. If all checks pass, call `get_jwt_identity()` to extract the user ID for the resource function.
 
-Signature validation is local and fast; Redis lookup adds minimal latency.
+```python
+@jwt.token_in_blacklist_loader
+def check_token_blacklist(decoded_token):
+    jti = decoded_token['jti']
+    return rc.get(jti) is not None
+```
+
+Signature validation is local and fast. The Redis lookup adds one network round-trip per protected request. This is the cost of supporting real revocation.
 
 ---
 
-### 3.6 Refreshing tokens (refresh flow)
+## Token refresh flow
 
-1. Client detects access token expiry (401 response or client timer).
-2. Client calls `/api/auth/refresh`.
-3. Server validates refresh token:
-   - Signature
-   - Expiry
-   - Redis blacklist check
-4. If valid:
-   - Issue new access token
-   - Issue new refresh token (recommended rotation)
-   - Blacklist old refresh token JTI in Redis (with TTL)
-5. Return new tokens to client.
+```mermaid
+sequenceDiagram
+  participant A as Axios
+  participant F as Flask
+  participant R as Redis
 
-Refresh-token rotation significantly reduces risk if a refresh token is compromised.
+  A->>F: POST /api/user/token/refresh (Bearer refresh_token)
+  F->>R: get(refresh_token_jti)
+  R-->>F: null (not blacklisted)
+  F->>F: create_access_token(identity=user_id)
+  F-->>A: 200 {access_token}
+  A->>A: localStorage.setItem(access_token)
+  A->>A: onRefreshed(new_token)
+  A->>F: Replay all queued requests with new token
+```
+
+The refresh endpoint requires the refresh token via `@jwt_refresh_token_required`.
+
+```python
+class TokenRefresh(Resource):
+    @jwt_refresh_token_required
+    def post(self):
+        current_user = get_jwt_identity()
+        new_access_token = create_access_token(identity=current_user)
+        return {'access_token': new_access_token}, 200
+```
+
+The subscriber queue pattern in `Api.js` ensures that when multiple requests fail simultaneously because the access token expired, only one refresh attempt runs. All other failed requests queue themselves and replay once the new token is available. The user never sees a session interruption.
 
 ---
 
-### 3.7 Logout and revocation
+## Logout and the Redis blacklist
 
-- Client calls:
+Logout stores the access token's JTI in Redis with a TTL slightly longer than the token's natural expiry.
 
-```
-POST /api/auth/logout
-```
-
-- Server:
-  - Extracts `jti` from access token
-  - Extracts `jti` from refresh token
-  - Stores both in Redis blacklist with TTL equal to remaining lifetime
-
-Example Redis entry:
-
-```
-SETEX jwt:blacklist:<jti> <remaining_seconds> "revoked"
+```python
+class Logout(Resource):
+    @jwt_required
+    def delete(self):
+        jti = get_raw_jwt()['jti']
+        rc.set(jti, jti, ex=int(ACCESS_EXPIRES.total_seconds() * 1.2))
+        return {'message': 'Successfully logged out'}, 200
 ```
 
-Now even if the token has not expired, it is rejected.
-
----
-
-## 4. Redis-based blacklist — mechanics & implications
-
-### 4.1 How it works
-
-On revocation:
+The Redis key is set with this pattern.
 
 ```
 SETEX jwt:blacklist:<jti> <remaining_seconds> "revoked"
 ```
 
-On every authenticated request:
+The TTL is `ACCESS_EXPIRES * 1.2`, which gives 18 minutes for a 15-minute token. The extra 20% accounts for clock drift between services. Once the token would have expired naturally, Redis deletes the key automatically. The blacklist never needs manual cleanup and stays bounded in size.
+
+On every subsequent request with that JTI, the `token_in_blacklist_loader` finds the Redis key and returns True, causing Flask-JWT-Extended to reject the request with 401.
+
+---
+
+## Why Redis for the blacklist
+
+Redis fits this use case precisely because of three properties.
+
+**Immediate revocation capability.** The blacklist entry exists as soon as `SET` returns. There's no replication lag, no eventual consistency window.
+
+**Automatic expiration via TTL.** Redis cleans up entries without application code doing anything. The blacklist is self-maintaining.
+
+**Extremely fast lookup.** A single `GET` command on a key is O(1). Even under load, the Redis lookup adds negligible latency compared to the database query that follows.
+
+The cost is that pure JWT statelessness is gone. Every protected request requires a Redis round-trip. Sin Pluma accepts this tradeoff because security and immediate revocation outweigh minimal performance cost for a platform handling editorial content.
+
+---
+
+## Refresh token revocation gap
+
+The current implementation blacklists access tokens on logout but not refresh tokens. A captured refresh token remains usable for up to 30 days to generate new access tokens with fresh JTIs, bypassing the logout blacklist entry.
+
+Fixing this requires blacklisting the refresh token JTI on logout as well.
+
+```python
+# Complete logout (recommended improvement)
+access_jti = get_raw_jwt()['jti']
+rc.set(access_jti, access_jti, ex=int(ACCESS_EXPIRES.total_seconds() * 1.2))
+# Also blacklist the refresh token
+refresh_jti = request.json.get('refresh_jti')
+rc.set(refresh_jti, refresh_jti, ex=int(REFRESH_EXPIRES.total_seconds() * 1.2))
+```
+
+The outline documentation for this project describes refresh-token rotation as the stronger defense: issue a new refresh token on every refresh call and blacklist the old one. If a captured refresh token is used, the legitimate user's next refresh will fail because their current token has been rotated away, creating a detectable anomaly.
+
+This gap is acceptable for the current scope because refresh tokens only travel to one endpoint from client code that controls `localStorage`. Capturing a refresh token requires XSS access or physical device access, at which point the security model has other, more serious problems.
+
+---
+
+## Token storage trade-offs
+
+Sin Pluma stores both tokens in `localStorage` for simplicity. This is a common choice with a common criticism: XSS vulnerabilities can exfiltrate tokens from `localStorage`.
+
+The production recommendation from the project outlines is different. Store the access token in memory (a JavaScript variable in Redux state or a closure) where XSS cannot directly read it. Store the refresh token in an `httpOnly`, `Secure` cookie with `SameSite` attributes, so JavaScript cannot access it but the browser sends it automatically to the refresh endpoint.
 
 ```
-EXISTS jwt:blacklist:<jti>
+Set-Cookie: refresh_token=<value>; HttpOnly; Secure; SameSite=Strict
 ```
 
-If key exists → token rejected.
+This approach limits what an XSS attack can exfiltrate while preserving the refresh mechanism. The access token in memory is lost on page refresh, but the browser sends the cookie to `/token/refresh` automatically and gets a new one.
+
+For a platform handling creative writing rather than financial transactions, the `localStorage` approach is an acceptable simplification. For a higher-stakes application, the cookie-based approach is the right default.
 
 ---
 
-### 4.2 Why use Redis blacklist?
+## Security checklist
 
-- Immediate revocation capability.
-- Lightweight storage (only JTIs).
-- Automatic expiration via TTL.
-- Extremely fast lookup.
+The full set of security controls and recommendations from this implementation.
 
----
-
-### 4.3 The statelessness tradeoff
-
-JWTs are meant to be stateless — validation should not require server storage.
-
-Redis blacklisting introduces state:
-
-- **Pro:** immediate logout & compromise mitigation.
-- **Con:** every request requires a Redis lookup.
-
-SinPluma accepts this tradeoff because security and immediate revocation outweigh minimal performance cost.
+- Passwords use bcrypt hashing. Plaintext passwords never touch the database.
+- Access tokens are short-lived at 15 minutes. The window of exposure on token theft is narrow.
+- JWT secret key is loaded from an environment variable and never appears in source code.
+- Redis blacklist provides immediate revocation on logout.
+- Marshmallow schemas validate all inputs before they reach business logic.
+- File uploads validate MIME type and size server-side, not just client-side.
+- For production: store refresh tokens in `httpOnly` cookies, rotate on every use, and blacklist old JTIs.
+- For production: prefer RS256 over HS256 if multiple services validate tokens independently, so the private key never needs to be shared.
+- Log authentication anomalies: repeated 401s, unusual refresh patterns, and token reuse after logout.
+- Avoid placing sensitive data inside JWT payloads. They're base64-encoded, not encrypted. Anyone with the token can read the claims.
 
 ---
 
-### 4.4 Alternatives to JTI blacklisting
+## Full lifecycle summary
 
-- Short-lived access tokens only + opaque refresh tokens stored server-side.
-- OAuth-style token introspection endpoint.
-- Session invalidation timestamp comparison (`iat` vs `last_invalidated_at`).
-- Strict refresh rotation + very short access TTL.
+The complete token lifecycle in one place. Login creates both tokens and stores them client-side. Every API request sends the access token as a Bearer header. Flask-JWT-Extended decodes it, validates the signature, checks the Redis blacklist, and either proceeds or returns 401. When the access token expires, the Axios interceptor exchanges the refresh token for a new access token and replays any queued requests. Logout stores the access token's JTI in Redis with an 18-minute TTL so the server rejects any subsequent use of that token.
 
----
-
-## 5. Security considerations & best practices
-
-- Store refresh tokens in **HttpOnly Secure cookies**.
-- Keep access tokens short-lived (10–30 minutes).
-- Rotate refresh tokens on each use.
-- Prefer RS256 if multiple services validate tokens.
-- Blacklist JTIs with TTL equal to remaining token lifetime.
-- Protect refresh endpoint from CSRF (SameSite + CSRF token).
-- Log authentication anomalies.
-- Avoid placing sensitive data inside JWT payload.
-
----
-
-## 6. Example flows (concise)
-
-### Login
-
-1. POST `/api/auth/login`
-2. Server validates credentials.
-3. Server creates access + refresh tokens.
-4. Return tokens (or set refresh cookie).
-
-### Access protected resource
-
-1. Client sends `Authorization: Bearer <access_token>`
-2. Server verifies signature → checks Redis → authorizes → returns data.
-
-### Access token expired
-
-1. Client calls `/api/auth/refresh`
-2. Server validates refresh token
-3. Server issues new access token (+ new refresh token if rotating)
-4. Blacklists old refresh JTI
-
-### Logout
-
-1. Client calls `/api/auth/logout`
-2. Server blacklists access + refresh JTIs in Redis
-
----
-
-## 7. Closing summary
-
-SinPluma uses JWTs to provide decentralized, standards-based authentication:
-
-- Short-lived access tokens for per-request authorization.
-- Longer-lived refresh tokens for session continuity.
-- Redis-backed JTI blacklist for immediate revocation.
-
-This approach balances performance (local signature validation) with security (revocation, rotation, short TTLs), making it suitable for a distributed microservices environment while maintaining strong authentication guarantees.
+The design gives 15-minute token rotation, real logout semantics, and transparent refresh. The cost is one Redis round-trip per protected request, which is negligible alongside the database query that follows.

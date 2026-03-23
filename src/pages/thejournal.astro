@@ -1,9 +1,10 @@
 ---
-import JournalGrid from "@components/common/JournalGrid.astro";
-import JournalHero from "@components/sections/thejournal/JournalHero.astro";
+import JournalGrid from "@components/shared/JournalGrid.astro";
+import JournalHero from "@components/thejournal/index/JournalHero.astro";
+import { entryManifest } from "@content/processors/thejournal";
+import { sitesManifest } from "@data/site_manifest";
 import BaseLayout from "@layouts/BaseLayout.astro";
 import FlexShell from "@layouts/FlexShell.astro";
-import { entryManifest } from "@utils/thejournal_manifest";
 
 const byNewestPubDate = (a: { pubDate: Date }, b: { pubDate: Date }) =>
   b.pubDate.getTime() - a.pubDate.getTime();
@@ -19,14 +20,9 @@ const secondHalf = allEntries
   .sort(byNewestPubDate);
 
 const catalog = [...firstHalf, ...secondHalf];
-
-const pageTitle = "The Journal.";
 ---
 
-<BaseLayout
-  pageTitle={pageTitle}
-  description="Like a blog, but with a cooler name"
->
+<BaseLayout siteManifest={sitesManifest["/thejournal/"]}>
   <JournalHero slot="hero" />
 
   <FlexShell class="pb-14">

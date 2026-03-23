@@ -1,7 +1,7 @@
 ---
-title: "The Flask API Service"
+title: "Designing the Sin Pluma Flask REST API"
 pubDate: 2026-03-01
-description: "A technical overview of the Flask service that powers SinPluma. This document explains the API’s responsibilities, architecture, endpoint design, and its interaction with MySQL, Redis, and MinIO."
+description: "How Sin Pluma's Flask API is structured: the app factory pattern, blueprint organization, full endpoint inventory, Marshmallow validation, and integrations with MySQL, Redis, and MinIO."
 author: "Alberto Duran"
 order: 3
 image: "../../assets/thejournal/stock/07.avif"
@@ -9,455 +9,322 @@ tags: ["python", "flask", "rest api"]
 github: "SinPluma"
 ---
 
-## 1. Purpose and role in the platform
-
-The Flask service is the canonical application API for SinPluma. It acts as the central layer where business rules live and where the platform enforces its data integrity.
-
-This service handles the core responsibilities of the system
-
-- user authentication and authorization
-- author and profile management
-- creation, editing, versioning, and publishing of notebooks and pages
-- media uploads used inside written content
-- lightweight search and read APIs
-- session and token lifecycle management, including revocation
-- coordination with supporting services such as the linguistics engine and infrastructure systems like MinIO, Redis, and MySQL
-
-Architecturally, the service functions as the brain of the platform. It enforces invariants, performs transactional updates, and exposes JSON endpoints consumed by the React SPA and any future external clients.
+There's a particular failure mode in Flask projects where the app starts as a single file and then slowly becomes a 2,000-line mess as the project grows. Sin Pluma avoids it by using the app factory pattern from the beginning. Every piece of configuration, every extension, every blueprint registers itself through a single `create_app()` function, and nothing assumes global state. This post walks through how that factory is structured, how requests flow through it, and how the three main integrations (MySQL, Redis, MinIO) slot in.
 
 ---
 
-## 2. How the service is built - project layout and runtime
+## Purpose and role
 
-### 2.1 Code layout
+The Flask service is the canonical application API for Sin Pluma. It acts as the central layer where business rules live and where the platform enforces its data integrity. This service handles everything that matters to the platform as a service.
 
-A typical project structure looks like this
+- User authentication and authorization
+- Author and profile management
+- Creation, editing, and publishing of notebooks and pages
+- Media uploads and object storage coordination
+- Lightweight search across published content
+- Session and token lifecycle management, including revocation
+- Coordination with the linguistics engine, MinIO, Redis, and MySQL
+
+Architecturally, Flask functions as the brain of the platform. It enforces invariants, performs transactional updates, and exposes JSON endpoints consumed by the React SPA and any future external clients.
+
+---
+
+## Code layout and runtime
+
+The project structure follows a clear module separation.
 
 ```plaintext
-/flaskService
-  /app
-    /models      # SQLAlchemy models such as User, Notebook, Page, ImageMeta
-    /schemas     # Marshmallow schemas for request and response validation
-    /resources   # Flask-RESTful resources that define API endpoints
-    /auth        # JWT helpers, authentication decorators, token blacklist logic
-    /storage     # MinIO integration helpers
-    /db          # database engine and session configuration
-    /utils       # shared utilities such as pagination and error handling
-  wsgi.py        # gunicorn entry point
+flaskService/
+  app/
+    models/      # SQLAlchemy models: User, Notebook, Page, Genre, Reading
+    schemas/     # Marshmallow schemas for validation and serialization
+    resources/   # Flask-RESTful resources that define API endpoints
+    auth/        # JWT helpers, authentication decorators, blacklist logic
+    storage/     # MinIO integration helpers
+    db/          # Database engine and session configuration
+    utils/       # Shared utilities: pagination, error handling
+  wsgi.py        # Gunicorn entry point
   requirements.txt
-  config.py      # environment-driven configuration
+  config.py      # Environment-driven configuration
 ```
 
-### 2.2 Runtime and deployment
-
-The service runs inside containers and is designed for predictable deployment.
-
-- **WSGI server**  
-  The Flask application runs behind gunicorn. Multiple workers allow concurrent request handling.
-
-- **Containerization**  
-  The service is packaged as a Docker image. Development and staging typically run through Docker Compose, with Kubernetes available for larger deployments.
-
-- **Configuration**  
-  Environment variables define database endpoints, MinIO credentials, Redis connection details, and JWT secrets.
+The service runs behind Gunicorn with multiple workers for concurrent request handling. It's packaged as a Docker image. Configuration comes entirely from environment variables: database endpoints, MinIO credentials, Redis connection details, and JWT secrets.
 
 ---
 
-## 3. Core libraries and why they were chosen
+## Core libraries and why they were chosen
 
-The service relies on a small set of focused libraries
+The stack is deliberate and minimal.
 
-- **Flask**  
-  A lightweight microframework that keeps the API layer explicit and easy to reason about.
+**Flask** keeps the API layer explicit. There's no magic. Every route, every middleware, every extension is registered in code you can read.
 
-- **Flask-RESTful**  
-  Adds structured resource routing using class-based endpoints.
+**Flask-RESTful** adds structured resource routing using class-based endpoints. GET and POST on the same path live in the same class, organized by HTTP method.
 
-- **Flask-JWT-Extended**  
-  Manages access tokens, refresh tokens, and request authentication.
+**Flask-JWT-Extended** manages access tokens, refresh tokens, and request authentication. It handles the decorator-based protection pattern and the token creation API.
 
-- **Flask-SQLAlchemy with pymysql**  
-  Provides ORM support and connectivity to the MySQL InnoDB cluster.
+**Flask-SQLAlchemy with PyMySQL** provides ORM support and connectivity to the MySQL InnoDB cluster. Connection strings point to MySQL Router, not individual nodes.
 
-- **marshmallow and flask-marshmallow**  
-  Handle request validation and response serialization.
+**Marshmallow and Flask-Marshmallow** handle request validation and response serialization. Every request body and response payload goes through a schema.
 
-- **MinIO integration layer**  
-  Provides S3-compatible object storage for media assets.
+**bcrypt** performs secure password hashing. Passwords never touch the database in plaintext.
 
-- **flask-redis**  
-  Supplies Redis connectivity for caching and token management.
-
-- **bcrypt**  
-  Performs secure password hashing.
-
-- **gunicorn**  
-  A production-grade WSGI server that handles concurrency reliably.
+**Gunicorn** is the production-grade WSGI server. Multiple workers allow concurrent request handling without threading complexity in application code.
 
 ---
 
-## 4. Endpoint inventory - methods, paths, behavior and guarantees
+## The app factory
 
-Exact route names can vary slightly across repositories. The following represents the canonical API semantics.
+The entry point is `flaskService/app/__init__.py`. It exports one function.
 
-### 4.1 Authentication and session
+```python
+def create_app():
+    app = Flask(__name__)
+    app.config.from_object('config.settings')
 
-```http
-POST /api/auth/register
+    # Initialize extensions
+    db.init_app(app)
+    ma.init_app(app)
+    jwt.init_app(app)
+
+    # Register blueprints
+    from app.resources.user import user_blueprint
+    from app.resources.notebook import notebook_blueprint
+    app.register_blueprint(user_blueprint, url_prefix='/user')
+    app.register_blueprint(notebook_blueprint, url_prefix='/')
+
+    # JWT callbacks
+    @jwt.token_in_blacklist_loader
+    def check_token_blacklist(decoded_token):
+        jti = decoded_token['jti']
+        return rc.get(jti) is not None
+
+    return app
 ```
 
-Purpose  
-Create a new user account.
+The factory creates a fresh Flask app, loads config from `config.settings`, initializes SQLAlchemy, Marshmallow, and Flask-JWT-Extended, then registers the two blueprints. The JWT blacklist callback is registered here because it needs access to the `jwt` extension instance. Running the app is one line in `wsgi.py`.
 
-Input
+---
 
-```json
-{ "username", "email", "password" }
+## Configuration
+
+`config/settings.py` holds all environment-specific values. A few are worth calling out.
+
+```python
+SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://root:root@inno_router:6446/SinPluma'
+JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY')
+JWT_BLACKLIST_ENABLED = True
+JWT_BLACKLIST_TOKEN_CHECKS = ['access', 'refresh']
+
+ACCESS_EXPIRES = timedelta(minutes=15)
+REFRESH_EXPIRES = timedelta(days=30)
+
+JWT_ACCESS_TOKEN_EXPIRES = ACCESS_EXPIRES
+JWT_REFRESH_TOKEN_EXPIRES = REFRESH_EXPIRES
 ```
 
-Behavior  
-The password is hashed with bcrypt and a User record is created inside a database transaction.
-
-Response  
-Returns the user object or a newly issued token depending on configuration.
+The database URI connects through MySQL Router (`inno_router:6446`). Port 6446 is the Router's read-write endpoint. Flask never talks to a MySQL node directly.
 
 ---
 
-```http
-POST /api/auth/login
+## Full endpoint inventory
+
+The API splits into two blueprints: `user_blueprint` and `notebook_blueprint`.
+
+### Authentication and session
+
+**`POST /user/login`** — Authenticate a user and issue JWT tokens. Takes `username` and `password`. Verifies credentials against the bcrypt hash. Returns `access_token` and `refresh_token` on success.
+
+**`POST /user/register`** — Create a new user account. Hashes the password with bcrypt and writes a User record inside a database transaction.
+
+**`DELETE /user/logout`** — Invalidate the current session. Extracts the JWT ID from the access token and writes it to the Redis blacklist.
+
+**`POST /user/token/refresh`** — Exchange a refresh token for a new access token. Validates the refresh token signature, expiry, and Redis blacklist status.
+
+### Users and profiles
+
+**`GET /user/<username>`** — Retrieve public profile information. Reads user metadata from MySQL and serializes it through Marshmallow.
+
+**`PUT /user/settings`** — Update profile information such as username, email, or password. Requires authentication. The requesting user must match the profile owner. Profile updates occur inside a transactional database write.
+
+**`GET /user/<username>/image/`** — Retrieve the profile image for a user. Proxied from MinIO.
+
+**`POST /user/<username>/image/`** — Upload a profile image. Streams the file to MinIO and returns the object reference.
+
+### Notebooks and works
+
+**`GET /notebooks/`** — List notebooks. Returns public notebooks or the current user's notebooks depending on the auth context. Supports pagination via `page` and `per_page` query parameters.
+
+**`POST /notebooks/`** — Create a new notebook. Takes `title`, `genre_id`, and `resume`. Inserts the record inside a database transaction and returns the created identifier.
+
+**`GET /notebooks/<id>`** — Retrieve notebook metadata along with its list of pages.
+
+**`PUT /notebooks/<id>`** — Update notebook metadata. Requires authentication; the requesting user must own the notebook.
+
+**`DELETE /notebooks/<id>`** — Remove a notebook. Cascades to associated pages.
+
+**`GET /notebooks/<id>/image/`** — Retrieve the notebook cover image from MinIO.
+
+**`POST /notebooks/<id>/image/`** — Upload a notebook cover image. Validates MIME type and file size, streams to MinIO, records metadata in MySQL inside a transaction.
+
+### Pages
+
+**`GET /pages/`** — List pages belonging to a notebook. Accepts `notebook_id` as a query parameter. Returns pages ordered by `position`.
+
+**`POST /pages/`** — Create a new page within a notebook. Takes `title`, `content`, and `notebook_id`. The `position` is assigned as the next available slot.
+
+**`GET /pages/<id>`** — Retrieve the content of a specific page. Accepts a `mode` query parameter: `editor` returns the full draft, `reader` returns the published version.
+
+**`PUT /pages/<id>`** — Update page content. This endpoint handles both manual saves and autosave operations. The `content` field stores Slate's JSON document tree.
+
+**`DELETE /pages/<id>`** — Remove a page and re-number remaining pages to close the position gap.
+
+### Genres and readings
+
+**`GET /genres/`** — Return the full genre list. Public endpoint, no authentication required.
+
+**`GET /readings/`** — List notebooks the current user follows.
+
+**`POST /readings/`** — Follow a notebook. Creates a Reading record linking the current user to the notebook.
+
+**`DELETE /readings/`** — Unfollow a notebook. Removes the Reading record.
+
+### Search
+
+**`GET /search?q=...`** — Perform text search across notebooks and pages using SQL LIKE queries. Returns matching works ordered by relevance (approximate). This is sufficient for small datasets; a dedicated search index would be the next step for scale.
+
+---
+
+## The domain model
+
+SQLAlchemy models live in `app/models/`. Each model class maps to a database table.
+
+```python
+class User(db.Model):
+    __tablename__ = 'user'
+    user_id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), unique=True, nullable=False)
+    email = db.Column(db.String(100), unique=True, nullable=False)
+    password = db.Column(db.String(255), nullable=False)
+    user_created = db.Column(db.DateTime, default=datetime.utcnow)
+    notebooks = db.relationship('Notebook', backref='author', lazy=True)
+
+class Notebook(db.Model):
+    __tablename__ = 'notebook'
+    notebook_id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.user_id'), nullable=False)
+    genre_id = db.Column(db.Integer, db.ForeignKey('genre.genre_id'), nullable=False)
+    title = db.Column(db.String(100), nullable=False)
+    resume = db.Column(db.Text)
+    pages = db.relationship('Page', backref='notebook', lazy=True,
+                            order_by='Page.position')
+
+class Page(db.Model):
+    __tablename__ = 'page'
+    page_id = db.Column(db.Integer, primary_key=True)
+    notebook_id = db.Column(db.Integer, db.ForeignKey('notebook.notebook_id'))
+    title = db.Column(db.String(100))
+    content = db.Column(db.JSON)
+    position = db.Column(db.Integer)
 ```
 
-Purpose  
-Authenticate a user and issue JWT access tokens.
+Page content is stored as JSON, which maps directly to Slate's document format. SQLAlchemy's `db.JSON` type handles serialization transparently.
 
-Input
+---
 
-```json
-{ "email", "password" }
+## Marshmallow schemas
+
+Every request body and response payload goes through a Marshmallow schema.
+
+```python
+class NotebookSchema(ma.Schema):
+    notebook_id = fields.Int(dump_only=True)
+    user_id = fields.Int(required=True)
+    genre_id = fields.Int(required=True)
+    title = fields.Str(required=True, validate=validate.Length(min=1, max=100))
+    resume = fields.Str()
+
+notebook_schema = NotebookSchema()
+notebooks_schema = NotebookSchema(many=True)
 ```
 
-Behavior  
-Credentials are verified against the stored bcrypt hash. On success the service issues a JWT containing a unique token identifier and expiration time.
+On POST requests, the resource calls `notebook_schema.load(request.json)`, which validates the input and raises a `ValidationError` if anything is wrong. Flask-RESTful converts that into a 400 response with the validation messages. On GET responses, `notebook_schema.dump(notebook)` serializes the model instance to a dict, filtering out fields marked `load_only` and adding computed properties. The pattern is consistent across all resources.
 
 ---
 
-```http
-POST /api/auth/logout
+## A full request walkthrough
+
+Following a single request from Nginx to the database response makes the pieces concrete.
+
+A POST to `/api/notebooks/` arrives at Nginx. The config strips the `/api` prefix and forwards to `flask:5000/notebooks/`. Flask-JWT-Extended's `@jwt_required` decorator intercepts first, reads the Authorization header, decodes the token, checks the Redis blacklist via the `token_in_blacklist_loader` callback, and either raises a 401 or sets the JWT context.
+
+```python
+class NotebookList(Resource):
+    @jwt_required
+    def post(self):
+        user_id = get_jwt_identity()
+        data = notebook_schema.load(request.json)
+        notebook = Notebook(user_id=user_id, **data)
+        db.session.add(notebook)
+        db.session.commit()
+        return notebook_schema.dump(notebook), 201
 ```
 
-Purpose  
-Invalidate a session token.
-
-Input  
-Authorization header containing the active JWT.
-
-Behavior  
-The token identifier is written to Redis as part of a blacklist entry with a matching expiration time.
+SQLAlchemy sends the INSERT through PyMySQL to MySQL Router on port 6446. The Router forwards to the primary node. The commit completes, SQLAlchemy populates `notebook.notebook_id` from the AUTO_INCREMENT, and the schema serializes the response.
 
 ---
 
-```http
-POST /api/auth/refresh
+## Page position management
+
+When a page is deleted from the middle of a notebook, the remaining pages need their positions compacted.
+
+```python
+@staticmethod
+def reorder(notebook_id, deleted_position):
+    pages = Page.query.filter(
+        Page.notebook_id == notebook_id,
+        Page.position > deleted_position
+    ).all()
+    for page in pages:
+        page.position -= 1
+    db.session.commit()
 ```
 
-Purpose  
-Exchange a refresh token for a new access token.
+The `delete` resource calls `Page.reorder()` after the delete. This keeps positions contiguous. The frontend can use position as a stable sort key without checking for gaps.
 
 ---
 
-### 4.2 Users and profiles
+## Storage integrations
 
-```http
-GET /api/users/{id}
+**MinIO** handles all binary assets. Flask never writes files to disk. The MinIO client streams the file directly from the request into object storage.
+
+```python
+minio_client.put_object(
+    bucket_name='works',
+    object_name=f'{notebook_id}.jpg',
+    data=image.stream,
+    length=-1,
+    part_size=10 * 1024 * 1024,
+    content_type=image.content_type
+)
 ```
 
-Purpose  
-Retrieve public profile information.
+The Flask service validates MIME type and file size on the server before uploading. After the MinIO write succeeds, metadata (object key, MIME type, size) goes into MySQL inside a transaction. If the database write fails, the object is marked for cleanup. No dangling references land in the relational store.
 
-Authorization  
-Optional.
+**Redis** has one job: the JWT blacklist. On logout, the resource stores the JWT ID with a TTL slightly longer than the token's remaining lifetime.
 
-Behavior  
-The service reads user metadata from MySQL and serializes it through marshmallow.
-
----
-
-```http
-PUT /api/users/{id}
+```python
+jti = get_raw_jwt()['jti']
+rc.set(jti, jti, ex=int(ACCESS_EXPIRES.total_seconds() * 1.2))
 ```
 
-Purpose  
-Update profile information such as display name, biography, or avatar reference.
-
-Authorization  
-Required. The requesting user must match the profile owner.
-
-Behavior  
-Profile updates occur inside a transactional database write.
+The TTL is `ACCESS_EXPIRES * 1.2` (18 minutes for a 15-minute token) to account for clock drift between services. Once the token would have expired naturally, Redis deletes the key automatically. The blacklist never needs manual cleanup.
 
 ---
 
-### 4.3 Notebooks and works
+## Operational reliability patterns
 
-This is the central content model of the platform.
+Several patterns improve reliability in practice.
 
-```http
-GET /api/notebooks
-```
+SQLAlchemy connection pooling is tuned to match the number of Gunicorn workers, preventing connection exhaustion under load. The service is designed to be stateless with respect to file storage, which means Flask containers can be restarted or scaled horizontally without data loss. The Marshmallow validation layer ensures malformed requests fail fast at the boundary, before touching the database. Input file validation verifies both MIME type and file size on the server side, not just the client side.
 
-Purpose  
-List notebooks belonging to the current user or visible public notebooks.
-
-Query parameters may include
-
-- page
-- per_page
-- public
-
----
-
-```http
-POST /api/notebooks
-```
-
-Purpose  
-Create a new notebook draft.
-
-Input
-
-```json
-{ "title", "description", "metadata" }
-```
-
-Behavior  
-The notebook record is inserted inside a database transaction. The created identifier is returned in the response.
-
----
-
-```http
-GET /api/notebooks/{notebook_id}
-```
-
-Purpose  
-Retrieve notebook metadata and its list of pages.
-
----
-
-```http
-DELETE /api/notebooks/{notebook_id}
-```
-
-Purpose  
-Remove a notebook or mark it as deleted through a soft-delete mechanism.
-
----
-
-### 4.4 Pages and revisions
-
-```http
-GET /api/notebooks/{notebook_id}/pages/{page_id}
-```
-
-Purpose  
-Retrieve the content of a specific page. The request may return a draft or a published version.
-
----
-
-```http
-POST /api/notebooks/{notebook_id}/pages
-```
-
-Purpose  
-Create a new page within a notebook.
-
-Input
-
-```json
-{ "title", "content", "order" }
-```
-
----
-
-```http
-PUT /api/notebooks/{notebook_id}/pages/{page_id}
-```
-
-Purpose  
-Update page content. This endpoint supports normal saves and autosave operations.
-
-Input
-
-```json
-{
-  "content": "...",
-  "autosave": true
-}
-```
-
----
-
-```http
-GET /api/pages/{id}/revisions
-```
-
-Purpose  
-Return the revision history for a page. This supports auditing and rollback.
-
----
-
-### 4.5 Publish and unpublish
-
-```http
-POST /api/notebooks/{id}/publish
-```
-
-Purpose  
-Mark a notebook and its pages as publicly published.
-
----
-
-```http
-POST /api/notebooks/{id}/unpublish
-```
-
-Purpose  
-Remove a notebook from public visibility.
-
----
-
-### 4.6 Media uploads
-
-```http
-POST /api/uploads/images
-```
-
-Purpose  
-Upload an image used in profiles or embedded writing.
-
-Input  
-Multipart form data containing the file and optional metadata.
-
-Behavior  
-The service validates file size and MIME type, uploads the object to MinIO, and records metadata in the database.
-
----
-
-### 4.7 Search and discovery
-
-```http
-GET /api/search?q=...
-```
-
-Purpose  
-Perform simple text search across content. The implementation typically relies on SQL LIKE queries.
-
----
-
-### 4.8 Integrations and linguistics proxy
-
-```http
-GET /api/lin/sentiment?sent=...
-```
-
-Purpose  
-Forward a request to the separate linguistics service and return the result.
-
----
-
-## 5. Communication with Redis, MinIO and the InnoDB cluster
-
-### 5.1 Redis - stored data and purpose
-
-Redis handles short lived and high frequency data.
-
-Stored items include
-
-- token blacklist entries based on JWT identifiers
-- small cached fragments such as frequently accessed author snippets
-- temporary counters used for rate limiting
-
-This keeps authentication checks fast while avoiding additional database reads.
-
----
-
-### 5.2 MinIO - object storage
-
-MinIO stores binary assets associated with written content.
-
-Typical stored objects include
-
-- profile avatars
-- embedded images within notebooks or pages
-- other binary attachments referenced by the platform
-
-Transaction flow usually follows this order
-
-1. upload the file to MinIO
-2. create the metadata record in MySQL inside a transaction
-3. if the database write fails, mark the object for cleanup
-
----
-
-### 5.3 InnoDB cluster - authoritative datastore
-
-MySQL serves as the transactional backbone of the platform.
-
-Stored entities include
-
-- users and credential records
-- notebooks and pages
-- revision history
-- metadata that references stored images
-
-Flask connects through SQLAlchemy using a connection URI that points to the MySQL Router layer.
-
-Example connection string
-
-```text
-mysql+pymysql://root:root@inno_router:6446/SinPluma
-```
-
-The router directs writes to the primary node and balances read traffic across replicas.
-
----
-
-## 6. Operational and reliability patterns
-
-Several operational patterns improve reliability.
-
-- idempotency keys prevent duplicate side effects when requests are retried
-- connection pooling in SQLAlchemy is tuned to match the number of gunicorn workers
-- health endpoints expose readiness and liveness checks for orchestration systems
-
----
-
-## 7. Security considerations
-
-Security controls are applied at several layers.
-
-- password hashing uses bcrypt
-- JWT tokens remain short lived and can be revoked through the Redis blacklist
-- input validation occurs through marshmallow schemas before reaching business logic
-- file validation verifies both file size and MIME type on the server
-
----
-
-## 8. Why the Flask service depends on these components
-
-Each infrastructure component solves a distinct problem.
-
-- MySQL InnoDB cluster guarantees durability, transactional consistency, and revision history
-- MinIO stores binary assets outside the relational database, which improves performance and simplifies backups
-- Redis handles ephemeral authentication state with very low latency
-
-Together they allow the API layer to remain focused on business logic while delegating storage responsibilities to systems designed for those workloads.
-
----
-
-## 9. Closing summary
-
-The Flask service operates as the central transactional API for SinPluma. It coordinates authentication, content management, publishing workflows, and integrations.
-
-Data integrity comes from the InnoDB cluster. Binary storage is handled by MinIO. Redis manages fast, temporary state such as token revocation.
-
-This separation keeps the architecture predictable. The Flask layer enforces the rules, the databases store the truth, and the infrastructure components each serve a clear role.
+For production hardening, the architecture anticipates health endpoints for readiness and liveness checks, idempotency keys for retryable writes, and Prometheus metrics on Flask routes via a middleware layer. These aren't implemented in the current repository but the structure makes them straightforward additions.

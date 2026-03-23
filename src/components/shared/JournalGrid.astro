@@ -1,0 +1,19 @@
+---
+import { type EntryContext } from "@appTypes/content_context";
+import JournalCard from "@components/shared/JournalCard.astro";
+
+interface Props {
+  catalog: EntryContext[];
+}
+
+const { catalog } = Astro.props;
+---
+
+<div
+  class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12 w-full place-items-stretch"
+>
+  {
+    catalog.length > 0 &&
+      catalog.map((entry: EntryContext) => <JournalCard entry={entry} />)
+  }
+</div>

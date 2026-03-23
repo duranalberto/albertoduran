@@ -1,407 +1,287 @@
 ---
-title: "Engineering the Frontend"
+title: "Engineering the Sin Pluma React frontend"
 pubDate: 2026-03-02
-description: "A detailed overview of the SinPluma frontend architecture, covering the React SPA structure, state management strategy, routing model, editor integration, and communication with backend services."
+description: "A detailed look at how Sin Pluma's React SPA is structured: Redux state, HOC-based auth guards, Axios interceptors, Slate.js rich text editor, and backend service integration patterns."
 author: "Alberto Duran"
 order: 2
 image: "../../assets/thejournal/stock/07.avif"
-tags: ["react", "material ui", "frontend"]
+tags: ["react", "redux", "slate-js", "frontend"]
 github: "SinPluma"
 ---
 
-This publication isolates the **Frontend Architecture** of SinPluma and examines it in detail. It explains the technology stack, internal structure, routing model, state management strategy, page composition, and the integration patterns used to communicate with backend services.
-
-The objective is to demonstrate frontend engineering capability beyond interface design. The focus is on architectural decisions, maintainability, and the ability to scale the application over time.
-
-![SinPluma UI](../../assets/thejournal/pub/sinpluma_01.png)
+Most React apps start simple and get complicated. State bleeds between components, auth checks end up duplicated across views, and API error handling becomes a patchwork of try-catch blocks scattered through every page. Sin Pluma's frontend avoids most of that by making three structural decisions early: centralized Redux state, higher-order components for access control, and a single Axios instance that handles token refresh automatically. This post traces how each of those decisions plays out in practice.
 
 ---
 
-## 1. Frontend Overview
+## Architecture goals
 
-SinPluma’s frontend is implemented as a **Single Page Application (SPA)** built with React. The application functions as a writing platform where users can:
+The frontend architecture prioritizes a few things above interface aesthetics.
 
-- Create and manage notebooks
-- Write structured multi-page documents
-- Upload and embed images
-- Read published work
-- Search for content
-- Receive real-time linguistic feedback while writing
+**Modular component design** keeps UI elements reusable and independent. Components that hold minimal local state and pull from Redux are straightforward to test and relocate.
 
-Although the user experience centers on writing, the underlying architecture prioritizes long-term maintainability and clear system boundaries.
+**Predictable state management** through Redux means every state transition is explicit and traceable. When something breaks, the Redux DevTools tell you exactly what action fired and what the state looked like before and after.
 
-Key architectural goals include:
+**Clear API communication layers** mean network logic never leaks into UI components. Axios calls live in action creators. Components dispatch actions and render state. The two concerns stay separated.
 
-- Modular component design
-- Predictable state management
-- Clear API communication layers
-- Separation between presentation and business logic
-- Scalable routing and layout composition
+**Separation between presentation and business logic** makes both sides easier to change. Adding a feature means adding an action, a reducer case, and a component, not hunting through mixed logic.
 
 ---
 
-## 2. Technology Stack & Core Libraries
+## Technology stack
 
-### 2.1 Core Framework
+The frontend runs on React with React Router for client-side navigation. Redux manages global state with reducers that define state transitions deterministically. Slate.js powers the rich text editor. Material UI supplies the component library. Axios handles all HTTP communication.
 
-- **React**  
-  The application uses a component-driven UI architecture. Functional components and React hooks encapsulate state and lifecycle behavior within isolated UI units.
+Slate was chosen over simpler editors for specific reasons. It exposes a full document tree representation, which is what the sentiment analysis integration needs. Rendering and editing behavior can be customized in detail. It integrates naturally with React's state model. A basic `<textarea>` would have made the sentiment annotation feature essentially impossible to build cleanly.
 
-- **React Router**  
-  Handles client-side navigation and enables URL-based state representation. Routes such as `/notebooks/:id` or `/read/:slug` directly map the URL to application state.
-
-This routing model keeps navigation predictable and allows pages to be addressed directly.
-
-![SinPluma UI](../../assets/thejournal/pub/sinpluma_02.png)
+Material UI reduces the need for custom CSS while maintaining a consistent design system. Centralizing style definitions through MUI's theming keeps visual behavior predictable across the application.
 
 ---
 
-### 2.2 State Management
+## Project structure
 
-- **Redux**
-
-  Redux manages global application state across the entire frontend.
-
-  The store contains:
-  - Authentication state
-  - Notebook metadata
-  - Document pages
-  - UI state and loading indicators
-
-  State transitions occur through **reducers**, ensuring that updates remain deterministic and traceable.
-
-  Actions represent domain events, for example:
-  - `CREATE_NOTEBOOK`
-  - `LOAD_PAGES`
-  - `LOGIN_SUCCESS`
-
-This model separates responsibilities clearly:
-
-- React components render the interface
-- Redux reducers define state transitions
-- Asynchronous actions handle API communication
-
-The result is a predictable data flow that simplifies debugging and future extensions.
-
----
-
-### 2.3 Rich Text Editing
-
-- **Slate.js**
-
-  The writing experience is powered by Slate, a customizable rich-text editing framework designed for structured documents.
-
-  Slate enables features such as:
-  - Inline formatting like bold, italic, and headings
-  - Structured content blocks
-  - Embedded media such as images
-  - Custom plugins, including sentiment analysis feedback
-
-Slate was selected instead of simpler editors for several reasons:
-
-- It exposes a full document tree representation.
-- Rendering and editing behavior can be customized in detail.
-- It integrates naturally with React’s state model.
-
-This flexibility makes it well suited for a writing platform rather than a basic text field.
-
----
-
-### 2.4 UI & Component Library
-
-- **Material UI (MUI)**
-
-  Material UI provides standardized components used throughout the interface, including:
-  - Buttons
-  - Forms
-  - Dialogs
-  - Navigation bars
-
-The library also supports theming, which centralizes style definitions and keeps visual behavior consistent across the application.
-
-Using MUI reduces the need for custom CSS while maintaining a coherent design system.
-
-![SinPluma UI](../../assets/thejournal/pub/sinpluma_03.png)
-
----
-
-### 2.5 API Communication
-
-- **Axios**
-
-  Axios acts as the HTTP client layer for all communication with backend services.
-
-  A centralized Axios configuration manages:
-  - The base API URL
-  - Authorization headers containing the JWT token
-  - Global error interceptors
-
-API calls are typically executed inside Redux asynchronous actions, following a middleware pattern such as thunks.
-
-This abstraction keeps network logic separate from UI components.
-
----
-
-## 3. Frontend Architecture
-
-The frontend follows a layered SPA architecture organized around clear functional boundaries.
+The frontend lives in the `reacts/` directory and follows a feature-organized layout.
 
 ```
-    /src
-    /components
-    /pages
-    /store
-    /reducers
-    /actions
-    /services
-    /utils
+reacts/src/
+├── common/           # Shared utilities: Api.js, Session.js
+├── components/       # HOCs: requireAuth, noRequireAuth, DrawIfAuth, DrawIfNotAuth
+├── containers/       # Page-level containers wired to Redux
+├── pages/            # Route-level views
+├── reducers/         # 13 combined Redux reducers
+├── actions/          # Redux action creators
+└── index.js          # App entry point with store and router setup
 ```
 
-Each directory represents a distinct responsibility within the client application.
+The `common/` folder is the most important place to understand first. Everything else in the app depends on what lives there. `Api.js` defines the Axios instance and interceptors. `Session.js` handles JWT parsing and session hydration.
 
 ---
 
-### 3.1 Component Layer
+## State management with Redux
 
-The component layer contains reusable UI elements such as:
+Sin Pluma uses Redux with 13 combined reducers. Each one owns a narrow slice of state.
 
-- Editor components
-- Toolbar controls
-- Navigation bars
-- Page lists
-- Modal dialogs
+```js
+// reducers/index.js
+const rootReducer = combineReducers({
+  auth, // JWT tokens, login status
+  user, // User profile data
+  notebooks, // List of notebooks
+  notebook, // Single notebook detail
+  pages, // List of pages in a notebook
+  page, // Single page content
+  genres, // Genre lookup list
+  readings, // Follow relationships
+  image, // Image upload state
+  sentiment, // Sentiment analysis results
+  editor, // Editor mode, draft state
+  ui, // Loading flags, error messages
+  session, // Parsed JWT claims
+});
+```
 
-Most components are intentionally lightweight. They either remain stateless or maintain minimal local state.
+The state flow is predictable throughout the application. A user interaction triggers a Redux dispatch. An asynchronous action performs the API request. The backend response updates the store. React components re-render from the updated state. That cycle applies to every feature uniformly.
 
-Access to global data occurs through Redux hooks such as:
+Actions represent domain events clearly: `CREATE_NOTEBOOK`, `LOAD_PAGES`, `LOGIN_SUCCESS`. The naming makes the history of any session readable in the DevTools.
 
-- `useSelector` for reading state
-- `useDispatch` for triggering actions
-
-This design keeps UI elements reusable and independent from business logic.
-
-![SinPluma UI](../../assets/thejournal/pub/sinpluma_04.png)
-
----
-
-### 3.2 Pages Layer (Route-Based Composition)
-
-The pages layer contains high-level components mapped directly to application routes.
-
-Each page composes lower-level components and orchestrates data loading.
-
-Key pages include the following.
+Keeping each concern in its own reducer means components subscribe to exactly what they need. A reading list component doesn't re-render when editor state changes. A genre dropdown doesn't care about auth status.
 
 ---
 
-#### 1. Authentication Pages
+## HOC-based auth guards
 
-Authentication pages handle user entry into the platform.
+Sin Pluma has four higher-order components for access control. Two control route access; two control element visibility.
 
-They include:
+```
+requireAuth       — Wraps a route; redirects to login if no valid session
+noRequireAuth     — Wraps a route; redirects to home if already logged in
+DrawIfAuth        — Renders children only when the user is authenticated
+DrawIfNotAuth     — Renders children only when the user is not authenticated
+```
 
-- Login
-- Registration
-- Password validation flows
+The route guards work by checking the Redux `auth` slice on mount. If the condition fails, they redirect using React Router's `<Redirect>`. Components never need to know whether a page is protected.
 
-Responsibilities include:
+```jsx
+// Usage in route definitions
+<Route path="/editor/:id" component={requireAuth(EditorPage)} />
+<Route path="/login" component={noRequireAuth(LoginPage)} />
+```
 
-- Form validation
-- Requesting authentication tokens
-- Updating the Redux authentication state
+The visibility components solve a different problem. The "follow" button on a notebook detail page should only appear if the reader is logged in and isn't the author. Rather than putting conditional logic inside the component itself, you wrap the button.
 
----
+```jsx
+<DrawIfAuth>
+  <DrawIfNotAuth condition={isAuthor}>
+    <FollowButton notebookId={id} />
+  </DrawIfNotAuth>
+</DrawIfAuth>
+```
 
-#### 2. Dashboard / Notebooks Page
-
-The dashboard displays the user’s notebooks and acts as the primary entry point after login.
-
-Users can:
-
-- View existing notebooks
-- Create new notebooks
-- Delete notebooks
-
-Notebook data is retrieved from the backend endpoint `/api/notebooks`.
-
-Typical state flow:
-
-1. The page loads.
-2. An asynchronous Redux action dispatches an API request.
-3. The response updates the Redux store.
-4. React components re-render based on the new state.
+This pattern keeps the rendering logic declarative. The components stay clean.
 
 ---
 
-#### 3. Notebook Editor Page
+## Session management
 
-The notebook editor is the core writing interface and the most complex page in the application.
+`common/Session.js` handles everything related to parsing and storing JWT tokens. It exposes three functions.
 
-Key responsibilities include:
+`parseJwt(token)` decodes the base64 payload from a JWT string without verifying the signature. It's client-side only; the server does the real validation. The function extracts the user ID, username, and expiry timestamp from the claims.
 
-- Loading notebook pages dynamically
-- Managing Slate editor state
-- Saving document changes through API requests
-- Rendering embedded images
-- Triggering linguistic analysis services
+`loadSession()` reads the access token from `localStorage`, parses it, and dispatches a Redux action that populates the session slice. The app calls this on startup so a page refresh doesn't log the user out.
 
-The page also implements:
-
-- Autosave behavior
-- Debounced persistence requests
-- Optimistic UI updates
-
-These mechanisms ensure writing remains responsive while maintaining data integrity.
-
-![SinPluma UI](../../assets/thejournal/pub/sinpluma_06.png)
+`startSession(accessToken, refreshToken)` stores both tokens in `localStorage` and calls `loadSession()` to update Redux state immediately. The login flow calls this right after a successful POST to `/api/login`.
 
 ---
 
-#### 4. Reader Page
+## Axios interceptors and the token refresh queue
 
-The reader page presents published content in a simplified reading interface.
+`common/Api.js` creates a single Axios instance with the API base URL and attaches interceptors to both the request pipeline and the response pipeline.
 
-Characteristics include:
+The request interceptor adds the Authorization header automatically.
 
-- Minimal UI
-- Stateless rendering
-- Content fetched by slug or document identifier
+```js
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("access_token");
+  if (token) config.headers["Authorization"] = `Bearer ${token}`;
+  return config;
+});
+```
 
-The goal is to provide a distraction-free reading experience.
+The response interceptor handles 401 errors. The tricky part is what happens when multiple requests fail simultaneously because the access token expired. Without coordination, each failed request would independently try to refresh, causing a race condition: the first refresh succeeds and invalidates the old refresh token, then the second refresh fails because that token is already used.
 
----
+Sin Pluma solves this with a subscriber queue.
 
-#### 5. Search Page
+```js
+let isRefreshing = false;
+let subscribers = [];
 
-The search page enables users to discover notebooks and published writing.
+function subscribeTokenRefresh(callback) {
+  subscribers.push(callback);
+}
 
-Core elements include:
+function onRefreshed(token) {
+  subscribers.forEach((cb) => cb(token));
+  subscribers = [];
+}
 
-- A query input field
-- Result listing components
-- API-driven data retrieval
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const { config, response } = error;
+    if (response?.status !== 401) return Promise.reject(error);
+    if (response.data?.msg !== "Token has expired")
+      return Promise.reject(error);
 
-Results are rendered dynamically based on backend responses.
+    if (!isRefreshing) {
+      isRefreshing = true;
+      const refreshToken = localStorage.getItem("refresh_token");
+      const res = await api.post(
+        "/refresh",
+        {},
+        {
+          headers: { Authorization: `Bearer ${refreshToken}` },
+        },
+      );
+      const newToken = res.data.access_token;
+      localStorage.setItem("access_token", newToken);
+      isRefreshing = false;
+      onRefreshed(newToken);
+    }
 
----
+    return new Promise((resolve) => {
+      subscribeTokenRefresh((token) => {
+        config.headers["Authorization"] = `Bearer ${token}`;
+        resolve(api(config));
+      });
+    });
+  },
+);
+```
 
-## 4. State Flow & Data Lifecycle
-
-SinPluma follows a predictable state lifecycle that governs how data moves through the application.
-
-1. A user interaction triggers a Redux dispatch.
-2. An asynchronous action performs the API request.
-3. The backend response updates the Redux store.
-4. React components re-render from the updated state.
-
-This model provides several benefits:
-
-- Deterministic UI updates
-- A clear debugging path
-- Strict separation between UI rendering and business logic
-
----
-
-## 5. Integration with Backend Services
-
-### 5.1 Authentication Flow
-
-The authentication process follows a token-based model.
-
-1. The user submits login credentials.
-2. The backend returns a JWT token.
-3. The token is stored in Redux and optionally persisted in local storage.
-4. Axios attaches the token to future requests through authorization headers.
-5. Logging out removes the token and resets authentication state.
-
-![SinPluma UI](../../assets/thejournal/pub/sinpluma_05.jpg)
-
----
-
-### 5.2 Image Upload Flow
-
-Image uploads occur directly from the editor interface.
-
-The process works as follows:
-
-1. The editor selects an image file.
-2. The frontend sends a multipart upload request.
-3. The backend stores the file in MinIO object storage.
-4. The resulting URL is returned to the client.
-5. The editor embeds the URL inside the Slate document structure.
-
-This approach allows images to behave as structured document elements.
+The first failed request sets `isRefreshing = true` and starts the refresh. Every subsequent failed request during that window adds itself to the `subscribers` array. Once the refresh completes, `onRefreshed` replays all queued requests with the new token. The user sees nothing.
 
 ---
 
-### 5.3 Linguistics Service Integration
+## Routing setup
 
-The writing assistant feature integrates with an external linguistic analysis service.
+Routes are defined in `index.js` using React Router v5. Protected routes wrap their components with `requireAuth`. Public-only routes use `noRequireAuth`. A handful of routes are open to anyone.
 
-The workflow is lightweight:
+```
+/                   — Home (open)
+/login              — Login (noRequireAuth)
+/register           — Register (noRequireAuth)
+/profile/:username  — User profile (open)
+/works              — Browse works (open)
+/works/:id          — Work detail (open)
+/editor/:id         — Page editor (requireAuth)
+/create             — Create notebook (requireAuth)
+/search             — Search results (open)
+/settings           — User settings (requireAuth)
+```
 
-1. The editor sends sentence text to the service.
-2. The service returns sentiment or tone classification.
-3. The UI visually highlights the feedback.
-
-The interaction remains stateless and does not persist additional client data.
-
----
-
-## 6. Build & Deployment
-
-The frontend is distributed as a containerized application using Docker.
-
-The build and deployment process follows these steps:
-
-- A production bundle is generated using `npm run build`.
-- Static assets are served through an Nginx container.
-- Environment variables are injected during the build stage.
-- The container runs behind a reverse proxy that routes API traffic.
-
-This deployment model provides several operational advantages:
-
-- Portability across environments
-- Simple configuration through environment variables
-- Easy integration with backend services in container orchestration setups
+The router wraps the Redux `<Provider>` at the top level, so every component in the tree has access to the store.
 
 ---
 
-## 7. Architectural Strengths
+## Page composition
 
-The frontend architecture provides several important advantages:
+The pages layer contains high-level components mapped directly to application routes. Each page composes lower-level components and orchestrates data loading.
 
-- Clear separation between UI rendering, state logic, and side effects
-- A rich document model built on Slate
-- Predictable global state management through Redux
-- Modular routing and page composition
-- Scalable component organization
-- Clean API communication through Axios
-- Containerized deployment ready for production environments
+**Authentication pages** handle login, registration, and validation. They form-validate on the client, request authentication tokens, and update the Redux auth state on success.
 
----
+**The dashboard** displays the user's notebooks and acts as the primary entry point after login. Notebook data fetches from `/api/notebooks` on mount through an async Redux action. The component re-renders from the updated store once the response lands.
 
-## 8. Architectural Constraints
+**The notebook editor** is the most complex page. It loads pages dynamically, manages Slate editor state, saves changes through debounced API requests, renders embedded images, and triggers linguistic analysis. It implements autosave with optimistic UI updates to keep writing responsive while maintaining data integrity.
 
-Some trade-offs exist in the current design:
+**The reader page** presents published content in a simplified reading interface. It's stateless, fetches content by identifier, and has no editing controls.
 
-- Redux introduces boilerplate for smaller UI interactions.
-- No dedicated client-side caching layer such as React Query is present.
-- Search behavior depends heavily on backend SQL queries.
-- The application lacks server-side rendering, which limits search engine indexing for public content.
+**The search page** sends a query input to `/api/search?q=...` and renders results dynamically as they arrive.
 
 ---
 
-## Closing Summary
+## The Slate.js editor
 
-The SinPluma frontend operates as a structured client application rather than a simple user interface.
+The page editor runs in two modes depending on how the page loads.
 
-Its architecture combines:
+In **editor mode** (the author's view), Slate loads the page content as a JSON document, allows editing, and auto-saves on every keystroke through a debounced PUT request to `/api/pages/{id}`. The toolbar supports basic formatting: bold, italic, headings, and embedded images.
 
-- Modular component design
-- Deterministic state transitions
-- A rich text document model
-- Clean backend API integration
-- A containerized production build
+In **reader mode**, the same Slate component renders in read-only state. No cursor, no toolbar. The content displays exactly as the author wrote it.
 
-Together these elements demonstrate core frontend engineering capabilities, including disciplined state management, complex editor integration, real-world API interaction, and a maintainable SPA routing structure.
+The sentiment annotation layer sits on top of the editor. When the author clicks "Analizar", the frontend traverses the Slate document tree to find text nodes, splits them into sentences, and sends each sentence to the linguistics service.
+
+```js
+function getSentences(slateNodes) {
+  const sentences = [];
+  for (const node of slateNodes) {
+    if (node.text) {
+      node.text.split(/[.\n]/).forEach((s, i) => {
+        if (s.trim())
+          sentences.push({ key: `${node.key}-${i}`, text: s.trim() });
+      });
+    }
+    if (node.children) sentences.push(...getSentences(node.children));
+  }
+  return sentences;
+}
+```
+
+Each response from `/lin/sentiment` comes back as `{ key, label }` where label is `positive` or `negative`. The editor stores these in Redux under the `sentiment` slice and uses Slate's `decorate` function to apply color annotations to matching text ranges. Clicking "Analizar" a second time clears the sentiment slice and removes all decorations.
+
+---
+
+## Image upload flow
+
+Image uploads occur directly from the editor interface. The editor selects an image file, sends a multipart upload request to `/api/notebooks/{id}/image/`, and the backend stores the file in MinIO. The resulting object URL returns to the client, and the editor embeds it inside the Slate document structure as a custom element. This approach lets images behave as structured document nodes rather than raw HTML insertions.
+
+---
+
+## Component layer and Material UI
+
+Most components are intentionally lightweight. They either remain stateless or maintain minimal local state. Access to global data happens through Redux hooks: `useSelector` for reading state and `useDispatch` for triggering actions. This keeps UI elements reusable and independent from business logic.
+
+Material UI supplies standardized components throughout: buttons, forms, dialogs, navigation bars, and cards. The library's theming centralizes style definitions and keeps visual behavior consistent without custom CSS. Page containers connect to Redux via `connect(mapStateToProps, mapDispatchToProps)` and handle data fetching in `componentDidMount`. Display components receive props and don't know anything about Redux or the API.
+
+---
+
+## Architectural trade-offs
+
+The current frontend architecture has a few constraints worth naming. Redux introduces boilerplate for smaller interactions that don't really need global state. There's no dedicated client-side caching layer like React Query, which means data fetches repeat on every remount. Server-side rendering is absent, which limits search engine indexing for public content. The application also lacks service workers or offline capabilities. These are sensible omissions for a platform focused on demonstrating engineering structure rather than production polish, but they'd be necessary steps for a real-world launch.

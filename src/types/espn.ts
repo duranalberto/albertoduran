@@ -1,4 +1,17 @@
 export interface ESPNTeamSchedule {
+  season?: {
+    year: number;
+    type: number;
+    name: string;
+    displayName: string;
+    half?: number;
+  };
+  requestedSeason?: {
+    year: number;
+    type: number;
+    name: string;
+    displayName: string;
+  };
   team: {
     standingSummary: string;
     recordSummary: string;

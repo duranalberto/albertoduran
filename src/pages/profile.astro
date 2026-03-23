@@ -1,57 +1,52 @@
 ---
 import image from "@assets/thejournal/stock/05.avif";
-import ProjectsGrid from "@components/common/ProjectsGrid.astro";
-import AwardsGrid from "@components/sections/profile/AwardsGrid.astro";
-import CertificationsList from "@components/sections/profile/CertificationsList.astro";
-import EducationList from "@components/sections/profile/EducationList.astro";
-import ExperienceTimeline from "@components/sections/profile/ExperienceTimeline.astro";
-import ProfileHero from "@components/sections/profile/ProfileHero.astro";
-import SkillsGrid from "@components/sections/profile/SkillsGrid.astro";
-import SectionHeader from "@components/ui/SectionHeader.astro";
-import AboutMetadata from "@data/about";
+import AwardsGrid from "@components/profile/AwardsGrid.astro";
+import CertificationsList from "@components/profile/CertificationsList.astro";
+import EducationList from "@components/profile/EducationList.astro";
+import ExperienceTimeline from "@components/profile/ExperienceTimeline.astro";
+import ProfileHero from "@components/profile/ProfileHero.astro";
+import SkillsGrid from "@components/profile/SkillsGrid.astro";
+import ProjectsGrid from "@components/shared/ProjectsGrid.astro";
+import SectionHeader from "@components/ui/display/SectionHeader.astro";
+import about from "@data/about";
+import { sitesManifest } from "@data/site_manifest";
 import BaseLayout from "@layouts/BaseLayout.astro";
 import FlexShell from "@layouts/FlexShell.astro";
-
-const pageTitle = "Alberto Duran | Software Engineer";
 ---
 
-<BaseLayout
-  pageTitle={pageTitle}
-  description="Results-oriented Software Engineer with experience designing,
-          optimizing and deploying web applications and enterprise solutions."
-  image={image}
->
+<BaseLayout siteManifest={sitesManifest["/profile/"]} image={image}>
   <ProfileHero slot="hero" />
 
   <FlexShell class="flex flex-col gap-16 md:gap-24 lg:gap-32 pb-14">
     <section id="skills" class="w-full">
       <SectionHeader title="Technical Skills" />
-      <SkillsGrid skills={AboutMetadata.skills} />
+      <SkillsGrid skills={about.skills} />
     </section>
 
     <section id="experience" class="w-full">
       <SectionHeader title="Professional Experience" />
-      <ExperienceTimeline experience={AboutMetadata.experience} />
+      <ExperienceTimeline experience={about.experience} />
     </section>
 
     <section
       id="credentials"
       class="grid grid-cols-1 gap-16 md:grid-cols-2 lg:gap-24"
     >
+      <h2 class="sr-only">Credentials</h2>
       <div class="w-full">
-        <SectionHeader title="Education" />
-        <EducationList education={AboutMetadata.education} />
+        <SectionHeader title="Educational Background" level={3} />
+        <EducationList education={about.education} />
       </div>
 
       <div class="w-full">
-        <SectionHeader title="Certifications" />
-        <CertificationsList certifications={AboutMetadata.certifications} />
+        <SectionHeader title="Professional Certifications" level={3} />
+        <CertificationsList certifications={about.certifications} />
       </div>
     </section>
 
     <section id="awards" class="w-full">
-      <SectionHeader title="Honors & Awards" />
-      <AwardsGrid awards={AboutMetadata.awards} />
+      <SectionHeader title="Honors and Awards" />
+      <AwardsGrid awards={about.awards} />
     </section>
 
     <section id="projects" class="w-full">

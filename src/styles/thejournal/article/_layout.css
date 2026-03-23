@@ -1,0 +1,150 @@
+/* =========================================================
+   JOURNAL LAYOUT
+   Shell, sidebar, and stacking context for thejournal pages.
+   ========================================================= */
+
+/* ──────────────────────────────────────────────────────────
+   PROJECT-WIDE Z-INDEX ARCHITECTURE
+   ──────────────────────────────────────────────────────────
+   This project has a deliberate three-tier stacking model:
+
+   TIER 1 — Normal document stacking contexts
+     10   .journal-sidebar   (sticky, this file)
+     30   .dock-wrapper      (fixed, _dock.css)
+     50   <header>           (sticky + backdrop-filter, Header.astro)
+
+   TIER 2 — <main> stacking context trap
+     BaseLayout's <main transition:name="page-main"> has the CSS property
+     `view-transition-name: page-main` (compiled by Astro). The View
+     Transitions spec requires this to create a stacking context. Since
+     <main> has no explicit z-index its context sits at auto (~0). The
+     header at z-index:50 always paints on top of everything inside <main>.
+     No z-index value assigned to a child of <main> can escape this.
+
+     RULE: never place an overlay/modal as a descendant of <main> expecting
+     a z-index value to beat the header. Use the native Popover API or
+     <dialog>.showModal() instead.
+
+   TIER 3 — Top layer (rendered above all CSS stacking contexts)
+     • DaisyUI .modal-toggle  — vault + OTP modals ([...slug].astro)
+       ↳ Safe because they render via <Fragment slot="overlays">, which is
+         a direct child of <body>, outside <main>'s stacking context.
+     • Native popover         — diagram expanded view (MermaidDiagramWrapper.astro)
+       ↳ Safe because popover="auto" promotes the element to the browser
+         top layer regardless of its position in the DOM tree. No slot
+         teleportation required.
+
+   ────────────────────────────────────────────────────────── */
+
+:root {
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sat: env(safe-area-inset-top, 0px);
+
+  --journal-header-offset: 6rem;
+  --journal-radius-lg: var(--radius-selector);
+  --journal-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --prose-max-width: 65ch;
+  --sidebar-summary-h: 3.5rem;
+}
+
+.journal-root,
+.journal-content {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100svh;
+  min-height: 100dvh;
+}
+
+.journal-shell {
+  position: relative;
+  align-items: flex-start;
+}
+
+@media (min-width: theme(--breakpoint-xl)) {
+  .journal-sidebar {
+    position: -webkit-sticky;
+    position: sticky;
+    top: var(--journal-header-offset);
+    z-index: 10;
+    align-self: flex-start;
+
+    display: flex;
+    flex-direction: column;
+
+    max-height: calc(100vh - var(--journal-header-offset));
+    max-height: calc(100svh - var(--journal-header-offset));
+    max-height: calc(100dvh - var(--journal-header-offset));
+
+    min-height: 10rem;
+
+    width: var(--sidebar-width, auto);
+    overflow: hidden;
+    will-change: width;
+    transition: width 0.3s var(--journal-ease);
+  }
+
+  .journal-sidebar-panel {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    scrollbar-width: thin;
+  }
+
+  .sidebar-left {
+    width: 18rem;
+  }
+
+  .sidebar-right {
+    width: 16rem;
+  }
+
+  .sidebar-left:has(details:not([open])),
+  .sidebar-right:has(details:not([open])) {
+    width: 3.5rem;
+  }
+
+  .sidebar-scroll-area {
+    max-height: calc(
+      100vh - var(--journal-header-offset) - var(--sidebar-summary-h) -
+        (var(--border) * 2)
+    );
+    max-height: calc(
+      100svh - var(--journal-header-offset) - var(--sidebar-summary-h) -
+        (var(--border) * 2)
+    );
+    max-height: calc(
+      100dvh - var(--journal-header-offset) - var(--sidebar-summary-h) -
+        (var(--border) * 2)
+    );
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
+details:not([open]) {
+  --sidebar-width: 3.5rem;
+}
+
+.journal-sidebar .onthispage-nav {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.journal-sidebar .onthispage-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.content-container {
+  display: none;
+  visibility: hidden;
+}
+
+.group[open] .content-container {
+  display: flex;
+  visibility: visible;
+}
+
+html.journal-instant-scroll {
+  scroll-behavior: auto !important;
+}

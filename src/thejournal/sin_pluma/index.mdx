@@ -1,196 +1,119 @@
 ---
-title: "A writer's service"
+title: "A writer's platform"
 pubDate: 2026-03-01
-description: "A technical walkthrough of the architecture behind SinPluma, the SaaS writing platform developed for the DIVEC Project Exposition 2019B. This post explains the system design, the services involved, and the infrastructure that powers the application."
+description: "An introduction to Sin Pluma, its domain model, core user journeys, architectural goals, and what makes this SaaS writing platform worth studying as a real-world distributed system."
 author: "Alberto Duran"
 image: "../../assets/thejournal/stock/07.avif"
-tags: ["project", "docker", "python", "react", "sql"]
+tags: ["project", "software-design", "docker", "python", "react", "sql"]
 github: "SinPluma"
 ---
 
-# Building SinPluma and the Architecture Behind It
+Building a writing platform sounds simple until you sit down to actually do it. You realize you need users, works, chapters, genres, follower systems, image storage, and sentiment analysis, and those concepts all need to talk to each other in ways that don't collapse under their own weight. Sin Pluma is my attempt at solving that problem, and it earned second place at the DIVEC Project Exposition 2019B, not for the concept alone but for the engineering behind it. This series walks through every design decision that went into it.
 
-Second Place at the DIVEC Project Exposition 2019B.
+---
 
-SinPluma began as a writing platform where authors can create, edit, publish, and read works. The product itself matters, though the engineering behind it mattered more during development. The goal was to build something closer to a real service than a simple classroom project.
+## What Sin Pluma is and who it's for
 
-A modern editor, a clean API, and a resilient database layer shaped the direction early on. The entire system needed to start with a single command, run inside containers, and demonstrate realistic operational concerns.
+Sin Pluma is a SaaS writing platform where authors publish long-form creative works and readers follow them. Think serialized fiction, essay collections, poetry, and experimental prose. The name means "without a pen" in Spanish, which captures the idea of digital writing freed from physical constraints.
 
-The final platform runs as a containerized system composed of a React application, a Flask API, several infrastructure services, and a three node MySQL cluster managed through MySQL Shell.
+The platform targets two types of users. **Authors** need a place to organize their works into notebooks, write and edit chapters (called pages), upload cover images, and see how readers engage with their content. **Readers** need to browse works by genre, follow what interests them, and read chapters in a clean interface. Both groups interact with the same data through the same API, just with different permissions and views.
 
-## Overview
+What makes Sin Pluma interesting from a technical standpoint is the choices made in implementation. It's API-first, meaning every feature exists as an HTTP endpoint before any UI touches it. The frontend is a full React SPA. The database runs as a MySQL InnoDB Cluster for high availability. Image uploads go to MinIO. Sentiment analysis runs in a separate microservice. And all of this connects through Nginx and Docker Compose.
 
-From the user perspective the platform stays simple. Writers log in, create notebooks, edit pages, embed images, follow other authors, and read published work. The editor lives inside a React single page application built on top of the Slate rich text framework.
+---
 
-Behind that interface sits an API responsible for authentication, persistence, media storage, and service coordination.
+## Architectural goals
 
-Instead of a single monolithic application process, the platform runs as several cooperating services connected through HTTP and internal networking.
+Several design goals shaped the system from the start, and they're worth naming explicitly because they explain decisions that might otherwise look arbitrary.
 
-The system includes the following major components.
+The platform follows an **API-first model**. Every operation inside the application flows through a JSON endpoint. The React client consumes the same interface a mobile app or an external client could use. There's no server-rendered HTML, no shortcut that bypasses the contract.
 
-- a Flask API service
-- a small linguistics service for text analysis
-- MinIO object storage
-- Redis for token state
-- an InnoDB Group Replication cluster
-- an Nginx gateway that routes external traffic
+**High availability for the database** came next. User accounts and written content represent the core of the platform. Storing everything in a single database instance felt wrong for a system meant to demonstrate realistic infrastructure. A three-node InnoDB Group Replication cluster with MySQL Router was the answer.
 
-Treating the system as a distributed architecture created a much more interesting engineering challenge than a traditional CRUD application.
+**Separation of concerns** influenced the architecture throughout. Transactional logic belongs in the API layer. Media files belong in object storage. Text analysis should run independently from the main application. Each service has a clear boundary and a clear job.
 
-![SinPluma Architecture](../../assets/thejournal/pub/sinpluma_architecture.png)
+**Automation** was the final requirement. The system needed to bootstrap itself automatically inside Docker Compose without manual intervention. A MySQL Shell script handles the entire cluster initialization sequence, including schema import, so a fresh environment comes online with a single `docker-compose up`.
 
-## Architectural Goals
+---
 
-Several design goals guided the structure of the system.
+## The domain vocabulary
 
-The platform follows an API first model. Every operation inside the application flows through a JSON endpoint. The React client consumes the same interface that a mobile or external client could use.
+Before touching any code, you need a shared language for the domain. Sin Pluma's model has eight core concepts.
 
-High availability for the database came next. User accounts and written content represent the core of the platform. Storing everything in a single database instance felt limiting for a system meant to demonstrate realistic infrastructure.
+A **User** is anyone with an account. Users have a username, email, first name, last name, and a bcrypt-hashed password. The `user_created` timestamp records when they joined.
 
-Separation of concerns also influenced the architecture. Transactional logic belongs in the API layer. Media files belong in object storage. Text analysis should run independently from the main application.
+A **Notebook** is what an author calls their work: a novel, a collection, a series. Each notebook belongs to one user, belongs to one genre, has a title, and has a synopsis (`resume`). The notebook is the top-level container.
 
-Automation became the final requirement. The system needed to bootstrap itself automatically inside Docker Compose without manual setup.
+A **Page** is a chapter or section within a notebook. Pages have a title, content stored as rich JSON from the Slate editor, and a `position` integer that orders them within their parent notebook. When you delete a page, the system automatically re-numbers the remaining pages.
 
-## The API Layer
+A **Genre** is a classification label: fiction, science fiction, poetry, horror, and so on. The database seeds ten genres on first boot. Genres are simple lookup records that notebooks reference by foreign key.
 
-At the center of the system sits the Flask API.
+A **Reading** is the follow relationship between a user and a notebook. When a reader follows a work, a reading record is created. When they unfollow, it's deleted. This is a many-to-many join between users and notebooks.
 
-This service exposes the canonical backend interface for the entire platform. Authentication, user profiles, notebooks, pages, reading activity, and image uploads all pass through this layer.
+A **Tag** exists in the schema as a future feature. The `tags` and `has_tags` tables are defined, but the current API doesn't expose tag management yet. The data model is ready; the endpoints aren't.
 
-The API runs on Python 3.8 and relies on a set of libraries chosen for stability and familiarity.
+An **Image** isn't a database entity in the traditional sense. Profile images and notebook cover images are stored as objects in MinIO, keyed by the user or notebook ID. The API proxies GET and POST requests to MinIO, and only metadata references live in MySQL.
 
-Flask provides the web framework. Flask RESTful structures the API routes. Flask JWT Extended handles token authentication. SQLAlchemy manages database access through PyMySQL. Marshmallow serializes request data and responses. Bcrypt secures user passwords.
+A **Sentiment** is the output of the linguistics microservice. When an author triggers analysis in the editor, the frontend sends each sentence to the `/lin/sentiment` endpoint, which returns `positive` or `negative`. The editor highlights the result inline using Slate annotations.
 
-Two additional services integrate directly with the API. Media files store in MinIO while revoked authentication tokens persist in Redis.
+---
 
-Most user interactions translate into straightforward database transactions. Editing a page or publishing a notebook triggers operations executed through SQLAlchemy.
+## The core user journeys
 
-Database connections route through MySQL Router rather than a specific database node. That small detail keeps the application unaware of the cluster topology.
+Understanding the system is easier if you trace what a user actually does rather than reading the data model in isolation.
 
-## The Linguistics Service
+### Creating and publishing a work
 
-A small companion service handles text analysis.
+An author registers, logs in, and gets back an access token and a refresh token. They navigate to the create-work page, fill in a title, pick a genre, and write a synopsis. The frontend POSTs to `/notebooks/` with their user ID embedded from the JWT claims. The work appears in their profile immediately.
 
-The editor can request sentence level sentiment information while the user writes. When the frontend sends a sentence fragment, Nginx routes the request to a dedicated Flask container responsible for processing it.
+From the work detail page they can add pages. Each new page starts empty. The editor loads the page content from `/pages/{id}?mode=editor` and auto-saves on every change by PUTting to the same endpoint. The author can also upload a cover image, which the frontend sends as multipart form data to `/notebooks/{id}/image/`. Flask receives the file, streams it to MinIO, and returns a reference URL that the frontend stores.
 
-The service relies on scikit learn for a lightweight sentiment model.
+### Reading and following
 
-Keeping the NLP functionality separate allows the main API to remain focused on transactional behavior.
+A reader visits the works browse page, which calls `/notebooks/` to list everything, then fetches genres in parallel to display labels. The reader clicks a work, lands on its detail page, and can click "Seguir" (follow). That sends a POST to `/readings` with the notebook ID. The JWT on the request tells the server which user is following.
 
-## The Frontend Application
+If the reader is the author of the work, the follow button doesn't appear. The frontend checks the current user's ID against the notebook's `user_id` using two higher-order components called `DrawIfAuth` and `DrawIfNotAuth`.
 
-The client side runs as a React single page application.
+### Running sentiment analysis
 
-Redux manages application state while Slate powers the rich text editor. Slate allows content to behave more like structured blocks than traditional HTML text editing.
+Inside the editor there's an "Analizar" button. The author clicks it and the frontend iterates over every text node in the Slate document, splits them by sentence boundaries (period or newline), and sends each sentence to `/lin/sentiment?key={key}&sentence={text}`. The linguistics service runs inference on a pre-trained scikit-learn logistic regression model and returns positive or negative. The editor colors each sentence using Slate's annotation system. Clicking analyze again clears all annotations and the cycle resets.
 
-Material UI supplies the visual components used across the interface. Axios handles communication with backend services.
+---
 
-Most user actions occur asynchronously. The interface updates immediately while the client synchronizes changes with the API.
+## What makes the system design worth studying
 
-Image uploads follow the same path. Files travel through the API before landing in object storage.
+Several properties set Sin Pluma apart from a typical classroom project.
 
-![SinPluma UI](../../assets/thejournal/pub/sinpluma_01.png)
+**API-first design** means the backend has no knowledge of the frontend. Every interaction goes through explicit HTTP contracts. You could swap the React SPA for a mobile app or a CLI and the backend wouldn't change.
 
-## Object Storage with MinIO
+**Microservices with clear boundaries.** The linguistics service is fully isolated. It loads a pickled scikit-learn model at startup, exposes one endpoint, and has no database connection. Flask, gunicorn, done. No shared code with the main API.
 
-Binary assets rarely belong inside relational databases.
+**High availability database.** Using MySQL InnoDB Cluster instead of a single database instance means the system can survive node failures. MySQL Router sits in front of three MySQL nodes and handles read/write distribution and failover automatically. From the application's perspective, the cluster looks like a single connection string pointing to the router.
 
-MinIO provides an S3 compatible object storage system that runs alongside the other services. Profile images and images embedded in notebooks store as objects inside this service.
+**JWT-based auth with Redis blacklisting.** Access tokens expire in 15 minutes. Refresh tokens last 30 days. Logging out doesn't just discard the token client-side; it stores the JWT ID in Redis so the server rejects it on any future request. This hybrid approach gives stateless JWT most of its benefits while still supporting real logout behavior.
 
-The relational database only stores references to those objects.
+**Fully automated infrastructure.** Typing `docker-compose up` brings up ten containers, bootstraps a three-node MySQL cluster, imports the schema, and configures MySQL Router, all without manual steps. That level of operational automation is unusual for a project at this scope.
 
-This mirrors how many production SaaS platforms manage media storage.
+---
 
-## Redis and Token Management
+## Trade-offs in the design
 
-Redis handles small pieces of short lived application state.
+Several decisions favored simplicity over maximum scalability, and that was intentional.
 
-The primary responsibility involves revoked authentication tokens. When a token becomes invalid its identifier stores inside Redis. Each request checks this blacklist before allowing access.
+Most domain logic lives inside a single Flask service. Splitting into many smaller microservices would add operational complexity without providing clear benefits at this project scope. The linguistics service splits off because its responsibilities are genuinely different, not because microservices are philosophically required.
 
-Redis can also support lightweight caching if needed.
+Processing is synchronous throughout. Background queues and message brokers were intentionally skipped. For the current scale, synchronous HTTP calls are simpler to reason about and debug. If you needed to add indexing jobs, notifications, or analytics pipelines, an event broker would become necessary.
 
-## Nginx as the Entry Point
+Search uses SQL LIKE queries rather than a dedicated search engine. For small datasets this is perfectly sufficient. For a platform with millions of works, it would need replacing with something purpose-built for relevance ranking.
 
-Every external request enters the system through Nginx.
+Docker Compose orchestrates the environment. A production system would likely need Kubernetes or a managed database service. But for demonstrating the architecture and proving operational competence, Compose does exactly what's needed.
 
-The gateway inspects the request path and routes traffic to the appropriate service.
+---
 
-Requests to the root path serve the React application. API requests route to the Flask service. Linguistics requests route to the text analysis service.
+## What's coming in this series
 
-This structure provides a single public entry point for the entire platform.
+This post is the overview. The rest of the series goes deep on each layer.
 
-## The InnoDB Cluster
+The next post covers the full architecture: how the services connect, what Docker networks isolate what, and where each request travels from browser to response. After that we look at the React frontend, the Flask API design, the MySQL InnoDB Cluster setup, and finally the complete JWT lifecycle from login through logout.
 
-The database layer became the most interesting part of the project.
-
-Instead of deploying a single MySQL instance, the platform runs a three node InnoDB Group Replication cluster. Each node maintains a synchronized copy of the database.
-
-Group Replication handles leader election and replication across nodes.
-
-MySQL Router sits in front of the cluster and exposes a single logical endpoint. The API communicates with the router rather than with individual database instances.
-
-If the primary node fails, Router redirects traffic to another node automatically.
-
-From the perspective of the application nothing changes.
-
-## Cluster Automation
-
-Managing a cluster manually would defeat the purpose of the architecture.
-
-A MySQL Shell script handles the entire bootstrap process. When the containers start, the shell container waits until each database node becomes reachable.
-
-The script then configures every instance, creates the cluster if it does not exist, and adds the remaining nodes.
-
-The same process loads an initial SQL file containing the database schema.
-
-From a clean environment the full infrastructure comes online with a single command.
-
-## Request Flow Through the System
-
-The runtime flow stays predictable.
-
-A browser sends a request to Nginx. The gateway forwards the request to the correct service. The Flask API handles most interactions and communicates with the database through MySQL Router.
-
-If the request requires text analysis, Nginx forwards it to the linguistics service. Image uploads travel through the API and land inside MinIO.
-
-Authentication tokens accompany every request. Redis stores the blacklist used to validate them.
-
-Each service performs a narrow responsibility while the API coordinates the overall workflow.
-
-## Tradeoffs in the Design
-
-Several decisions favored simplicity over maximum scalability.
-
-Most domain logic lives inside a single Flask service. Splitting the system into many microservices would add operational complexity without providing clear benefits for the project scope.
-
-Processing also remains synchronous. Background queues or message brokers were intentionally avoided.
-
-Search functionality uses simple SQL queries instead of a dedicated indexing engine. For a small dataset this approach remains sufficient.
-
-Docker Compose orchestrates the environment. A production system would likely require a stronger orchestration platform.
-
-Each choice reduced infrastructure overhead while keeping the architecture understandable.
-
-## Improvements for the Future
-
-Several additions could push the platform toward production readiness.
-
-An event broker could support asynchronous jobs such as indexing, notifications, or analytics. A dedicated search engine would improve discovery of written content.
-
-Database lifecycle management could move to a Kubernetes operator or managed database service.
-
-Schema migrations, stronger automated tests, and proper secret management would improve operational discipline.
-
-Observability would benefit from metrics, tracing, and structured logs.
-
-Real time collaboration would require a synchronization layer based on operational transforms or CRDT models.
-
-## Final Thoughts
-
-SinPluma became more than a writing platform. The project evolved into a practical exercise in designing and operating a distributed system.
-
-The architecture combines a modern editor, a containerized API, object storage, Redis state management, and a replicated MySQL cluster that initializes itself automatically.
-
-The cluster automation remains the most satisfying part of the system. Watching a full database cluster configure itself inside Docker marked the moment the project started to feel like real infrastructure rather than a simple prototype.
-
-With stronger search capabilities, asynchronous processing, and improved observability, the platform could evolve from an academic project into a production SaaS system.
+Each post is self-contained. You can read them in order or jump to the part you care about. The code is real and inspectable throughout.

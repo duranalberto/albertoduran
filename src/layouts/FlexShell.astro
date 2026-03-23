@@ -1,5 +1,5 @@
 ---
-interface Props {
+export interface Props {
   id?: string;
   class?: string;
   as?: "div" | "section" | "article" | "nav" | "main" | "header";
@@ -20,7 +20,7 @@ const {
 const mobilePx = Math.floor(px / 2);
 const mobilePy = Math.floor(py / 2);
 
-const paddingClasses = `px-${mobilePx} py-${mobilePy} md:px-${px} md:py-${py} 2xl:px-2`;
+const paddingClasses = `px-${mobilePx} py-${mobilePy} md:px-${px} md:py-${py}`;
 ---
 
 <Tag

@@ -1,0 +1,149 @@
+---
+import type { EntryContext } from "@appTypes/content_context";
+import { vaultsManifest } from "@content/processors/thejournal";
+import { Picture } from "astro:assets";
+
+interface Props {
+  entry: EntryContext;
+}
+
+const { entry } = Astro.props;
+
+const href = `/thejournal/${entry.id}/`;
+const isVault = !!entry.vaultId;
+const isVaultRoot = isVault && entry.id === entry.vaultId;
+const isVaultItem = isVault && entry.id !== entry.vaultId;
+const vaultInfo = entry.vaultId ? vaultsManifest[entry.vaultId] : null;
+const vaultTitle = vaultInfo?.title ?? "Vault";
+
+const formattedDate = entry.pubDate
+  ? new Date(entry.pubDate).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    })
+  : null;
+
+const readTimeText = entry.readTime
+  ? `${entry.readTime} min${entry.readTime > 1 ? "s" : ""} read`
+  : null;
+---
+
+<a
+  href={href}
+  class="group block h-full w-full rounded-box transition-transform duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary active:scale-95"
+>
+  <article
+    class="card card-border flex h-full flex-col overflow-hidden bg-base-200 text-base-content shadow-sm transition-[transform,box-shadow] duration-200 will-change-transform group-hover:-translate-y-1 group-hover:shadow-xl"
+  >
+    {
+      entry.image && (
+        <figure class="relative block h-52 w-full overflow-hidden border-b border-base-300 bg-base-300">
+          <div
+            class="font-display absolute inset-0 flex items-center justify-center text-4xl font-bold text-base-content/10 transition-transform duration-200 group-hover:scale-105"
+            aria-hidden="true"
+          >
+            {entry.title?.charAt(0)}
+          </div>
+          <Picture
+            src={entry.image}
+            alt={entry.title}
+            widths={[250, 400, 500, 800]}
+            formats={["avif", "webp"]}
+            sizes="(max-width: 480px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 500px"
+            quality={65}
+            loading="lazy"
+            decoding="async"
+            class="absolute inset-0 h-full w-full select-none object-cover transition-transform duration-200 group-hover:scale-105"
+            draggable={false}
+          />
+        </figure>
+      )
+    }
+
+    <div class="card-body">
+      <div class="flex flex-col gap-4">
+        <header
+          class="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest"
+        >
+          <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+            {
+              formattedDate && (
+                <time
+                  datetime={new Date(entry.pubDate).toISOString()}
+                  class="rounded-sm bg-base-300 px-1.5 py-0.5 whitespace-nowrap text-base-content"
+                >
+                  {formattedDate}
+                </time>
+              )
+            }
+
+            {
+              readTimeText && (
+                <span class="whitespace-nowrap font-medium lowercase tracking-normal text-base-content/50">
+                  {readTimeText}
+                </span>
+              )
+            }
+
+            {
+              isVaultItem && entry.vaultId && (
+                <>
+                  <span
+                    class="hidden h-1 w-1 rounded-full bg-base-content/20 sm:block"
+                    aria-hidden="true"
+                  />
+                  <span class="font-medium normal-case tracking-normal text-base-content/60">
+                    In <span class="italic">{vaultTitle}</span>
+                  </span>
+                </>
+              )
+            }
+
+            {
+              isVaultRoot && (
+                <div class="flex items-center gap-1.5">
+                  <span
+                    class="h-1.5 w-1.5 animate-pulse rounded-full bg-primary"
+                    aria-hidden="true"
+                  />
+                  <span class="text-primary">Vault</span>
+                </div>
+              )
+            }
+          </div>
+        </header>
+        <h2
+          class="card-title transition-colors duration-200 group-hover:text-primary"
+        >
+          {entry.title}
+        </h2>
+
+        <p class="line-clamp-3 min-h-[4.875rem] text-base leading-relaxed text-base-content/80">
+          {entry.description}
+        </p>
+      </div>
+      <footer
+        class="mt-auto flex items-end justify-between border-t border-base-300 pt-4"
+      >
+        <div class="flex flex-wrap items-center gap-2">
+          {
+            entry.tags
+              ?.slice(0, 3)
+              .map((tag) => (
+                <span class="badge badge-ghost badge-sm border-base-300 py-2 font-medium">
+                  #{tag}
+                </span>
+              ))
+          }
+        </div>
+        <span
+          class="-translate-x-2 font-bold text-primary opacity-0 transition-[transform,opacity] duration-200 group-hover:translate-x-0 group-hover:opacity-100"
+          aria-hidden="true"
+        >
+          &rarr;
+        </span>
+      </footer>
+    </div>
+  </article>
+</a>

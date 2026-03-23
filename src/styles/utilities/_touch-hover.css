@@ -38,10 +38,6 @@
   .hover\:gap-2:hover:not(:active) {
     gap: 0.25rem;
   }
-
-  img:hover {
-    -webkit-tap-highlight-color: transparent;
-  }
 }
 
 a,
@@ -50,13 +46,6 @@ label,
 summary,
 [role="button"],
 .badge,
-nav a,
-.navbar a,
-.menu a,
-.nav-item,
-.vault-tree-node,
-.onthispage-link,
-.footer a,
 [data-astro-prefetch] {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;

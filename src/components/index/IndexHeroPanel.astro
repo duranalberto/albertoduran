@@ -1,0 +1,95 @@
+---
+/**
+ * IndexHeroPanel.astro
+ *
+ * Personal "Currently + Interests" right-side panel for IndexHero.
+ * Combines a "currently doing" status stack with a personality interests grid.
+ */
+
+interface CurrentItem {
+  emoji: string;
+  label: string;
+  values: string[];
+}
+
+interface InterestTile {
+  emoji: string;
+  label: string;
+  detail: string;
+}
+
+const currentItems: CurrentItem[] = [
+  { emoji: "🏗️", label: "Building", values: ["This site"] },
+  {
+    emoji: "🎮",
+    label: "Playing",
+    values: ["Splatoon 3", "Pokopia"],
+  },
+  { emoji: "📺", label: "Watching", values: ["The PIT", "The Mentalist"] },
+  { emoji: "🎬", label: "Watched", values: ["Super Mario Galaxy"] },
+  { emoji: "🎵", label: "Listening", values: ["31 Minutos"] },
+];
+
+const interests: InterestTile[] = [
+  { emoji: "🦊", label: "Atlas FC", detail: "Even if they win" },
+  { emoji: "🎮", label: "Gaming", detail: "Zelda · Pokémon · Fire Emblem" },
+  { emoji: "📺", label: "TV Series", detail: "GoT · HotD · AKOTSK" },
+  { emoji: "📚", label: "Learning", detail: "Never stops" },
+  { emoji: "☕", label: "Coffee", detail: "Fuel of engineers" },
+  { emoji: "🍴", label: "Food", detail: "Tacos · Chilaquiles" },
+];
+---
+
+<aside
+  class="hero-panel glass-surface rounded-3xl shadow-2xl flex flex-col gap-0 w-full"
+  aria-label="Personal snapshot"
+>
+  <div
+    class="hero-panel-currently px-6 pt-6 pb-5 overflow-hidden rounded-t-3xl"
+  >
+    <p class="hero-panel-eyebrow mb-4" aria-hidden="true">
+      <span class="hero-panel-pulse" aria-hidden="true"></span>
+      Live Feed
+    </p>
+
+    <ul class="hero-panel-status-list" role="list">
+      {
+        currentItems.map((item, i) => (
+          <li class="hero-panel-status-item" style={`--item-index: ${i};`}>
+            <span class="hero-panel-status-emoji" aria-hidden="true">
+              {item.emoji}
+            </span>
+            <span class="hero-panel-status-label">{item.label}</span>
+            <span class="hero-panel-status-value">
+              {item.values.join(" · ")}
+            </span>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+
+  <div class="hero-panel-divider" aria-hidden="true"></div>
+
+  <div
+    class="hero-panel-interests px-6 pt-5 pb-6 overflow-hidden rounded-b-3xl"
+  >
+    <p class="hero-panel-eyebrow mb-4" aria-hidden="true">
+      A few things I care about
+    </p>
+
+    <ul class="hero-panel-grid" role="list" aria-label="Personal interests">
+      {
+        interests.map((tile, i) => (
+          <li class="hero-panel-tile" style={`--tile-index: ${i};`}>
+            <span class="hero-panel-tile-emoji" aria-hidden="true">
+              {tile.emoji}
+            </span>
+            <span class="hero-panel-tile-label">{tile.label}</span>
+            <span class="hero-panel-tile-detail">{tile.detail}</span>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</aside>

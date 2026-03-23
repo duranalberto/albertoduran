@@ -1,0 +1,10 @@
+---
+import { entryManifest } from "@content/processors/thejournal";
+import JournalGrid from "./JournalGrid.astro";
+
+const catalog = Object.values(entryManifest)
+  .filter((entry) => entry.tags.some((tag) => tag.toLowerCase() == "project"))
+  .slice(0, 3);
+---
+
+<JournalGrid catalog={catalog} />

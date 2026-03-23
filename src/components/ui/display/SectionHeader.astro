@@ -1,0 +1,48 @@
+---
+import Button from "../primitive/Button.astro";
+
+interface Props {
+  title: string;
+  level?: 2 | 3;
+  linkHref?: string;
+  linkLabel?: string;
+  linkExternal?: boolean;
+}
+
+const {
+  title,
+  level = 2,
+  linkHref,
+  linkLabel,
+  linkExternal = false,
+} = Astro.props as Props;
+const HeadingTag = level === 3 ? "h3" : "h2";
+---
+
+<div
+  class="flex flex-col w-full max-w-screen-2xl mx-auto gap-6 pb-8 md:pb-10 sm:flex-row sm:items-center sm:justify-between sm:gap-0"
+>
+  <div class="flex items-center h-10 md:h-12 gap-4 border-l-4 border-primary">
+    <HeadingTag
+      class="pl-4 text-3xl sm:text-4xl font-display font-semibold tracking-tight text-base-content"
+    >
+      {title}
+    </HeadingTag>
+  </div>
+
+  {
+    linkHref && linkLabel && (
+      <div class="self-start sm:self-auto">
+        <Button
+          href={linkHref}
+          label={linkLabel}
+          size="btn-lg"
+          variant="btn-primary"
+          isExternal={linkExternal}
+          ariaLabel={linkLabel}
+          class="shadow-lg hover:scale-105 active:scale-95 transition-transform"
+        />
+      </div>
+    )
+  }
+</div>

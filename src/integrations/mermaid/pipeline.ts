@@ -5,7 +5,7 @@
  *
  * ## Public API (consumed by integration.ts and plugin.ts)
  *   createPipeline(svgBus, themes, logger) → DiagramPipeline
- *   DiagramPipeline.registerDiagram(stableId, code) → Promise<HastElement>
+ *   DiagramPipeline.registerDiagram(stableId, code) → Promise<RegisteredDiagram>
  *   DiagramPipeline.logBuildSummary(astroLogger?)
  *
  * ## Design
@@ -22,8 +22,12 @@
 
 import type { AstroIntegrationLogger } from "astro";
 import type { Element as HastElement } from "hast";
+import { toHtml } from "hast-util-to-html";
 import { createHash } from "node:crypto";
+import fsAsync from "node:fs/promises";
+import path from "node:path";
 import { performance } from "node:perf_hooks";
+import { fileURLToPath } from "node:url";
 import type { AstroDiskBus } from "../../lib/astro-disk-bus.ts";
 import { BuildLogger } from "./build-logger.ts";
 import {
@@ -31,10 +35,19 @@ import {
   FLUSH_DEBOUNCE_MS,
   INTER_CHUNK_DELAY_MS,
 } from "./constants.ts";
-import { createHastElement, sanitizeStyleAttributes } from "./hast.ts";
+import {
+  createHastElement,
+  parseSvgToHast,
+  sanitizeStyleAttributes,
+  stripScripts,
+} from "./hast.ts";
 import { fetchDiagrams, isFallbackSvg } from "./renderers.ts";
 import { buildMergedThemeNode } from "./transform.ts";
 import { RenderService, type MermaidPalette } from "./types.ts";
+
+const STANDALONE_THEME_CSS_START = "/* mermaid-standalone-theme:start */";
+const STANDALONE_THEME_CSS_END = "/* mermaid-standalone-theme:end */";
+const STANDALONE_BACKGROUND_ATTR = "data-mermaid-standalone-background";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Internal types
@@ -46,12 +59,36 @@ interface BatchItem {
   cacheKey: string;
 }
 
+export interface RegisteredDiagram {
+  node: HastElement;
+  stableId: string;
+  cacheKey: string;
+  assetHref: string;
+  assetHrefDark: string;
+}
+
+interface DiagramAsset {
+  stableId: string;
+  cacheKey: string;
+  assetHref: string;
+  assetHrefDark: string;
+  node: HastElement;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
 function buildCacheKey(code: string, version: string): string {
   return createHash("sha256").update(`${version}::${code}`).digest("hex");
+}
+
+function buildAssetHref(stableId: string, cacheKey: string): string {
+  return `/_app/mermaid/${stableId}-${cacheKey}.svg`;
+}
+
+function buildDarkAssetHref(stableId: string, cacheKey: string): string {
+  return `/_app/mermaid/${stableId}-${cacheKey}-dark.svg`;
 }
 
 function makeFallbackNode(): HastElement {
@@ -79,6 +116,126 @@ function chunkArray<T>(arr: T[], size: number): T[][] {
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
+function findSvg(root: ReturnType<typeof parseSvgToHast>): HastElement | null {
+  for (const child of root.children) {
+    if (child.type === "element" && child.tagName === "svg") return child;
+  }
+  return null;
+}
+
+function stripStandaloneCss(svgEl: HastElement): void {
+  svgEl.children = svgEl.children.filter((child) => {
+    if (child.type !== "element") return true;
+    const props = child.properties ?? {};
+    return (
+      props[STANDALONE_BACKGROUND_ATTR] !== "true" &&
+      props.dataMermaidStandaloneBackground !== "true"
+    );
+  });
+
+  for (const child of svgEl.children) {
+    if (child.type !== "element" || child.tagName !== "style") continue;
+    const first = child.children[0];
+    if (!first || first.type !== "text") continue;
+    first.value = first.value.replace(
+      /\/\* mermaid-standalone-theme:start \*\/[\s\S]*?\/\* mermaid-standalone-theme:end \*\//g,
+      "",
+    );
+  }
+}
+
+function appendStandaloneBackgroundCss(
+  svgEl: HastElement,
+  backgroundColor: string,
+  colorScheme: "light" | "dark",
+): void {
+  const css = [
+    STANDALONE_THEME_CSS_START,
+    `svg { background-color: ${backgroundColor}; color-scheme: ${colorScheme}; }`,
+    STANDALONE_THEME_CSS_END,
+  ].join("\n");
+
+  for (const child of svgEl.children) {
+    if (child.type !== "element" || child.tagName !== "style") continue;
+    const first = child.children[0];
+    if (first?.type === "text") {
+      first.value = `${first.value}\n${css}`;
+      return;
+    }
+  }
+
+  svgEl.children.unshift({
+    type: "element",
+    tagName: "style",
+    properties: {},
+    children: [{ type: "text", value: css }],
+  });
+}
+
+function prependStandaloneBackgroundRect(
+  svgEl: HastElement,
+  backgroundColor: string,
+): void {
+  svgEl.children.unshift({
+    type: "element",
+    tagName: "rect",
+    properties: {
+      [STANDALONE_BACKGROUND_ATTR]: "true",
+      width: "100%",
+      height: "100%",
+      fill: backgroundColor,
+    },
+    children: [],
+  });
+}
+
+function getSvgRootId(svgEl: HastElement): string | null {
+  const id = svgEl.properties?.id;
+  return typeof id === "string" ? id : null;
+}
+
+function getStyleText(svgEl: HastElement): string {
+  for (const child of svgEl.children) {
+    if (child.type !== "element" || child.tagName !== "style") continue;
+    const first = child.children[0];
+    if (first?.type === "text") return first.value;
+  }
+  return "";
+}
+
+function appendDarkThemeCss(svgEl: HastElement): void {
+  const rootId = getSvgRootId(svgEl);
+  if (!rootId) return;
+
+  const css = getStyleText(svgEl);
+  if (!css.includes(`[data-theme="dark"] #${rootId}`)) return;
+
+  const darkCss = css.replaceAll(
+    `[data-theme="dark"] #${rootId}`,
+    `#${rootId}`,
+  );
+  for (const child of svgEl.children) {
+    if (child.type !== "element" || child.tagName !== "style") continue;
+    const first = child.children[0];
+    if (first?.type === "text") {
+      first.value = `${first.value}\n${darkCss}`;
+      return;
+    }
+  }
+}
+
+function serializeSvgAsset(
+  node: HastElement,
+  variant: "light" | "dark",
+  backgroundColor: string,
+): string {
+  const svg = structuredClone(node);
+  if (variant === "dark") appendDarkThemeCss(svg);
+  appendStandaloneBackgroundCss(svg, backgroundColor, variant);
+  prependStandaloneBackgroundRect(svg, backgroundColor);
+  return toHtml(svg, { space: "svg" });
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // DiagramPipeline
 // ─────────────────────────────────────────────────────────────────────────────
@@ -88,20 +245,27 @@ export class DiagramPipeline {
   private readonly themes: Map<string, MermaidPalette>;
   private readonly rendererVersion: string;
   private readonly buildLogger: BuildLogger;
+  private readonly remoteCacheBaseUrl: string | null;
 
   private currentBatch: BatchItem[] = [];
   private batchPromise: Promise<Record<string, HastElement>> | null = null;
   private readonly memoryCache = new Map<string, HastElement>();
+  private readonly usedAssets = new Map<string, DiagramAsset>();
 
   constructor(
     svgBus: AstroDiskBus<HastElement>,
     themes: Map<string, MermaidPalette>,
     rendererVersion: string,
+    site: string | undefined,
   ) {
     this.svgBus = svgBus;
     this.themes = themes;
     this.rendererVersion = rendererVersion;
     this.buildLogger = new BuildLogger();
+    this.remoteCacheBaseUrl =
+      process.env.MERMAID_DISABLE_REMOTE_CACHE === "true" || !site
+        ? null
+        : site.replace(/\/$/, "");
   }
 
   // ── Public API ──────────────────────────────────────────────────────────
@@ -111,32 +275,59 @@ export class DiagramPipeline {
    *
    * Cache hierarchy: memory → disk → batch network render.
    */
-  async registerDiagram(stableId: string, code: string): Promise<HastElement> {
+  async registerDiagram(
+    stableId: string,
+    code: string,
+  ): Promise<RegisteredDiagram> {
     const cacheKey = buildCacheKey(code, this.rendererVersion);
+    const assetHref = buildAssetHref(stableId, cacheKey);
+    const assetHrefDark = buildDarkAssetHref(stableId, cacheKey);
 
     // 1. Memory cache hit
     const fromMemory = this.memoryCache.get(cacheKey);
     if (fromMemory) {
-      const clone = structuredClone(fromMemory);
-      sanitizeStyleAttributes(clone);
-      return clone;
+      return this.registerResolvedNode(
+        stableId,
+        cacheKey,
+        assetHref,
+        assetHrefDark,
+        fromMemory,
+      );
     }
 
     // 2. Disk cache hit
     const fromDisk = await this.svgBus.get(cacheKey);
     if (fromDisk) {
-      const clone = structuredClone(fromDisk);
-      sanitizeStyleAttributes(clone);
       this.memoryCache.set(cacheKey, fromDisk);
-      return clone;
+      return this.registerResolvedNode(
+        stableId,
+        cacheKey,
+        assetHref,
+        assetHrefDark,
+        fromDisk,
+      );
     }
 
-    // 3. Queue for batch rendering (deduplicated by stableId)
+    // 3. Production asset cache hit
+    const fromRemote = await this.getRemoteCachedNode(assetHref);
+    if (fromRemote) {
+      await this.svgBus.set(cacheKey, fromRemote);
+      this.memoryCache.set(cacheKey, fromRemote);
+      return this.registerResolvedNode(
+        stableId,
+        cacheKey,
+        assetHref,
+        assetHrefDark,
+        fromRemote,
+      );
+    }
+
+    // 4. Queue for batch rendering (deduplicated by stableId)
     if (!this.currentBatch.some((item) => item.id === stableId)) {
       this.currentBatch.push({ id: stableId, code, cacheKey });
     }
 
-    // 4. Arm the debounced batch flush
+    // 5. Arm the debounced batch flush
     if (!this.batchPromise) {
       this.batchPromise = new Promise((resolve) => {
         setTimeout(async () => {
@@ -147,14 +338,116 @@ export class DiagramPipeline {
     }
 
     const resultsMap = await this.batchPromise;
-    return resultsMap[stableId] ?? makeFallbackNode();
+    return this.registerResolvedNode(
+      stableId,
+      cacheKey,
+      assetHref,
+      assetHrefDark,
+      resultsMap[stableId] ?? makeFallbackNode(),
+    );
   }
 
   logBuildSummary(logger?: AstroIntegrationLogger): void {
     this.buildLogger.logBuildSummary(logger);
   }
 
+  async emitAssets(
+    outDir: URL,
+    logger?: AstroIntegrationLogger,
+  ): Promise<void> {
+    if (this.usedAssets.size === 0) return;
+
+    const root = path.join(fileURLToPath(outDir), "_app", "mermaid");
+    await fsAsync.mkdir(root, { recursive: true });
+
+    await Promise.all(
+      Array.from(this.usedAssets.values()).map(async (asset) => {
+        const fileName = path.basename(asset.assetHref);
+        const darkFileName = path.basename(asset.assetHrefDark);
+        await Promise.all([
+          fsAsync.writeFile(
+            path.join(root, fileName),
+            serializeSvgAsset(
+              asset.node,
+              "light",
+              this.themes.get("light")?.base100 ?? "#ffffff",
+            ),
+            "utf-8",
+          ),
+          fsAsync.writeFile(
+            path.join(root, darkFileName),
+            serializeSvgAsset(
+              asset.node,
+              "dark",
+              this.themes.get("dark")?.base100 ?? "#21212a",
+            ),
+            "utf-8",
+          ),
+        ]);
+      }),
+    );
+
+    logger?.info(
+      `Emitted ${this.usedAssets.size} Mermaid SVG asset pair(s).`,
+    );
+  }
+
   // ── Private: batch orchestration ────────────────────────────────────────
+
+  private registerResolvedNode(
+    stableId: string,
+    cacheKey: string,
+    assetHref: string,
+    assetHrefDark: string,
+    sourceNode: HastElement,
+  ): RegisteredDiagram {
+    const node = structuredClone(sourceNode);
+    sanitizeStyleAttributes(node);
+
+    const hasSvgAsset = node.tagName === "svg";
+
+    if (hasSvgAsset) {
+      this.usedAssets.set(cacheKey, {
+        stableId,
+        cacheKey,
+        assetHref,
+        assetHrefDark,
+        node: structuredClone(node),
+      });
+    }
+
+    return {
+      node,
+      stableId,
+      cacheKey,
+      assetHref: hasSvgAsset ? assetHref : "",
+      assetHrefDark: hasSvgAsset ? assetHrefDark : "",
+    };
+  }
+
+  private async getRemoteCachedNode(
+    assetHref: string,
+  ): Promise<HastElement | null> {
+    if (!this.remoteCacheBaseUrl) return null;
+
+    try {
+      const response = await fetch(`${this.remoteCacheBaseUrl}${assetHref}`, {
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!response.ok) return null;
+
+      const root = parseSvgToHast(await response.text());
+      stripScripts(root);
+      const svgEl = findSvg(root);
+      if (!svgEl) return null;
+
+      stripStandaloneCss(svgEl);
+      sanitizeStyleAttributes(svgEl);
+      return svgEl;
+    } catch {
+      return null;
+    }
+  }
 
   private async runBatchFlush(): Promise<Record<string, HastElement>> {
     const items = [...this.currentBatch];
@@ -190,7 +483,10 @@ export class DiagramPipeline {
       items.map((d) => ({ id: d.id, code: d.code })),
       this.themes,
     ).catch((err) => {
-      console.error("[mermaid:pipeline] fetchDiagrams threw unexpectedly:", err);
+      console.error(
+        "[mermaid:pipeline] fetchDiagrams threw unexpectedly:",
+        err,
+      );
       return {
         results: {} as Record<string, Map<string, string>>,
         service: RenderService.FailurePlaceholder,
@@ -257,6 +553,7 @@ export function createPipeline(
   svgBus: AstroDiskBus<HastElement>,
   themes: Map<string, MermaidPalette>,
   rendererVersion: string,
+  site?: string,
 ): DiagramPipeline {
-  return new DiagramPipeline(svgBus, themes, rendererVersion);
+  return new DiagramPipeline(svgBus, themes, rendererVersion, site);
 }

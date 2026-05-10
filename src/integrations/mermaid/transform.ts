@@ -46,6 +46,7 @@ import type { Element as HastElement, Root as HastRoot } from "hast";
 import { select } from "hast-util-select";
 import postcss from "postcss";
 import {
+  collapseForeignObjectLineBreaks,
   hoistInlineColorsToCss,
   parseSvgToHast,
   sanitizeStyleAttributes,
@@ -260,13 +261,18 @@ export async function buildMergedThemeNodeWorker(
     const strippedCss = entry.renderId
       ? stripRenderId(entry.rawCss, entry.renderId)
       : entry.rawCss;
+    const { rootBlocks, otherCss } = splitRootRules(strippedCss);
 
     const isBase = i === 0;
     const scopePrefix = isBase
       ? `#${targetId}`
       : `[data-theme="${entry.name}"] #${targetId}`;
 
-    const { scoped, keyframes } = await scopeCss(strippedCss, scopePrefix);
+    if (isBase) {
+      rootBlocks.forEach((b) => allKeyframeStrings.add(b));
+    }
+
+    const { scoped, keyframes } = await scopeCss(otherCss, scopePrefix);
     keyframes.forEach((k) => allKeyframeStrings.add(k));
     if (scoped.trim()) allScopedBlocks.push(scoped);
   }
@@ -277,6 +283,7 @@ export async function buildMergedThemeNodeWorker(
 
   stripScripts(baseRoot);
   sanitizeStyleAttributes(baseRoot);
+  collapseForeignObjectLineBreaks(baseRoot);
   updateHastIds(baseRoot, baseEntry.renderId, targetId);
 
   const svgEl = select("svg", baseRoot);
@@ -383,6 +390,7 @@ export async function buildMergedThemeNodeInk(
 
   stripScripts(baseRoot);
   sanitizeStyleAttributes(baseRoot);
+  collapseForeignObjectLineBreaks(baseRoot);
 
   // Rename `mermaid-svg` → `mermaid-<stableId>` throughout the tree.
   // Done AFTER hoistInlineColorsToCss so the hoisted rules already

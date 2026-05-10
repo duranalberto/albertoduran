@@ -25,6 +25,7 @@ import type { Code, Root as MdastRoot, Parent } from "mdast";
 import { createHash } from "node:crypto";
 import type { Plugin } from "unified";
 import { visit } from "unist-util-visit";
+import type { RegisteredDiagram } from "./pipeline.ts";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -36,7 +37,10 @@ export interface MermaidPluginConfig {
    * Injected by integration.ts — delegates to DiagramPipeline.registerDiagram.
    * Defined here so the plugin is decoupled from the pipeline singleton.
    */
-  registerDiagram: (stableId: string, code: string) => Promise<HastElement>;
+  registerDiagram: (
+    stableId: string,
+    code: string,
+  ) => Promise<RegisteredDiagram>;
 }
 
 /**
@@ -79,7 +83,7 @@ export const mermaidRemarkPlugin: Plugin<[MermaidPluginConfig], MdastRoot> = (
 
     if (tasks.length === 0) return;
 
-    const resolvedNodes: HastElement[] = await Promise.all(
+    const resolvedDiagrams: RegisteredDiagram[] = await Promise.all(
       tasks.map(({ node }) => {
         const code = node.value.trim();
         const stableId = getStableId(code);
@@ -89,14 +93,20 @@ export const mermaidRemarkPlugin: Plugin<[MermaidPluginConfig], MdastRoot> = (
 
     for (let i = 0; i < tasks.length; i++) {
       const { index, parent } = tasks[i]!;
-      const svgNode = resolvedNodes[i]!;
+      const diagram = resolvedDiagrams[i]!;
 
       const containerNode: MermaidContainerNode = {
         type: "mermaid-container",
         data: {
           hName: "div",
-          hProperties: { className: ["mermaid-diagram-container"] },
-          hChildren: [svgNode],
+          hProperties: {
+            className: ["mermaid-diagram-container"],
+            "data-diagram-src": diagram.assetHref,
+            "data-diagram-dark-src": diagram.assetHrefDark,
+            "data-diagram-stable-id": diagram.stableId,
+            "data-diagram-cache-key": diagram.cacheKey,
+          },
+          hChildren: [diagram.node],
         },
       };
 
@@ -104,7 +114,8 @@ export const mermaidRemarkPlugin: Plugin<[MermaidPluginConfig], MdastRoot> = (
       // custom virtual node types. The cast is intentional and scoped to this
       // single assignment — the virtual node is consumed by rehype immediately
       // after the remark phase and never surfaces as a real mdast node.
-      parent.children[index] = containerNode as unknown as typeof parent.children[number];
+      parent.children[index] =
+        containerNode as unknown as (typeof parent.children)[number];
     }
   };
 };

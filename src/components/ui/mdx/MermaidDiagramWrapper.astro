@@ -4,14 +4,9 @@
  *
  * MDX component replacement for `.mermaid-diagram-container` divs.
  *
- * Uses the Popover API — zero JavaScript, CSS-only toggle via popovertarget.
- *
- * No-JS architecture note:
- *   Both the inline diagram and the popover copy are rendered at build time.
- *   The popover copy has its <style> block stripped to reduce HTML size —
- *   the inline copy's styles are sufficient since both SVGs share the same
- *   theme CSS. The popover SVG root ID is suffixed with `-expanded` to avoid
- *   duplicate IDs in the same document.
+ * The inline SVG is always rendered for no-JS visitors. JavaScript only
+ * enhances the shell by cloning the inline SVG into the Popover API overlay
+ * at runtime, avoiding a second build-time copy in the final HTML.
  */
 
 interface Props {
@@ -27,15 +22,16 @@ const isDiagram =
 const popoverId = `diagram-popover-${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
 
 const diagramHtml = await Astro.slots.render("default");
-
-// Strip the embedded <style> block from the popover copy to reduce HTML size.
-// The inline copy already carries the full scoped CSS for both light/dark themes.
-// Both SVGs share the same mermaid-<stableId> CSS scope so the inline styles
-// apply correctly to the popover SVG as well.
-const popoverDiagramHtml = diagramHtml.replace(
-  /<style[^>]*>[\s\S]*?<\/style>/i,
-  "",
-);
+const diagramSrc =
+  typeof rest["data-diagram-src"] === "string" &&
+  rest["data-diagram-src"].length > 0
+    ? (rest["data-diagram-src"] as string)
+    : null;
+const diagramDarkSrc =
+  typeof rest["data-diagram-dark-src"] === "string" &&
+  rest["data-diagram-dark-src"].length > 0
+    ? (rest["data-diagram-dark-src"] as string)
+    : null;
 
 // Detect diagram type from the SVG data attribute or first mermaid keyword
 // for a more descriptive popover title.
@@ -44,43 +40,74 @@ const firstKeyword = diagramHtml.match(
   /class="[^"]*\b(flowchart|sequence|gantt|classDiagram|stateDiagram|erDiagram|journey|gitGraph|kanban|timeline|pie)\b/i,
 );
 const diagramType = diagramTypeMatch?.[1] ?? firstKeyword?.[1] ?? null;
-const popoverTitle = diagramType
-  ? `${diagramType.charAt(0).toUpperCase() + diagramType.slice(1)} · Expanded`
-  : "Diagram · Expanded";
+const diagramLabel = diagramType
+  ? diagramType.charAt(0).toUpperCase() + diagramType.slice(1)
+  : "Diagram";
+const popoverTitle = diagramLabel;
 
 const popoverTitleId = `${popoverId}-title`;
 ---
 
 {
   isDiagram ? (
-    <div class="diagram-wrapper not-prose">
+    <mermaid-diagram-shell class="diagram-wrapper not-prose">
       <div class={className} {...rest} set:html={diagramHtml} />
 
-      <button
-        type="button"
-        class="diagram-expand-bar"
-        popovertarget={popoverId}
-        popovertargetaction="show"
-        aria-label="Expand diagram"
-        aria-haspopup="dialog"
-      >
-        <svg
-          viewBox="0 0 16 16"
-          width="13"
-          height="13"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          aria-hidden="true"
+      <div class="diagram-action-bar">
+        <a
+          class="diagram-action"
+          href={diagramSrc ?? "#"}
+          data-diagram-open-link
+          data-diagram-light-src={diagramSrc}
+          data-diagram-dark-src={diagramDarkSrc}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`Open ${diagramLabel} SVG in a new tab`}
         >
-          <polyline points="1,5 1,1 5,1" />
-          <polyline points="11,1 15,1 15,5" />
-          <polyline points="15,11 15,15 11,15" />
-          <polyline points="5,15 1,15 1,11" />
-        </svg>
-        <span>Expand</span>
-      </button>
+          <svg
+            viewBox="0 0 16 16"
+            width="13"
+            height="13"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M9 2h5v5" />
+            <path d="M7 9 14 2" />
+            <path d="M14 10v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3" />
+          </svg>
+          <span>Open {diagramLabel}</span>
+        </a>
+
+        <button
+          type="button"
+          class="diagram-action js-only"
+          popovertarget={popoverId}
+          popovertargetaction="show"
+          aria-label="Expand diagram"
+          aria-haspopup="dialog"
+        >
+          <svg
+            viewBox="0 0 16 16"
+            width="13"
+            height="13"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <polyline points="1,5 1,1 5,1" />
+            <polyline points="11,1 15,1 15,5" />
+            <polyline points="15,11 15,15 11,15" />
+            <polyline points="5,15 1,15 1,11" />
+          </svg>
+          <span>Expand</span>
+        </button>
+      </div>
 
       <div
         id={popoverId}
@@ -118,11 +145,15 @@ const popoverTitleId = `${popoverId}-title`;
           </div>
 
           <div class="diagram-popover-scroll">
-            <div class={className} {...rest} set:html={popoverDiagramHtml} />
+            <div
+              class={className}
+              {...rest}
+              data-diagram-popover-content
+            />
           </div>
         </div>
       </div>
-    </div>
+    </mermaid-diagram-shell>
   ) : (
     <div class={className} {...rest} set:html={diagramHtml} />
   )

@@ -43,6 +43,7 @@
 }
 
 .diagram-wrapper {
+  display: block;
   margin-block: 2rem;
   border-radius: var(--radius-box);
   border: 1px solid
@@ -57,7 +58,16 @@
     color-mix(in oklab, var(--color-base-content) 8%, transparent);
 }
 
-.diagram-expand-bar {
+.diagram-action-bar {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+html.no-js .diagram-action-bar {
+  grid-template-columns: 1fr;
+}
+
+.diagram-action {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -68,11 +78,15 @@
   background-color: transparent;
   color: color-mix(in oklab, var(--color-base-content) 40%, transparent);
   border: none;
+  border-inline-end: 1px solid
+    color-mix(in oklab, var(--color-base-content) 8%, transparent);
   cursor: pointer;
   font-family: var(--font-display);
   font-size: 0.65rem;
   font-weight: 700;
   letter-spacing: 0.12em;
+  line-height: 1;
+  text-decoration: none;
   text-transform: uppercase;
   transition:
     background-color 0.15s ease,
@@ -81,8 +95,12 @@
   touch-action: manipulation;
 }
 
+.diagram-action:last-child {
+  border-inline-end: none;
+}
+
 @media (hover: hover) and (pointer: fine) {
-  .diagram-expand-bar:hover {
+  .diagram-action:hover {
     background-color: color-mix(
       in oklab,
       var(--color-base-200) 70%,
@@ -92,12 +110,12 @@
   }
 }
 
-.diagram-expand-bar:active {
+.diagram-action:active {
   background-color: var(--color-base-200);
   color: var(--color-base-content);
 }
 
-.diagram-expand-bar:focus-visible {
+.diagram-action:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: -2px;
 }
@@ -208,7 +226,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .diagram-expand-bar,
+  .diagram-action,
   .diagram-popover:popover-open {
     transition: none;
   }

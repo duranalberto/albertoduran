@@ -51,6 +51,47 @@ export function sanitizeStyleAttributes(tree: HastRoot | HastElement): void {
   });
 }
 
+function collapseBreakRuns(parent: HastParent): void {
+  let previousWasBreak = false;
+  const nextChildren: HastParent["children"] = [];
+
+  for (const child of parent.children) {
+    const isBreak = child.type === "element" && child.tagName === "br";
+
+    if (isBreak) {
+      child.children = [];
+      if (!previousWasBreak) nextChildren.push(child);
+      previousWasBreak = true;
+      continue;
+    }
+
+    previousWasBreak =
+      child.type === "text" && child.value.trim() === ""
+        ? previousWasBreak
+        : false;
+
+    if (child.type === "element") collapseBreakRuns(child);
+    nextChildren.push(child);
+  }
+
+  parent.children = nextChildren;
+}
+
+/**
+ * Browser HTML parsing treats serialized SVG/XHTML `<br></br>` as two line
+ * breaks. Some render services already emit repeated break nodes for Mermaid
+ * HTML labels, so after HAST parsing and serialization those labels can expand
+ * from one intended line break into four visible breaks. Collapse consecutive
+ * `<br>` elements inside SVG foreignObject labels back to a single break.
+ */
+export function collapseForeignObjectLineBreaks(
+  tree: HastRoot | HastElement,
+): void {
+  visit(tree, "element", (node: HastElement) => {
+    if (node.tagName === "foreignObject") collapseBreakRuns(node);
+  });
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Ink-specific: hoist classDef inline colour styles into scoped CSS rules
 // ─────────────────────────────────────────────────────────────────────────────

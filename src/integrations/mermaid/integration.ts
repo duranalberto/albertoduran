@@ -30,6 +30,7 @@ import type { AstroIntegration } from "astro";
 import type { Element as HastElement } from "hast";
 import { AstroDiskBus } from "../../lib/astro-disk-bus.ts";
 import { RENDERER_VERSION } from "./constants.ts";
+import { optimizeBuiltMermaidPageCss } from "./page-css.ts";
 import { createPipeline, type DiagramPipeline } from "./pipeline.ts";
 import { mermaidRemarkPlugin, type MermaidPluginConfig } from "./plugin.ts";
 import type { MermaidPalette } from "./types.ts";
@@ -64,6 +65,7 @@ export function mermaidIntegration(
   // Created in astro:build:start and consumed by the remark plugin via the
   // registerDiagram closure injected in astro:config:setup.
   let pipeline: DiagramPipeline | null = null;
+  let site: string | undefined;
 
   return {
     name: "astro-mermaid",
@@ -110,6 +112,10 @@ export function mermaidIntegration(
         });
       },
 
+      "astro:config:done": ({ config }) => {
+        site = config.site?.toString();
+      },
+
       /**
        * astro:build:start
        * Runs once before Vite begins processing any source file.
@@ -124,16 +130,22 @@ export function mermaidIntegration(
 
         await svgBus.ensureDir();
 
-        pipeline = createPipeline(svgBus, themes, RENDERER_VERSION);
+        pipeline = createPipeline(svgBus, themes, RENDERER_VERSION, site);
 
         logger.info(`Cache dir ready: .astro/${cacheSubDir}`);
       },
 
+      "astro:build:generated": async ({ dir, logger }) => {
+        await pipeline?.emitAssets(dir, logger);
+      },
+
       /**
        * astro:build:done
-       * Emits the build summary to the Astro integration logger.
+       * Hoists per-SVG Mermaid CSS into page-level CSS before the final HTML
+       * minifier runs, then emits the build summary.
        */
-      "astro:build:done": ({ logger }) => {
+      "astro:build:done": async ({ dir, logger }) => {
+        await optimizeBuiltMermaidPageCss(dir, logger);
         pipeline?.logBuildSummary(logger);
         pipeline = null;
       },

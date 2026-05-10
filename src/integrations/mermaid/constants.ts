@@ -17,8 +17,17 @@
  * v4.2 — normalizesvgIntrinsicSize: SVG width="100%" replaced with
  *         pixel value from viewBox so CSS width: auto resolves to the
  *         diagram's natural dimensions rather than filling the container.
+ *
+ * v4.3 — standalone SVG assets receive a theme-matching background while
+ *         inline publication SVGs remain transparent.
+ *
+ * v4.4 — remote cached standalone SVG assets correctly strip previously
+ *         injected background rects before re-emitting light/dark variants.
+ *
+ * v4.5 — normalizes Worker SVG foreignObject line breaks and keeps Mermaid
+ *         :root rules unscoped so production HTML labels stay inside nodes.
  */
-export const RENDERER_VERSION = "v4.2";
+export const RENDERER_VERSION = "v4.5";
 
 /**
  * Debounce window (ms) before the collected batch is flushed to the

@@ -53,9 +53,10 @@ We build upon **Node.js 24.13 (LTS) Alpine**.
 - **Oh My Zsh:** Framework for Zsh management.
 - **Powerlevel10k:** Theme configured for minimalism (relative path + git status only).
 - **GitHub CLI (gh):** Tool for interacting with GitHub directly from the terminal.
-- **Testing Infrastructure:** - **Vitest:** Pre-installed for unit and component testing.
-  - **Playwright Dependencies:** All system-level Linux dependencies (libraries for Chromium, Firefox, and WebKit) are pre-installed in the Docker image.
-  - **Benefit:** Commands like `npm test` and `npm run test:e2e` work immediately upon container start.
+- **Testing Infrastructure:**
+  - **Vitest:** Installed through `npm install` for unit and integration testing.
+  - **Playwright:** Installed through `npm install`; Chromium browser dependencies are installed locally with `npx playwright install --with-deps chromium` when needed.
+  - **Source of truth:** See `docs/TESTING_STRATEGY.md` for test commands, fixture flags, and CI behavior.
 
 ### Intelligent Secret Management
 
@@ -101,7 +102,7 @@ The following settings are applied specifically when running inside the containe
 The construction follows these logical steps:
 
 1. **Base Layer:** Uses `node:24.13-alpine`.
-2. **Dependencies:** Installs `git`, `zsh`, `curl`, `github-cli`, and the Linux libraries required for Playwright/Vitest via `apk`.
+2. **Dependencies:** Uses the JavaScript/Node devcontainer image and installs GitHub CLI through the devcontainer feature. Project test tools are installed by `npm install`.
 3. **User Context:** Switches to `USER node` for security.
 4. **Zsh Setup:** Installs Oh My Zsh, Powerlevel10k, and plugins (`autosuggestions`, `syntax-highlighting`).
 5. **Dynamic Configuration:** Injects settings into `~/.zshrc` to handle the minimalist prompt and GITHUB_TOKEN export logic.

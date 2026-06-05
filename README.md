@@ -61,7 +61,10 @@ All commands are run from the root of the project, from a terminal:
 | `npm install`                     | Installs dependencies                            |
 | `npm run dev`                     | Starts local dev server at `localhost:4321`      |
 | `npm run build`                   | Build your production site to `./dist/`          |
+| `npm run build:test`              | Build with deterministic Atlas and Mermaid fixtures |
 | `npm run preview`                 | Preview your build locally, before deploying     |
+| `npm test`                        | Run Vitest unit and integration tests            |
+| `npm run test:e2e`                | Run production-preview Playwright tests          |
 | `npm run astro ...`               | Run CLI commands like `astro add`, `astro check` |
 | `npm run astro -- --help`         | Get help using the Astro CLI                     |
 | `npm run build && npm run deploy` | Deploy your production site to Cloudflare        |

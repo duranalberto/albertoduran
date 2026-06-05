@@ -8,24 +8,28 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+export const HTML_MINIFIER_OPTIONS: HtmlMinifierOptions = {
+  collapseWhitespace: true,
+  removeComments: true,
+  minifyJS: true,
+  minifyCSS: true,
+  ignoreCustomFragments: [
+    /<pre[\s\S]*?<\/pre>/,
+    /<code[\s\S]*?<\/code>/,
+    /<kbd[\s\S]*?<\/kbd>/,
+  ],
+};
+
+export async function minifyHtmlDocument(html: string): Promise<string> {
+  return minify(html, HTML_MINIFIER_OPTIONS);
+}
+
 async function buildDone({ dir }: { dir: URL }) {
   const distDir = fileURLToPath(dir);
 
   const htmlFiles = await glob(join(distDir, "**/*.html"), {
     ignore: [join(distDir, "_astro/**")],
   });
-
-  const minifierOptions: HtmlMinifierOptions = {
-    collapseWhitespace: true,
-    removeComments: true,
-    minifyJS: true,
-    minifyCSS: true,
-    ignoreCustomFragments: [
-      /<pre[\s\S]*?<\/pre>/,
-      /<code[\s\S]*?<\/code>/,
-      /<kbd[\s\S]*?<\/kbd>/,
-    ],
-  };
 
   await Promise.all(
     htmlFiles.map(async (filePath: string) => {
@@ -34,7 +38,7 @@ async function buildDone({ dir }: { dir: URL }) {
         console.log(`  \x1b[2mMinifying: ${fileName}\x1b[0m`);
 
         const html: string = await readFile(filePath, "utf-8");
-        const minified: string = await minify(html, minifierOptions);
+        const minified = await minifyHtmlDocument(html);
 
         await writeFile(filePath, minified);
       } catch (error) {

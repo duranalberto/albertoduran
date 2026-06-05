@@ -25,7 +25,7 @@ This document tracks planned features, technical integrations, and upcoming mile
 
 | Feature                | Priority   | Tech Notes                                                                                                                     |
 | :--------------------- | :--------- | :----------------------------------------------------------------------------------------------------------------------------- |
-| **CI Test Automation** | **Urgent** | **GitHub Actions to run `docs/TESTING_STRATEGY.md` (Vitest & Playwright) on every PR. Required for Git Workflow enforcement.** |
+| **CI Test Automation** | **In place** | **GitHub Actions runs `docs/TESTING_STRATEGY.md` gates (Astro check, Vitest, Playwright) on PRs. Future work: broader browser and accessibility coverage.** |
 | **Contact Form**       | High       | Preact Island + Validation. Integration with Cloudflare Turnstile for spam.                                                    |
 | **Dark Mode**          | Medium     | DaisyUI Theme Controller + Tailwind. Persist in LocalStorage.                                                                  |
 | **RSS Feed**           | Medium     | Use `@astrojs/rss` as seen in `package.json`.                                                                                  |

@@ -39,6 +39,8 @@ Thumbs.db
 # Testing
 coverage/
 .coverage/
+playwright-report/
+test-results/
 
 # Other files
 ./gitignore

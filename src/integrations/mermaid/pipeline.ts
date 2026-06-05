@@ -279,6 +279,7 @@ export class DiagramPipeline {
     stableId: string,
     code: string,
   ): Promise<RegisteredDiagram> {
+    const fixtureMode = process.env.MERMAID_RENDERER_FIXTURE === "true";
     const cacheKey = buildCacheKey(code, this.rendererVersion);
     const assetHref = buildAssetHref(stableId, cacheKey);
     const assetHrefDark = buildDarkAssetHref(stableId, cacheKey);
@@ -296,30 +297,34 @@ export class DiagramPipeline {
     }
 
     // 2. Disk cache hit
-    const fromDisk = await this.svgBus.get(cacheKey);
-    if (fromDisk) {
-      this.memoryCache.set(cacheKey, fromDisk);
-      return this.registerResolvedNode(
-        stableId,
-        cacheKey,
-        assetHref,
-        assetHrefDark,
-        fromDisk,
-      );
+    if (!fixtureMode) {
+      const fromDisk = await this.svgBus.get(cacheKey);
+      if (fromDisk) {
+        this.memoryCache.set(cacheKey, fromDisk);
+        return this.registerResolvedNode(
+          stableId,
+          cacheKey,
+          assetHref,
+          assetHrefDark,
+          fromDisk,
+        );
+      }
     }
 
     // 3. Production asset cache hit
-    const fromRemote = await this.getRemoteCachedNode(assetHref);
-    if (fromRemote) {
-      await this.svgBus.set(cacheKey, fromRemote);
-      this.memoryCache.set(cacheKey, fromRemote);
-      return this.registerResolvedNode(
-        stableId,
-        cacheKey,
-        assetHref,
-        assetHrefDark,
-        fromRemote,
-      );
+    if (!fixtureMode) {
+      const fromRemote = await this.getRemoteCachedNode(assetHref);
+      if (fromRemote) {
+        await this.svgBus.set(cacheKey, fromRemote);
+        this.memoryCache.set(cacheKey, fromRemote);
+        return this.registerResolvedNode(
+          stableId,
+          cacheKey,
+          assetHref,
+          assetHrefDark,
+          fromRemote,
+        );
+      }
     }
 
     // 4. Queue for batch rendering (deduplicated by stableId)
@@ -508,7 +513,9 @@ export class DiagramPipeline {
       ) {
         try {
           node = await buildMergedThemeNode(svgMap, item.id, service);
-          await this.svgBus.set(item.cacheKey, node);
+          if (process.env.MERMAID_RENDERER_FIXTURE !== "true") {
+            await this.svgBus.set(item.cacheKey, node);
+          }
           this.memoryCache.set(item.cacheKey, node);
 
           this.buildLogger.logDiagramResult({

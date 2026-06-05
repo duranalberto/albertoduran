@@ -306,6 +306,68 @@ const PLACEHOLDER_SVG = `<svg id="mermaid-placeholder" viewBox="0 0 200 60" xmln
   </text>
 </svg>`;
 
+function escapeXml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function buildFixtureSvg(
+  diagram: { id: string; code: string },
+  themeName: string,
+): string {
+  const renderId = `fixture-${themeName}-${diagram.id}`;
+  const isDark = themeName === "dark";
+  const fill = isDark ? "#1f2937" : "#ffffff";
+  const stroke = isDark ? "#93c5fd" : "#2563eb";
+  const text = isDark ? "#f8fafc" : "#111827";
+  const label = escapeXml(diagram.code.split(/\s+/)[0] ?? "diagram");
+
+  return `<svg id="${renderId}" data-diagram-type="flowchart" width="100%" viewBox="0 0 260 120" style="max-width: 260px;" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    :root { --fixture-font: Inter, sans-serif; }
+    #${renderId} .node rect { fill: ${fill}; stroke: ${stroke}; }
+    #${renderId} .node text { fill: ${text}; font-family: var(--fixture-font); }
+    #${renderId} .edgePath path { stroke: ${stroke}; }
+    @keyframes fixture-dash { to { stroke-dashoffset: 0; } }
+  </style>
+  <defs>
+    <marker id="${renderId}-pointEnd" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="${stroke}"/>
+    </marker>
+  </defs>
+  <g class="node" id="${renderId}-A">
+    <rect class="basic" x="20" y="24" width="92" height="44" rx="6"/>
+    <text x="66" y="52" text-anchor="middle">${label}</text>
+  </g>
+  <g class="node" id="${renderId}-B">
+    <rect class="basic" x="148" y="24" width="92" height="44" rx="6"/>
+    <text x="194" y="52" text-anchor="middle">${escapeXml(themeName)}</text>
+  </g>
+  <path class="edgePath" d="M 112 46 L 148 46" fill="none" marker-end="url(#${renderId}-pointEnd)"/>
+</svg>`;
+}
+
+function buildFixtureResult(
+  diagrams: Array<{ id: string; code: string }>,
+  themes: Map<string, MermaidPalette>,
+): RenderResult {
+  const results: Record<string, Map<string, string>> = {};
+  const themeNames = themes.size > 0 ? Array.from(themes.keys()) : ["default"];
+
+  for (const diagram of diagrams) {
+    const diagramResults = new Map<string, string>();
+    for (const themeName of themeNames) {
+      diagramResults.set(themeName, buildFixtureSvg(diagram, themeName));
+    }
+    results[diagram.id] = diagramResults;
+  }
+
+  return { results, service: RenderService.CloudflareWorker };
+}
+
 /**
  * SVGs that must NOT be cached — worker error sentinel and our placeholder.
  */
@@ -332,6 +394,10 @@ export async function fetchDiagrams(
   diagrams: Array<{ id: string; code: string }>,
   themes: Map<string, MermaidPalette>,
 ): Promise<RenderResult> {
+  if (process.env.MERMAID_RENDERER_FIXTURE === "true") {
+    return buildFixtureResult(diagrams, themes);
+  }
+
   let lastError: Error | null = null;
 
   for (const provider of PROVIDERS) {

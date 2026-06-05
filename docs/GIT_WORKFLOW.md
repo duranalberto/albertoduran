@@ -89,12 +89,15 @@ The MR must reflect behavior verified via `build + preview`.
 
 ---
 
-## 4. Testing (Planned & Current State)
+## 4. Testing
+
+The formal test matrix lives in `docs/TESTING_STRATEGY.md`.
 
 ### Current Available Commands
 
 ```bash
 npm test
+npm run test:coverage
 npm run test:e2e
 npm run astro check
 ```
@@ -102,26 +105,13 @@ npm run astro check
 | Command               | Purpose                         |
 | --------------------- | ------------------------------- |
 | `npm test`            | Unit & component tests (Vitest) |
+| `npm run test:coverage` | Vitest coverage report |
 | `npm run test:e2e`    | End-to-end tests (Playwright)   |
 | `npm run astro check` | Astro diagnostics               |
 
-### Future Testing Strategy (Placeholder)
+`npm run test:e2e` runs `npm run build:test` first, then serves the production build with `astro preview`. The test build uses deterministic Atlas and Mermaid fixtures so CI does not depend on ESPN or remote Mermaid renderers.
 
-Testing infrastructure is partially implemented and will expand to include:
-
-- Structured unit coverage thresholds
-- Component snapshot testing
-- CI enforcement gates
-- Accessibility testing
-- Performance regression tests
-
-A formal testing matrix will be defined in `docs/TESTING_STRATEGY.md`.
-
-Until fully implemented:
-
-- Static analysis must pass.
-- Build must succeed.
-- Manual verification via `preview` is mandatory.
+`npm run lint` is intentionally outside the mandatory gate until an ESLint flat config is added for ESLint 10.
 
 ---
 

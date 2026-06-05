@@ -1,0 +1,81 @@
+# Testing Strategy
+
+This project is static-first, content-heavy, and uses a small amount of browser JavaScript for progressive enhancement. The test suite focuses on the parts most likely to break production behavior: build-time content processing, custom Mermaid rendering, external Atlas data loading, generated routes, theme persistence, and journal navigation.
+
+## Testing Pyramid
+
+| Layer | Tool | Purpose |
+| :-- | :-- | :-- |
+| Static diagnostics | `npm run check` | Astro and TypeScript diagnostics for `.astro`, content, and TS files. |
+| Unit and integration | `npm test` | Pure logic and mocked integration tests with Vitest. |
+| Production E2E | `npm run test:e2e` | Builds deterministic production output, serves `dist`, then validates browser behavior with Playwright. |
+| Coverage | `npm run test:coverage` | Vitest coverage report for TypeScript logic. |
+
+`npm run lint` is not part of the required gate yet because ESLint 10 needs a flat `eslint.config.*` file. Add that config before making lint mandatory in CI.
+
+## Commands
+
+Run these from the repository root:
+
+```bash
+npm run check
+npm test
+npm run test:coverage
+npm run test:e2e
+```
+
+For faster local iteration:
+
+```bash
+npm run test:watch
+npm run build:test
+npm run preview
+```
+
+`build:test` sets deterministic fixture flags:
+
+- `ALBERTODURAN_TEST_MODE=true` makes the Atlas content loader use local data instead of ESPN.
+- `MERMAID_RENDERER_FIXTURE=true` makes Mermaid use local SVG fixtures instead of remote renderers.
+
+## Required Tests by Change Type
+
+| Change type | Required coverage |
+| :-- | :-- |
+| Content manifest, journal routing, vault logic | Vitest tests for manifest shape, required images, sorting, child inheritance, and previous/next links. |
+| Mermaid rendering or SVG handling | Vitest tests for HAST utilities and theme transforms; Playwright check for rendered diagram shell behavior. |
+| Runtime browser behavior | Playwright tests against production preview. |
+| External data loaders | Vitest tests with mocked `fetch`; no live network dependency in tests. |
+| Layout, navigation, or route changes | Playwright smoke coverage for affected routes and semantic navigation assertions. |
+| New Preact/Astro islands | Unit tests for pure logic plus Playwright coverage for user-visible interaction. |
+
+## Critical Test Matrix
+
+Vitest currently covers:
+
+- Navigation path normalization and journal publication detection.
+- Ribbon SVG dimensions, ID scoping, and reference rewriting.
+- Atlas loader normal schedule data, zero-record standings fallback, missing match behavior, failed fetch handling, and deterministic test mode.
+- Mermaid HAST sanitation, ID/reference rewriting, foreignObject line break cleanup, Worker theme merging, Ink inline-color hoisting, and dispatcher failure guards.
+- Journal manifest build rules: standalone/vault image requirements, nested vault grouping, child image inheritance, sorted traversal, previous/next links, read time, and path context lookup.
+- HTML minification while preserving `<pre>`, `<code>`, and `<kbd>` fragments.
+
+Playwright currently covers:
+
+- Smoke routes: `/`, `/profile/`, `/thejournal/`, one standalone article, one vault root, and one nested vault article.
+- Journal catalog links to generated article routes.
+- Article headings, On This Page navigation, vault context, and pagination.
+- Theme toggle persistence across Astro navigation.
+- Mermaid diagram shell inline SVG rendering, expanded popover cloning, clone ID rewriting, and theme-specific asset links.
+- Basic semantic checks for title, main/header/footer landmarks, active navigation, and browser console errors.
+
+## CI
+
+`.github/workflows/quality.yml` runs on pull requests and pushes to `dev` or `master`:
+
+1. `npm ci`
+2. `npm run check`
+3. `npm test`
+4. `npx playwright install --with-deps chromium`
+5. `npm run test:e2e`
+
+The Playwright HTML report is uploaded as a CI artifact when available.

@@ -359,6 +359,10 @@ export async function buildMergedThemeNodeInk(
       ? `#${targetId}`
       : `[data-theme="${themeName}"] #${targetId}`;
 
+    // Rename before hoisting so generated ID-specific CSS points at the final
+    // SVG ids, not mermaid.ink's fixed `mermaid-svg-*` ids.
+    updateHastIds(themeRoot, MERMAID_INK_ROOT_ID, targetId);
+
     // Step 1 — Hoist classDef inline colour styles into CSS rules.
     // This also strips the colour declarations from the inline style attributes
     // on the parsed tree (themeRoot is mutated here).
@@ -391,11 +395,6 @@ export async function buildMergedThemeNodeInk(
   stripScripts(baseRoot);
   sanitizeStyleAttributes(baseRoot);
   collapseForeignObjectLineBreaks(baseRoot);
-
-  // Rename `mermaid-svg` → `mermaid-<stableId>` throughout the tree.
-  // Done AFTER hoistInlineColorsToCss so the hoisted rules already
-  // reference the correct targetId via scopePrefix.
-  updateHastIds(baseRoot, MERMAID_INK_ROOT_ID, targetId);
 
   const svgEl = select("svg", baseRoot);
   if (!svgEl || svgEl.type !== "element") {

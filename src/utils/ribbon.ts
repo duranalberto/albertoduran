@@ -36,8 +36,11 @@ export const generateRibbonSVGData = (icons: Icon[], config: RibbonIcon) => {
       const scopedContent = compressed
         .replace(/id=["']([^"']+)["']/g, `id="${prefix}$1"`)
         .replace(/url\(#([^)]+)\)/g, `url(#${prefix}$1)`)
-        .replace(/href=["']#([^"']+)["']/g, `href="#${prefix}$1"`)
-        .replace(/xlink:href=["']#([^"']+)["']/g, `xlink:href="#${prefix}$1"`);
+        .replace(/xlink:href=["']#([^"']+)["']/g, `xlink:href="#${prefix}$1"`)
+        .replace(
+          /(^|\s)href=["']#([^"']+)["']/g,
+          `$1href="#${prefix}$2"`,
+        );
 
       return `<g transform="translate(${x},${y})"><svg width="${iconSize}" height="${iconSize}" viewBox="${icon.viewBox || "0 0 128 128"}" preserveAspectRatio="xMidYMid meet">${scopedContent}</svg></g>`;
     })

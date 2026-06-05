@@ -29,7 +29,18 @@ type ESPNStandingsPage = {
 
 const ATLAS_TEAM_ID = "216";
 
-function formatRecordSummary(recordSummary: string): string {
+export const ATLAS_TEST_DATA: AtlasData = {
+  standing: "4th in Liga MX",
+  record: "7 wins 2 ties 1 losses",
+  points: 23,
+  homeTeam: "Atlas",
+  awayTeam: "Club America",
+  rawDate: "2026-07-19T02:00:00Z",
+  stadium: "Estadio Jalisco",
+  city: "Guadalajara",
+};
+
+export function formatRecordSummary(recordSummary: string): string {
   if (!recordSummary) return "--";
 
   return recordSummary
@@ -38,7 +49,7 @@ function formatRecordSummary(recordSummary: string): string {
     .join(" ");
 }
 
-function parseRecordSummary(recordSummary: string): {
+export function parseRecordSummary(recordSummary: string): {
   wins: number;
   ties: number;
 } {
@@ -52,13 +63,13 @@ function parseRecordSummary(recordSummary: string): {
   };
 }
 
-function isZeroRecord(recordSummary: string, points: number): boolean {
+export function isZeroRecord(recordSummary: string, points: number): boolean {
   const normalized = recordSummary.trim();
 
   return (!normalized || normalized === "0-0-0") && points === 0;
 }
 
-function extractEspnAppState(html: string): ESPNStandingsPage | null {
+export function extractEspnAppState(html: string): ESPNStandingsPage | null {
   const marker = "window['__espnfitt__']=";
   const markerIndex = html.indexOf(marker);
 
@@ -156,6 +167,15 @@ export default {
   name: "atlas-loader",
   load: async (context: any): Promise<void> => {
     const { store } = context;
+
+    if (process.env.ALBERTODURAN_TEST_MODE === "true") {
+      store.clear();
+      store.set({
+        id: "current-match",
+        data: ATLAS_TEST_DATA,
+      });
+      return;
+    }
 
     try {
       const response = await fetch(

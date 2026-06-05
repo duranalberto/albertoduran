@@ -50,8 +50,10 @@ import { ui } from "@data/icons";
         />
 
         <button
+          type="button"
           onclick="history.back()"
-          class="group flex items-center gap-3 text-xs font-bold uppercase tracking-[0.2em] text-base-content/60 transition-colors py-2"
+          class="js-only group items-center gap-3 text-xs font-bold uppercase tracking-[0.2em] text-base-content/60 transition-colors py-2"
+          style="--js-only-display: inline-flex"
         >
           <SVGIcon
             icon={ui.arrowLeft!}

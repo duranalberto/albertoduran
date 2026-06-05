@@ -12,6 +12,7 @@ import HeadingAnchor from "@components/ui/mdx/HeadingAnchor.astro";
 import HeadingAnchorH3 from "@components/ui/mdx/HeadingAnchorH3.astro";
 import ProseTable from "@components/ui/mdx/ProseTable.astro";
 import MermaidDiagramWrapper from "@components/ui/mdx/MermaidDiagramWrapper.astro";
+import OverlayPanel from "@components/ui/primitive/OverlayPanel.astro";
 import SVGIcon from "@components/ui/primitive/SVGIcon.astro";
 import {
   entryManifest,
@@ -96,7 +97,6 @@ const layoutProps = {
           vaultContext && (
             <aside
               class="journal-sidebar sidebar-left hidden xl:block shrink-0"
-              transition:name="sidebar-left"
             >
               <div class="journal-sidebar-panel">
                 <VaultExplorer
@@ -111,11 +111,10 @@ const layoutProps = {
 
         <div
           class="journal-main-content w-full flex-1 min-w-0 flex flex-col mt-4"
-          transition:name="thejournal-main"
         >
           <PublicationHeader entry={entry} vaultContext={vaultContext} />
 
-          <div class="flex-1 break-words" transition:name="thejournal-article">
+          <div class="flex-1 break-words">
             <Article>
               <renderResult.Content components={components} />
             </Article>
@@ -132,17 +131,19 @@ const layoutProps = {
           <nav
             class="dock-wrapper xl:hidden z-30"
             aria-label="Article navigation dock"
-            transition:name="thejournal-navigation-mobile"
           >
             <div class="dock-inner">
               <div class="join dock-join">
                 {
                   vaultContext && (
-                    <button
-                      type="button"
+                    <label
+                      for="vault-modal-toggle"
+                      role="button"
+                      tabindex="0"
                       class="btn btn-ghost join-item dock-btn"
                       aria-label="Open Vault Explorer"
-                      onclick="document.getElementById('vault-modal-toggle').checked = true"
+                      aria-controls="vault-modal-toggle"
+                      aria-haspopup="dialog"
                     >
                       <SVGIcon
                         icon={vaultIcon}
@@ -150,15 +151,18 @@ const layoutProps = {
                         aria-hidden="true"
                       />
                       <span class="dock-btn-label">{vaultIcon.text}</span>
-                    </button>
+                    </label>
                   )
                 }
 
-                <button
-                  type="button"
+                <label
+                  for="otp-modal-toggle"
+                  role="button"
+                  tabindex="0"
                   class="btn btn-ghost join-item dock-btn"
                   aria-label="Open Table of Contents"
-                  onclick="document.getElementById('otp-modal-toggle').checked = true"
+                  aria-controls="otp-modal-toggle"
+                  aria-haspopup="dialog"
                 >
                   <SVGIcon
                     icon={otpIcon}
@@ -166,7 +170,7 @@ const layoutProps = {
                     aria-hidden="true"
                   />
                   <span class="dock-btn-label">{otpIcon.text}</span>
-                </button>
+                </label>
               </div>
             </div>
           </nav>
@@ -175,7 +179,6 @@ const layoutProps = {
         {/* SIDEBAR RIGHT */}
         <aside
           class="journal-sidebar sidebar-right hidden xl:block shrink-0"
-          transition:name="sidebar-right"
         >
           <div class="journal-sidebar-panel">
             <OnThisPage
@@ -189,94 +192,26 @@ const layoutProps = {
   </div>
 
   <Fragment slot="overlays">
-    <input
-      type="checkbox"
-      id="vault-modal-toggle"
-      class="modal-toggle"
-      aria-hidden="true"
-    />
-    <div
-      class="modal modal-bottom sm:modal-middle"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={vaultModalTitleId}
-    >
-      <div class="modal-box p-0 flex flex-col max-h-[85dvh] sm:max-w-sm">
-        <div
-          class="flex items-center justify-between px-4 py-3 border-b border-base-content/10 shrink-0"
+    {
+      vaultContext && (
+        <OverlayPanel
+          toggleId="vault-modal-toggle"
+          title="Vault Explorer"
+          titleId={vaultModalTitleId}
+          closeLabel="Close Vault Explorer"
         >
-          <span
-            id={vaultModalTitleId}
-            class="text-xs font-bold uppercase tracking-widest text-base-content/60"
-          >
-            Vault Explorer
-          </span>
-          <button
-            type="button"
-            class="btn btn-ghost btn-sm btn-circle"
-            aria-label="Close Vault Explorer"
-            onclick="document.getElementById('vault-modal-toggle').checked = false"
-          >
-            ✕
-          </button>
-        </div>
-        <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4">
-          {
-            vaultContext && (
-              <VaultNavContent vault={vaultContext} currentEntryId={entry.id} />
-            )
-          }
-        </div>
-      </div>
-      <button
-        type="button"
-        class="modal-backdrop"
-        aria-label="Close Vault Explorer"
-        onclick="document.getElementById('vault-modal-toggle').checked = false"
-      ></button>
-    </div>
+          <VaultNavContent vault={vaultContext} currentEntryId={entry.id} />
+        </OverlayPanel>
+      )
+    }
 
-    <input
-      type="checkbox"
-      id="otp-modal-toggle"
-      class="modal-toggle"
-      aria-hidden="true"
-    />
-    <div
-      class="modal modal-bottom sm:modal-middle"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={otpModalTitleId}
+    <OverlayPanel
+      toggleId="otp-modal-toggle"
+      title="On This Page"
+      titleId={otpModalTitleId}
+      closeLabel="Close Table of Contents"
     >
-      <div class="modal-box p-0 flex flex-col max-h-[85dvh] sm:max-w-sm">
-        <div
-          class="flex items-center justify-between px-4 py-3 border-b border-base-content/10 shrink-0"
-        >
-          <span
-            id={otpModalTitleId}
-            class="text-xs font-bold uppercase tracking-widest text-base-content/60"
-          >
-            On This Page
-          </span>
-          <button
-            type="button"
-            class="btn btn-ghost btn-sm btn-circle"
-            aria-label="Close Table of Contents"
-            onclick="document.getElementById('otp-modal-toggle').checked = false"
-          >
-            ✕
-          </button>
-        </div>
-        <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4">
-          <OnThisPageContent headings={headings} />
-        </div>
-      </div>
-      <button
-        type="button"
-        class="modal-backdrop"
-        aria-label="Close Table of Contents"
-        onclick="document.getElementById('otp-modal-toggle').checked = false"
-      ></button>
-    </div>
+      <OnThisPageContent headings={headings} />
+    </OverlayPanel>
   </Fragment>
 </BaseLayout>

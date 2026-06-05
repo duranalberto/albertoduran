@@ -7,26 +7,21 @@ const props = Astro.props;
 <section class="hero-section relative overflow-hidden" {...props}>
   <div class="max-w-screen-2xl mx-auto">
     <div class="grid grid-cols-1 lg:grid-cols-12 items-center gap-12 lg:gap-16">
-      <div class="flex flex-col items-start gap-8 lg:col-span-7">
+      <div class="flex flex-col items-start lg:col-span-7">
         <div class="hero-eyebrow" aria-hidden="true">
           <span class="hero-eyebrow-line"></span>
           <p class="hero-eyebrow-label">Software Engineer</p>
         </div>
 
         <h1
-          class="hero-heading font-display text-5xl md:text-7xl lg:text-8xl select-none w-full"
+          class="hero-heading font-display text-5xl md:text-7xl lg:text-8xl select-none w-full mb-8"
         >
-          <span class="text-primary" transition:name="hero-title-first"
-            >Alberto</span
-          ><wbr /><span
-            transition:name="hero-title-second"
-            class="text-base-content">Duran</span
-          >
+          <span class="text-primary">Alberto</span>
+          <span class="text-base-content">Duran</span>
         </h1>
 
         <div
-          class="hero-description text-lg leading-relaxed text-neutral-content lg:text-xl"
-          transition:name="hero-description-index"
+          class="hero-description text-lg leading-relaxed text-neutral-content lg:text-xl mb-8"
         >
           <span
             class="hero-rotating-text text-rotate font-display font-black text-xl sm:text-2xl lg:text-3xl text-base-content duration-[40000ms]"
@@ -71,10 +66,7 @@ const props = Astro.props;
         <SocialTire />
       </div>
 
-      <div
-        class="hidden lg:flex lg:col-span-5 lg:items-center"
-        transition:name="hero-lateral-index"
-      >
+      <div class="hidden lg:flex lg:col-span-5 lg:items-center">
         <IndexHeroPanel />
       </div>
     </div>

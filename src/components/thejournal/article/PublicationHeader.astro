@@ -44,7 +44,6 @@ const readTimeText = entry.readTime ? `${entry.readTime} min read` : null;
         <nav aria-label="Breadcrumb">
           <a
             href={`/thejournal/${vaultContext.id}/`}
-            transition:name={`article-vault-button-${entry.vaultId}`}
             class="badge badge-outline h-auto min-h-8 px-3 py-2 text-xs font-bold tracking-widest uppercase transition-all hover:bg-primary hover:text-primary-content active:scale-95"
           >
             {vaultContext.title}
@@ -55,7 +54,6 @@ const readTimeText = entry.readTime ? `${entry.readTime} min read` : null;
 
     <h1
       id="article-header"
-      transition:name="article-title"
       class="font-display block text-4xl font-black leading-tight text-base-content md:text-5xl lg:text-6xl"
     >
       {entry.title}
@@ -63,7 +61,6 @@ const readTimeText = entry.readTime ? `${entry.readTime} min read` : null;
 
     <div
       class="flex flex-wrap items-center justify-between gap-6 pb-2 text-sm font-medium text-neutral-content/80"
-      transition:name="article-metadata"
     >
       <div class="flex flex-wrap items-center gap-x-8 gap-y-4">
         <div class="flex items-center gap-2.5 whitespace-nowrap">
@@ -119,8 +116,7 @@ const readTimeText = entry.readTime ? `${entry.readTime} min read` : null;
   {
     image && (
       <div
-        class="article-image-container group relative overflow-hidden shadow-2xl layer-gpu md:rounded-box"
-        transition:name={`article-image-${image.src}`}
+        class="article-image-container relative overflow-hidden shadow-2xl layer-gpu md:rounded-box"
       >
         <Picture
           src={image}
@@ -132,7 +128,7 @@ const readTimeText = entry.readTime ? `${entry.readTime} min read` : null;
           loading="eager"
           fetchpriority="high"
           decoding="async"
-          class="article-featured-img select-none transition-transform duration-700 ease-out group-hover:scale-105"
+          class="article-featured-img select-none"
           draggable={false}
         />
         <div class="article-image-overlay pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/10 md:rounded-box" />

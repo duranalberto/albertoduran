@@ -3,7 +3,6 @@ import tailwindcss from "@tailwindcss/vite";
 import { defineConfig, fontProviders } from "astro/config";
 import {
   customHtmlMinifier,
-  injectModulePreload,
   mermaidIntegration,
 } from "./src/integrations/index.ts";
 import {
@@ -28,7 +27,6 @@ export default defineConfig({
       ]),
     }),
     mdx(),
-    injectModulePreload(),
     customHtmlMinifier(),
   ],
 
@@ -40,25 +38,19 @@ export default defineConfig({
   fonts: [
     {
       provider: fontProviders.fontsource(),
-      name: "Geist",
-      cssVariable: "--font-display",
-      weights: ["700", "800", "900"],
-      subsets: ["latin"],
-      display: "swap",
-    },
-    {
-      provider: fontProviders.fontsource(),
       name: "Inter",
-      cssVariable: "--font-sans",
+      cssVariable: "--font-inter",
       weights: ["400", "600", "700"],
+      styles: ["normal"],
       subsets: ["latin"],
       display: "swap",
     },
     {
       provider: fontProviders.fontsource(),
       name: "Montserrat",
-      cssVariable: "--font-reading",
+      cssVariable: "--font-montserrat",
       weights: ["400", "500", "600", "700"],
+      styles: ["normal"],
       subsets: ["latin"],
       display: "swap",
     },

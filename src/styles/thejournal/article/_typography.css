@@ -1,7 +1,7 @@
 /* =========================================================
    JOURNAL PROSE TYPOGRAPHY (Standalone & Isolated)
    Replaces @tailwindcss/typography entirely.
-   Font: Montserrat (sans-serif editorial) via --font-reading token.
+   Font: Montserrat publication face via --font-reading token.
    ========================================================= */
 @layer typography {
   .prose-journal {

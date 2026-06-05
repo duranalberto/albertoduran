@@ -5,12 +5,11 @@
    astro.config.mjs (data-line attribute on each line).
    ========================================================= */
 
-[style*="--font-fira-code"],
 .prose-journal code,
 .prose-journal pre,
 kbd,
 samp {
-  font-family: var(--font-fira-code), monospace;
+  font-family: var(--font-mono);
   font-variant-ligatures: common-ligatures contextual;
   font-feature-settings:
     "liga" 1,

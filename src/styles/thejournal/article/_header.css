@@ -52,10 +52,6 @@
   touch-action: manipulation;
 }
 
-[transition\:name="article-metadata"] {
-  contain: layout;
-}
-
 .article-header-root .layer-gpu {
   transform: translate3d(0, 0, 0);
   will-change: transform;

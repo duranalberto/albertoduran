@@ -1,9 +1,7 @@
 /* =========================================================
    SHARED HERO LAYOUT
-   Consistent spacing, typography scale, and View Transition
-   stability tokens shared across IndexHero, ProfileHero,
-   and JournalHero. Keeps all three pages visually coherent
-   during Astro View Transitions.
+   Consistent spacing and typography scale shared across
+   IndexHero, ProfileHero, and JournalHero.
    ========================================================= */
 
 .hero-section {
@@ -34,21 +32,14 @@
 
 .hero-rotating-text {
   display: block;
-  min-height: 2.4em;
-  min-height: 2lh;
+  block-size: 1.2em;
+  line-height: 1.2;
+  overflow: hidden;
   contain: layout;
 }
 
-@media (min-width: theme(--breakpoint-sm)) {
-  .hero-rotating-text {
-    min-height: 2.8em;
-  }
-}
-
-@media (min-width: theme(--breakpoint-lg)) {
-  .hero-rotating-text {
-    min-height: 3em;
-  }
+.hero-rotating-text span {
+  line-height: inherit;
 }
 
 .hero-eyebrow {
@@ -79,19 +70,6 @@
   .hero-eyebrow-label {
     font-size: 0.875rem;
   }
-}
-
-/* ── View Transition: stable layout for morphing elements ─── */
-/*
- * Elements that participate in cross-page View Transitions need
- * layout containment to avoid triggering reflows in adjacent
- * sections during the animation. This applies to the h1 title
- * spans, the lateral panel, and the social tier.
- */
-[transition\:name^="hero-title-"],
-[transition\:name^="hero-lateral"],
-[transition\:name^="social-tier"] {
-  contain: layout;
 }
 
 @media (prefers-reduced-motion: reduce) {

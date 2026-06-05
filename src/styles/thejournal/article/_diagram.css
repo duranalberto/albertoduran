@@ -58,68 +58,6 @@
     color-mix(in oklab, var(--color-base-content) 8%, transparent);
 }
 
-.diagram-action-bar {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-html.no-js .diagram-action-bar {
-  grid-template-columns: 1fr;
-}
-
-.diagram-action {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  width: 100%;
-  padding: 0.5rem 1rem;
-  min-height: 44px;
-  background-color: transparent;
-  color: color-mix(in oklab, var(--color-base-content) 40%, transparent);
-  border: none;
-  border-inline-end: 1px solid
-    color-mix(in oklab, var(--color-base-content) 8%, transparent);
-  cursor: pointer;
-  font-family: var(--font-display);
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  line-height: 1;
-  text-decoration: none;
-  text-transform: uppercase;
-  transition:
-    background-color 0.15s ease,
-    color 0.15s ease;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-}
-
-.diagram-action:last-child {
-  border-inline-end: none;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .diagram-action:hover {
-    background-color: color-mix(
-      in oklab,
-      var(--color-base-200) 70%,
-      transparent
-    );
-    color: var(--color-base-content);
-  }
-}
-
-.diagram-action:active {
-  background-color: var(--color-base-200);
-  color: var(--color-base-content);
-}
-
-.diagram-action:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: -2px;
-}
-
 .diagram-popover {
   margin: auto;
   padding: 0;
@@ -161,49 +99,8 @@ html.no-js .diagram-action-bar {
     overlay 0.2s ease allow-discrete;
 }
 
-.diagram-popover-inner {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 100%;
-  box-sizing: border-box;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-}
-
-.diagram-popover-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.625rem 0.75rem 0.625rem 1.25rem;
-  border-bottom: 1px solid
-    color-mix(in oklab, var(--color-base-content) 8%, transparent);
-  background-color: var(--color-base-200);
-  flex-shrink: 0;
-}
-
-.diagram-popover-title {
-  font-family: var(--font-display);
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: color-mix(in oklab, var(--color-base-content) 50%, transparent);
-}
-
 .diagram-popover-scroll {
-  flex: 1;
-  min-height: 0;
-  display: block;
-
-  overflow: auto;
-  overscroll-behavior: contain;
   touch-action: pan-x pan-y;
-  -webkit-overflow-scrolling: touch;
-
-  width: 100%;
-  height: 100%;
-  box-sizing: border-box;
-
   padding: 1.5rem;
   padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 1.5rem));
 }
@@ -226,7 +123,6 @@ html.no-js .diagram-action-bar {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .diagram-action,
   .diagram-popover:popover-open {
     transition: none;
   }
@@ -234,7 +130,7 @@ html.no-js .diagram-action-bar {
 
 @media (prefers-contrast: more) {
   .diagram-wrapper,
-  .diagram-popover-header,
+  .diagram-popover .ui-panel-header,
   .diagram-popover {
     border-width: 2px;
   }

@@ -5,8 +5,8 @@
  *   Light primary:  oklch(0.5434 0.174  29.69) → #b83a2a
  *   Dark  primary:  oklch(0.5333 0.2151 28.10) → #bf3020
  *
- * fontFamily uses "Inter, sans-serif" to match the --font-sans CSS variable
- * configured in astro.config.mjs. Inter is loaded via fontsource on every
+ * fontFamily uses "Inter, sans-serif" to match the UI font exposed through
+ * --font-sans. Inter is loaded via the raw --font-inter variable on every
  * page, so inline SVGs rendered by both the Cloudflare Worker and mermaid.ink
  * will use Inter when displayed in the browser regardless of whether the
  * render service has the font installed server-side.
@@ -58,7 +58,7 @@ export const LIGHT_PALETTE: MermaidPalette = {
 
   // ── Typography & mode ─────────────────────────────────────────────────────
   darkMode: false,
-  // Inter matches --font-sans from astro.config.mjs (loaded via fontsource).
+  // Inter matches the UI font stack loaded through --font-inter.
   // The browser resolves this font-family declaration when displaying the
   // inlined SVG, so Inter is used even though neither mermaid.ink nor the
   // Cloudflare Worker has the font installed server-side.

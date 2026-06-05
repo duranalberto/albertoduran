@@ -85,9 +85,14 @@ const socialImageURL = new URL(optimizedImage.src, Astro.site);
       transition:persist
     />
 
-    <Font cssVariable="--font-display" preload />
-    <Font cssVariable="--font-sans" preload />
-    <Font cssVariable="--font-reading" />
+    <Font
+      cssVariable="--font-inter"
+      preload={[{ weight: "400", style: "normal", subset: "latin" }]}
+    />
+    <Font
+      cssVariable="--font-montserrat"
+      preload={[{ weight: "700", style: "normal", subset: "latin" }]}
+    />
     <Font cssVariable="--font-fira-code" />
     <ClientRouter />
   </head>
@@ -98,11 +103,11 @@ const socialImageURL = new URL(optimizedImage.src, Astro.site);
     <Header />
     {
       hasHero ? (
-        <FlexShell class="py-0 md:py-0" transition:name="page-hero">
+        <FlexShell class="py-0 md:py-0">
           <slot name="hero" />
         </FlexShell>
       ) : (
-        <div transition:name="page-hero" aria-hidden="true" />
+        <div aria-hidden="true" />
       )
     }
 

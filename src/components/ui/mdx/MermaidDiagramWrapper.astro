@@ -53,9 +53,9 @@ const popoverTitleId = `${popoverId}-title`;
     <mermaid-diagram-shell class="diagram-wrapper not-prose">
       <div class={className} {...rest} set:html={diagramHtml} />
 
-      <div class="diagram-action-bar">
+      <div class="ui-panel-action-grid" data-no-js-single>
         <a
-          class="diagram-action"
+          class="ui-panel-action"
           href={diagramSrc ?? "#"}
           data-diagram-open-link
           data-diagram-light-src={diagramSrc}
@@ -84,7 +84,7 @@ const popoverTitleId = `${popoverId}-title`;
 
         <button
           type="button"
-          class="diagram-action js-only"
+          class="ui-panel-action js-only"
           popovertarget={popoverId}
           popovertargetaction="show"
           aria-label="Expand diagram"
@@ -116,9 +116,9 @@ const popoverTitleId = `${popoverId}-title`;
         aria-labelledby={popoverTitleId}
         class="diagram-popover"
       >
-        <div class="diagram-popover-inner">
-          <div class="diagram-popover-header">
-            <span id={popoverTitleId} class="diagram-popover-title">
+        <div class="ui-panel-inner">
+          <div class="ui-panel-header">
+            <span id={popoverTitleId} class="ui-panel-title">
               {popoverTitle}
             </span>
             <button
@@ -144,7 +144,7 @@ const popoverTitleId = `${popoverId}-title`;
             </button>
           </div>
 
-          <div class="diagram-popover-scroll">
+          <div class="ui-panel-scroll diagram-popover-scroll">
             <div
               class={className}
               {...rest}

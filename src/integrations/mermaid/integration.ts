@@ -8,7 +8,7 @@
  *
  * mermaidIntegration() MUST come before mdx(). Astro runs
  * astro:config:setup hooks in array order. This integration injects
- * the remark plugin via updateConfig(); mdx() reads that config to
+ * the remark plugin through Astro's unified markdown processor; mdx() reads that config to
  * build its remark pipeline. Reversing the order means mdx() reads
  * the config before the plugin is registered and the plugin is never
  * applied.
@@ -27,6 +27,7 @@
  */
 
 import type { AstroIntegration } from "astro";
+import { unified } from "@astrojs/markdown-remark";
 import type { Element as HastElement } from "hast";
 import { AstroDiskBus } from "../../lib/astro-disk-bus.ts";
 import { RENDERER_VERSION } from "./constants.ts";
@@ -73,8 +74,8 @@ export function mermaidIntegration(
     hooks: {
       /**
        * astro:config:setup
-       * Injects the remark plugin into Astro's markdown pipeline via
-       * updateConfig so the user never touches remarkPlugins directly.
+       * Injects the remark plugin into Astro's markdown pipeline through
+       * the unified processor so the user never touches remarkPlugins directly.
        * Must run before mdx() reads the markdown config — guaranteed
        * by placing mermaidIntegration() before mdx() in the array.
        *
@@ -92,22 +93,24 @@ export function mermaidIntegration(
 
         updateConfig({
           markdown: {
-            remarkPlugins: [
-              [
-                mermaidRemarkPlugin,
-                {
-                  cacheSubDir,
-                  registerDiagram: (stableId: string, code: string) => {
-                    if (!pipeline) {
-                      throw new Error(
-                        "[mermaid] registerDiagram called before astro:build:start — pipeline not initialised.",
-                      );
-                    }
-                    return pipeline.registerDiagram(stableId, code);
-                  },
-                } satisfies MermaidPluginConfig,
+            processor: unified({
+              remarkPlugins: [
+                [
+                  mermaidRemarkPlugin,
+                  {
+                    cacheSubDir,
+                    registerDiagram: (stableId: string, code: string) => {
+                      if (!pipeline) {
+                        throw new Error(
+                          "[mermaid] registerDiagram called before astro:build:start — pipeline not initialised.",
+                        );
+                      }
+                      return pipeline.registerDiagram(stableId, code);
+                    },
+                  } satisfies MermaidPluginConfig,
+                ],
               ],
-            ],
+            }),
           },
         });
       },

@@ -50,6 +50,7 @@
 
 /* ─── 8. UI ──────────────────────────────────────────────── */
 @import "./ui/display/_strip-background.css";
+@import "./ui/primitive/_panel.css";
 @import "./ui/mdx/_heading-anchor.css";
 @import "./ui/mdx/_code-block.css";
 @import "./ui/mdx/_prose-table.css";

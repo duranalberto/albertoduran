@@ -1,0 +1,48 @@
+---
+interface Props {
+  toggleId: string;
+  title: string;
+  titleId: string;
+  closeLabel: string;
+}
+
+const { toggleId, title, titleId, closeLabel } = Astro.props;
+---
+
+<input
+  type="checkbox"
+  id={toggleId}
+  class="modal-toggle"
+  aria-hidden="true"
+/>
+<div
+  class="modal modal-bottom sm:modal-middle"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby={titleId}
+>
+  <div class="modal-box ui-panel p-0 flex flex-col max-h-[85dvh] sm:max-w-sm">
+    <div class="ui-panel-header">
+      <span id={titleId} class="ui-panel-title">
+        {title}
+      </span>
+      <label
+        for={toggleId}
+        role="button"
+        tabindex="0"
+        class="btn btn-ghost btn-sm btn-circle"
+        aria-label={closeLabel}
+      >
+        ✕
+      </label>
+    </div>
+
+    <div class="ui-panel-scroll">
+      <slot />
+    </div>
+  </div>
+
+  <label for={toggleId} class="modal-backdrop" aria-label={closeLabel}>
+    Close
+  </label>
+</div>

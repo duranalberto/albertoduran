@@ -14,13 +14,25 @@
   object-position: top !important;
 }
 
-::view-transition-group(active-line) {
+.header-active-line {
+  view-transition-name: header-active-line;
+}
+
+.vault-active-line {
+  view-transition-name: vault-active-line;
+}
+
+::view-transition-group(header-active-line),
+::view-transition-group(vault-active-line) {
   animation-duration: 0.18s;
   animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-html.vt-freeze-scroll {
-  overflow: hidden !important;
+::view-transition-old(header-active-line),
+::view-transition-new(header-active-line),
+::view-transition-old(vault-active-line),
+::view-transition-new(vault-active-line) {
+  mix-blend-mode: normal;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -30,7 +42,8 @@ html.vt-freeze-scroll {
     mix-blend-mode: normal !important;
   }
 
-  ::view-transition-group(active-line) {
+  ::view-transition-group(header-active-line),
+  ::view-transition-group(vault-active-line) {
     animation: none !important;
   }
 

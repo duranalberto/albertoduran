@@ -7,158 +7,152 @@ image: "../../assets/thejournal/stock/01.avif"
 tags: ["astro", "blogging"]
 ---
 
-High-performance personal portfolio and publishing platform built with **Astro**.  
+High-performance personal portfolio and publishing platform built with **Astro 6**.
 Static-first architecture with SPA-like navigation and structured long-form content support.
 
 ---
 
-## ✨ Overview
+## Overview
 
 This project is designed to:
 
-- Deliver excellent performance and SEO
-- Provide seamless, SPA-like page transitions
-- Support single publications and vault of publication
-- Maintain strict architectural boundaries
-- Minimize client-side JavaScript
+- Deliver excellent performance and SEO.
+- Provide smooth internal navigation with Astro view transitions.
+- Support standalone publications and nested vaults of related publications.
+- Maintain clear architectural boundaries.
+- Keep client-side JavaScript focused on progressive enhancement.
 
 ---
 
-## 🧱 Architecture
+## Architecture
 
 ### Static-First Philosophy
 
-All content and layouts render as static HTML by default.  
-Client-side JavaScript is added **only when required**.
+The site is generated as static HTML. Build-time integrations process MDX content, render Mermaid diagrams, optimize assets, and minify HTML before deployment.
 
-| Layer       | Usage                                 |
-| ----------- | ------------------------------------- |
-| Static HTML | Default rendering mode                |
-| SSR         | When dynamic runtime data is required |
+Client-side JavaScript is added only where it improves the experience:
 
-This keeps bundle size small and performance high.
+- Theme persistence and light/dark switching.
+- Article heading navigation.
+- Mermaid diagram expansion and theme-specific assets.
+- Atlas schedule enhancement.
 
----
-
-### 🚀 SPA-like Navigation
-
-The project uses Astro View Transitions to provide seamless internal navigation without full page reloads.
-
-#### Implementation Rules
-
-- `<ViewTransitions />` is included in the main layout.
-- Only missing assets are fetched on navigation.
-- Content is swapped during transitions.
-- Navigation, header, and footer remain visually stable.
-
-If a component needs state persistence across transitions:
-
-```astro
-<MyComponent transition:persist />
-```
+This keeps the default content path fast, indexable, and resilient.
 
 ---
 
-## 🛠 Tech Stack
+### SPA-like Navigation
+
+The project uses Astro view transitions to provide smoother internal navigation while preserving the benefits of a static site.
+
+Implementation rules:
+
+- The shared document shell lives in `BaseLayout.astro`.
+- Internal routes should keep header, footer, and navigation behavior visually stable.
+- Browser-side scripts must tolerate Astro page swaps.
+- Interactive behavior should be progressive enhancement, not a requirement for reading content.
+
+---
+
+## Tech Stack
 
 ### Core Frameworks
 
-- **Astro v5.17.x** – Routing, SSG, SSR
-- **Tailwind CSS v4.1.x** – Utility-first styling
-- **DaisyUI v5.5.x** – Component system for Tailwind
+- **Astro 6** - Routing, static generation, MDX, image optimization, and integrations.
+- **Tailwind CSS 4** - Utility-first styling and theme tokens.
+- **DaisyUI 5** - Theme-aware component primitives.
+- **Vitest** - Unit and integration tests.
+- **Playwright** - Production-preview browser tests.
+- **Cloudflare Workers Assets** - Static deployment target configured through `wrangler.json`.
 
-### 📂 Project Structure
+---
+
+## Project Structure
 
 ```plaintext
 albertoduran/
+├─ .devcontainer/
+├─ .github/workflows/
+├─ docs/
 ├─ public/
-│  ├─ fonts/
-│  └─ favicon.svg
 ├─ src/
 │  ├─ assets/
 │  ├─ components/
-│  │  ├─ common/
-│  │  ├─ sections/
-│  │  │  ├─ index/
-│  │  │  ├─ profile/
-│  │  │  └─ thejournal/
-│  │  └─ ui/
+│  ├─ content/
 │  ├─ data/
+│  ├─ integrations/
 │  ├─ layouts/
 │  ├─ pages/
-│  │  ├─ thejournal/
-│  │  │  └─ [...slug].astro
-│  │  ├─ 404.astro
-│  │  ├─ index.astro
-│  │  ├─ profile.astro
-│  │  └─ thejournal.astro
+│  ├─ runtime/
 │  ├─ styles/
 │  ├─ thejournal/
 │  ├─ types/
-│  ├─ utils/
-│  │
-│  └─ content.config.ts
-│
+│  └─ utils/
 ├─ astro.config.mjs
 ├─ package.json
-└─ tsconfig.json
+├─ playwright.config.ts
+├─ vitest.config.ts
+└─ wrangler.json
 ```
 
 ---
 
-## 🧭 Routing
+## Routing
 
-Routing is file-based and owned exclusively by `src/pages/`.
+Routing is file-based and owned by `src/pages/`.
 
-| Route                             | File                         | Description                        |
-| --------------------------------- | ---------------------------- | ---------------------------------- |
-| `/`                               | `index.astro`                | About / Bio                        |
-| `/profile`                        | `profile.astro`              | Professional Profile               |
-| `/404`                            | `404.astro`                  | 404 error page                     |
-| `/thejournal`                     | `thejournal/index.astro`     | The Journal Home                   |
-| `/thejournal/[slug]`              | `thejournal/[...slug].astro` | Individual publication             |
-| `/thejournal/[vaultId]/[...slug]` | `thejournal/[...slug].astro` | A vault groups common publications |
+| Route | File | Description |
+| :-- | :-- | :-- |
+| `/` | `src/pages/index.astro` | Home page |
+| `/profile/` | `src/pages/profile.astro` | Professional profile |
+| `/404/` | `src/pages/404.astro` | Static 404 page |
+| `/thejournal/` | `src/pages/thejournal.astro` | Journal index |
+| `/thejournal/[...slug]/` | `src/pages/thejournal/[...slug].astro` | Standalone publications, vault roots, and nested vault publications |
 
----
-
-## 📝 Frontmatter Schema
-
-Defined in:
-
-```
-src/content/config.ts
-```
-
-| Field         | Required | Description               |
-| ------------- | -------- | ------------------------- |
-| `title`       | Yes      | Display title             |
-| `pubDate`     | Yes      | Used for sorting          |
-| `description` | No       | Card preview              |
-| `image`       | No       | Image of the publication  |
-| `github`      | No       | Github repository         |
-| `tags`        | No       | Defaults to []            |
-| `order`       | No       | Default: 100 (for Vaults) |
+The site uses trailing slashes, so generated canonical routes include the final `/`.
 
 ---
 
-## 🚢 Deployment
+## Frontmatter Schema
 
-### Hosting
+Journal content is defined in:
 
-- Cloudflare Workers
-- Auto-deploy from `master` branch
+```text
+src/content.config.ts
+```
 
-### DNS & SSL
+| Field | Required | Description |
+| :-- | :-- | :-- |
+| `title` | Yes | Display title |
+| `pubDate` | Yes | Publication date used for sorting |
+| `updatePubDate` | No | Last update date |
+| `description` | No | Card and metadata summary |
+| `image` | Required for standalone publications and vault roots | Publication image; vault children can inherit the root image |
+| `github` | No | Related GitHub repository URL |
+| `tags` | No | Tag list; defaults to `[]` |
+| `order` | No | Manual ordering value; defaults to `100` |
 
-Managed via Cloudflare.
+---
+
+## Deployment
+
+The production build outputs static files to `dist/`.
+
+Cloudflare deployment settings live in `wrangler.json`:
+
+- Asset directory: `dist`.
+- Not-found handling: `404-page`.
+- Worker name: `albertoduran`.
+
+DNS, SSL, and production traffic are managed through Cloudflare.
 
 ---
 
 ## Guiding Principles
 
-- Static-first
-- Minimal client JavaScript
-- Directory-driven content behavior
-- Strict build-time validation
-- SPA experience without SPA cost
-- Clear separation of concerns
+- Static-first pages before runtime behavior.
+- Minimal client JavaScript.
+- Directory-driven content behavior.
+- Strict build-time validation.
+- SPA-like navigation without a full SPA runtime.
+- Clear separation of concerns.

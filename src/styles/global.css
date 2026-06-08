@@ -57,6 +57,7 @@
 
 /* ─── 9. PAGE — INDEX ───────────────────────────────────── */
 @import "./index/_hero-panel.css";
+@import "./index/_atlas-note.css";
 
 /* ─── 10. PAGE — THEJOURNAL ─────────────────────────────── */
 @import "./thejournal/article/_layout.css";

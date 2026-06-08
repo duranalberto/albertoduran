@@ -72,6 +72,10 @@ const headings = renderResult.headings.filter(
 const SIDEBAR_LEFT_WIDTH = "18rem";
 const SIDEBAR_RIGHT_WIDTH = "16rem";
 
+const vaultModalToggleId = "vault-modal-toggle";
+const otpModalToggleId = "otp-modal-toggle";
+const vaultModalDialogId = `${vaultModalToggleId}-dialog`;
+const otpModalDialogId = `${otpModalToggleId}-dialog`;
 const vaultModalTitleId = "vault-modal-title";
 const otpModalTitleId = "otp-modal-title";
 const siteManifest: SiteManifest = {
@@ -137,12 +141,12 @@ const layoutProps = {
                 {
                   vaultContext && (
                     <label
-                      for="vault-modal-toggle"
+                      for={vaultModalToggleId}
                       role="button"
                       tabindex="0"
                       class="btn btn-ghost join-item dock-btn"
                       aria-label="Open Vault Explorer"
-                      aria-controls="vault-modal-toggle"
+                      aria-controls={vaultModalDialogId}
                       aria-haspopup="dialog"
                     >
                       <SVGIcon
@@ -156,12 +160,12 @@ const layoutProps = {
                 }
 
                 <label
-                  for="otp-modal-toggle"
+                  for={otpModalToggleId}
                   role="button"
                   tabindex="0"
                   class="btn btn-ghost join-item dock-btn"
                   aria-label="Open Table of Contents"
-                  aria-controls="otp-modal-toggle"
+                  aria-controls={otpModalDialogId}
                   aria-haspopup="dialog"
                 >
                   <SVGIcon
@@ -195,7 +199,7 @@ const layoutProps = {
     {
       vaultContext && (
         <OverlayPanel
-          toggleId="vault-modal-toggle"
+          toggleId={vaultModalToggleId}
           title="Vault Explorer"
           titleId={vaultModalTitleId}
           closeLabel="Close Vault Explorer"
@@ -206,12 +210,12 @@ const layoutProps = {
     }
 
     <OverlayPanel
-      toggleId="otp-modal-toggle"
+      toggleId={otpModalToggleId}
       title="On This Page"
       titleId={otpModalTitleId}
       closeLabel="Close Table of Contents"
     >
-      <OnThisPageContent headings={headings} />
+      <OnThisPageContent headings={headings} preserveOverlayScroll />
     </OverlayPanel>
   </Fragment>
 </BaseLayout>

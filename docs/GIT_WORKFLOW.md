@@ -17,7 +17,7 @@ All development must occur inside the **VS Code DevContainer**.
 
 ### Environment
 
-- **Node**: 24.13 (Alpine Linux)
+- **Node**: 22
 - **Shell**: Zsh (Oh My Zsh + Powerlevel10k)
 - **CLI Tools**:
   - `gh` (GitHub CLI)
@@ -99,7 +99,7 @@ The formal test matrix lives in `docs/TESTING_STRATEGY.md`.
 npm test
 npm run test:coverage
 npm run test:e2e
-npm run astro check
+npm run check
 ```
 
 | Command               | Purpose                         |
@@ -107,7 +107,7 @@ npm run astro check
 | `npm test`            | Unit & component tests (Vitest) |
 | `npm run test:coverage` | Vitest coverage report |
 | `npm run test:e2e`    | End-to-end tests (Playwright)   |
-| `npm run astro check` | Astro diagnostics               |
+| `npm run check`       | Astro and TypeScript diagnostics |
 
 `npm run test:e2e` runs `npm run build:test` first, then serves the production build with `astro preview`. The test build uses deterministic Atlas and Mermaid fixtures so CI does not depend on ESPN or remote Mermaid renderers.
 
@@ -247,7 +247,7 @@ Requirements:
 Only `dev` may be merged into `master`.
 
 - Manual approval required
-- Triggers Cloudflare Pages deployment
+- Triggers the production Cloudflare deployment for the static Workers Assets build
 
 Direct merges into `master` from any other branch are rejected.
 

@@ -1,49 +1,55 @@
-# Project Roadmap & Future Integrations: albertoduran
+# Project Roadmap: albertoduran
 
-This document tracks planned features, technical integrations, and upcoming milestones to provide context for future development cycles.
+This document tracks planned features, technical integrations, and quality improvements. It should describe future work only; completed items belong in `README.md`, `docs/PROJECT_CONTEXT.md`, or `docs/TESTING_STRATEGY.md`.
 
-## 1. Technical Integrations (Planned)
+## Current Baseline
 
-### 📊 Metrics & Analytics
+- Static Astro 6 site with MDX journal content.
+- Tailwind CSS 4 and DaisyUI 5 theme system.
+- Light/dark theme persistence is implemented.
+- GitHub Actions quality workflow is in place for pull requests and pushes to `dev` or `master`.
+- Cloudflare Workers Assets deployment configuration exists in `wrangler.json`.
 
-- **Tool:** Plausible Analytics (or lightweight alternative).
-- **Goal:** Privacy-friendly tracking without heavy JS bundles.
-- **Implementation Strategy:** Add script to the main `Layout.astro` head, potentially using a Partytown integration to keep it off the main thread.
+## Planned Integrations
 
-### ☁️ Cloudflare Integration
+### Contact Form
 
-- **Platform:** Cloudflare Pages.
-- **CI/CD:** Automatic builds from `master`.
-- **Advanced Features:** Explore Cloudflare Workers for dynamic form handling on the `/contact` page if SSR becomes too heavy.
+- **Priority:** High
+- **Goal:** Add a lightweight contact workflow without compromising the static-first architecture.
+- **Likely approach:** Small client-side form enhancement plus a Cloudflare-backed endpoint.
+- **Notes:** Evaluate Cloudflare Turnstile for spam protection before implementation.
 
-### 🤖 AI Model Integration (Claude/Gemini)
+### Analytics
 
-- **Goal:** Use AI for content suggestions or automated metadata generation for `.mdx` files.
-- **Contextual Awareness:** Models should always refer to the `docs/` folder to maintain brand voice and technical standards.
+- **Priority:** Medium
+- **Goal:** Add privacy-friendly analytics with minimal JavaScript cost.
+- **Likely approach:** Plausible Analytics or a similarly lightweight provider.
+- **Constraint:** Do not add tracking until the privacy and performance tradeoffs are accepted.
 
-## 2. Feature Backlog (Pending)
+### RSS Feed
 
-| Feature                | Priority   | Tech Notes                                                                                                                     |
-| :--------------------- | :--------- | :----------------------------------------------------------------------------------------------------------------------------- |
-| **CI Test Automation** | **In place** | **GitHub Actions runs `docs/TESTING_STRATEGY.md` gates (Astro check, Vitest, Playwright) on PRs. Future work: broader browser and accessibility coverage.** |
-| **Contact Form**       | High       | Preact Island + Validation. Integration with Cloudflare Turnstile for spam.                                                    |
-| **Dark Mode**          | Medium     | DaisyUI Theme Controller + Tailwind. Persist in LocalStorage.                                                                  |
-| **RSS Feed**           | Medium     | Use `@astrojs/rss` as seen in `package.json`.                                                                                  |
-| **Blog Search**        | Low        | Static index search or Pagefind integration.                                                                                   |
+- **Priority:** Medium
+- **Goal:** Publish journal updates through an RSS feed.
+- **Likely approach:** Add an Astro-compatible RSS integration or generate the feed at build time.
+- **Constraint:** Add the dependency only when the implementation is approved; `@astrojs/rss` is not currently installed.
 
-## 3. Implementation Logic for AI
+### Journal Search
 
-When assisting with a "High" or "Medium" priority task:
+- **Priority:** Low
+- **Goal:** Make long-form journal content easier to discover.
+- **Likely approach:** Static search index or Pagefind-style indexing.
+- **Constraint:** Preserve fast static output and avoid search code that blocks initial page rendering.
 
-1. **Architecture Alignment**: Ensure the solution is compatible with the "SPA-feel" and lifecycle hooks defined in `ARCHITECTURE_AND_ROUTING.md`.
-2. **Dependency Management**: Do not introduce new dependencies without checking if an existing one (Preact, DaisyUI) can handle the task.
-3. **Verification Requirement**: Always suggest or generate a test case following `docs/TESTING_STRATEGY.md` before finalizing a feature.
-4. **Contextual Onboarding**: Before starting any task, the AI must confirm it has processed the rules defined in the **AI Usage Protocol** (located in `PROJECT_CONTEXT.md`).
+### Broader QA Coverage
 
-## 4. Implement QA
+- **Priority:** Medium
+- **Goal:** Extend the current CI gate beyond the existing Chromium Playwright suite.
+- **Candidates:** Accessibility assertions, additional browser/device coverage, visual regression snapshots, and markdown/content linting.
 
-### Quality Assurance & Testing
+## Implementation Rules for Future Work
 
-- **Vitest**: For Unit and Component testing (Preact logic).
-- **Playwright**: For End-to-End (E2E) testing (Navigation and View Transitions).
-- **Astro Check**: For static type-checking of `.astro` files.
+1. Confirm architecture and content behavior in `docs/PROJECT_CONTEXT.md`.
+2. Follow the required gates in `docs/TESTING_STRATEGY.md`.
+3. Keep the static-first model unless the feature explicitly requires a runtime service.
+4. Prefer existing components, Tailwind/DaisyUI tokens, and current integrations before adding dependencies.
+5. Update docs when a feature changes commands, deployment behavior, content schema, or developer workflow.

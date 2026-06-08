@@ -3,6 +3,9 @@ import type { BuiltWith, SocialLink } from "@appTypes/footer";
 import AlbertoDuran from "@components/ui/primitive/AlbertoDuran.astro";
 import SVGIcon from "@components/ui/primitive/SVGIcon.astro";
 import { social } from "@data/icons";
+import packageJson from "../../../package.json";
+
+const packageVersion = packageJson.version;
 
 const builtWith: BuiltWith[] = [
   { label: "Astro.js", href: "https://astro.build" },
@@ -34,7 +37,8 @@ const socialLinks: SocialLink[] = [
     <aside>
       <AlbertoDuran />
       <p class="mt-2 max-w-xs text-sm leading-relaxed text-base-content/70">
-        Software Engineer. Always learning.
+        I don't know what to write here, so... <br />Thanks for visiting! <br
+        />Have a nice day 😁
       </p>
     </aside>
 
@@ -58,7 +62,7 @@ const socialLinks: SocialLink[] = [
         rel="noopener noreferrer"
         class="mt-2 text-xs italic text-base-content/40 transition-opacity hover:opacity-100"
       >
-        Hosted by Cloudflare Workers
+        Deployed by Cloudflare Workers
       </a>
     </nav>
 
@@ -87,9 +91,7 @@ const socialLinks: SocialLink[] = [
     <div
       class="flex flex-col items-center justify-between gap-4 text-xs md:flex-row"
     >
-      <p class="text-base-content/60">
-        © {new Date().getFullYear()} Alberto Duran
-      </p>
+      <p class="text-base-content/60">{packageVersion}</p>
 
       <div class="text-base-content/40 italic">
         Designed with ❤️ and a questionable amount of sleep deprivation

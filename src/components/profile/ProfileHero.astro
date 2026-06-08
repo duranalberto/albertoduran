@@ -5,26 +5,26 @@ const props = Astro.props;
 ---
 
 <section class="hero-section relative overflow-hidden font-sans" {...props}>
-  <div class="mx-auto max-w-screen-2xl">
-    <div class="grid items-end gap-12 grid-cols-1 lg:grid-cols-12">
-      <div class="flex flex-col items-start lg:col-span-8">
+  <div class="hero-shell">
+    <div class="hero-grid">
+      <div class="hero-primary lg:col-span-7">
         <div class="hero-eyebrow" aria-hidden="true">
           <span class="hero-eyebrow-line"></span>
           <p class="hero-eyebrow-label">Technical Roadmap</p>
         </div>
 
         <h1
-          class="hero-heading font-display text-5xl md:text-7xl lg:text-8xl select-none mb-8"
+          class="hero-heading font-display text-[1.7rem] sm:text-5xl md:text-7xl lg:text-8xl select-none mb-8"
         >
           <span class="text-primary">Alberto</span>
           <span class="text-base-content">Duran</span><br />
-          <span class="text-primary">Software</span>
-          <span class="text-base-content">Engineer</span>
+          <span class="inline-block whitespace-nowrap">
+            <span class="text-primary">Software</span>
+            <span class="text-base-content">Engineer</span>
+          </span>
         </h1>
 
-        <p
-          class="hero-description text-lg leading-8 text-neutral-content md:text-xl md:leading-9 mb-10"
-        >
+        <p class="hero-description text-lg leading-relaxed text-neutral-content md:text-xl mb-8">
           Results-oriented Software Engineer with experience designing,
           optimizing, and deploying web applications and enterprise solutions.
           Analytical and delivery-focused, with an emphasis on scalable,
@@ -34,7 +34,7 @@ const props = Astro.props;
         <SocialTire />
       </div>
 
-      <div class="flex flex-col justify-end lg:items-end lg:col-span-4">
+      <div class="flex flex-col justify-end lg:items-end lg:col-span-5">
         <div class="flex flex-col lg:text-right">
           <span
             class="select-none font-display text-8xl font-black leading-none text-primary/15 md:text-9xl lg:text-[10rem]"

@@ -5,9 +5,15 @@ interface Props {
   headings: MarkdownHeading[];
   tracked?: boolean;
   compact?: boolean;
+  preserveOverlayScroll?: boolean;
 }
 
-const { headings, tracked = false, compact = false } = Astro.props;
+const {
+  headings,
+  tracked = false,
+  compact = false,
+  preserveOverlayScroll = false,
+} = Astro.props;
 ---
 
 <nav class:list={[tracked && "onthispage-nav"]} aria-label="On this page">
@@ -19,6 +25,9 @@ const { headings, tracked = false, compact = false } = Astro.props;
             href={`#${h.slug}`}
             title={h.text}
             data-state="inactive"
+            data-overlay-preserve-page-scroll={
+              preserveOverlayScroll ? true : undefined
+            }
             class:list={[
               "onthispage-link nav-item flex items-center relative w-full",
               "pr-4 border-l-0 xl:border-l-4 border-transparent",

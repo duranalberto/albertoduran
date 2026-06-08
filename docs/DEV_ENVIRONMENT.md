@@ -1,108 +1,73 @@
 # Development Environment Setup Guide: albertoduran
 
-This document provides a comprehensive guide to the containerized development environment (DevContainer) used in this Astro, Preact, and TailwindCSS project.
+This project uses a VS Code DevContainer so local development matches the CI runtime closely.
 
 ## 1. Overview
 
-We utilize **VS Code DevContainers** to ensure every developer works in an identical, pre-configured environment. This eliminates "it works on my machine" issues by encapsulating the operating system, tools, runtime (Node.js), and editor extensions within a Docker container.
+The DevContainer provides:
 
-## 2. Minimum Requirements (Host Machine)
+- Node 22 through `mcr.microsoft.com/devcontainers/javascript-node:22`.
+- GitHub CLI through the devcontainer feature in `.devcontainer/devcontainer.json`.
+- Zsh with Oh My Zsh, Powerlevel10k, autosuggestions, and syntax highlighting.
+- Project dependencies installed by the `postCreateCommand`.
+- VS Code extensions for Astro, MDX, Tailwind CSS, ESLint, Prettier, spell checking, markdown linting, and GitHub workflows.
 
-Before cloning the repository, ensure your local machine meets these requirements:
+## 2. Host Requirements
 
-1. **Docker Desktop:** Installed and running.
-2. **Visual Studio Code:** Latest version.
-3. **Dev Containers Extension:** Official extension by Microsoft.
-4. **Font Installation (Crucial):**
-   - The container terminal uses **"FiraCode Nerd Font"** to render icons (Git branches, file types).
-   - **Action:** Download and install a Nerd Font on your **host operating system**.
-   - [Download FiraCode Nerd Font](https://www.nerdfonts.com/font-downloads)
+Before opening the container, install:
 
-## 3. Quick Start for Developers
+1. Docker Desktop or another compatible Docker runtime.
+2. Visual Studio Code.
+3. The Microsoft Dev Containers extension.
+4. A Nerd Font on the host if you want terminal prompt icons to render correctly.
 
-Follow these steps to spin up the environment:
-
-### Step 1: Clone and Prepare Secrets
-
-The project uses a secure `.env` strategy. The `.devcontainer` folder contains an example file, but strictly ignores the real secrets file.
+## 3. Quick Start
 
 1. Clone the repository.
-2. Navigate to the `.devcontainer/` folder.
-3. Create a copy of the example file:
-   `cp .devcontainer/.env.example .devcontainer/.env`
+2. Open the repository root in VS Code.
+3. Choose **Reopen in Container** when prompted.
+4. Wait for `npm install` to finish.
+5. Run `npm run dev` from the repository root.
 
-Optional: Open `.devcontainer/.env` and add your `GITHUB_TOKEN` for `gh` CLI auto-authentication.
+The dev server runs on port `4321`. The container forwards that port and labels it as the Astro preview/dev port.
 
-### Step 2: Build the Container
+## 4. GitHub CLI Authentication
 
-1. Open the project root folder in VS Code.
-2. When the notification appears, click **Reopen in Container**.
-3. _Alternative:_ Press `F1` and run **Dev Containers: Reopen in Container**.
+The container installs `gh`, but it does not create or manage a project secrets file. Authenticate manually when needed:
 
----
+```bash
+gh auth login
+```
 
-## 4. What is Being Built?
+If your host environment already forwards GitHub credentials, `gh` may reuse them.
 
-### The Operating System (Dockerfile)
+## 5. VS Code Configuration
 
-We build upon **Node.js 24.13 (LTS) Alpine**.
+Project settings live in `.vscode/settings.json`; container-specific settings live in `.devcontainer/devcontainer.json`.
 
-**Key Components Installed:**
+Important defaults:
 
-- **Zsh (Z Shell):** Enhanced interactive shell.
-- **Oh My Zsh:** Framework for Zsh management.
-- **Powerlevel10k:** Theme configured for minimalism (relative path + git status only).
-- **GitHub CLI (gh):** Tool for interacting with GitHub directly from the terminal.
-- **Testing Infrastructure:**
-  - **Vitest:** Installed through `npm install` for unit and integration testing.
-  - **Playwright:** Installed through `npm install`; Chromium browser dependencies are installed locally with `npx playwright install --with-deps chromium` when needed.
-  - **Source of truth:** See `docs/TESTING_STRATEGY.md` for test commands, fixture flags, and CI behavior.
+- `formatOnSave` is enabled.
+- Astro, MDX, TypeScript, JavaScript, JSON, and JSONC use configured formatters.
+- Tailwind CSS IntelliSense is associated with Astro and MDX files.
+- The integrated terminal exports `HOST=0.0.0.0` so Astro binds correctly inside the container.
+- The project dictionary lives at `.vscode/dictionary.txt`.
 
-### Intelligent Secret Management
+## 6. Test and Quality Tools
 
-- It looks for a `.env` file in the `.devcontainer` folder.
-- If a `GITHUB_TOKEN` is present, the `gh` CLI is automatically authenticated.
-- Fallback: If no token is found, the shell notifies the user and reverts to standard host credential forwarding.
+Project quality commands are installed through `npm install`:
 
----
+```bash
+npm run check
+npm test
+npm run test:e2e
+```
 
-## 5. VS Code Configuration & Extensions
+Playwright browser dependencies are installed in CI before the e2e suite. For local e2e troubleshooting, run:
 
-The setup is split between `devcontainer.json` (infrastructure/fonts) and `.vscode/settings.json` (project logic).
+```bash
+npx playwright install --with-deps chromium
+npm run test:e2e
+```
 
-### Grouped Extension Strategy
-
-- **UI & Aesthetics:** **Monokai++** for syntax and **Material Icon Theme** for the file explorer.
-- **Core Logic:** Official **Astro**, **MDX**, and **TypeScript** support, plus React/Preact snippets.
-- **Styling:** **Tailwind CSS** IntelliSense and custom regex for class detection.
-- **QA & Formatting:** - **ESLint/Prettier/Markdownlint:** Maintain code and structure quality.
-  - **Code Spell Checker:** Manages professionalism in code and documentation via a dedicated project dictionary located at `.vscode/dictionary.txt`.
-- **Collaboration:** **Better Git Line Blame**, **GitGraph**, and **GitHub Pull Requests** for seamless teamwork.
-
-### Project Settings (`.vscode/settings.json`)
-
-To ensure consistency across all environments, the following logic is standardized in the repository:
-
-- **Formatting:** `formatOnSave` enabled; Prettier handles `.astro`, `.mdx`, `.jsx`, and `.tsx` files.
-- **Astro/MDX Optimization:** Includes Emmet support and Tailwind CSS language associations.
-- **Auto-Imports:** JavaScript and TypeScript are configured to suggest and update imports on file moves automatically.
-- **Spell Checker:** Linked to a local dictionary file to keep the configuration clean and portable.
-
-### Container UI Overrides (`devcontainer.json`)
-
-The following settings are applied specifically when running inside the container:
-
-- **Font Ligatures:** Enabled for "Fira Code" (e.g., `=>` becomes a single arrow).
-- **Terminal:** Integrated terminal set to `zsh` with "FiraCode Nerd Font" for icon rendering.
-
----
-
-## 6. Detailed Dockerfile Breakdown
-
-The construction follows these logical steps:
-
-1. **Base Layer:** Uses `node:24.13-alpine`.
-2. **Dependencies:** Uses the JavaScript/Node devcontainer image and installs GitHub CLI through the devcontainer feature. Project test tools are installed by `npm install`.
-3. **User Context:** Switches to `USER node` for security.
-4. **Zsh Setup:** Installs Oh My Zsh, Powerlevel10k, and plugins (`autosuggestions`, `syntax-highlighting`).
-5. **Dynamic Configuration:** Injects settings into `~/.zshrc` to handle the minimalist prompt and GITHUB_TOKEN export logic.
+See `docs/TESTING_STRATEGY.md` for the full quality gate and fixture behavior.

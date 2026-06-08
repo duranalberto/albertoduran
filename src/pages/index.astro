@@ -1,5 +1,6 @@
 ---
 import { type EntryContext } from "@appTypes/content_context";
+import AtlasNote from "@components/index/AtlasNote.astro";
 import AtlasStats from "@components/index/AtlasStats.astro";
 import IndexHero from "@components/index/IndexHero.astro";
 import ProfileView from "@components/index/ProfileView.astro";
@@ -7,6 +8,7 @@ import Quote from "@components/index/Quote.astro";
 import JournalGrid from "@components/shared/JournalGrid.astro";
 import ProjectsGrid from "@components/shared/ProjectsGrid.astro";
 import SectionHeader from "@components/ui/display/SectionHeader.astro";
+import OverlayPanel from "@components/ui/primitive/OverlayPanel.astro";
 import { entryManifest } from "@content/processors/thejournal";
 import about from "@data/about";
 import { sitesManifest } from "@data/site_manifest";
@@ -26,6 +28,10 @@ const manifestMap = new Map(
 const catalog = Array.from(publications)
   .map((id) => manifestMap.get(id))
   .filter((entry): entry is EntryContext => !!entry);
+
+const atlasNoteToggleId = "atlas-story-modal";
+const untitledOverlayTestToggleId = "untitled-overlay-test-modal";
+const isTestMode = process.env.ALBERTODURAN_TEST_MODE === "true";
 ---
 
 <BaseLayout siteManifest={sitesManifest["/"]}>
@@ -39,7 +45,7 @@ const catalog = Array.from(publications)
       <ProjectsGrid projects={about.projects} />
     </FlexShell>
 
-    <AtlasStats />
+    <AtlasStats noteToggleId={atlasNoteToggleId} />
 
     <FlexShell>
       <SectionHeader
@@ -51,5 +57,56 @@ const catalog = Array.from(publications)
     </FlexShell>
 
     <Quote />
+
+    {
+      isTestMode && (
+        <FlexShell>
+          <label
+            for={untitledOverlayTestToggleId}
+            role="button"
+            tabindex="0"
+            aria-haspopup="dialog"
+            class="btn btn-sm"
+          >
+            Open untitled overlay test
+          </label>
+        </FlexShell>
+      )
+    }
   </div>
+
+  <Fragment slot="overlays">
+    <OverlayPanel
+      toggleId={atlasNoteToggleId}
+      ariaLabel="Atlas championship story"
+      closeLabel="Close Atlas story"
+      maxWidthClass="sm:max-w-2xl"
+      boxClass="atlas-note-panel"
+      scrollClass="atlas-note-scroll"
+    >
+      <AtlasNote />
+    </OverlayPanel>
+
+    {
+      isTestMode && (
+        <OverlayPanel
+          toggleId={untitledOverlayTestToggleId}
+          ariaLabel="Untitled overlay test"
+          closeLabel="Close untitled overlay test"
+          maxWidthClass="sm:max-w-lg"
+        >
+          <div class="space-y-6" data-untitled-overlay-body>
+            <p>Untitled overlay body starts at the top of the panel.</p>
+            {Array.from({ length: 24 }, (_, index) => (
+              <p>
+                Scroll fixture row {index + 1}: enough content to verify the
+                floating close button stays anchored while the panel body
+                scrolls.
+              </p>
+            ))}
+          </div>
+        </OverlayPanel>
+      )
+    }
+  </Fragment>
 </BaseLayout>

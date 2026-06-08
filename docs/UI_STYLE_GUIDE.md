@@ -67,7 +67,7 @@ Order: Base -> Modifiers -> Layout -> Spacing -> Typography -> Colors -> Borders
 
 To ensure accessibility and visual harmony, always pair background semantic colors with their corresponding content tokens. Never use a base content color on a primary background.
 
-As example:
+For example:
 
 | Color Name          | CSS Variable              | Usage                                                    |
 | :------------------ | :------------------------ | :------------------------------------------------------- |
@@ -105,7 +105,7 @@ If a component requires structural layout changes:
 ## What Must Be Avoided
 
 - **Clutter:** Crowding elements without sufficient whitespace padding.
-- **Hardcoded Values:** Hex colors or non-theme structural values, refer theme variables.
+- **Hardcoded Values:** Hex colors or non-theme structural values; prefer theme variables.
 - **Inaccessibility:** Missing `aria-labels` or poor contrast ratios (e.g., using `text-base-content` on `bg-primary`).
 - **Poor Responsive Design:** Missing breakpoint rules or failing to cap widths with `--breakpoint-2xl` and `mx-auto`.
 
@@ -118,7 +118,7 @@ If a component requires structural layout changes:
 - [ ] Are colors correctly paired for contrast (e.g., `primary` + `primary-content`)?
 - [ ] Does the visual check pass seamlessly in both Light and Dark themes?
 - [ ] Are structural overrides strictly component-scoped and not leaking globally?
-- [ ] Is the design fully responsive and using the tailwind and daisyui breakpoints?
+- [ ] Is the design fully responsive and using Tailwind and DaisyUI breakpoints?
 - [ ] Are interactive elements keyboard accessible (`:focus-visible`)?
 
 ---
@@ -126,8 +126,6 @@ If a component requires structural layout changes:
 ## Enforcement Philosophy
 
 The design system must be theme-driven, consistent, and predictable. If a new design requirement conflicts with these rules, **update the theme tokens**—not the individual components.
-
-Would you like me to create a reusable Astro component snippet that implements the primary/primary-content pairing and the max-width layout tokens?
 
 ---
 
@@ -154,4 +152,3 @@ Level 30: dock-wrapper (Sticky bottom).
 Level 40: .modal (The container and backdrop).
 
 Level 50: .modal-box (The actual content card).
-No fluff—this is a drop-in replacement with only necessary changes.

@@ -1,255 +1,171 @@
-# albertoduran
+# albertoduran Project Context
 
-High-performance personal portfolio and publishing platform built with **Astro**.  
-Static-first architecture with SPA-like navigation and structured long-form content support.
+This repository is a static-first Astro publishing site for albertoduran.com. It combines a personal portfolio, profile pages, and a long-form MDX journal with directory-driven vault navigation.
 
----
+## Overview
 
-## ✨ Overview
+The project is designed to:
 
-This project is designed to:
+- Deliver static HTML with strong SEO and performance.
+- Provide smooth internal navigation with Astro view transitions.
+- Support standalone publications and nested journal vaults.
+- Keep client-side JavaScript limited to progressive enhancement.
+- Validate content and generated routes at build time.
 
-- Deliver excellent performance and SEO
-- Provide seamless, SPA-like page transitions
-- Support single publications and vault of publication
-- Maintain strict architectural boundaries
-- Minimize client-side JavaScript
+Astro is configured with `output: "static"` in `astro.config.mjs`. Runtime browser code exists for enhancements such as theme persistence, Mermaid diagram interactions, Atlas schedule rendering, and article navigation behavior.
 
-The system combines **Static Site Generation (SSG)**, selective **SSR**, and targeted client-side hydration using Astro Islands.
+## Tech Stack
 
----
+| Area | Current implementation |
+| :-- | :-- |
+| Framework | Astro `^6.4.4` |
+| Content | Astro content collections and MDX |
+| Styling | Tailwind CSS `^4.3.0` and DaisyUI `^5.5.20` |
+| Diagrams | Custom Mermaid integration that emits themed static SVG assets |
+| HTML output | Custom HTML minifier integration |
+| Tests | Astro Check, Vitest, and Playwright |
+| Deployment config | Cloudflare Workers Assets via `wrangler.json` |
 
-## 🧱 Architecture
+## Architecture
 
-### Static-First Philosophy
+### Static-First Rendering
 
-All content and layouts render as static HTML by default.  
-Client-side JavaScript is added **only when required**.
+All routes are generated as static pages. Build-time integrations handle content processing, Mermaid rendering, image optimization, and HTML minification before the site is deployed.
 
-| Layer            | Usage                                 |
-| ---------------- | ------------------------------------- |
-| Static HTML      | Default rendering mode                |
-| SSR              | When dynamic runtime data is required |
-| Client Hydration | Interactive components only           |
+Client-side scripts are loaded only where they improve the experience:
 
-This keeps bundle size small and performance high.
+- `src/runtime/managers/theme_manager.ts` keeps light/dark theme state synchronized.
+- `src/runtime/elements/on-this-page.ts` enhances article heading navigation.
+- `src/runtime/elements/mermaid-diagram-shell.ts` handles Mermaid diagram expansion and theme-specific assets.
+- `src/runtime/elements/atlas-schedule.ts` enhances Atlas schedule display.
 
----
+### View Transitions
 
-### 🚀 SPA-like Navigation
+`BaseLayout.astro` owns the shared document shell, view-transition setup, theme bootstrap, and runtime imports. Internal navigation should preserve the SPA-like feel while still serving static pages.
 
-The project uses Astro View Transitions to provide seamless internal navigation without full page reloads.
+### Content Processing
 
-#### Implementation Rules
+The journal uses the `thejournal` content collection in `src/content.config.ts`. Source files live under `src/thejournal/`.
 
-- `<ViewTransitions />` is included in the main layout.
-- Only missing assets are fetched on navigation.
-- Content is swapped during transitions.
-- Navigation, header, and footer remain visually stable.
+The manifest builder in `src/content/processors/thejournal-manifest.ts` maps raw collection entries into:
 
-If a component needs state persistence across transitions:
+- Standalone publication contexts.
+- Vault root contexts.
+- Nested vault item trees.
+- Previous and next links.
+- Read-time estimates.
+- Inherited vault images for child entries when needed.
 
-```astro
-<MyComponent transition:persist />
-```
+## Project Structure
 
-- Add other transitions
-
----
-
-## 🛠 Tech Stack
-
-### Core Frameworks
-
-- **Astro v5.17.x** – Routing, SSG, SSR
-- **Tailwind CSS v4.1.x** – Utility-first styling
-- **DaisyUI v5.5.x** – Component system for Tailwind
-
----
-
-## 📂 Project Structure
-
-```plaintext
+```text
 albertoduran/
-├─ .devcontainer/
-│  ├─ .env
-│  ├─ .env.example
-│  ├─ devcontainer.json
-│  └─ Dockerfile
-├─ .vscode/
-│  ├─ dictionary.txt
-│  ├─ launch.json
-│  └─ settings.json
-├─ docs/
-│  ├─ AI_PROTOCOL.md
-│  ├─ DEV_ENVIRONMENT.md
-│  ├─ GIT_WORKFLOW.md
-│  ├─ PROJECT_CONTEXT.md
-│  ├─ ROADMAP.md
-│  └─ UI_STYLE_GUIDE.md
-├─ public/
-│  ├─ fonts/
-│  │  ├─ FiraCode.woff2
-│  │  ├─ Montserrat.woff2
-│  │  └─ NotoSansDisplay.woff2
-│  └─ favicon.svg
+├─ .devcontainer/           # Node 22 VS Code DevContainer
+├─ .github/workflows/       # Quality workflow
+├─ docs/                    # Internal project documentation
+├─ public/                  # Static public assets and headers
 ├─ src/
-│  ├─ assets/
-│  ├─ components/
-│  │  ├─ common/
-│  │  │  ├─ Footer.astro
-│  │  │  ├─ Header.astro
-│  │  │  ├─ JournalCard.astro
-│  │  │  ├─ JournalGrid.astro
-│  │  │  ├─ NavDrawer.astro
-│  │  │  └─ ProjectsGrid.astro
-│  │  ├─ sections/
-│  │  │  ├─ index/
-│  │  │  │  ├─ AtlasStats.astro
-│  │  │  │  ├─ IndexHero.astro
-│  │  │  │  ├─ ProfileView.astro
-│  │  │  │  └─ Quote.astro
-│  │  │  ├─ profile/
-│  │  │  │  ├─ AwardsGrid.astro
-│  │  │  │  ├─ CertificationsList.astro
-│  │  │  │  ├─ EducationList.astro
-│  │  │  │  ├─ ExperienceTimeline.astro
-│  │  │  │  ├─ ProfileHero.astro
-│  │  │  │  └─ SkillsGrid.astro
-│  │  │  └─ thejournal/
-│  │  │     ├─ Article.astro
-│  │  │     ├─ JournalHero.astro
-│  │  │     ├─ OnThisPage.astro
-│  │  │     ├─ Pagination.astro
-│  │  │     ├─ PublicationHeader.astro
-│  │  │     └─ TableOfContent.astro
-│  │  └─ ui/
-│  │     ├─ AlbertoDuran.astro
-│  │     ├─ Button.astro
-│  │     ├─ CodeBlock.astro
-│  │     ├─ ErrorHero.astro
-│  │     ├─ HeadingAnchor.astro
-│  │     ├─ SectionHeader.astro
-│  │     ├─ StripBackground.astro
-│  │     ├─ SVGIcon.astro
-│  │     ├─ ThemeToggle.astro
-│  │     └─ VaultTreeNode.astro
-│  ├─ data/
-│  │  ├─ about.ts
-│  │  └─ icons.ts
-│  ├─ layouts/
-│  │  ├─ BaseCard.astro
-│  │  ├─ BaseLayout.astro
-│  │  ├─ FlexShell.astro
-│  │  └─ ParallaxHero.astro
-│  ├─ pages/
-│  │  ├─ thejournal/
-│  │  │  └─ [...slug].astro
-│  │  ├─ 404.astro
-│  │  ├─ index.astro
-│  │  ├─ profile.astro
-│  │  └─ thejournal.astro
-│  ├─ styles/
-│  │  ├─ glass.css
-│  │  ├─ global.css
-│  │  ├─ mockup-code.css
-│  │  └─ typography-bundle.css
-│  ├─ thejournal/
-│  ├─ types/
-│  │  ├─ about.ts
-│  │  ├─ atlas_data.ts
-│  │  ├─ button.ts
-│  │  ├─ content_context.ts
-│  │  ├─ espn.ts
-│  │  ├─ footer.ts
-│  │  ├─ icon.ts
-│  │  ├─ navigation.ts
-│  │  └─ profile_view.ts
-│  ├─ utils/
-│  │  ├─ atlas_schedule.ts
-│  │  ├─ atlas_service.ts
-│  │  ├─ brave_ios_router_fix.ts
-│  │  ├─ is_brave_ios.ts
-│  │  ├─ ribbon.ts
-│  │  └─ thejournal_manifest.ts
-│  └─ content.config.ts
-├─ .gitignore
+│  ├─ assets/               # Local images and fonts
+│  ├─ components/           # Astro components by feature area
+│  ├─ content/              # Journal processors and manifest logic
+│  ├─ data/                 # Site, profile, icon, and manifest data
+│  ├─ integrations/         # Mermaid and HTML minifier integrations
+│  ├─ layouts/              # Shared Astro layouts
+│  ├─ pages/                # File-based route entry points
+│  ├─ runtime/              # Browser-side progressive enhancements
+│  ├─ styles/               # Global CSS, themes, utilities, and page styles
+│  ├─ thejournal/           # MDX publications and vaults
+│  ├─ types/                # Shared TypeScript types
+│  └─ utils/                # Shared utilities
 ├─ astro.config.mjs
-├─ package-lock.json
 ├─ package.json
-├─ README.md
-└─ tsconfig.json
-
+├─ playwright.config.ts
+├─ vitest.config.ts
+└─ wrangler.json
 ```
 
----
+## Routes
 
-## 🧭 Routing
+Routing is file-based and owned by `src/pages/`.
 
-Routing is file-based and owned exclusively by `src/pages/`.
+| Route | File | Description |
+| :-- | :-- | :-- |
+| `/` | `src/pages/index.astro` | Home page |
+| `/profile/` | `src/pages/profile.astro` | Professional profile |
+| `/404/` | `src/pages/404.astro` | Static 404 page |
+| `/thejournal/` | `src/pages/thejournal.astro` | Journal index |
+| `/thejournal/[...slug]/` | `src/pages/thejournal/[...slug].astro` | Standalone articles, vault roots, and nested vault articles |
 
-| Route                             | File                         | Description                        |
-| --------------------------------- | ---------------------------- | ---------------------------------- |
-| `/`                               | `index.astro`                | About / Bio                        |
-| `/profile`                        | `profile.astro`              | Professional Profile               |
-| `/404`                            | `404.astro`                  | 404 error page                     |
-| `/thejournal`                     | `thejournal/index.astro`     | The Journal Home                   |
-| `/thejournal/[slug]`              | `thejournal/[...slug].astro` | Individual publication             |
-| `/thejournal/[vaultId]/[...slug]` | `thejournal/[...slug].astro` | A vault groups common publications |
+Astro is configured with `trailingSlash: "always"`, so generated canonical URLs include trailing slashes.
 
----
+## theJournal Content Model
 
-## 📚 theJournal Collection System
-
-- Give a quick overview of what is an astro collection
-- Explain how the the astro collection is configured
-- How publications and vaults are loaded (explain the script and their export)
-- What is a publication
-- What is a vault (name inspired from vaults in Obsidian), how is structured
-
-## 📝 Frontmatter Schema
-
-Defined in:
+The journal collection is configured in `src/content.config.ts`:
 
 ```ts
-// src/content/config.ts
+const thejournal = defineCollection({
+  loader: glob({
+    pattern: "**/[^_]*.{md,mdx}",
+    base: "./src/thejournal",
+  }),
+  schema: ({ image }) =>
+    z.object({
+      title: z.string(),
+      github: z.string().optional(),
+      image: image().optional(),
+      description: z.string().default("Without description available."),
+      pubDate: z.coerce.date(),
+      updatePubDate: z.coerce.date().optional(),
+      tags: z.array(z.string()).default([]),
+      order: z.number().default(100),
+    }),
+});
 ```
 
-| Field         | Required | Description               |
-| ------------- | -------- | ------------------------- |
-| `title`       | Yes      | Display title             |
-| `pubDate`     | Yes      | Used for sorting          |
-| `description` | No       | Card preview              |
-| `image`       | No       | Image of the publication  |
-| `github`      | No       | Github repository         |
-| `tags`        | No       | Defaults to []            |
-| `order`       | No       | Default: 100 (for Vaults) |
+| Field | Required | Description |
+| :-- | :-- | :-- |
+| `title` | Yes | Display title |
+| `pubDate` | Yes | Publication date used for sorting |
+| `updatePubDate` | No | Last update date |
+| `description` | No | Card and metadata summary; defaults when omitted |
+| `image` | Required for standalone publications and vault roots | Publication image; child vault entries can inherit the vault root image |
+| `github` | No | Related GitHub repository URL |
+| `tags` | No | Tag list; defaults to `[]` |
+| `order` | No | Manual ordering value; defaults to `100` |
 
----
+A vault is any first-level folder under `src/thejournal/` with an `index.mdx`. Nested folders can form sub-vault sections when they also include an `index.mdx`.
 
-## 🚢 Deployment
+## Testing and CI
 
-### Hosting
+The test strategy lives in `docs/TESTING_STRATEGY.md`.
 
-- Cloudflare Workers
-- Auto-deploy from `master` branch
+Required quality commands:
 
-### DNS & SSL
+```bash
+npm run check
+npm test
+npm run test:e2e
+```
 
-Managed via Cloudflare.
+`.github/workflows/quality.yml` runs the same quality gate on pull requests and pushes to `dev` or `master`.
 
-### Analytics
+## Deployment
 
-- Plausible Analytics (planned)
-- Do not implement tracking until officially integrated
+The production build is static output in `dist/`.
 
----
+Cloudflare Workers Assets settings live in `wrangler.json`:
 
-## 🏗 Guiding Principles
+- Worker name: `albertoduran`
+- Asset directory: `dist`
+- 404 handling: `404-page`
 
-- Static-first
-- Minimal client JavaScript
-- Directory-driven content behavior
-- Strict build-time validation
-- SPA experience without SPA cost
-- Clear separation of concerns
+DNS, SSL, and production traffic are managed through Cloudflare.
+
+## Guiding Principles
+
+- Static-first pages before runtime behavior.
+- Progressive enhancement over mandatory client JavaScript.
+- Directory-driven content behavior.
+- Strict build-time validation.
+- Smooth internal navigation without turning the app into a full SPA.
+- Clear ownership boundaries between content, components, runtime enhancement, and integrations.

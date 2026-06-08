@@ -6,6 +6,12 @@ import GlassPanel from "@components/ui/primitive/GlassPanel.astro";
 import { Picture, getImage } from "astro:assets";
 import { getEntry } from "astro:content";
 
+interface Props {
+  noteToggleId?: string;
+}
+
+const { noteToggleId = "atlas-story-modal" } = Astro.props;
+
 const entry = await getEntry("atlasData", "current-match");
 const buildData = entry?.data;
 
@@ -131,10 +137,7 @@ const desktopWebp = await getImage({
     <atlas-schedule class="flex flex-col gap-8 lg:gap-10 w-full lg:w-[65%]">
       <div id="match-content" class="flex flex-col gap-8 lg:gap-10 w-full">
         <!-- Stats Cards: Standing, Record, Points -->
-        <GlassPanel
-          as="section"
-          class="flex flex-col w-full overflow-hidden"
-        >
+        <GlassPanel as="section" class="flex flex-col w-full overflow-hidden">
           <div class="flex flex-col gap-0 w-full">
             <div
               class="metric-card flex items-end justify-between py-4 px-8 min-w-0 transition-transform duration-300 hover:scale-[1.03]"
@@ -177,7 +180,9 @@ const desktopWebp = await getImage({
           as="section"
           class="flex flex-col lg:flex-row w-full overflow-hidden"
         >
-          <div class="metric-card flex-2 py-8 px-8 transition-transform duration-300 hover:scale-[1.03]">
+          <div
+            class="metric-card flex-2 py-8 px-8 transition-transform duration-300 hover:scale-[1.03]"
+          >
             <div
               class="flex flex-col text-3xl font-extrabold uppercase md:text-5xl"
             >
@@ -229,6 +234,20 @@ const desktopWebp = await getImage({
             </div>
           </div>
         </GlassPanel>
+      </div>
+
+      <div class="w-full">
+        <label
+          for={noteToggleId}
+          role="button"
+          tabindex="0"
+          class="btn btn-primary btn-lg inline-flex w-full items-center justify-center gap-3 normal-case font-medium text-base shadow-lg transition-transform hover:scale-105 active:scale-95"
+          aria-label="If I explain it to you, you won’t understand."
+          aria-controls={`${noteToggleId}-dialog`}
+          aria-haspopup="dialog"
+        >
+          <span>If I explain it to you, you won&rsquo;t understand.</span>
+        </label>
       </div>
     </atlas-schedule>
   </div>

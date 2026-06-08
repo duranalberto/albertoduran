@@ -116,9 +116,9 @@ const desktopWebp = await getImage({
   </picture>
 
   <div
-    class="flex flex-col lg:flex-row items-stretch justify-center gap-8 lg:gap-10 max-w-7xl mx-auto px-4 w-full"
+    class="flex flex-col xl:flex-row items-stretch justify-center gap-8 xl:gap-10 max-w-7xl mx-auto px-4 w-full"
   >
-    <div class="flex items-center justify-center w-full lg:w-[35%]">
+    <div class="flex items-center justify-center w-full xl:w-[35%] min-w-0">
       <Picture
         src={srcImage}
         alt="Atlas FC"
@@ -134,13 +134,13 @@ const desktopWebp = await getImage({
       />
     </div>
 
-    <atlas-schedule class="flex flex-col gap-8 lg:gap-10 w-full lg:w-[65%]">
-      <div id="match-content" class="flex flex-col gap-8 lg:gap-10 w-full">
+    <atlas-schedule class="flex flex-col gap-8 xl:gap-10 w-full xl:w-[65%] min-w-0">
+      <div id="match-content" class="flex flex-col gap-8 xl:gap-10 w-full min-w-0">
         <!-- Stats Cards: Standing, Record, Points -->
         <GlassPanel as="section" class="flex flex-col w-full overflow-hidden">
           <div class="flex flex-col gap-0 w-full">
             <div
-              class="metric-card flex items-end justify-between py-4 px-8 min-w-0 transition-transform duration-300 hover:scale-[1.03]"
+              class="metric-card flex min-w-0 items-end justify-between py-4 px-8 transition-transform duration-300 hover:scale-[1.03]"
             >
               <span
                 class="text-xs uppercase tracking-widest font-bold opacity-60"
@@ -151,7 +151,7 @@ const desktopWebp = await getImage({
               >
             </div>
             <div
-              class="metric-card flex items-end justify-between py-4 px-8 border-t border-base-content/10 transition-transform duration-300 hover:scale-[1.03]"
+              class="metric-card flex min-w-0 items-end justify-between py-4 px-8 border-t border-base-content/10 transition-transform duration-300 hover:scale-[1.03]"
             >
               <span
                 class="text-xs uppercase tracking-widest font-bold opacity-60"
@@ -162,7 +162,7 @@ const desktopWebp = await getImage({
               >
             </div>
             <div
-              class="metric-card flex items-end justify-between py-4 px-8 border-t border-base-content/10 transition-transform duration-300 hover:scale-[1.03]"
+              class="metric-card flex min-w-0 items-end justify-between py-4 px-8 border-t border-base-content/10 transition-transform duration-300 hover:scale-[1.03]"
             >
               <span
                 class="text-xs uppercase tracking-widest font-bold opacity-60"
@@ -178,10 +178,10 @@ const desktopWebp = await getImage({
         <!-- Match Details: Teams, Date, Stadium -->
         <GlassPanel
           as="section"
-          class="flex flex-col lg:flex-row w-full overflow-hidden"
+          class="flex flex-col xl:flex-row w-full overflow-hidden"
         >
           <div
-            class="metric-card flex-2 py-8 px-8 transition-transform duration-300 hover:scale-[1.03]"
+            class="metric-card flex-2 py-8 px-8 min-w-0 transition-transform duration-300 hover:scale-[1.03]"
           >
             <div
               class="flex flex-col text-3xl font-extrabold uppercase md:text-5xl"
@@ -207,7 +207,7 @@ const desktopWebp = await getImage({
           </div>
 
           <div
-            class="metric-card flex-1 flex flex-col gap-6 p-8 border-t lg:border-t-0 lg:border-l border-base-content/10 bg-base-content/5 transition-transform duration-300 hover:scale-[1.03]"
+            class="metric-card flex-1 flex min-w-0 flex-col gap-6 p-8 border-t xl:border-t-0 xl:border-l border-base-content/10 bg-base-content/5 transition-transform duration-300 hover:scale-[1.03]"
           >
             <div>
               <span class="block text-xs font-bold uppercase opacity-60"

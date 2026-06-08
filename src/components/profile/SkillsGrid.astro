@@ -9,16 +9,16 @@ interface Props {
 const { skills } = Astro.props;
 ---
 
-<div class="grid grid-cols-1 md:grid-cols-3 gap-16">
+<div class="grid grid-cols-1 gap-12 lg:grid-cols-3 lg:gap-16">
   {
     skills.map((skill) => (
       <div class="flex flex-col gap-8">
         <h3 class="font-display min-h-8 flex items-end text-md font-bold tracking-[0.32em] uppercase text-neutral-content opacity-90">
           {skill.category}
         </h3>
-        <div class="flex flex-wrap justify-start gap-x-10 gap-y-10">
+        <div class="grid grid-cols-[repeat(auto-fit,minmax(5.5rem,1fr))] gap-x-8 gap-y-10">
           {skill.skills_icons.map((skill_icon) => (
-            <div class="flex flex-col items-center gap-4 w-24">
+            <div class="flex w-full min-w-0 max-w-24 flex-col items-center gap-4 justify-self-center">
               <div class="text-neutral-content opacity-90">
                 <SVGIcon icon={skill_icon} class="h-20 w-20" />
               </div>

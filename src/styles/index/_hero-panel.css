@@ -95,7 +95,7 @@
   gap: 0.75rem;
   /* Increased padding for better vertical rhythm */
   padding: 0.75rem 0;
-  border-bottom: 1px solid
+  border-bottom: var(--border) solid
     color-mix(in oklab, var(--color-base-content) 6%, transparent);
 
   opacity: 0;
@@ -162,7 +162,7 @@
     var(--color-base-content) 4%,
     transparent
   );
-  border: 1px solid
+  border: var(--border) solid
     color-mix(in oklab, var(--color-base-content) 7%, transparent);
   opacity: 0;
   animation: hero-panel-tile-in 0.35s ease forwards;

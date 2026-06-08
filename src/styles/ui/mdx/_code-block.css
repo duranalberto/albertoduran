@@ -68,9 +68,9 @@ samp {
   content: "";
   opacity: 1 !important;
   box-shadow:
-    1.2em 0 0 rgba(0, 0, 0, 0.1),
-    2.8em 0 0 rgba(0, 0, 0, 0.1),
-    4.4em 0 0 rgba(0, 0, 0, 0.1) !important;
+    1.2em 0 0 rgb(var(--shadow-color-base) / 0.1),
+    2.8em 0 0 rgb(var(--shadow-color-base) / 0.1),
+    4.4em 0 0 rgb(var(--shadow-color-base) / 0.1) !important;
 }
 
 [data-theme="dark"] .mockup-code {

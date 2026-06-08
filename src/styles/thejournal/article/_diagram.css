@@ -31,7 +31,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--color-error);
+  border: var(--border) solid var(--color-error);
   background-color: color-mix(in oklab, var(--color-error) 10%, transparent);
   color: var(--color-error);
   padding: 1rem;
@@ -46,7 +46,7 @@
   display: block;
   margin-block: 2rem;
   border-radius: var(--radius-box);
-  border: 1px solid
+  border: var(--border) solid
     color-mix(in oklab, var(--color-base-content) 10%, transparent);
   overflow: hidden;
   background-color: var(--color-base-100);
@@ -54,7 +54,7 @@
 
 .diagram-wrapper > .mermaid-diagram-container {
   padding: 1.25rem 1rem 1rem;
-  border-bottom: 1px solid
+  border-bottom: var(--border) solid
     color-mix(in oklab, var(--color-base-content) 8%, transparent);
 }
 
@@ -64,20 +64,20 @@
   border: none;
   width: min(95vw, 1400px);
   height: min(90dvh, 900px);
-  height: min(calc(90dvh - env(safe-area-inset-bottom, 0px)), 900px);
+  height: min(calc(90dvh - var(--safe-area-bottom)), 900px);
   background-color: var(--color-base-100);
   border-radius: var(--radius-box);
-  border: 1px solid
+  border: var(--border) solid
     color-mix(in oklab, var(--color-base-content) 10%, transparent);
   box-shadow:
-    0 25px 50px -12px rgb(0 0 0 / 0.4),
+    0 25px 50px -12px rgb(var(--shadow-color-base) / 0.4),
     0 0 0 1px color-mix(in oklab, var(--color-base-content) 6%, transparent);
   overflow: hidden;
   transform-origin: center center;
 }
 
 .diagram-popover::backdrop {
-  background-color: rgb(0 0 0 / 0.5);
+  background-color: rgb(var(--shadow-color-base) / 0.5);
   -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
 }
@@ -102,7 +102,7 @@
 .diagram-popover-scroll {
   touch-action: pan-x pan-y;
   padding: 1.5rem;
-  padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 1.5rem));
+  padding-bottom: max(1.5rem, var(--safe-area-bottom));
 }
 
 .diagram-popover-scroll .mermaid-diagram-container {

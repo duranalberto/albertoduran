@@ -1,7 +1,6 @@
 /* =========================================================
    JS / NO-JS STATES
-   Elements with .js-only are hidden until JS adds class
-   to <html>. Elements with .no-js-only hide after JS loads.
+   Elements with .js-only are hidden until JS adds class to <html>.
    ========================================================= */
 
 .js-only {
@@ -10,12 +9,4 @@
 
 html:not(.no-js) .js-only {
   display: var(--js-only-display, flex) !important;
-}
-
-.no-js-only {
-  display: block;
-}
-
-html:not(.no-js) .no-js-only {
-  display: none !important;
 }

@@ -12,8 +12,8 @@
   position: relative;
   overflow: hidden;
   isolation: isolate;
-  border: 1px solid rgba(128, 128, 128, 0.15);
-  border: 1px solid
+  border: var(--border) solid rgba(128, 128, 128, 0.15);
+  border: var(--border) solid
     color-mix(
       in srgb,
       var(--color-base-content, currentColor),
@@ -48,7 +48,7 @@
     will-change: transform, box-shadow;
     transform: translateY(-6px);
     box-shadow:
-      0 20px 40px -10px rgba(0, 0, 0, 0.25),
+      0 20px 40px -10px rgb(var(--shadow-color-base) / 0.25),
       0 0 0 1px color-mix(in srgb, var(--color-primary), transparent 85%);
   }
 

@@ -4,33 +4,10 @@
    specific component or layout concern.
    ========================================================= */
 
-.pb-safe {
-  padding-bottom: calc(var(--sab) + 1rem);
-}
-
-.overscroll-contain {
-  overscroll-behavior: contain;
-}
-
 @media (hover: none) {
   .touch-manipulation {
     -webkit-tap-highlight-color: transparent;
     user-select: none;
     touch-action: manipulation;
-  }
-}
-
-#section-error {
-  animation: fadeIn 0.4s ease-out;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
   }
 }

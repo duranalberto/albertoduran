@@ -17,12 +17,12 @@
     font-size: 1rem;
   }
 
-  @media (min-width: 768px) {
+  @media (min-width: theme(--breakpoint-md)) {
     .prose-journal {
       font-size: 1.0625rem;
     }
   }
-  @media (min-width: 1024px) {
+  @media (min-width: theme(--breakpoint-lg)) {
     .prose-journal {
       font-size: 1.125rem;
     }
@@ -152,7 +152,7 @@
     font-size: 0.875em;
     line-height: 1.714;
     margin-block: 1.714em;
-    border-radius: var(--radius-box, 0.5rem);
+    border-radius: var(--radius-box);
     padding: 1.14em;
     overflow-x: auto;
   }
@@ -171,7 +171,7 @@
   .prose-journal :where(blockquote):not(.not-prose, .not-prose *, svg *) {
     position: relative;
     border-left: 3px solid var(--color-primary);
-    border-radius: 0 var(--radius-box, 0.5rem) var(--radius-box, 0.5rem) 0;
+    border-radius: 0 var(--radius-box) var(--radius-box) 0;
     padding: 1.5rem 1.75rem 1.5rem 2.25rem;
     background: color-mix(in oklab, var(--color-base-200) 55%, transparent);
     font-style: italic;
@@ -190,7 +190,7 @@
   /* Horizontal Rule */
   .prose-journal :where(hr):not(.not-prose, .not-prose *, svg *) {
     border-color: var(--color-base-300);
-    border-top-width: 1px;
+    border-top-width: var(--border);
     margin-block: 3em;
   }
 
@@ -201,6 +201,6 @@
     height: auto;
     margin-block: 2em;
     border-radius: 0.75rem;
-    box-shadow: 0 20px 40px rgb(0 0 0 / 0.12);
+    box-shadow: 0 20px 40px rgb(var(--shadow-color-base) / 0.12);
   }
 }

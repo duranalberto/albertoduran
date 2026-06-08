@@ -31,7 +31,7 @@
   transition: none !important;
 }
 
-@media (min-width: theme(--breakpoint-xl)) {
+@media (min-width: theme(--breakpoint-2xl)) {
   .onthispage-link[data-state="active"] {
     border-left-color: var(--color-primary) !important;
   }

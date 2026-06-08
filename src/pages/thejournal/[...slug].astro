@@ -91,16 +91,16 @@ const layoutProps = {
 ---
 
 <BaseLayout {...layoutProps}>
-  <div class="journal-root xl:pb-14">
+  <div class="journal-root 2xl:pb-14">
     <div class="journal-content flex-1">
       <FlexShell
-        class="journal-shell xl:flex xl:items-start xl:gap-12 py-4 px-4 lg:pb-8"
+        class="journal-shell 2xl:flex 2xl:items-start 2xl:gap-12 py-4 px-4 lg:pb-8"
         py={0}
       >
         {
           vaultContext && (
             <aside
-              class="journal-sidebar sidebar-left hidden xl:block shrink-0"
+              class="journal-sidebar sidebar-left hidden 2xl:block shrink-0"
             >
               <div class="journal-sidebar-panel">
                 <VaultExplorer
@@ -133,7 +133,7 @@ const layoutProps = {
           </div>
 
           <nav
-            class="dock-wrapper xl:hidden z-30"
+            class="dock-wrapper 2xl:hidden z-30"
             aria-label="Article navigation dock"
           >
             <div class="dock-inner">
@@ -182,7 +182,7 @@ const layoutProps = {
 
         {/* SIDEBAR RIGHT */}
         <aside
-          class="journal-sidebar sidebar-right hidden xl:block shrink-0"
+          class="journal-sidebar sidebar-right hidden 2xl:block shrink-0"
         >
           <div class="journal-sidebar-panel">
             <OnThisPage

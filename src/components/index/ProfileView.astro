@@ -28,12 +28,12 @@ const metrics: ProfessionalMetric[] = [
   <StripBackground slot="background" />
 
   <div
-    class="flex flex-col lg:flex-row items-stretch justify-center gap-8 lg:gap-10 max-w-7xl mx-auto px-4 w-full"
+    class="flex flex-col xl:flex-row items-stretch justify-center gap-8 xl:gap-10 max-w-7xl mx-auto px-4 w-full"
   >
     <GlassPanel
-      class="p-8 md:p-10 w-full lg:w-[35%] flex items-center"
+      class="p-8 md:p-10 w-full xl:w-[35%] flex items-center min-w-0"
     >
-      <div class="flex flex-col gap-6 text-center lg:text-left w-full">
+      <div class="flex flex-col gap-6 text-center xl:text-left w-full min-w-0">
         <h2 class="text-xl sm:text-3xl md:text-4xl text-primary uppercase">
           My Professional Profile
         </h2>
@@ -47,7 +47,7 @@ const metrics: ProfessionalMetric[] = [
       </div>
     </GlassPanel>
 
-    <div class="w-full lg:w-[65%] flex flex-col">
+    <div class="w-full xl:w-[65%] flex min-w-0 flex-col">
       <GlassPanel class="flex flex-col md:flex-row w-full h-full">
         {
           metrics.map((metric, index) => (

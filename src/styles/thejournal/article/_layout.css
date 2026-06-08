@@ -37,13 +37,7 @@
    ────────────────────────────────────────────────────────── */
 
 :root {
-  --sab: env(safe-area-inset-bottom, 0px);
-  --sat: env(safe-area-inset-top, 0px);
-
   --journal-header-offset: 6rem;
-  --journal-radius-lg: var(--radius-selector);
-  --journal-ease: cubic-bezier(0.4, 0, 0.2, 1);
-  --prose-max-width: 65ch;
   --sidebar-summary-h: 3.5rem;
 }
 
@@ -60,7 +54,7 @@
   align-items: flex-start;
 }
 
-@media (min-width: theme(--breakpoint-xl)) {
+@media (min-width: theme(--breakpoint-2xl)) {
   .journal-sidebar {
     position: -webkit-sticky;
     position: sticky;
@@ -80,7 +74,7 @@
     width: var(--sidebar-width, auto);
     overflow: hidden;
     will-change: width;
-    transition: width 0.3s var(--journal-ease);
+    transition: width 0.3s var(--ease-standard);
   }
 
   .journal-sidebar-panel {
@@ -122,8 +116,14 @@
   }
 }
 
-details:not([open]) {
+.journal-sidebar details:not([open]) {
   --sidebar-width: 3.5rem;
+}
+
+@media not (min-width: theme(--breakpoint-2xl)) {
+  .journal-main-content {
+    padding-bottom: calc(5.5rem + var(--safe-area-bottom));
+  }
 }
 
 .journal-sidebar .onthispage-nav {
@@ -143,8 +143,4 @@ details:not([open]) {
 .group[open] .content-container {
   display: flex;
   visibility: visible;
-}
-
-html.journal-instant-scroll {
-  scroll-behavior: auto !important;
 }

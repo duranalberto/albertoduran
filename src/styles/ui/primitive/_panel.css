@@ -18,8 +18,8 @@
 
 .ui-panel-floating-close {
   position: absolute;
-  top: max(0.75rem, env(safe-area-inset-top, 0px));
-  right: max(0.75rem, env(safe-area-inset-right, 0px));
+  top: max(0.75rem, var(--safe-area-top));
+  right: max(0.75rem, var(--safe-area-right));
   z-index: 2;
   background-color: color-mix(in oklab, var(--color-base-100) 86%, transparent);
   box-shadow: 0 8px 24px
@@ -33,7 +33,7 @@
   width: 100%;
   height: 100%;
   box-sizing: border-box;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-bottom: var(--safe-area-bottom);
 }
 
 .ui-panel-header {
@@ -41,7 +41,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.625rem 0.75rem 0.625rem 1.25rem;
-  border-bottom: 1px solid
+  border-bottom: var(--border) solid
     color-mix(in oklab, var(--color-base-content) 8%, transparent);
   background-color: var(--color-base-200);
   flex-shrink: 0;
@@ -96,7 +96,7 @@ html.no-js .ui-panel-action-grid[data-no-js-single] {
   background-color: transparent;
   color: color-mix(in oklab, var(--color-base-content) 40%, transparent);
   border: none;
-  border-inline-end: 1px solid
+  border-inline-end: var(--border) solid
     color-mix(in oklab, var(--color-base-content) 8%, transparent);
   cursor: pointer;
   font-family: var(--font-display);

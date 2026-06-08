@@ -9,6 +9,25 @@ const smokeRoutes = [
   "/thejournal/building_albertoduran/publications/slug_generation/",
 ];
 
+const responsiveRoutes = [
+  "/",
+  "/profile/",
+  "/thejournal/sin_pluma/innodb_cluster/",
+  "/thejournal/building_albertoduran/publications/codeblocks/",
+  "/404.html",
+];
+
+const responsiveViewports = [
+  { width: 390, height: 844 },
+  { width: 767, height: 900 },
+  { width: 768, height: 900 },
+  { width: 1023, height: 900 },
+  { width: 1024, height: 900 },
+  { width: 1279, height: 900 },
+  { width: 1280, height: 900 },
+  { width: 1536, height: 900 },
+];
+
 function collectConsoleProblems(page: Page) {
   const problems: string[] = [];
 
@@ -23,6 +42,41 @@ function collectConsoleProblems(page: Page) {
   });
 
   return problems;
+}
+
+async function expectNoPageHorizontalOverflow(page: Page) {
+  const { clientWidth, scrollWidth } = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: Math.max(
+      document.documentElement.scrollWidth,
+      document.body.scrollWidth,
+    ),
+  }));
+
+  expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 1);
+}
+
+async function expectLocatorHorizontallyInViewport(locator: Locator) {
+  const box = await locator.boundingBox();
+  const viewport = locator.page().viewportSize();
+
+  expect(box).not.toBeNull();
+  expect(viewport).not.toBeNull();
+  expect(box!.x).toBeGreaterThanOrEqual(-1);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(viewport!.width + 1);
+}
+
+async function getFirstRowChildCount(locator: Locator) {
+  return locator.evaluate((element) => {
+    const rects = Array.from(element.children).map((child) =>
+      child.getBoundingClientRect(),
+    );
+    const firstTop = Math.min(...rects.map((rect) => Math.round(rect.top)));
+
+    return rects.filter(
+      (rect) => Math.abs(Math.round(rect.top) - firstTop) <= 2,
+    ).length;
+  });
 }
 
 async function wheelOutsideDialog(page: Page) {
@@ -140,6 +194,90 @@ test("top-level heroes keep eyebrow and heading geometry aligned", async ({
       ).toBeLessThanOrEqual(1);
     }
   }
+});
+
+test("responsive pages avoid horizontal overflow at breakpoint edges", async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+
+  for (const viewport of responsiveViewports) {
+    await page.setViewportSize(viewport);
+
+    for (const route of responsiveRoutes) {
+      await page.goto(route);
+      await expect(page.locator("main#main-content")).toBeVisible();
+      await expectNoPageHorizontalOverflow(page);
+      await expectLocatorHorizontallyInViewport(
+        page.locator("main#main-content"),
+      );
+    }
+  }
+});
+
+test("home hero waits for wide desktop before showing the side panel", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1024, height: 900 });
+  await page.goto("/");
+
+  const sidePanel = page.locator(".hero-grid > div").nth(1);
+  await expect(sidePanel).toBeHidden();
+  await expectNoPageHorizontalOverflow(page);
+  await expectLocatorHorizontallyInViewport(page.locator(".hero-primary"));
+
+  await page.setViewportSize({ width: 1536, height: 900 });
+  await page.goto("/");
+
+  await expect(sidePanel).toBeVisible();
+  await expectNoPageHorizontalOverflow(page);
+  await expectLocatorHorizontallyInViewport(page.locator(".hero-primary"));
+  await expectLocatorHorizontallyInViewport(sidePanel);
+});
+
+test("profile skills grid only switches to three columns at desktop width", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 768, height: 900 });
+  await page.goto("/profile/");
+
+  const skillsGrid = page.locator("#skills > .grid").first();
+  await expect(skillsGrid).toBeVisible();
+  expect(await getFirstRowChildCount(skillsGrid)).toBe(1);
+  await expectNoPageHorizontalOverflow(page);
+
+  await page.setViewportSize({ width: 1024, height: 900 });
+  await page.goto("/profile/");
+
+  await expect(skillsGrid).toBeVisible();
+  expect(await getFirstRowChildCount(skillsGrid)).toBe(3);
+  await expectNoPageHorizontalOverflow(page);
+});
+
+test("journal article sidebars wait until the content column can stay readable", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/thejournal/building_albertoduran/publications/codeblocks/");
+
+  await expect(page.locator(".sidebar-right")).toBeHidden();
+  await expect(page.locator(".dock-wrapper")).toBeVisible();
+  await expectNoPageHorizontalOverflow(page);
+
+  const mainAt1280 = await page.locator(".journal-main-content").boundingBox();
+  expect(mainAt1280).not.toBeNull();
+  expect(mainAt1280!.width).toBeGreaterThan(900);
+
+  await page.setViewportSize({ width: 1536, height: 900 });
+  await page.goto("/thejournal/building_albertoduran/publications/codeblocks/");
+
+  await expect(page.locator(".sidebar-right")).toBeVisible();
+  await expect(page.locator(".dock-wrapper")).toBeHidden();
+  await expectNoPageHorizontalOverflow(page);
+
+  const mainAt1536 = await page.locator(".journal-main-content").boundingBox();
+  expect(mainAt1536).not.toBeNull();
+  expect(mainAt1536!.width).toBeGreaterThan(640);
 });
 
 test("journal catalog links to generated article routes", async ({ page }) => {
@@ -332,6 +470,7 @@ test("article pages expose article navigation, headings, and vault context", asy
 }) => {
   const problems = collectConsoleProblems(page);
 
+  await page.setViewportSize({ width: 1536, height: 900 });
   await page.goto(
     "/thejournal/building_albertoduran/publications/slug_generation/",
   );

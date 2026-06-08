@@ -10,7 +10,7 @@
   overflow: hidden;
 }
 
-@media (min-width: theme(--breakpoint-lg)) {
+@media (min-width: theme(--breakpoint-xl)) {
   .hero-section {
     min-block-size: 36rem;
     padding-block: 6rem;
@@ -28,9 +28,11 @@
   grid-template-columns: minmax(0, 1fr);
   align-items: start;
   gap: 3rem;
+  min-inline-size: 0;
+  max-inline-size: 100%;
 }
 
-@media (min-width: theme(--breakpoint-lg)) {
+@media (min-width: theme(--breakpoint-xl)) {
   .hero-grid {
     grid-template-columns: repeat(12, minmax(0, 1fr));
     gap: 4rem;
@@ -50,13 +52,17 @@
   line-height: 1.05;
   letter-spacing: 0;
   text-wrap: balance;
+  overflow-wrap: anywhere;
   word-break: break-word;
+  max-inline-size: 100%;
 }
 
 .hero-description {
   max-width: 42rem;
   line-height: 1.75;
   contain: layout;
+  min-inline-size: 0;
+  max-inline-size: 100%;
 }
 
 .hero-rotating-text {
@@ -65,10 +71,16 @@
   line-height: 1.2;
   overflow: hidden;
   contain: layout;
+  max-inline-size: 100%;
 }
 
 .hero-rotating-text span {
+  display: block;
   line-height: inherit;
+  max-inline-size: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .hero-eyebrow {

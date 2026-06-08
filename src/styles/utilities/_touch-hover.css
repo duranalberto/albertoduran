@@ -21,13 +21,11 @@
 
   .glass-interactive:hover:not(:active),
   .card:hover:not(:active),
-  .group:hover .group-hover\:-translate-y-1:not(:active),
-  .group:hover .group-hover\:scale-x-100:not(:active) {
+  .group:hover .group-hover\:-translate-y-1:not(:active) {
     transform: none !important;
   }
 
-  .group:hover .group-hover\:opacity-100:not(:active),
-  .lg\:group-hover\:opacity-100:hover:not(:active) {
+  .group:hover .group-hover\:opacity-100:not(:active) {
     opacity: inherit !important;
   }
 

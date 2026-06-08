@@ -36,7 +36,7 @@
 
 .prose-table-wrapper .table tbody td {
   color: var(--color-base-content);
-  border-bottom: 1px solid
+  border-bottom: var(--border) solid
     color-mix(in oklab, var(--color-base-content) 8%, transparent);
   vertical-align: top;
 }

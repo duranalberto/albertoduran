@@ -18,7 +18,11 @@ interface PageCssResult {
 
 function optimizeMermaidCss(css: string): string {
   const result = minifyCss(css, {
-    restructure: true,
+    // Mermaid emits repeated, ID-scoped light/dark rule pairs. CSSO
+    // restructuring can group selectors across different diagrams and theme
+    // guards, which preserves declarations but makes the cascade fragile when
+    // the CSS is cloned into expanded SVG popovers.
+    restructure: false,
   });
   return result.css;
 }

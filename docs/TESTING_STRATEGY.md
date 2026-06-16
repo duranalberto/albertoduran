@@ -42,7 +42,7 @@ npm run preview
 | Change type | Required coverage |
 | :-- | :-- |
 | Content manifest, journal routing, vault logic | Vitest tests for manifest shape, required images, sorting, child inheritance, and previous/next links. |
-| Mermaid rendering or SVG handling | Vitest tests for HAST utilities and theme transforms; Playwright check for rendered diagram shell behavior. |
+| Mermaid rendering or SVG handling | Vitest tests for HAST utilities, page CSS hoisting, and theme transforms; Playwright check for rendered diagram shell behavior. Follow `docs/MERMAID_RENDERING.md` for release cache/version checks. |
 | Runtime browser behavior | Playwright tests against production preview. |
 | External data loaders | Vitest tests with mocked `fetch`; no live network dependency in tests. |
 | Layout, navigation, or route changes | Playwright smoke coverage for affected routes and semantic navigation assertions. |
@@ -55,7 +55,7 @@ Vitest currently covers:
 - Navigation path normalization and journal publication detection.
 - Ribbon SVG dimensions, ID scoping, and reference rewriting.
 - Atlas loader normal schedule data, zero-record standings fallback, missing match behavior, failed fetch handling, and deterministic test mode.
-- Mermaid HAST sanitation, ID/reference rewriting, foreignObject line break cleanup, Worker theme merging, Ink inline-color hoisting, and dispatcher failure guards.
+- Mermaid HAST sanitation, page CSS hoisting without unsafe selector restructuring, ID/reference rewriting, foreignObject line break cleanup, Worker theme merging, Ink inline-color hoisting, and dispatcher failure guards.
 - Journal manifest build rules: standalone/vault image requirements, nested vault grouping, child image inheritance, sorted traversal, previous/next links, read time, and path context lookup.
 - HTML minification while preserving `<pre>`, `<code>`, and `<kbd>` fragments.
 

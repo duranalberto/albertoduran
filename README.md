@@ -44,23 +44,24 @@ Use the VS Code DevContainer when possible. It provides Node 22, GitHub CLI, Zsh
 
 Run commands from the repository root:
 
-| Command | Action |
-| :-- | :-- |
-| `npm install` | Install dependencies |
-| `npm run dev` | Start the Astro dev server at `localhost:4321` |
-| `npm run build` | Build the production site to `./dist/` |
-| `npm run build:test` | Build with deterministic Atlas and Mermaid fixtures |
-| `npm run preview` | Preview the production build locally |
-| `npm run check` | Run Astro and TypeScript diagnostics |
-| `npm test` | Run Vitest unit and integration tests |
-| `npm run test:coverage` | Generate Vitest coverage |
-| `npm run test:e2e` | Build deterministic output and run Playwright tests |
-| `npm run astro -- --help` | Show Astro CLI help |
+| Command                   | Action                                              |
+| :------------------------ | :-------------------------------------------------- |
+| `npm install`             | Install dependencies                                |
+| `npm run dev`             | Start the Astro dev server at `localhost:4321`      |
+| `npm run build`           | Build the production site to `./dist/`              |
+| `npm run build:test`      | Build with deterministic Atlas and Mermaid fixtures |
+| `npm run preview`         | Preview the production build locally                |
+| `npm run check`           | Run Astro and TypeScript diagnostics                |
+| `npm test`                | Run Vitest unit and integration tests               |
+| `npm run test:coverage`   | Generate Vitest coverage                            |
+| `npm run test:e2e`        | Build deterministic output and run Playwright tests |
+| `npm run astro -- --help` | Show Astro CLI help                                 |
 
 ## Documentation
 
 - `docs/PROJECT_CONTEXT.md` explains the architecture, routes, content model, and deployment target.
 - `docs/TESTING_STRATEGY.md` defines the required quality gates and CI workflow.
+- `docs/MERMAID_RENDERING.md` documents Mermaid rendering cache/version rules.
 - `docs/GIT_WORKFLOW.md` documents branching, verification, and merge expectations.
 - `docs/UI_STYLE_GUIDE.md` captures UI implementation rules.
 - `docs/AI_PROTOCOL.md` defines how AI assistants should work in this repo.

@@ -39,6 +39,10 @@ Client-side scripts are loaded only where they improve the experience:
 - `src/runtime/elements/mermaid-diagram-shell.ts` handles Mermaid diagram expansion and theme-specific assets.
 - `src/runtime/elements/atlas-schedule.ts` enhances Atlas schedule display.
 
+Mermaid rendering has release-specific cache and CSS cascade requirements. See
+`docs/MERMAID_RENDERING.md` before changing the Mermaid integration, Mermaid
+theme output, diagram shell runtime, or diagram styles.
+
 ### View Transitions
 
 `BaseLayout.astro` owns the shared document shell, view-transition setup, theme bootstrap, and runtime imports. Internal navigation should preserve the SPA-like feel while still serving static pages.
@@ -61,6 +65,7 @@ The manifest builder in `src/content/processors/thejournal-manifest.ts` maps raw
 ```text
 albertoduran/
 ├─ .devcontainer/           # Node 22 VS Code DevContainer
+├─ .agents/                 # Project-local Codex skills
 ├─ .github/workflows/       # Quality workflow
 ├─ docs/                    # Internal project documentation
 ├─ public/                  # Static public assets and headers
@@ -138,6 +143,9 @@ A vault is any first-level folder under `src/thejournal/` with an `index.mdx`. N
 ## Testing and CI
 
 The test strategy lives in `docs/TESTING_STRATEGY.md`.
+
+Project-local AI skills live in `.agents/skills/` and are documented in
+`docs/AI_SKILLS.md`.
 
 Required quality commands:
 

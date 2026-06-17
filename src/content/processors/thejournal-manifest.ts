@@ -66,8 +66,8 @@ export function stripMdxContent(body: string): {
   content = content.replace(/<[a-z][^>]*\/?>/g, " ");
   content = content.replace(/<\/[a-z][^>]+>/g, " ");
   content = content.replace(/`[^`\n]+`/g, " ");
-  content = content.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
   content = content.replace(/!\[[^\]]*\]\([^)]+\)/g, " ");
+  content = content.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
   content = content.replace(/^#{1,6}\s+/gm, "");
   content = content.replace(/[*_]{1,3}/g, "");
   content = content.replace(/^>\s*/gm, "");
@@ -187,8 +187,6 @@ export function buildJournalManifest(
     const vaultId = getVaultDirectory(context.filepath);
 
     if (vaultId) {
-      context.vaultId = vaultId;
-
       if (!rootVaults[vaultId]) {
         rootVaults[vaultId] = [];
       }
@@ -203,7 +201,10 @@ export function buildJournalManifest(
     const rootIndex = entries[0];
 
     if (!rootIndex || !isIndexFileForPath(rootIndex.filepath, vaultId)) {
-      continue;
+      throw new Error(
+        `[thejournal] Vault "${vaultId}" is missing a required root index. ` +
+          `Add ${vaultId}/index.mdx or ${vaultId}/index.md before adding entries under this folder.`,
+      );
     }
 
     if (!rootIndex.image) {
@@ -211,6 +212,10 @@ export function buildJournalManifest(
         `[thejournal] Vault root entry "${rootIndex.id}" is missing a required image. ` +
           `Every vault root index (${vaultId}/index.mdx or ${vaultId}/index.md) must declare an image in its frontmatter.`,
       );
+    }
+
+    for (const entry of entries) {
+      entry.vaultId = vaultId;
     }
 
     vaultsManifest[vaultId] = {
@@ -259,7 +264,10 @@ function buildNestedStructure(
     !currentIndex ||
     !isIndexFileForPath(currentIndex.filepath, currentPath)
   ) {
-    return [];
+    throw new Error(
+      `[thejournal] Vault section "${currentPath}" is missing a required index. ` +
+        `Add ${currentPath}/index.mdx or ${currentPath}/index.md before adding entries under this folder.`,
+    );
   }
 
   const items: VaultItem[] = [];
@@ -294,15 +302,20 @@ function buildNestedStructure(
     const subIndex = subEntries[0];
     const subPath = `${currentPath}/${subDir}`;
 
-    if (subIndex && isIndexFileForPath(subIndex.filepath, subPath)) {
-      items.push({
-        id: subPath,
-        title: subIndex.title,
-        order: subIndex.order,
-        index: subIndex,
-        items: buildNestedStructure(subEntries, subPath),
-      });
+    if (!subIndex || !isIndexFileForPath(subIndex.filepath, subPath)) {
+      throw new Error(
+        `[thejournal] Vault section "${subPath}" is missing a required index. ` +
+          `Add ${subPath}/index.mdx or ${subPath}/index.md before adding entries under this folder.`,
+      );
     }
+
+    items.push({
+      id: subPath,
+      title: subIndex.title,
+      order: subIndex.order,
+      index: subIndex,
+      items: buildNestedStructure(subEntries, subPath),
+    });
   }
 
   return items.sort(sortByOrderThenTitle);

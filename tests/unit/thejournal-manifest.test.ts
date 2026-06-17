@@ -149,6 +149,21 @@ describe("thejournal manifest builder", () => {
     ).toThrow("Vault root entry");
   });
 
+  it("rejects top-level vault folders without a root index", () => {
+    expect(() =>
+      buildJournalManifest([entry("orphan/child", "orphan/child.mdx")]),
+    ).toThrow('Vault "orphan" is missing a required root index');
+  });
+
+  it("rejects nested vault sections without an index", () => {
+    expect(() =>
+      buildJournalManifest([
+        entry("vault", "vault/index.mdx", { image }),
+        entry("vault/orphan/deep", "vault/orphan/deep.mdx"),
+      ]),
+    ).toThrow('Vault section "vault/orphan" is missing a required index');
+  });
+
   it("builds nested vaults, inherits child images, sorts items, and links traversal", () => {
     const [entries, vaults] = buildJournalManifest([
       entry("vault/late", "vault/late.mdx", { order: 30 }),
@@ -187,6 +202,7 @@ describe("thejournal manifest builder", () => {
   it("resolves entries and vault context from generated journal paths", () => {
     const [entries, vaults] = buildJournalManifest([
       entry("vault", "vault/index.mdx", { image }),
+      entry("vault/section", "vault/section/index.mdx"),
       entry("vault/section/deep", "vault/section/deep.mdx"),
     ]);
 
@@ -217,6 +233,16 @@ describe("thejournal manifest builder", () => {
       "```",
     ].join("\n");
     expect(measureReadTime(entry("code", "code.mdx", { image }, code))).toBe(2);
+
+    const imageAlt = Array.from(
+      { length: 201 },
+      (_, index) => `altword${index}`,
+    ).join(" ");
+    expect(
+      measureReadTime(
+        entry("image-alt", "image-alt.mdx", { image }, `![${imageAlt}](x.png)`),
+      ),
+    ).toBe(1);
   });
 
   it("rejects updated entries without an original publication date", () => {

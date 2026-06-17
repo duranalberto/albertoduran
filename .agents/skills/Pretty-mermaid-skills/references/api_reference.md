@@ -1,34 +1,45 @@
-# Reference Documentation for Beautiful Mermaid
+# Pretty Mermaid Local API Reference
 
-This is a placeholder for detailed reference documentation.
-Replace with actual reference content or delete if not needed.
+This reference documents the scripts included with the project-local `pretty-mermaid` skill. Run commands from `.agents/skills/Pretty-mermaid-skills/`.
 
-Example real reference docs from other skills:
-- product-management/references/communication.md - Comprehensive guide for status updates
-- product-management/references/context_building.md - Deep-dive on gathering context
-- bigquery/references/ - API references and query examples
+## Scripts
 
-## When Reference Docs Are Useful
+### `scripts/render.mjs`
 
-Reference docs are ideal for:
-- Comprehensive API documentation
-- Detailed workflow guides
-- Complex multi-step processes
-- Information too lengthy for main SKILL.md
-- Content that's only needed for specific use cases
+Render one Mermaid `.mmd` file as SVG or ASCII.
 
-## Structure Suggestions
+```bash
+node scripts/render.mjs --input diagram.mmd --output diagram.svg --format svg --theme tokyo-night
+node scripts/render.mjs --input diagram.mmd --format ascii --use-ascii
+```
 
-### API Reference Example
-- Overview
-- Authentication
-- Endpoints with examples
-- Error codes
-- Rate limits
+Common options:
 
-### Workflow Guide Example
-- Prerequisites
-- Step-by-step instructions
-- Common patterns
-- Troubleshooting
-- Best practices
+- `--input`, `-i`: input Mermaid file. Required.
+- `--output`, `-o`: output path. Defaults to stdout.
+- `--format`, `-f`: `svg` or `ascii`. Defaults to `svg`.
+- `--theme`, `-t`: one of the themes listed by `scripts/themes.mjs`.
+- `--transparent`: transparent SVG background.
+- `--bg`, `--fg`, `--line`, `--accent`, `--muted`, `--surface`, `--border`: custom color overrides.
+- `--font`: SVG font family. Defaults to Inter.
+- `--use-ascii`, `--padding-x`, `--padding-y`, `--box-border-padding`: ASCII output controls.
+
+### `scripts/batch.mjs`
+
+Render every `.mmd` file in a directory.
+
+```bash
+node scripts/batch.mjs --input-dir ./diagrams --output-dir ./rendered --format svg --theme github-dark --workers 4
+```
+
+### `scripts/themes.mjs`
+
+Print the locally available Beautiful Mermaid themes. This installed copy currently reports 14 themes.
+
+```bash
+node scripts/themes.mjs
+```
+
+## Dependency Behavior
+
+The scripts auto-install the local `beautiful-mermaid` dependency on first run if it is missing. That may create `node_modules/` and `package-lock.json` inside the skill directory. Treat those as local generated artifacts unless the project intentionally decides to vendor-lock skill dependencies.

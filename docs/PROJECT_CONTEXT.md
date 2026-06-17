@@ -114,16 +114,30 @@ const thejournal = defineCollection({
     base: "./src/thejournal",
   }),
   schema: ({ image }) =>
-    z.object({
-      title: z.string(),
-      github: z.string().optional(),
-      image: image().optional(),
-      description: z.string().default("Without description available."),
-      pubDate: z.coerce.date(),
-      updatePubDate: z.coerce.date().optional(),
-      tags: z.array(z.string()).default([]),
-      order: z.number().default(100),
-    }),
+    z
+      .object({
+        title: z.string(),
+        github: z.string().optional(),
+        image: image().optional(),
+        description: z.string().default("Without description available."),
+        pubDate: z.coerce.date(),
+        updatePubDate: z.coerce.date().optional(),
+        tags: z.array(z.string()).default([]),
+        order: z.number().default(100),
+      })
+      .refine(
+        (data) => {
+          if (data.updatePubDate && !data.pubDate) {
+            return false;
+          }
+          return true;
+        },
+        {
+          message:
+            "updatePubDate requires pubDate to be set. Add a pubDate field to this entry.",
+          path: ["updatePubDate"],
+        },
+      ),
 });
 ```
 
@@ -133,12 +147,14 @@ const thejournal = defineCollection({
 | `pubDate` | Yes | Publication date used for sorting |
 | `updatePubDate` | No | Last update date |
 | `description` | No | Card and metadata summary; defaults when omitted |
-| `image` | Required for standalone publications and vault roots | Publication image; child vault entries can inherit the vault root image |
+| `image` | Required by manifest rules for standalone publications and vault roots | Publication image; child vault entries can inherit the vault root image |
 | `github` | No | Related GitHub repository URL |
 | `tags` | No | Tag list; defaults to `[]` |
 | `order` | No | Manual ordering value; defaults to `100` |
 
 A vault is any first-level folder under `src/thejournal/` with an `index.mdx`. Nested folders can form sub-vault sections when they also include an `index.mdx`.
+
+The schema accepts `image` as optional because vault child entries can inherit the vault root image. The manifest builder enforces images for standalone publications and vault roots during build-time processing.
 
 ## Testing and CI
 

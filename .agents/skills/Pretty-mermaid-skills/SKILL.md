@@ -2,7 +2,7 @@
 name: pretty-mermaid
 description: |
   Render beautiful Mermaid diagrams as SVG or ASCII art using the beautiful-mermaid library.
-  Supports 15+ themes, 5 diagram types (flowchart, sequence, state, class, ER), and ultra-fast rendering.
+  Supports 14 themes, 5 diagram types (flowchart, sequence, state, class, ER), and ultra-fast rendering.
 
   Use this skill when:
   1. User asks to "render a mermaid diagram" or provides .mmd files
@@ -255,23 +255,22 @@ node scripts/themes.mjs
 ```
 Available Beautiful-Mermaid Themes:
 
- 1. zinc-light
- 2. zinc-dark
- 3. tokyo-night
- 4. tokyo-night-storm
- 5. tokyo-night-light
- 6. catppuccin-mocha
- 7. catppuccin-latte
- 8. nord
- 9. nord-light
-10. dracula
+ 1. zinc-dark
+ 2. tokyo-night
+ 3. tokyo-night-storm
+ 4. tokyo-night-light
+ 5. catppuccin-mocha
+ 6. catppuccin-latte
+ 7. nord
+ 8. nord-light
+ 9. dracula
+10. github-light
 11. github-dark
-12. github-light
+12. solarized-light
 13. solarized-dark
-14. solarized-light
-15. one-dark
+14. one-dark
 
-Total: 15 themes
+Total: 14 themes
 ```
 
 ### Theme Selection Guide
@@ -283,9 +282,9 @@ Total: 15 themes
 - `nord` - Cool, minimalist
 
 **For light mode documentation:**
-- `github-light` - Clean, professional
-- `zinc-light` - High contrast, printable
+- `github-light` - Clean, professional, printable
 - `catppuccin-latte` - Warm, friendly
+- `solarized-light` - Balanced and readable for long-form docs
 
 **Detailed theme information:** See [THEMES.md](references/THEMES.md)
 
@@ -429,7 +428,7 @@ node scripts/render.mjs \
 node scripts/render.mjs \
   --input slides-diagram.mmd \
   --output presentation.svg \
-  --theme zinc-light
+  --theme github-light
 ```
 
 ---
@@ -477,7 +476,7 @@ Executable Node.js scripts for rendering operations:
 Documentation to inform diagram creation:
 - `THEMES.md` - Detailed theme reference with examples
 - `DIAGRAM_TYPES.md` - Comprehensive syntax guide for all diagram types
-- `api_reference.md` - beautiful-mermaid API documentation
+- `api_reference.md` - local script and option reference
 
 ### assets/
 Template files for quick diagram creation:

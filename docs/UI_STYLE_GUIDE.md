@@ -36,7 +36,7 @@ Enforce the use of tokens for adjusting design across viewports.
 - **NEVER** hardcode Hex colors or Tailwind gray scales.
 - **ALWAYS** use DaisyUI semantic classes (`bg-base-200`, `text-base-content`) or CSS variables (`--color-*`).
 - Every component must automatically adapt to `dark` and `light` themes via these tokens.
-- See Global Theme Configuration section to see all the DaisyUI theme settings.
+- DaisyUI theme tokens live in `src/styles/themes/_daisyui-themes.css`; Tailwind theme extensions live in `src/styles/themes/_tailwind-theme.css`.
 
 ---
 
@@ -62,6 +62,12 @@ Order: Base -> Modifiers -> Layout -> Spacing -> Typography -> Colors -> Borders
 ---
 
 ## Theme & Token Rules
+
+### Global Theme Configuration
+
+`src/styles/global.css` is the CSS entry point imported by the base layout. It loads Tailwind, enables the selected DaisyUI components, and imports theme token partials before base, utility, shared, layout, UI, and page-specific styles.
+
+The active DaisyUI themes are `light` and `dark`. Theme color variables use OKLCH tokens such as `--color-base-100`, `--color-base-content`, `--color-primary`, and `--color-primary-content`. When a new UI needs a color that is not covered by the existing semantic tokens, update the theme partials instead of hardcoding local colors.
 
 ### Contrast & Semantic Pairing
 
@@ -90,7 +96,7 @@ Custom CSS helpers must complement the framework, not compete with it.
 - Scope them to theme token alignment.
 - Avoid shorthand properties that override multiple CSS behaviors at once.
 - Always pair custom helpers with Tailwind directional utilities, never override them.
-- CSS custom classes must be added to the global.css styles and dependencies rules.
+- CSS custom classes must live in the appropriate imported partial under `src/styles/`; do not add rules directly to `src/styles/global.css`.
 
 ### Component-Level Overrides
 
@@ -129,26 +135,20 @@ The design system must be theme-driven, consistent, and predictable. If a new de
 
 ---
 
-## Implementation strategies
+## Implementation Strategies
 
-### Glassmorphism implementation
+### Glassmorphism Implementation
 
-To ensure a flawless "Glassmorphism" effect on iOS and prevent the PublicationHeader or dock-wrapper from ghosting through the modal backdrop, we need to establish a strict Z-index stacking context.
+Glass surfaces must preserve a predictable stacking context on WebKit, where `backdrop-filter` can interact poorly with sticky or fixed elements.
 
-On WebKit (Safari), backdrop-filter can sometimes create a new stacking context that makes elements with sticky or fixed positioning behave unpredictably.
+Keep global overlay and article stacking rules aligned with `src/styles/thejournal/article/_layout.css`, `src/styles/thejournal/article/_dock.css`, and `src/styles/ui/primitive/_panel.css`.
 
 ### Z-Index Audit & Layering Strategy
 
-We will organize the layers from bottom to top as follows:
+Current layer intent from bottom to top:
 
-Level 0: Main Content (Article, Pagination).
-
-Level 10: Sticky Sidebars (Desktop only).
-
-Level 20: PublicationHeader (Sticky top).
-
-Level 30: dock-wrapper (Sticky bottom).
-
-Level 40: .modal (The container and backdrop).
-
-Level 50: .modal-box (The actual content card).
+- Level 0: main content.
+- Level 10: desktop article sidebars.
+- Level 30: `.dock-wrapper`.
+- Level 50: global header.
+- Overlay panels and modals must not rely on a descendant of `<main>` out-stacking the header. Use the established overlay component and CSS partials.

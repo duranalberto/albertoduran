@@ -58,4 +58,5 @@ When updating a project-local skill:
 1. Record the source repository, branch, and commit in this file.
 2. Keep the skill under `.agents/skills/<skill-folder>/`.
 3. Verify the installed skill folder contains `SKILL.md`.
-4. Restart Codex after the update.
+4. Use `python3` in project-local skill examples; this workspace does not expose a `python` command.
+5. Restart Codex after the update.

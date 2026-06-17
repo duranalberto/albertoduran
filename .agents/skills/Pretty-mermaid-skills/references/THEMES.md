@@ -1,13 +1,12 @@
 # Beautiful-Mermaid 主题参考
 
-Beautiful-Mermaid 提供 15 个精心设计的内置主题，涵盖亮色和暗色方案。每个主题都基于两种核心颜色（背景 `bg` 和前景 `fg`），并可通过可选的丰富色彩进行增强。
+Beautiful-Mermaid 提供 14 个精心设计的内置主题，涵盖亮色和暗色方案。每个主题都基于两种核心颜色（背景 `bg` 和前景 `fg`），并可通过可选的丰富色彩进行增强。
 
 ## 快速选择指南
 
 ### 亮色主题
 | 主题 | 背景 | 前景 | 用途 |
 |------|------|------|------|
-| `zinc-light` | #FFFFFF | 自动推导 | 通用亮色主题 |
 | `tokyo-night-light` | #d5d6db | #34548a | 柔和亮色 |
 | `catppuccin-latte` | #eff1f5 | #8839ef | 清爽亮色 |
 | `nord-light` | #eceff4 | #5e81ac | 冰蓝亮色 |
@@ -30,32 +29,6 @@ Beautiful-Mermaid 提供 15 个精心设计的内置主题，涵盖亮色和暗�
 ---
 
 ## 主题详细说明
-
-### `zinc-light` (亮色)
-**特性：** 清洁、通用的浅色主题，适合打印和高对比度场景。
-
-**配置：**
-```javascript
-{
-  bg: '#FFFFFF',
-  fg: '#27272A'
-}
-```
-
-**最佳用途：**
-- 正式文档和报告
-- 打印输出
-- 演示幻灯片
-
-**示例：**
-```mermaid
-graph TD
-  A[Start] --> B{Decision}
-  B -->|Yes| C[Action]
-  B -->|No| D[End]
-```
-
----
 
 ### `zinc-dark` (暗色)
 **特性：** 纯暗色主题，前景色由系统推导。极简主义风格。
@@ -333,7 +306,7 @@ graph TD
 只需要两种颜色就能创建美观的主题：
 
 ```python
-python render_mermaid.py \
+node scripts/render.mjs \
   --input diagram.mmd \
   --output output.svg \
   --bg '#0f0f0f' \
@@ -347,7 +320,7 @@ python render_mermaid.py \
 对于更丰富的颜色方案，提供可选的强调色：
 
 ```python
-python render_mermaid.py \
+node scripts/render.mjs \
   --input diagram.mmd \
   --output output.svg \
   --bg '#0f0f0f' \
@@ -378,7 +351,7 @@ python render_mermaid.py \
 ```
 你想要的主题风格是什么？
 ├── 亮色 (Light)
-│   ├── 极简/清洁？ → zinc-light
+│   ├── 极简/清洁？ → github-light
 │   ├── GitHub 风格？ → github-light
 │   ├── Solarized？ → solarized-light
 │   ├── 冰蓝色？ → nord-light
@@ -404,7 +377,7 @@ python render_mermaid.py \
 ### 示例 1：在中文文档中使用 Tokyo Night
 
 ```bash
-python render_mermaid.py \
+node scripts/render.mjs \
   --input 架构图.mmd \
   --output 架构图.svg \
   --theme tokyo-night
@@ -413,16 +386,16 @@ python render_mermaid.py \
 ### 示例 2：创建打印友好的图表
 
 ```bash
-python render_mermaid.py \
+node scripts/render.mjs \
   --input diagram.mmd \
   --output diagram.svg \
-  --theme zinc-light
+  --theme github-light
 ```
 
 ### 示例 3：批量应用主题
 
 ```bash
-python batch_render.py \
+node scripts/batch.mjs \
   --input-dir ./diagrams \
   --output-dir ./output \
   --format svg \
@@ -432,7 +405,7 @@ python batch_render.py \
 ### 示例 4：自定义企业主题
 
 ```bash
-python render_mermaid.py \
+node scripts/render.mjs \
   --input diagram.mmd \
   --output output.svg \
   --bg '#1a1a1a' \
@@ -462,7 +435,7 @@ python render_mermaid.py \
 ## 常见问题
 
 **Q: 我应该使用哪个主题？**
-A: 如果不确定，推荐使用 `tokyo-night`（暗色）或 `zinc-light`（亮色）。
+A: 如果不确定，推荐使用 `tokyo-night`（暗色）或 `github-light`（亮色）。
 
 **Q: 如何为 GitHub README 选择主题？**
 A: 使用 `github-light` 或 `github-dark`，与 GitHub 的主题相匹配。
@@ -474,4 +447,4 @@ A: 可以，使用 Enriched Mode 自定义任意颜色组合。
 A: 支持，添加 `--transparent` 标志。
 
 **Q: 如何在 AI 聊天中推荐主题给用户？**
-A: 根据项目类型：开发项目→Tokyo Night，企业→Nord，打印→Zinc Light。
+A: 根据项目类型：开发项目→Tokyo Night，企业→Nord，打印→GitHub Light。

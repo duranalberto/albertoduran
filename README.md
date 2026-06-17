@@ -15,6 +15,7 @@ A high-performance personal portfolio and publishing site built with Astro 6, Ta
 ```text
 /
 ├─ .devcontainer/           # VS Code DevContainer configuration
+├─ .agents/                 # Project-local AI skills and local context guide
 ├─ .github/workflows/       # GitHub Actions quality workflow
 ├─ docs/                    # Project documentation and contribution rules
 ├─ public/                  # Static public files and headers
@@ -60,11 +61,14 @@ Run commands from the repository root:
 ## Documentation
 
 - `docs/PROJECT_CONTEXT.md` explains the architecture, routes, content model, and deployment target.
+- `docs/DEV_ENVIRONMENT.md` explains the DevContainer and local tool setup.
 - `docs/TESTING_STRATEGY.md` defines the required quality gates and CI workflow.
 - `docs/MERMAID_RENDERING.md` documents Mermaid rendering cache/version rules.
 - `docs/GIT_WORKFLOW.md` documents branching, verification, and merge expectations.
 - `docs/UI_STYLE_GUIDE.md` captures UI implementation rules.
 - `docs/AI_PROTOCOL.md` defines how AI assistants should work in this repo.
+- `docs/AI_SKILLS.md` documents project-local Codex skills.
+- `docs/ROADMAP.md` tracks planned work.
 
 ## Development Rules
 

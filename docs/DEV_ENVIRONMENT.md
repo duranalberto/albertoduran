@@ -10,7 +10,7 @@ The DevContainer provides:
 - GitHub CLI through the devcontainer feature in `.devcontainer/devcontainer.json`.
 - Zsh with Oh My Zsh, Powerlevel10k, autosuggestions, and syntax highlighting.
 - Project dependencies installed by the `postCreateCommand`.
-- VS Code extensions for Astro, MDX, Tailwind CSS, ESLint, Prettier, spell checking, markdown linting, and GitHub workflows.
+- VS Code extensions for Astro, MDX, Tailwind CSS, ESLint, Prettier, spell checking, markdown linting, and Git helpers.
 
 ## 2. Host Requirements
 

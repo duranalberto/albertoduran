@@ -13,6 +13,11 @@ Before proposing implementation changes, an AI assistant should inspect the curr
 5. `docs/AI_SKILLS.md` for project-local AI skills and their source repositories.
 6. `docs/ROADMAP.md` for planned work and known future integrations.
 
+If `.agents/context/` contains user-provided files, review them as local
+reference material before planning or implementing changes. Treat that directory
+as optional, clone-local context: useful for the current workspace, but not a
+portable project source of truth.
+
 Repository files are always the final source of truth when docs and implementation disagree. Confirm current behavior from `package.json`, `astro.config.mjs`, `wrangler.json`, test configs, and the relevant source files before making claims.
 
 ## 2. Interaction Rules

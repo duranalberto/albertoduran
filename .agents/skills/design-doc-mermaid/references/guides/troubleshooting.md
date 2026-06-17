@@ -29,10 +29,10 @@ This guide documents the top 20+ most common Mermaid syntax errors discovered th
 
 ```bash
 # Validate all diagrams in a markdown file
-python scripts/extract_mermaid.py your-file.md --validate
+python3 scripts/extract_mermaid.py your-file.md --validate
 
 # Convert to image to verify rendering
-python scripts/mermaid_to_image.py diagram.mmd output.png
+python3 scripts/mermaid_to_image.py diagram.mmd output.png
 ```
 
 **Common Quick Fixes:**
@@ -858,10 +858,10 @@ mmdc -i input.mmd -o output.png
 **Python Scripts (This Skill):**
 ```bash
 # Validate diagrams in markdown
-python scripts/extract_mermaid.py file.md --validate
+python3 scripts/extract_mermaid.py file.md --validate
 
 # Convert to image
-python scripts/mermaid_to_image.py diagram.mmd output.png
+python3 scripts/mermaid_to_image.py diagram.mmd output.png
 ```
 
 ### Debugging Tips

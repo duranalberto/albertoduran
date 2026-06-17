@@ -7,13 +7,13 @@ The goal is to maintain:
 - A clean, linear Git history
 - High architectural integrity
 - Deterministic builds
-- Predictable deployments
+- Predictable releases
 
 ---
 
 ## 1. Development Environment
 
-All development must occur inside the **VS Code DevContainer**.
+Use the **VS Code DevContainer** when possible so local development matches CI closely. If you work outside the container, keep the same Node version and run the same npm scripts from the repository root.
 
 ### Environment
 
@@ -57,7 +57,7 @@ npm run dev
 
 ## 3. Mandatory Pre-Merge Verification
 
-Before opening a Merge Request (MR), developers **must validate production behavior**, not only development mode.
+Before opening a pull request (PR), developers **must validate production behavior**, not only development mode.
 
 ### 3.1 Build the Production Output
 
@@ -85,7 +85,7 @@ npm run preview
   - Sidebar automation
 
 ⚠️ Do **not** rely solely on `npm run dev`.  
-The MR must reflect behavior verified via `build + preview`.
+The PR must reflect behavior verified via `build + preview`.
 
 ---
 
@@ -121,7 +121,7 @@ This repository follows a strict, linear Git model.
 
 ### Branch Hierarchy
 
-- `master` → Production (Cloudflare deployment)
+- `master` → Production branch
 - `dev` → Integration branch
 - `feature/*` → Task-specific branches (created from `dev` only)
 
@@ -173,12 +173,12 @@ During development:
 npm run dev
 ```
 
-Before MR submission (mandatory):
+Before PR submission (mandatory):
 
 ```bash
 npm run build
 npm run preview
-npm run astro check
+npm run check
 ```
 
 If applicable:
@@ -247,7 +247,7 @@ Requirements:
 Only `dev` may be merged into `master`.
 
 - Manual approval required
-- Triggers the production Cloudflare deployment for the static Workers Assets build
+- Production deployment is managed outside this repository; this repo keeps the static Workers Assets configuration in `wrangler.json`.
 
 Direct merges into `master` from any other branch are rejected.
 
@@ -310,4 +310,4 @@ Use these to inspect PR state and maintain linear history.
 4. No direct commits to protected branches.
 5. No force pushes after PR review begins.
 
-Failure to follow these rules will result in rejection of the Merge Request.
+Failure to follow these rules will result in rejection of the pull request.

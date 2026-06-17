@@ -37,8 +37,7 @@
         "davidanson.vscode-markdownlint",
         "schmidsi.better-git-line-blame",
         "mhutchie.git-graph",
-        "Fuzionix.file-tree-extractor",
-        "github.vscode-pull-request-github"
+        "Fuzionix.file-tree-extractor"
       ]
     }
   },

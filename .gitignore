@@ -45,3 +45,7 @@ test-results/
 # Other files
 ./gitignore
 .cache/mermaid
+
+# Local agent/developer context
+.agents/context/*
+!.agents/context/README.md

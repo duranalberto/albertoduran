@@ -1,112 +1,43 @@
-<div align="center">
+# Pretty Mermaid Skill
 
-# Pretty-Mermaid Skills
+这是项目本地的 Codex skill，用 `beautiful-mermaid` 将 Mermaid 图表渲染为 SVG 或 ASCII。安装目录是 `.agents/skills/Pretty-mermaid-skills/`，来源记录在 `docs/AI_SKILLS.md`。
 
-![fLEWT5x.png](https://iili.io/fLEWT5x.png)
+## 功能
 
-将 Mermaid 图表渲染为精美的 SVG 或 ASCII 艺术
+- 支持 SVG 和 ASCII 输出。
+- `scripts/themes.mjs` 当前报告 14 个可用主题。
+- 包含 flowchart、sequence、state、class、ER 模板。
+- 支持单文件渲染和批量渲染。
 
-极速、全主题支持、零 DOM 依赖。为 AI 而生。
+## 本地使用
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Node.js Version](https://img.shields.io/badge/node-%3E%3D14-brightgreen)](https://nodejs.org/)
-[![GitHub stars](https://img.shields.io/github/stars/imxv/Pretty-mermaid-skills?style=social)](https://github.com/imxv/Pretty-mermaid-skills)
+从 skill 目录运行命令：
 
-**中文** | [English](README.md)
+```bash
+cd .agents/skills/Pretty-mermaid-skills
+node scripts/themes.mjs
+node scripts/render.mjs --input diagram.mmd --output diagram.svg --theme tokyo-night
+node scripts/render.mjs --input diagram.mmd --format ascii --use-ascii
+node scripts/batch.mjs --input-dir ./diagrams --output-dir ./rendered --format svg --theme github-dark
+```
 
-</div>
+如果缺少 `beautiful-mermaid`，脚本首次运行时会尝试自动安装依赖。这可能在 skill 目录下生成 `node_modules/` 或 `package-lock.json`。除非项目明确决定锁定该 skill 的依赖，否则把这些文件当作本地生成物。
 
-## 简介
-为 AI 提供的 Mermaid 图表渲染 Skill，支持 SVG 和 ASCII 双格式输出，让您的文档更加生动。
+## 可用主题
 
-## ✨ 功能特性
-
-- 📊 **多格式支持**：支持 SVG 和 ASCII 渲染导出
-- 🎨 **丰富主题**：内置 15 种精美主题，满足不同场景需求
-- 📈 **全图表支持**：支持 Flowchart, Sequence, State, Class, ER 等 5 种常用图表
-- ⚡ **高效渲染**：支持批量并行渲染，速度飞快
-- 📚 **开箱即用**：提供完整的模板和详细文档
-
-### 支持主题列表
 | Light Themes | Dark Themes | Other |
 | :--- | :--- | :--- |
-| zinc-light | zinc-dark | nord |
-| tokyo-night-light | tokyo-night | nord-light |
-| cappuccin-latte | tokyo-night-storm | dracula |
-| github-light | cappuccin-mocha | one-dark |
-| solarized-light | github-dark | |
+| tokyo-night-light | zinc-dark | nord |
+| github-light | tokyo-night | nord-light |
+| catppuccin-latte | tokyo-night-storm | dracula |
+| solarized-light | catppuccin-mocha | one-dark |
+| | github-dark | |
 | | solarized-dark | |
 
-## 🤖 AI 助手集成
+## 资源
 
-支持与以下 AI 编程环境无缝集成，通过自然语言即可调用绘图能力：
-
-- **Claude Code**
-- **Cursor**
-- **Gemini CLI**
-- **Antigravity**
-- **OpenCode**
-- **Codex**
-- **qoder**
-
-## 🚀 安装步骤
-
-### 一键安装
-```bash
-npx skills add https://github.com/imxv/pretty-mermaid-skills --skill pretty-mermaid
-```
-
-### 验证安装
-```bash
-cd Pretty-mermaid
-node scripts/themes.mjs
-```
-> **提示**：首次运行时会自动安装依赖，只需确保您的环境中有 Node.js。
-
-## 📖 快速开始
-
-### 列出可用主题
-```bash
-node scripts/themes.mjs
-```
-
-### 渲染单个图表
-```bash
-node scripts/render.mjs \
-  --input diagram.mmd \
-  --output output.svg \
-  --theme tokyo-night
-```
-
-### 批量渲染
-```bash
-node scripts/batch.mjs \
-  --input-dir ./diagrams \
-  --output-dir ./output \
-  --theme dracula
-```
-
-## 📂 使用示例
-
-查看 `assets/example_diagrams/` 目录下的 5 个模板文件，快速上手：
-- `flowchart.mmd` - 流程图
-- `sequence.mmd` - 时序图
-- `state.mmd` - 状态图
-- `class.mmd` - 类图
-- `er.mmd` - ER 图
-
-## 📚 完整文档
-详细使用指南请参阅 [SKILL.md](SKILL.md)
-
-## ⚙️ 系统要求
-- Node.js 14+
-
-## 📄 许可证
-MIT License
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=imxv/Pretty-mermaid-skills&type=timeline&legend=top-left)](https://www.star-history.com/#imxv/Pretty-mermaid-skills&type=timeline&legend=top-left)
-
-## 🙏 致谢
-基于 [beautiful-mermaid](https://github.com/lukilabs/beautiful-mermaid) 项目
+- `SKILL.md` 是 Codex 使用这个 skill 的主要说明。
+- `references/DIAGRAM_TYPES.md` 说明 Mermaid 图表语法。
+- `references/THEMES.md` 说明主题选择。
+- `references/api_reference.md` 说明本地脚本参数。
+- `assets/example_diagrams/` 包含示例 `.mmd` 文件。

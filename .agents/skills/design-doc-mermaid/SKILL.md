@@ -171,7 +171,7 @@ flowchart LR
 
 ```bash
 # Generate with full error recovery
-python scripts/resilient_diagram.py \
+python3 scripts/resilient_diagram.py \
     --code "flowchart TD; A-->B" \
     --markdown-file design_doc \
     --diagram-num 1 \
@@ -193,13 +193,11 @@ python scripts/resilient_diagram.py \
 
 ### Error Recovery Priority
 
-When validation fails, the workflow automatically:
+When validation fails, the workflow should:
 
-1. **Check troubleshooting guide** - `references/guides/troubleshooting.md` (28 documented errors)
-2. **Search with perplexity** - `perplexity_ask` MCP for syntax questions
-3. **Search with brave** - `brave_web_search` MCP for recent solutions
-4. **Ask gemini** - `gemini` skill for alternative perspective
-5. **General search** - `WebSearch` tool as fallback
+1. **Check troubleshooting guide** - `references/guides/troubleshooting.md` for documented parser errors.
+2. **Consult local references** - load the relevant diagram guide and compare against working templates.
+3. **Use available search tools** - if local references do not cover the issue, prefer official Mermaid documentation or the Mermaid repository with whatever web/search tool is available in the current Codex session.
 
 ### Manual Fallback Steps
 
@@ -210,7 +208,7 @@ If the script is unavailable:
 3. **Save to** `./diagrams/<markdown_file>_<num>_<type>_<title>.mmd`
 4. **Validate:** `mmdc -i file.mmd -o file.png -b transparent`
 5. **On error:** Search `references/guides/troubleshooting.md` for matching error
-6. **If not found:** Use search tools in priority order above
+6. **If not found:** Use the web/search tools available in the current Codex session, preferring official Mermaid sources
 7. **Add reference:** `![Description](./diagrams/filename.png)`
 
 ### Pattern 6: Resilient Diagram Generation
@@ -225,7 +223,7 @@ If the script is unavailable:
 5. Generate Mermaid code using templates
 6. Execute resilient workflow:
    ```bash
-   python scripts/resilient_diagram.py \
+   python3 scripts/resilient_diagram.py \
        --code "[generated code]" \
        --markdown-file design_doc \
        --diagram-num 1 \
@@ -277,16 +275,16 @@ graph TB
 
 ```bash
 # List all diagrams
-python scripts/extract_mermaid.py document.md --list-only
+python3 scripts/extract_mermaid.py document.md --list-only
 
 # Extract to separate files
-python scripts/extract_mermaid.py document.md --output-dir diagrams/
+python3 scripts/extract_mermaid.py document.md --output-dir diagrams/
 
 # Validate all diagrams
-python scripts/extract_mermaid.py document.md --validate
+python3 scripts/extract_mermaid.py document.md --validate
 
 # Replace with image references (for Confluence upload)
-python scripts/extract_mermaid.py document.md --replace-with-images \
+python3 scripts/extract_mermaid.py document.md --replace-with-images \
   --image-format png --output-markdown output.md
 ```
 
@@ -294,17 +292,17 @@ python scripts/extract_mermaid.py document.md --replace-with-images \
 
 ```bash
 # Single conversion
-python scripts/mermaid_to_image.py diagram.mmd output.png
+python3 scripts/mermaid_to_image.py diagram.mmd output.png
 
 # With custom settings
-python scripts/mermaid_to_image.py diagram.mmd output.svg \
+python3 scripts/mermaid_to_image.py diagram.mmd output.svg \
   --theme dark --background white --width 1200
 
 # Batch convert directory
-python scripts/mermaid_to_image.py diagrams/ output/ --format png --recursive
+python3 scripts/mermaid_to_image.py diagrams/ output/ --format png --recursive
 
 # From stdin
-echo "graph TD; A-->B" | python scripts/mermaid_to_image.py - output.png
+echo "graph TD; A-->B" | python3 scripts/mermaid_to_image.py - output.png
 ```
 
 ## Decision Tree Examples
@@ -392,8 +390,8 @@ graph TB
 ```
 design-doc-mermaid/
 ├── SKILL.md                          # This file - Main orchestrator
-├── README.md                         # User documentation
-├── CLAUDE.md                         # Claude Code instructions
+├── README.md                         # Project-local usage notes
+├── HIGH_CONTRAST_UPDATE.md           # Historical contrast guidance
 │
 ├── references/                       # Reference materials
 │   ├── mermaid-diagram-guide.md     # Legacy general guide
@@ -418,7 +416,8 @@ design-doc-mermaid/
 │
 ├── scripts/                          # Python utilities
 │   ├── extract_mermaid.py           # Extract & validate diagrams
-│   └── mermaid_to_image.py          # Convert to PNG/SVG
+│   ├── mermaid_to_image.py          # Convert to PNG/SVG
+│   └── resilient_diagram.py         # Save, render, validate, recover
 │
 ├── examples/                         # Language-specific patterns
 │   ├── spring-boot/                 # Spring Boot patterns
@@ -427,9 +426,6 @@ design-doc-mermaid/
 │   ├── python-etl/                  # Data pipeline patterns
 │   ├── node-webapp/                 # Express.js patterns
 │   └── java-webapp/                 # Traditional Java patterns
-│
-└── references/                       # General Mermaid reference
-    └── mermaid-diagram-guide.md     # Complete Mermaid syntax guide
 ```
 
 ## Workflow Summary
@@ -495,4 +491,4 @@ design-doc-mermaid/
 
 **Version:** 2.0 (Hierarchical Architecture)
 **Last Updated:** 2025-01-13
-**Maintained by:** Claude Code Skills
+**Maintained by:** Project-local Codex skills

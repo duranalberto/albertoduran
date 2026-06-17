@@ -216,7 +216,7 @@ The `resilient_diagram.py` script automates the entire workflow:
 
 ```bash
 # Basic usage
-python scripts/resilient_diagram.py \
+python3 scripts/resilient_diagram.py \
     --code "flowchart TD; A-->B" \
     --markdown-file design_doc \
     --diagram-num 1 \
@@ -224,7 +224,7 @@ python scripts/resilient_diagram.py \
     --format png
 
 # With JSON output (recommended for programmatic use)
-python scripts/resilient_diagram.py \
+python3 scripts/resilient_diagram.py \
     --code "sequenceDiagram..." \
     --markdown-file api \
     --diagram-num 2 \
@@ -383,7 +383,7 @@ When troubleshooting.md doesn't have a matching fix, use external search tools *
 Best for: Specific syntax questions, code examples
 
 ```
-perplexity_ask: "mermaid sequenceDiagram syntax error participant not defined"
+available web search: "mermaid sequenceDiagram syntax error participant not defined"
 ```
 
 ### 2. Brave Search MCP (Secondary)
@@ -391,7 +391,7 @@ perplexity_ask: "mermaid sequenceDiagram syntax error participant not defined"
 Best for: Recent issues, GitHub discussions, community solutions
 
 ```
-brave_web_search: "mermaid gantt chart reserved word error site:github.com"
+available web search: "mermaid gantt chart reserved word error site:github.com"
 ```
 
 ### 3. Gemini Skill (Tertiary)
@@ -399,19 +399,19 @@ brave_web_search: "mermaid gantt chart reserved word error site:github.com"
 Best for: Complex multi-line errors, alternative perspectives, debugging assistance
 
 ```
-Use gemini skill with prompt:
+Use a second-pass local review with prompt:
 "I have a Mermaid diagram error. The code is:
 [paste diagram code]
 The error is: [paste error message]
 What is the fix?"
 ```
 
-### 4. WebSearch Tool (Fallback)
+### 4. Available Web Search Tool (Fallback)
 
 Best for: General web results when other tools unavailable
 
 ```
-WebSearch: "mermaid diagram syntax error [specific error text]"
+Search: "mermaid diagram syntax error [specific error text]"
 ```
 
 ### Search Query Format
@@ -578,13 +578,13 @@ flowchart TD
 **Recovery:**
 
 1. **Search troubleshooting.md** → No match
-2. **Use perplexity_ask:**
+2. **Use available web search:**
    ```
    "mermaid flowchart custom directive unknown parsing error"
    ```
 3. **Get solution** from search result
 4. **Apply fix and retry**
-5. **If still failing:** Escalate to brave_web_search, then gemini skill
+5. **If still failing:** Use available web search, then revisit the local troubleshooting guide
 
 ---
 
@@ -611,10 +611,10 @@ flowchart TD
 ### Search Priority
 
 ```
-1. perplexity_ask MCP
-2. brave_web_search MCP
-3. gemini skill
-4. WebSearch tool
+1. available web search MCP
+2. available web search MCP
+3. a second-pass local review
+4. available web search tool
 ```
 
 ### Validation Command

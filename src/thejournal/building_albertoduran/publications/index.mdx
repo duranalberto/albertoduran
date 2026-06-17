@@ -1,336 +1,173 @@
 ---
-title: "Inside the Publication System"
-description: "An overview of the journal architecture built with Astro, MDX, and a custom manifest system."
-pubDate: 2026-03-07
+title: "Inside the publication system"
+description: "How MDX files become filtered manifests, vault navigation, rendered article pages, and static routes in the journal."
 author: "Alberto Duran"
-tags: ["astro", "mdx", "architecture", "static-sites"]
-order: 3
-image: "../../../assets/thejournal/stock/01.avif"
+tags: ["astro", "mdx", "content"]
+pubDate: 2026-06-17
+order: 20
 ---
 
-This journal is not a typical blog.
-
-It behaves more like a small documentation system or a personal knowledge base.
-
-Articles live in folders.  
-Folders represent topics.  
-Each topic can contain nested sections and related publications.
-
-The structure resembles documentation systems where content is grouped by subject rather than by date.
-
-The goal was straightforward.
-
-- keep publications as simple MDX files
-- organize knowledge using folders
-- automatically generate navigation
-- produce static pages that load instantly
-
-Astro provided the foundation. A small set of utilities builds the rest of the system.
+The journal looks calm from the outside. A reader opens an article, sees a title, a reading time, a vault sidebar, a table of contents, and maybe a diagram. Under that page, the site has already made dozens of decisions about whether the file should publish, where it lives, what image it owns, and which page comes next. This section explains that pipeline so the journal can keep growing without becoming a memory test.
 
 ---
 
-## Why This Architecture Exists
+## The publication problem
 
-Most blogging systems flatten content.
+The hard part of this journal is not rendering Markdown. Astro already does that well. The harder part is making a folder of MDX files behave like a structured publication system, where a single entry can appear as a route, a navigation item, a card, a breadcrumb target, and a pagination neighbor.
 
-Posts appear as chronological lists. This works well for announcements or short articles.
+That means the site needs one source of truth between content loading and page rendering. Without that middle layer, every component would invent a small version of publishing policy. One component would filter drafts. Another would guess vault membership. A third would build previous and next links from whatever array it received. That kind of drift is quiet until the day a draft page leaks into navigation.
 
-Technical publications require something different.
+The publication system solves the problem by treating the journal as a build-time data product. MDX files are source material. The content collection validates frontmatter. The manifest builder applies site rules. The route layer consumes a prepared context instead of recalculating policy.
 
-A technical journal benefits from:
+> The useful boundary is simple. Astro loads content, the manifest decides what publication means, and the route turns that decision into a page.
 
-- hierarchical navigation
-- grouped topics
-- ordered reading paths
-- structured sections
-- reusable layouts
-
-The journal addresses these needs with three main components.
-
-1. Astro content collections
-2. A manifest builder that understands folder structures
-3. Static page generation during the build process
-
-The result is a structured publication system without a database.
+That split keeps the authoring experience plain. Writers still create ordinary `.mdx` files under `src/thejournal/`. The build does the fussy work after that, which is exactly where fussy work belongs.
 
 ---
 
-## The Core Pipeline
+## The build path
 
-The entire system works as a transformation pipeline.
+The publication pipeline starts with source files and ends as static HTML. The route may look dynamic because it uses `/thejournal/[...slug]/`, but the build has already enumerated every path before deployment.
 
-```text
-MDX Publications
-│
-▼
-Astro Content Collection
-│
-▼
-Manifest Builder
-│
-├── entryManifest
-├── vaultsManifest
-└── rawEntries
-│
-▼
-Dynamic Route
-[...slug].astro
-│
-▼
-MDX Rendering
-renderResult.Content
-│
-▼
-Article Layout
-│
-▼
-Static HTML Pages
+```mermaid
+flowchart TD
+    Source[📝 Journal MDX files] --> Collection[📚 Astro collection loader]
+    Collection --> Raw[📥 Raw collection entries]
+    Raw --> Filter[🚦 Draft and scope filter]
+    Filter --> Manifest[🧭 Journal manifest builder]
+    Manifest --> Outputs{📦 Manifest outputs}
+    Outputs --> Entry[🔎 entryManifest]
+    Outputs --> Vaults[📚 vaultsManifest]
+    Outputs --> Published[✅ publishedEntries]
+    Published --> Paths[📍 getStaticPaths]
+    Entry --> Route[📄 Article route]
+    Vaults --> Route
+    Paths --> Route
+    Route --> Render[🧩 render post]
+    Render --> Html[🌐 Static HTML]
+
+    classDef source fill:#FFE4B5,stroke:#333,stroke-width:2px,color:black
+    classDef build fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+    classDef decision fill:#FFD700,stroke:#333,stroke-width:2px,color:black
+    classDef output fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
+    classDef route fill:#E6E6FA,stroke:#333,stroke-width:2px,color:darkblue
+
+    class Source,Raw source
+    class Collection,Filter,Manifest,Render build
+    class Outputs decision
+    class Entry,Vaults,Published output
+    class Paths,Route,Html route
 ```
 
-Each stage converts raw content into a richer structure.
+The important detail is that `publishedEntries`, `entryManifest`, and `vaultsManifest` come from the same published set. The route generator, article header, sidebar, breadcrumb, and pagination controls are not each asking the filesystem a different question.
 
-By the end of the process, every publication becomes a fully rendered static page.
+### The current route contract
 
----
+The catch-all route imports all three outputs from `@content/processors/thejournal`. It uses `publishedEntries` to generate static paths, `entryManifest` to retrieve article context, and `vaultsManifest` to render vault navigation when the entry belongs to one.
 
-## Writing Publications
-
-Each article exists as an MDX file.
-
-They live inside the journal directory.
-
-```text
-src/thejournal
+```ts
+export async function getStaticPaths() {
+  return publishedEntries.map((entry) => ({
+    params: { slug: entry.id },
+    props: { post: entry },
+  }));
+}
 ```
 
-Folders organize the topics.
+That contract keeps `src/pages/thejournal/[...slug].astro` small. The route still assembles a lot of UI, but it does not own publishing rules. When a page appears, disappears, inherits an image, or gets linked in sequence, that decision has already happened.
 
-```text
-src/thejournal
-│
-├── index.mdx
-│
-├── architecture
-│ ├── index.mdx
-│ └── astro-content.mdx
-│
-└── javascript
-├── index.mdx
-└── closures.mdx
+---
+
+## The three outputs
+
+The processor exports three shapes because the page layer has three different jobs. A single array would force the route and components to keep reshaping the same data. Separate outputs make each read path obvious.
+
+| Output | Shape | Primary reader |
+| ---- | ---- | ---- |
+| `publishedEntries` | Filtered Astro collection entries. | `getStaticPaths()` and `render(post)`. |
+| `entryManifest` | Flat lookup keyed by entry ID. | Article route, header, pagination, and path lookup. |
+| `vaultsManifest` | Nested vault tree keyed by vault ID. | Vault sidebar, breadcrumbs, and mobile vault overlay. |
+
+`publishedEntries` keeps the original collection entry available because Astro's `render(post)` expects that object. `entryManifest` holds the site-specific context that components need, including read time, image inheritance, vault ID, previous ID, and next ID. `vaultsManifest` preserves the nested folder shape that a flat collection cannot express.
+
+This division also gives the build a good failure point. If a vault folder is missing an index, the manifest builder can throw before the route ever renders. If a standalone article has no image, the manifest can stop the build before a card or social preview gets broken output.
+
+### Why IDs and file paths both matter
+
+The collection entry ID becomes the public route slug. The normalized file path tells the manifest where the entry lives inside the source tree. Those values often look similar, but they answer different questions.
+
+The route ID answers, "What URL should Astro generate?" The file path answers, "Which folder owns this entry?" That second answer is what lets the builder require vault indexes, group nested sections, and inherit a vault root image for child entries.
+
+When those concepts stay separate, the journal can change policy without making the route parse local file paths. The route receives a prepared context and renders the page. Small mercy, large payoff.
+
+---
+
+## Where policy belongs
+
+The schema in `src/content.config.ts` defines what authors can write in frontmatter. It knows about fields like `title`, `pubDate`, `image`, `tags`, and `draft`. It should not know what a vault is, how nested groups sort, or which pages belong to the previous and next chain.
+
+That site-specific policy lives in `src/content/processors/thejournal-manifest.ts`. The file handles the rules that depend on location, body content, or the full set of entries.
+
+- Draft standalone entries stay out of the manifest and route generation.
+- Draft index files create excluded scopes for the folder beneath them.
+- Every vault root and nested vault section must have an index file.
+- Standalone entries and vault roots must declare an image.
+- Vault children can inherit the image from the vault root.
+- Read time is measured once and stored in entry context.
+- Previous and next links follow the same order as the vault explorer.
+
+Those rules are not display preferences. They are publishing guarantees. Putting them in the manifest means the route, header, sidebar, and catalog can trust the context they receive.
+
+### A route should not become a policy engine
+
+It is tempting to put small checks in the route because the route already has the data. That works once. Then a catalog page needs the same check, a sidebar needs a slightly different check, and the test suite has to catch differences that should not exist.
+
+The manifest builder is the pressure valve. It centralizes the decisions that need to stay consistent across every journal surface. Components then become easier to read because they are rendering known states instead of negotiating whether the page is valid.
+
+---
+
+## Authoring stays ordinary
+
+The publication system does not ask writers to write component-heavy MDX for common article needs. Most authoring stays close to Markdown. The route supplies component overrides when it renders the compiled entry.
+
+```ts
+const components = {
+  pre: CodeBlock,
+  h2: HeadingAnchor,
+  h3: HeadingAnchorH3,
+  table: ProseTable,
+  div: MermaidDiagramWrapper,
+};
 ```
 
-Each folder represents a topic.
+That map is a small but important piece of the system. It lets a fenced code block become a Shiki-highlighted DaisyUI code panel. It lets normal `##` and `###` headings become copyable anchors. It lets Markdown tables become keyboard-scrollable regions. It lets Mermaid output become an expandable diagram shell without authors importing a component.
 
-The `index.mdx` file acts as the entry page for that section.
-
-These sections are called **vaults** inside the system.
+The writer gets simple source. The reader gets the site's UI. The build gets one place to wire those choices together.
 
 ---
 
-## Astro Collections
+## The section map
 
-Astro scans the journal directory using a content collection.
+This `publications/` section is split by ownership boundary. Each article looks at a layer that can be changed independently, as long as its contract with the next layer stays intact.
 
-The configuration lives in:
+| Article | Main question |
+| ---- | ---- |
+| `collections` | Which frontmatter fields can authors write, and what does the schema validate. |
+| `manifest_rules` | Which content rules become build-time policy before pages render. |
+| `static_generation` | How the catch-all route turns published entries into static pages. |
+| `mdx_rendering` | How `render(post)` and component overrides shape article HTML. |
+| `codeblocks` | How fenced code becomes theme-aware highlighted output. |
 
-```text
-src/content.config.ts
-```
+Read them in that order if you are changing the publishing model. The collection article starts with the author contract. The manifest article explains the build policy. Static generation shows how those decisions become routes. The rendering and code block articles cover the final MDX presentation layer.
 
-The collection performs several tasks.
-
-- validates metadata
-- loads MDX entries
-- provides typed content access
-- exposes a consistent API
-
-This transforms raw files into structured content entries.
+If you are changing the publishing model, keep the same direction of ownership. Collection schema should describe author input. The manifest should describe publication policy. The route should assemble a prepared page. The renderer should map ordinary MDX to local components. Keeping those responsibilities separate is what lets the site grow without turning every article into custom page code.
 
 ---
 
-## The Manifest Builder
+## What this buys the site
 
-Once the entries are loaded, a utility builds the journal structure.
+The practical benefit is boring in the best way. A new publication can be added by creating a file, filling frontmatter, and writing the article. If the file violates a journal rule, the build should complain with enough detail to fix the source.
 
-The manifest builder analyzes the folder hierarchy and metadata.
+That is better than discovering a broken breadcrumb after deploy. It is better than relying on a mental checklist for vault indexes. It is better than asking every component to defend itself against invalid content. Publishing rules become executable, and the UI can focus on readers.
 
-It generates three resources.
-
-```text
-entryManifest
-vaultsManifest
-rawEntries
-```
-
-These resources allow the interface to understand:
-
-- the hierarchy of vaults
-- article navigation
-- ordering rules
-- contextual relationships
-
-The manifest becomes the source of truth for the entire journal.
-
----
-
-## Static Page Generation
-
-All journal pages are rendered through a single dynamic route.
-
-```text
-src/pages/thejournal/[...slug].astro
-```
-
-During the build process Astro generates a page for every publication.
-
-```text
-/thejournal/architecture
-/thejournal/architecture/astro-content
-/thejournal/javascript/closures
-```
-
-Each page loads its corresponding entry from the manifest and renders it.
-
-No runtime database queries are required.
-
----
-
-## MDX Rendering
-
-MDX articles are compiled into components.
-
-The page renders them using:
-
-```astro
-<renderResult.Content components={components} />
-```
-
-Markdown tokens become HTML elements.
-
-Custom components extend the rendering process.
-
-Examples include:
-
-- headings with anchor links
-- styled code blocks
-- typography aware layouts
-
-All transformations happen during the build.
-
----
-
-## Prebuilt Navigation
-
-The journal also generates navigation elements at build time.
-
-These include:
-
-- table of contents
-- previous and next article links
-- vault navigation trees
-
-Because these elements are precomputed, the browser does not execute scripts to build them.
-
-The page arrives fully rendered.
-
----
-
-## Advantages of This Approach
-
-This architecture keeps the system simple while supporting complex content structures.
-
-Benefits include:
-
-- fast page loading
-- minimal client side JavaScript
-- clear separation between content and layout
-- predictable navigation
-- easy authoring workflow
-
-Authors only write MDX files. The build process handles the rest.
-
----
-
-## Articles in This Directory
-
-This series explains each part of the system in detail.
-
-### Content Collections Architecture
-
-A detailed explanation of the collection configuration and the manifest builder that organizes journal entries.
-
-Topics include:
-
-- thejournal collection
-- vault structure
-- entry and vault manifests
-- content discovery
-
----
-
-### Page Generation and Navigation
-
-An exploration of the routing system that converts manifest entries into static pages.
-
-Topics include:
-
-- dynamic routing
-- slug resolution
-- vault navigation
-- article ordering
-- table of contents generation
-
----
-
-### MDX Rendering with Astro
-
-A review of the rendering pipeline that converts MDX content into styled HTML.
-
-Topics include:
-
-- `renderResult.Content`
-- markdown token conversion
-- component overrides
-- the Article layout system
-- typography styling
-
----
-
-### Rendering codeblocks
-
-An explanation of the code block system used throughout the journal.
-
-Topics include:
-
-- the CodeBlock component
-- Shiki syntax highlighting
-- DaisyUI mockup code styles
-- theme integration
-- build time highlighting
-
----
-
-## A Small Publishing Engine
-
-Together these components form a compact publishing engine.
-
-```text
-Author writes MDX
-│
-▼
-Astro loads the collection
-│
-▼
-Manifest organizes the journal
-│
-▼
-Routes generate static pages
-│
-▼
-MDX renders into styled HTML
-│
-▼
-Publications ready to read
-```
-
-Everything begins with a folder of MDX files and ends as a structured, static journal.
+The tradeoff is that the manifest builder becomes an important piece of infrastructure. It deserves tests, careful naming, and conservative changes. When content policy changes, update the manifest first, then check every surface that consumes the context. The rest of this section exists to make that work less mysterious.

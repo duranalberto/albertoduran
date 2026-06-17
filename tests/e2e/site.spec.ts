@@ -6,7 +6,7 @@ const smokeRoutes = [
   "/thejournal/",
   "/thejournal/my_first_publication/",
   "/thejournal/building_albertoduran/",
-  "/thejournal/building_albertoduran/publications/slug_generation/",
+  "/thejournal/building_albertoduran/publications/static_generation/",
 ];
 
 const responsiveRoutes = [
@@ -472,7 +472,7 @@ test("article pages expose article navigation, headings, and vault context", asy
 
   await page.setViewportSize({ width: 1536, height: 900 });
   await page.goto(
-    "/thejournal/building_albertoduran/publications/slug_generation/",
+    "/thejournal/building_albertoduran/publications/static_generation/",
   );
 
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
@@ -496,7 +496,7 @@ test("mobile On This Page panel preserves selected heading scroll after close", 
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(
-    "/thejournal/building_albertoduran/publications/slug_generation/",
+    "/thejournal/building_albertoduran/publications/static_generation/",
   );
 
   await page.evaluate(() => window.scrollTo(0, 0));
@@ -538,9 +538,9 @@ test("mobile On This Page panel preserves selected heading scroll after close", 
   ).toBe(true);
 
   await dialog
-    .getByRole("link", { name: "Building the Table of Contents" })
+    .getByRole("link", { name: "Headings and navigation" })
     .click();
-  await expect(page).toHaveURL(/#building-the-table-of-contents$/);
+  await expect(page).toHaveURL(/#headings-and-navigation$/);
   await expect
     .poll(() => page.evaluate(() => window.scrollY))
     .toBeGreaterThan(pageScrollBeforeOpen + 500);

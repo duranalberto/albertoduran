@@ -1,95 +1,28 @@
 ---
-title: "Content Collections Architecture"
-pubDate: 2026-03-07
-description: "An inside look at the journal content system. This article explains how Astro collections and a custom manifest builder transform MDX files into a structured knowledge base."
+title: "Content collections and schema rules"
+description: "How the journal collection schema defines author metadata while manifest code enforces vault-specific publishing rules."
 author: "Alberto Duran"
-order: 3
-image: "../../../assets/thejournal/stock/01.avif"
-tags: ["astro", "typescript", "mdx", "static-sites"]
+tags: ["astro", "schema", "mdx"]
+pubDate: 2026-06-17
+order: 10
 ---
 
-## The Problem This System Solves
-
-I wanted a journal that behaved like a small knowledge base. Articles live in folders. Some folders act like sections. Others behave like nested topics.
-
-The UI needs structure, navigation, ordering, and relationships between entries.
-
-Astro gives a strong base with content collections. The project adds a layer that builds a manifest. That manifest becomes the source of truth for the UI.
-
-The flow looks like this.
-
-```
-MDX Files
-   │
-   ▼
-Astro Content Collection
-   │
-   ▼
-getCollection("thejournal")
-   │
-   ▼
-loadManifest()
-   │
-   ├── entryManifest
-   ├── vaultsManifest
-   └── rawEntries
-   │
-   ▼
-UI pages read the manifest
-```
-
-Each stage adds structure.
+A schema is a promise with a narrow job. It says which frontmatter fields an author can use and which values are valid enough to enter the build. It does not know whether a folder should become a vault, whether an image can be inherited, or whether a draft index should hide a whole subtree. This article separates those jobs so the journal can stay strict without making the schema carry the whole site.
 
 ---
 
-## Step 1. The Content Lives as MDX Files
+## The collection boundary
 
-Every journal entry lives under this directory.
+The journal collection lives in `src/content.config.ts`. That file is the first public contract between an MDX author and the build. If an entry cannot satisfy the schema, it should fail early, before the manifest builder tries to place it in navigation or before a page route tries to render it.
 
-```
-src/thejournal/
-```
+Astro content collections are a good fit here because they handle a practical middle ground. They load files from disk, validate frontmatter with Zod, and give the route layer typed collection entries. Zod is the validation library that turns a loose YAML object into a checked data shape. The collection does not need to understand every site rule to be useful.
 
-Example structure.
+The journal uses a glob loader rather than a custom loader for MDX source. A glob is a filename pattern, so this loader is simply saying which files under `src/thejournal/` can become candidates. The setup is intentionally small because the source already lives in predictable local folders.
 
-```
-src/thejournal
-│
-├── index.mdx
-│
-├── architecture
-│   ├── index.mdx
-│   ├── astro-content.mdx
-│   └── static-site-structure.mdx
-│
-└── javascript
-    ├── index.mdx
-    └── closures.mdx
-```
-
-Important convention.
-
-Every folder has an index.mdx. That file acts as the section root.
-
-This project calls those sections vaults.
-
-So the folder becomes a vault. The index file becomes the vault entry.
-
----
-
-## Step 2. Astro Collections Register the Content
-
-Astro collections provide a typed content layer.
-
-The configuration lives in src/content.config.ts.
-
-```typescript
-import { glob } from "astro/loaders";
-import { defineCollection, z } from "astro:content";
-
+```ts
 const thejournal = defineCollection({
   loader: glob({
-    pattern: "**/*.mdx",
+    pattern: "**/[^_]*.{md,mdx}",
     base: "./src/thejournal",
   }),
   schema: ({ image }) =>
@@ -99,432 +32,177 @@ const thejournal = defineCollection({
       image: image().optional(),
       description: z.string().default("Without description available."),
       pubDate: z.coerce.date(),
+      updatePubDate: z.coerce.date().optional(),
       tags: z.array(z.string()).default([]),
       order: z.number().default(100),
+      draft: z.boolean().optional(),
     }),
 });
-
-export const collections = { thejournal };
 ```
 
-This does several things.
-
-Astro scans all MDX files under src/thejournal.
-
-Each file becomes a typed entry.
-
-The schema enforces frontmatter structure.
-
-Example frontmatter.
-
-```
----
-title: Astro Content Collections
-description: How Astro organizes content
-pubDate: 2025-01-01
-tags: [astro, content]
-order: 1
----
-```
-
-Benefits of collections.
-
-- Schema validation
-- Type safety
-- Automatic content discovery
-- Unified loading through getCollection
-- Clear separation between code and content
-
-The project now has structured content. It still lacks hierarchy.
-
-That is where the manifest comes in.
+The loader says which files are candidates. The schema says which metadata shape those candidates must have. Everything after that belongs to the processor layer.
 
 ---
 
-## Step 3. The Manifest Builder
+## The glob pattern
 
-The file `src/utils/thejournal_manifest.ts` builds the system that the UI actually uses.
-
-Its job is to transform raw entries into a navigable structure.
-
-The process begins here.
-
-```typescript
-const rawEntries = await getCollection("thejournal");
-```
-
-getCollection returns every journal entry with metadata and body.
-
-But the UI needs more information.
-
-Examples.
-
-- folder hierarchy
-- navigation order
-- previous and next article
-- vault grouping
-
-The manifest layer computes all of this.
-
----
-
-## Step 4. What Is a Vault
-
-A vault represents a root directory inside the journal.
-
-Example.
-
-```
-src/thejournal/architecture
-```
-
-The file
-
-```
-src/thejournal/architecture/index.mdx
-```
-
-defines the vault entry.
-
-The rest of the files belong to that vault.
-
-```
-architecture
-├── index.mdx
-├── astro-content.mdx
-└── static-site-structure.mdx
-```
-
-The vault becomes a navigable tree.
-
-```
-Vault
- │
- ├── Index Article
- ├── Article A
- └── Article B
-```
-
-Nested folders create nested vault nodes.
-
----
-
-## Step 5. Loading the Manifest
-
-The manifest loader returns three resources.
-
-```typescript
-export const [entryManifest, vaultsManifest, rawEntries] = await loadManifest();
-```
-
-Each one serves a different purpose.
-
----
-
-### entryManifest
-
-This is a flat lookup table for all entries.
-
-Structure.
-
-```typescript
-Record<string, EntryContext>;
-```
-
-Example.
-
-```typescript
-{
-  "architecture/astro-content.mdx": EntryContext,
-  "architecture/static-site-structure.mdx": EntryContext
-}
-```
-
-Purpose.
-
-Fast access to entry metadata from an id.
-
-Used by routing, navigation, and article pages.
-
-The data is produced by this function.
-
-```typescript
-function mapEntryToContext(entry: JournalEntry): EntryContext;
-```
-
-It converts a raw Astro entry into a simplified context object.
-
-Fields include
-
-- id
-- filepath
-- title
-- description
-- tags
-- pubDate
-- readTime
-- vaultId
-
-Read time is calculated like this.
-
-```typescript
-const wordsPerMinute = 160;
-const words = entry.body?.trim().split(/\s+/).length;
-```
-
----
-
-### vaultsManifest
-
-This object represents the journal structure.
-
-Type.
-
-```typescript
-Record<string, VaultContext>;
-```
-
-Each vault contains
-
-```
-VaultContext
- │
- ├── index
- └── items
-```
-
-Example.
-
-```
-architecture
-│
-├── index.mdx
-├── astro-content.mdx
-└── static-site-structure.mdx
-```
-
-Becomes
-
-```
-VaultContext
- │
- ├── index
- └── items[]
-```
-
-Nested folders become nested vault nodes.
-
-```
-Vault
- │
- ├── Entry
- └── Subfolder
-     │
-     ├── index
-     └── items
-```
-
-The hierarchy is built here.
+The glob pattern is doing more than collecting files. It defines a small authoring convention for public and private content inside `src/thejournal/`.
 
 ```ts
-function buildNestedStructure(entries, currentPath);
+pattern: "**/[^_]*.{md,mdx}"
 ```
 
-It groups entries by subfolder and recursively builds the tree.
+The `**/` part allows files at any depth under the journal folder. The `{md,mdx}` part accepts both Markdown and MDX. The `[^_]*` basename rule excludes files whose name starts with `_`, which gives the repository a simple way to keep fragments, notes, or experiments near related articles without letting them become publication candidates.
 
-Sorting is handled by
+That underscore rule matters because vaults are directory-driven. A folder can contain a public `index.mdx`, several public child entries, and private supporting files. The author can keep context nearby while the collection loader stays predictable.
 
-```typescript
-function sortByOrderThenTitle(a, b);
-```
+### Candidate does not mean published
 
-Entries use the order field first. Title acts as a fallback.
+A file that matches the glob has only entered the collection. It has not earned a route. Draft filtering, vault requirements, image policy, read time, and pagination are all later decisions.
+
+That distinction is easy to miss because a content collection feels like a list of pages. In this project, it is better to think of it as a list of candidates. The manifest builder turns candidates into published entries.
 
 ---
 
-### rawEntries
+## The frontmatter fields
 
-This is the direct output of Astro.
+The active schema keeps the author contract compact. It supports enough metadata for cards, headers, routing context, and sorting without asking every post to repeat values the build can infer.
 
-```typescript
-JournalEntry[]
-```
+| Field | Schema rule | Where it shows up |
+| ---- | ---- | ---- |
+| `title` | Required string. | Article header, manifest labels, sidebars, and cards. |
+| `github` | Optional string. | Repository button in the article header when present. |
+| `image` | Optional image metadata. | Header image, card image, and social metadata when required by policy. |
+| `description` | String with a default. | Metadata summary, cards, and layout manifest. |
+| `pubDate` | Required date after coercion. | Article header and sorting contexts. |
+| `updatePubDate` | Optional date after coercion. | Updated article metadata when an entry changes later. |
+| `tags` | String array with default `[]`. | Header tags and journal discovery surfaces. |
+| `order` | Number with default `100`. | Manual ordering inside vaults and nested sections. |
+| `draft` | Optional boolean. | Publication exclusion and draft subtree behavior. |
 
-Nothing is modified.
+The schema uses `z.coerce.date()` for dates. That lets YAML strings like `2026-06-17` become `Date` objects for the rest of the build. Components can format dates without reparsing frontmatter.
 
-The project keeps this list because sometimes the raw content is useful.
-
-Example use cases.
-
-- search indexing
-- feeds
-- analytics
-- building lists without hierarchy
-
----
-
-## Step 6. Linking Articles
-
-Articles inside a vault get automatic navigation.
-
-The function responsible is
-
-```typescript
-linkVaultEntries(vault);
-```
-
-It walks through the vault tree and connects entries.
-
-```
-Entry A <-> Entry B <-> Entry C
-```
-
-Each entry receives
-
-```
-previous
-next
-```
-
-This powers the article footer navigation.
+Defaults also keep authoring quiet. A missing `description` receives a fallback. Missing `tags` become an empty array. Missing `order` becomes `100`, which lets most entries sort naturally while still allowing a section index or important article to move earlier.
 
 ---
 
-## Step 7. Path Resolution
+## The update date rule
 
-Pages often know only a URL path.
-
-The project needs to resolve that path into context data.
-
-That is the purpose of
-
-```typescript
-getContextFromPath();
-```
-
-Definition.
-
-```typescript
-export function getContextFromPath(path: string);
-```
-
-Return value.
-
-```typescript
-[EntryContext | null, VaultContext | null];
-```
-
-The function does three things.
-
-1. Normalize the URL path
-2. Locate the entry in the manifest
-3. Resolve its vault
-
-Example flow.
-
-```
-URL
-│
-▼
-/thejournal/architecture/astro-content
-│
-▼
-Normalize path
-│
-▼
-Find entry in entryManifest
-│
-▼
-Find vault in vaultsManifest
-```
-
-The page now has everything it needs.
-
-- entry metadata
-- vault structure
-- sibling entries
-- navigation links
-
----
-
-## Step 8. How the UI Uses the Manifest
-
-The journal page loads the catalog like this.
+The schema adds a refinement around `updatePubDate`. If an entry declares an update date, it must also declare a publication date. The current schema already requires `pubDate`, but the refinement keeps the relationship explicit and gives a clearer error when someone changes the schema later.
 
 ```ts
-const catalog = Object.values(entryManifest);
+.refine(
+  (data) => {
+    if (data.updatePubDate && !data.pubDate) {
+      return false;
+    }
+    return true;
+  },
+  {
+    message:
+      "updatePubDate requires pubDate to be set. Add a pubDate field to this entry.",
+    path: ["updatePubDate"],
+  },
+)
 ```
 
-This creates a list of all entries.
+The rule is small, but it captures an editorial truth. An update date only makes sense as the second point in a timeline. If the first point is missing, the article metadata would tell a half-story.
 
-The UI components then consume the structured data.
+### Why the schema stays conservative
 
-Typical flow.
+It would be possible to add more policy here. The schema could try to require images for some entries, reject drafts inside certain folders, or validate that every nested section has an index. That would make `content.config.ts` aware of the filesystem rules that the manifest already owns.
 
-```
-entryManifest
-     │
-     ▼
-JournalGrid
-     │
-     ▼
-JournalCard
-```
-
-Vault navigation uses vaultsManifest.
-
-```
-vaultsManifest
-     │
-     ▼
-VaultTreeNode component
-```
-
-Each component receives preprocessed data. No expensive computation happens inside the UI.
+The project keeps the schema conservative because frontmatter validation and publication policy change for different reasons. A new optional field belongs in the schema. A new vault rule belongs in the manifest. Mixing those concerns would make simple author metadata changes feel riskier than they are.
 
 ---
 
-## Full Lifecycle Summary
+## Why image is optional
 
-The entire system works like this.
+The `image` field is optional at schema level, even though standalone publications and vault roots must have images. That sounds contradictory until you look at vault children.
 
-```
-1. Author writes MDX files
-2. Astro collection loads the files
-3. getCollection returns typed entries
-4. loadManifest builds structured data
-5. entryManifest enables fast lookup
-6. vaultsManifest builds hierarchy
-7. linkVaultEntries connects navigation
-8. UI components consume the manifest
-```
+Vault child entries can inherit the image from the vault root. This keeps a long section from repeating the same image in every file. It also lets a vault root define the visual identity for the section while individual child pages stay focused on text.
 
-Or visually.
+The manifest builder can make that call because it knows where the entry lives. Position in the tree turns a loose metadata field into a publishing rule.
 
-```
-MDX Files
-   │
-   ▼
-Astro Collection
-   │
-   ▼
-getCollection()
-   │
-   ▼
-Manifest Builder
-   │
-   ├── entryManifest
-   ├── vaultsManifest
-   └── rawEntries
-   │
-   ▼
-UI Components
+```mermaid
+flowchart TD
+    Entry[📝 Collection entry] --> Position{📁 Entry position}
+    Position -->|Standalone| NeedsImage[🖼️ Must declare image]
+    Position -->|Vault root| RootImage[🖼️ Must declare image]
+    Position -->|Vault child| ChildImage{🖼️ Has own image}
+    ChildImage -->|Yes| UseOwn[✅ Use child image]
+    ChildImage -->|No| Inherit[📥 Inherit vault image]
+
+    classDef input fill:#FFE4B5,stroke:#333,stroke-width:2px,color:black
+    classDef decision fill:#FFD700,stroke:#333,stroke-width:2px,color:black
+    classDef rule fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+    classDef output fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
+
+    class Entry input
+    class Position,ChildImage decision
+    class NeedsImage,RootImage,UseOwn rule
+    class Inherit output
 ```
 
-The result feels like a small content database built entirely at build time.
+That is why `image().optional()` is correct. Optional in the schema means optional in the raw frontmatter contract. It does not mean every published context can reach the UI without an image. The manifest finishes that decision after it knows the entry type.
 
-Astro handles file discovery and typing.
+---
 
-The manifest layer turns files into a navigable knowledge structure.
+## Draft is metadata, scope is policy
 
-The UI simply reads the final map.
+The schema treats `draft` as a boolean. That is all it should do. A file either declares `draft: true`, declares `draft: false`, or omits the field.
+
+The meaning of that draft flag depends on location. A standalone draft hides one page. A draft vault root hides the entire vault. A draft nested index hides that section and everything below it. The schema cannot make that distinction because it validates one entry at a time.
+
+The manifest builder can see the full list of entries, so it can turn draft metadata into scoped publication behavior. That makes the draft rule stronger than a simple per-entry filter while keeping the author-facing field simple.
+
+---
+
+## The second collection
+
+`content.config.ts` also defines `atlasData`, a loader-backed collection powered by `src/utils/atlas_loader.ts`. It is not part of the MDX journal, but it explains an important project habit. The site uses content collections for both file-based writing and build-time data.
+
+```ts
+const atlasData = defineCollection({
+  loader: atlas_loader,
+  schema: z.object({
+    standing: z.string(),
+    record: z.string(),
+    points: z.number(),
+    homeTeam: z.string(),
+    awayTeam: z.string(),
+    rawDate: z.string(),
+    stadium: z.string(),
+    city: z.string(),
+  }),
+});
+```
+
+The journal collection starts from files. The Atlas collection starts from a custom loader. Both end as typed build inputs. That pattern lets the site keep browser code small because external or structured data can settle during the static build.
+
+The useful lesson for the journal is that content collections are not the whole publishing system. They are the typed input boundary. The site can then build stronger domain rules on top of that boundary.
+
+---
+
+## Authoring checklist
+
+When adding a new journal entry, the schema gives the first checklist. The manifest gives the second. Keeping those lists separate makes failures easier to read.
+
+- Add `title` and `pubDate` before expecting the file to load as a valid collection entry.
+- Add `description` when the default fallback would make a card or metadata preview unhelpful.
+- Add `tags` when the article belongs to a discoverable topic, and keep them lowercase for consistency.
+- Add `order` when the entry belongs in a specific vault sequence instead of alphabetical fallback order.
+- Add `image` for standalone entries and vault roots, while letting child entries inherit when the shared vault image is enough.
+- Add `draft: true` when the entry or section should stay out of every published surface.
+
+The schema catches malformed data. The manifest catches broken publication structure. A healthy journal needs both because valid frontmatter can still describe an invalid content tree.
+
+---
+
+## What to change with care
+
+Schema changes ripple outward. Adding a field is usually straightforward, but changing defaults or required fields can alter every source file in the collection. The safest path is to decide which layer owns the new behavior before touching code.
+
+If the change describes what an author can write, start in `src/content.config.ts`. If the change describes when a page can publish, how a vault sorts, or how entries relate to each other, start in `src/content/processors/thejournal-manifest.ts`.
+
+That boundary keeps the collection readable. It also keeps the manifest honest. Each layer has a narrow job, and narrow jobs are easier to test when the next content migration arrives.

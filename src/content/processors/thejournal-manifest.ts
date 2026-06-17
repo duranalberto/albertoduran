@@ -21,6 +21,7 @@ export interface JournalManifestSourceEntry {
     updatePubDate?: Date | undefined;
     tags?: string[] | undefined;
     order?: number | undefined;
+    draft?: boolean | undefined;
   };
 }
 
@@ -97,11 +98,52 @@ function addEntryToList(
   entry: EntryContext,
   expectedIndexPath: string,
 ): void {
-  if (entry.filepath === `${expectedIndexPath}/index.mdx`) {
+  if (isIndexFileForPath(entry.filepath, expectedIndexPath)) {
     list.unshift(entry);
   } else {
     list.push(entry);
   }
+}
+
+function isIndexFileForPath(
+  filepath: string,
+  expectedIndexPath: string,
+): boolean {
+  return (
+    filepath === `${expectedIndexPath}/index.mdx` ||
+    filepath === `${expectedIndexPath}/index.md`
+  );
+}
+
+function getIndexScope(entry: JournalManifestSourceEntry): string | null {
+  const normalizedPath = normalizeJournalFilePath(entry.filePath);
+  const match = normalizedPath.match(/^(.*)\/index\.mdx?$/);
+
+  return match?.[1] ?? null;
+}
+
+function isEntryInScope(
+  entry: JournalManifestSourceEntry,
+  scope: string,
+): boolean {
+  return entry.id === scope || entry.id.startsWith(`${scope}/`);
+}
+
+export function filterPublishedJournalEntries<
+  T extends JournalManifestSourceEntry,
+>(rawEntries: T[]): T[] {
+  const draftIndexScopes = rawEntries
+    .filter((entry) => entry.data.draft === true)
+    .map(getIndexScope)
+    .filter((scope): scope is string => typeof scope === "string");
+
+  return rawEntries.filter((entry) => {
+    if (entry.data.draft === true) {
+      return false;
+    }
+
+    return !draftIndexScopes.some((scope) => isEntryInScope(entry, scope));
+  });
 }
 
 function linkVaultEntries(vault: VaultContext) {
@@ -134,10 +176,11 @@ function linkVaultEntries(vault: VaultContext) {
 export function buildJournalManifest(
   rawEntries: JournalManifestSourceEntry[],
 ): [Record<string, EntryContext>, Record<string, VaultContext>] {
+  const publishedEntries = filterPublishedJournalEntries(rawEntries);
   const entryManifest: Record<string, EntryContext> = {};
   const rootVaults: Record<string, EntryContext[]> = {};
 
-  for (const entry of rawEntries) {
+  for (const entry of publishedEntries) {
     const context = mapEntryToContext(entry);
     entryManifest[context.id] = context;
 
@@ -159,14 +202,14 @@ export function buildJournalManifest(
   for (const [vaultId, entries] of Object.entries(rootVaults)) {
     const rootIndex = entries[0];
 
-    if (!rootIndex || rootIndex.filepath !== `${vaultId}/index.mdx`) {
+    if (!rootIndex || !isIndexFileForPath(rootIndex.filepath, vaultId)) {
       continue;
     }
 
     if (!rootIndex.image) {
       throw new Error(
         `[thejournal] Vault root entry "${rootIndex.id}" is missing a required image. ` +
-          `Every vault root index (${vaultId}/index.mdx) must declare an image in its frontmatter.`,
+          `Every vault root index (${vaultId}/index.mdx or ${vaultId}/index.md) must declare an image in its frontmatter.`,
       );
     }
 
@@ -212,7 +255,10 @@ function buildNestedStructure(
 ): VaultItem[] {
   const currentIndex = entries[0];
 
-  if (!currentIndex || currentIndex.filepath !== `${currentPath}/index.mdx`) {
+  if (
+    !currentIndex ||
+    !isIndexFileForPath(currentIndex.filepath, currentPath)
+  ) {
     return [];
   }
 
@@ -248,7 +294,7 @@ function buildNestedStructure(
     const subIndex = subEntries[0];
     const subPath = `${currentPath}/${subDir}`;
 
-    if (subIndex && subIndex.filepath === `${subPath}/index.mdx`) {
+    if (subIndex && isIndexFileForPath(subIndex.filepath, subPath)) {
       items.push({
         id: subPath,
         title: subIndex.title,
@@ -307,7 +353,11 @@ export function resolveJournalContext(
   const id = path.replace(new RegExp(`^${cleanSite}/?`), "").replace(/\/$/, "");
 
   const entry = entryManifest[id] ?? null;
-  const vaultId = entry?.vaultId || getVaultDirectory(id);
+  if (!entry) {
+    return [null, null];
+  }
+
+  const vaultId = entry.vaultId;
   const vault = vaultId ? (vaultsManifest[vaultId] ?? null) : null;
 
   return [entry, vault];

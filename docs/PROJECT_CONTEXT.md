@@ -16,15 +16,15 @@ Astro is configured with `output: "static"` in `astro.config.mjs`. Runtime brows
 
 ## Tech Stack
 
-| Area | Current implementation |
-| :-- | :-- |
-| Framework | Astro `^6.4.4` |
-| Content | Astro content collections and MDX |
-| Styling | Tailwind CSS `^4.3.0` and DaisyUI `^5.5.20` |
-| Diagrams | Custom Mermaid integration that emits themed static SVG assets |
-| HTML output | Custom HTML minifier integration |
-| Tests | Astro Check, Vitest, and Playwright |
-| Deployment config | Cloudflare Workers Assets via `wrangler.json` |
+| Area              | Current implementation                                         |
+| :---------------- | :------------------------------------------------------------- |
+| Framework         | Astro `^6.4.4`                                                 |
+| Content           | Astro content collections and MDX                              |
+| Styling           | Tailwind CSS `^4.3.0` and DaisyUI `^5.5.20`                    |
+| Diagrams          | Custom Mermaid integration that emits themed static SVG assets |
+| HTML output       | Custom HTML minifier integration                               |
+| Tests             | Astro Check, Vitest, and Playwright                            |
+| Deployment config | Cloudflare Workers Assets via `wrangler.json`                  |
 
 ## Architecture
 
@@ -93,12 +93,12 @@ albertoduran/
 
 Routing is file-based and owned by `src/pages/`.
 
-| Route | File | Description |
-| :-- | :-- | :-- |
-| `/` | `src/pages/index.astro` | Home page |
-| `/profile/` | `src/pages/profile.astro` | Professional profile |
-| `/404/` | `src/pages/404.astro` | Static 404 page |
-| `/thejournal/` | `src/pages/thejournal.astro` | Journal index |
+| Route                    | File                                   | Description                                                 |
+| :----------------------- | :------------------------------------- | :---------------------------------------------------------- |
+| `/`                      | `src/pages/index.astro`                | Home page                                                   |
+| `/profile/`              | `src/pages/profile.astro`              | Professional profile                                        |
+| `/404/`                  | `src/pages/404.astro`                  | Static 404 page                                             |
+| `/thejournal/`           | `src/pages/thejournal.astro`           | Journal index                                               |
 | `/thejournal/[...slug]/` | `src/pages/thejournal/[...slug].astro` | Standalone articles, vault roots, and nested vault articles |
 
 Astro is configured with `trailingSlash: "always"`, so generated canonical URLs include trailing slashes.
@@ -124,6 +124,7 @@ const thejournal = defineCollection({
         updatePubDate: z.coerce.date().optional(),
         tags: z.array(z.string()).default([]),
         order: z.number().default(100),
+        draft: z.boolean().optional(),
       })
       .refine(
         (data) => {
@@ -141,20 +142,23 @@ const thejournal = defineCollection({
 });
 ```
 
-| Field | Required | Description |
-| :-- | :-- | :-- |
-| `title` | Yes | Display title |
-| `pubDate` | Yes | Publication date used for sorting |
-| `updatePubDate` | No | Last update date |
-| `description` | No | Card and metadata summary; defaults when omitted |
-| `image` | Required by manifest rules for standalone publications and vault roots | Publication image; child vault entries can inherit the vault root image |
-| `github` | No | Related GitHub repository URL |
-| `tags` | No | Tag list; defaults to `[]` |
-| `order` | No | Manual ordering value; defaults to `100` |
+| Field           | Required                                                               | Description                                                             |
+| :-------------- | :--------------------------------------------------------------------- | :---------------------------------------------------------------------- |
+| `title`         | Yes                                                                    | Display title                                                           |
+| `pubDate`       | Yes                                                                    | Publication date used for sorting                                       |
+| `updatePubDate` | No                                                                     | Last update date                                                        |
+| `description`   | No                                                                     | Card and metadata summary; defaults when omitted                        |
+| `image`         | Required by manifest rules for standalone publications and vault roots | Publication image; child vault entries can inherit the vault root image |
+| `github`        | No                                                                     | Related GitHub repository URL                                           |
+| `tags`          | No                                                                     | Tag list; defaults to `[]`                                              |
+| `order`         | No                                                                     | Manual ordering value; defaults to `100`                                |
+| `draft`         | No                                                                     | Set `draft: true` to exclude a publication from all generated output    |
 
 A vault is any first-level folder under `src/thejournal/` with an `index.mdx`. Nested folders can form sub-vault sections when they also include an `index.mdx`.
 
 The schema accepts `image` as optional because vault child entries can inherit the vault root image. The manifest builder enforces images for standalone publications and vault roots during build-time processing.
+
+Draft filtering is handled before manifest generation and static path generation. A standalone entry with `draft: true` is excluded from `entryManifest`, journal indexes, navigation, pagination, and generated pages. A draft `index.md` or `index.mdx` excludes that index and every entry below its path, so a vault root draft hides the whole vault and a nested section draft hides that section subtree.
 
 ## Testing and CI
 

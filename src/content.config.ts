@@ -19,6 +19,7 @@ const thejournal = defineCollection({
         updatePubDate: z.coerce.date().optional(),
         tags: z.array(z.string()).default([]),
         order: z.number().default(100),
+        draft: z.boolean().optional(),
       })
       .refine(
         (data) => {

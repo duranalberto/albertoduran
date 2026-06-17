@@ -4,12 +4,12 @@ This project is static-first, content-heavy, and uses a small amount of browser 
 
 ## Testing Pyramid
 
-| Layer | Tool | Purpose |
-| :-- | :-- | :-- |
-| Static diagnostics | `npm run check` | Astro and TypeScript diagnostics for `.astro`, content, and TS files. |
-| Unit and integration | `npm test` | Pure logic and mocked integration tests with Vitest. |
-| Production E2E | `npm run test:e2e` | Builds deterministic production output, serves `dist`, then validates browser behavior with Playwright. |
-| Coverage | `npm run test:coverage` | Vitest coverage report for TypeScript logic. |
+| Layer                | Tool                    | Purpose                                                                                                 |
+| :------------------- | :---------------------- | :------------------------------------------------------------------------------------------------------ |
+| Static diagnostics   | `npm run check`         | Astro and TypeScript diagnostics for `.astro`, content, and TS files.                                   |
+| Unit and integration | `npm test`              | Pure logic and mocked integration tests with Vitest.                                                    |
+| Production E2E       | `npm run test:e2e`      | Builds deterministic production output, serves `dist`, then validates browser behavior with Playwright. |
+| Coverage             | `npm run test:coverage` | Vitest coverage report for TypeScript logic.                                                            |
 
 `npm run lint` is not part of the required gate yet because ESLint 10 needs a flat `eslint.config.*` file. Add that config before making lint mandatory in CI.
 
@@ -39,14 +39,14 @@ npm run preview
 
 ## Required Tests by Change Type
 
-| Change type | Required coverage |
-| :-- | :-- |
-| Content manifest, journal routing, vault logic | Vitest tests for manifest shape, required images, sorting, child inheritance, and previous/next links. |
-| Mermaid rendering or SVG handling | Vitest tests for HAST utilities, page CSS hoisting, and theme transforms; Playwright check for rendered diagram shell behavior. Follow `docs/MERMAID_RENDERING.md` for release cache/version checks. |
-| Runtime browser behavior | Playwright tests against production preview. |
-| External data loaders | Vitest tests with mocked `fetch`; no live network dependency in tests. |
-| Layout, navigation, or route changes | Playwright smoke coverage for affected routes and semantic navigation assertions. |
-| New Preact/Astro islands | Unit tests for pure logic plus Playwright coverage for user-visible interaction. |
+| Change type                                    | Required coverage                                                                                                                                                                                    |
+| :--------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Content manifest, journal routing, vault logic | Vitest tests for manifest shape, required images, draft filtering, sorting, child inheritance, and previous/next links.                                                                              |
+| Mermaid rendering or SVG handling              | Vitest tests for HAST utilities, page CSS hoisting, and theme transforms; Playwright check for rendered diagram shell behavior. Follow `docs/MERMAID_RENDERING.md` for release cache/version checks. |
+| Runtime browser behavior                       | Playwright tests against production preview.                                                                                                                                                         |
+| External data loaders                          | Vitest tests with mocked `fetch`; no live network dependency in tests.                                                                                                                               |
+| Layout, navigation, or route changes           | Playwright smoke coverage for affected routes and semantic navigation assertions.                                                                                                                    |
+| New Preact/Astro islands                       | Unit tests for pure logic plus Playwright coverage for user-visible interaction.                                                                                                                     |
 
 ## Critical Test Matrix
 
@@ -56,7 +56,7 @@ Vitest currently covers:
 - Ribbon SVG dimensions, ID scoping, and reference rewriting.
 - Atlas loader normal schedule data, zero-record standings fallback, missing match behavior, failed fetch handling, and deterministic test mode.
 - Mermaid HAST sanitation, page CSS hoisting without unsafe selector restructuring, ID/reference rewriting, foreignObject line break cleanup, Worker theme merging, Ink inline-color hoisting, and dispatcher failure guards.
-- Journal manifest build rules: standalone/vault image requirements, nested vault grouping, child image inheritance, sorted traversal, previous/next links, read time, and path context lookup.
+- Journal manifest build rules: standalone/vault image requirements, draft standalone and draft index subtree filtering, nested vault grouping, child image inheritance, sorted traversal, previous/next links, read time, and path context lookup.
 - HTML minification while preserving `<pre>`, `<code>`, and `<kbd>` fragments.
 
 Playwright currently covers:

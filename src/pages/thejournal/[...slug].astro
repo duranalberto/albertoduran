@@ -16,7 +16,7 @@ import OverlayPanel from "@components/ui/primitive/OverlayPanel.astro";
 import SVGIcon from "@components/ui/primitive/SVGIcon.astro";
 import {
   entryManifest,
-  rawEntries,
+  publishedEntries,
   vaultsManifest,
 } from "@content/processors/thejournal";
 import { ui } from "@data/icons";
@@ -25,7 +25,7 @@ import FlexShell from "@layouts/FlexShell.astro";
 import { render } from "astro:content";
 
 export async function getStaticPaths() {
-  return rawEntries.map((entry) => ({
+  return publishedEntries.map((entry) => ({
     params: { slug: entry.id },
     props: { post: entry },
   }));

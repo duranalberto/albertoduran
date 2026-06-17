@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildJournalManifest,
+  filterPublishedJournalEntries,
   measureReadTime,
   resolveJournalContext,
   type JournalManifestSourceEntry,
@@ -39,6 +40,100 @@ function entry(
 }
 
 describe("thejournal manifest builder", () => {
+  it("keeps entries published when draft is missing or false", () => {
+    const [entries] = buildJournalManifest([
+      entry("missing-draft", "missing-draft.mdx", { image }),
+      entry("false-draft", "false-draft.mdx", { image, draft: false }),
+    ]);
+
+    expect(entries["missing-draft"]).toBeDefined();
+    expect(entries["false-draft"]).toBeDefined();
+  });
+
+  it("filters draft standalone entries from static entries and manifests", () => {
+    const sourceEntries = [
+      entry("published", "published.mdx", { image }),
+      entry("draft-entry", "draft-entry.mdx", { image, draft: true }),
+    ];
+
+    const publishedEntries = filterPublishedJournalEntries(sourceEntries);
+    const [entries, vaults] = buildJournalManifest(sourceEntries);
+    const [resolvedEntry, resolvedVault] = resolveJournalContext(
+      "/thejournal/draft-entry/",
+      entries,
+      vaults,
+    );
+
+    expect(publishedEntries.map((entry) => entry.id)).toEqual(["published"]);
+    expect(entries["published"]).toBeDefined();
+    expect(entries["draft-entry"]).toBeUndefined();
+    expect(resolvedEntry).toBeNull();
+    expect(resolvedVault).toBeNull();
+  });
+
+  it("filters an entire vault when the root index is draft", () => {
+    const [entries, vaults] = buildJournalManifest([
+      entry("draft-vault", "draft-vault/index.md", { image, draft: true }),
+      entry("draft-vault/child", "draft-vault/child.mdx"),
+      entry("draft-vault/section", "draft-vault/section/index.mdx"),
+      entry("draft-vault/section/deep", "draft-vault/section/deep.mdx"),
+      entry("draft-vaultish", "draft-vaultish.mdx", { image }),
+    ]);
+
+    expect(vaults["draft-vault"]).toBeUndefined();
+    expect(entries["draft-vault"]).toBeUndefined();
+    expect(entries["draft-vault/child"]).toBeUndefined();
+    expect(entries["draft-vault/section"]).toBeUndefined();
+    expect(entries["draft-vault/section/deep"]).toBeUndefined();
+    expect(entries["draft-vaultish"]).toBeDefined();
+  });
+
+  it("filters a draft nested section and descendants while preserving siblings", () => {
+    const [entries, vaults] = buildJournalManifest([
+      entry("vault", "vault/index.mdx", { image }),
+      entry("vault/intro", "vault/intro.mdx", { order: 10 }),
+      entry("vault/section", "vault/section/index.mdx", {
+        order: 20,
+        draft: true,
+      }),
+      entry("vault/section/deep", "vault/section/deep.mdx", { order: 1 }),
+      entry("vault/sectional", "vault/sectional.mdx", { order: 30 }),
+    ]);
+
+    expect(entries["vault/section"]).toBeUndefined();
+    expect(entries["vault/section/deep"]).toBeUndefined();
+    expect(entries["vault/sectional"]).toBeDefined();
+    expect(vaults["vault"]?.itemCount).toBe(3);
+
+    const [resolvedEntry, resolvedVault] = resolveJournalContext(
+      "/thejournal/vault/section/deep/",
+      entries,
+      vaults,
+    );
+
+    expect(resolvedEntry).toBeNull();
+    expect(resolvedVault).toBeNull();
+  });
+
+  it("links pagination across published entries only", () => {
+    const [entries] = buildJournalManifest([
+      entry("vault", "vault/index.mdx", { image }),
+      entry("vault/first", "vault/first.mdx", { order: 10 }),
+      entry("vault/draft-middle", "vault/draft-middle.mdx", {
+        order: 20,
+        draft: true,
+      }),
+      entry("vault/last", "vault/last.mdx", { order: 30 }),
+    ]);
+
+    expect(entries["vault"]?.next).toBe("vault/first");
+    expect(entries["vault/first"]?.previous).toBe("vault");
+    expect(entries["vault/first"]?.next).toBe("vault/last");
+    expect(entries["vault/last"]?.previous).toBe("vault/first");
+    expect(entries["vault/last"]?.next).toBeUndefined();
+    expect(entries["vault/draft-middle"]).toBeUndefined();
+  });
+
   it("requires images for standalone entries and vault roots", () => {
     expect(() =>
       buildJournalManifest([
@@ -108,16 +203,19 @@ describe("thejournal manifest builder", () => {
   it("measures prose and code read time with a one-minute minimum", () => {
     expect(measureReadTime(entry("empty", "empty.mdx", { image }, ""))).toBe(0);
 
-    const prose = Array.from({ length: 201 }, (_, index) => `word${index}`).join(
-      " ",
-    );
+    const prose = Array.from(
+      { length: 201 },
+      (_, index) => `word${index}`,
+    ).join(" ");
     expect(measureReadTime(entry("long", "long.mdx", { image }, prose))).toBe(
       2,
     );
 
-    const code = ["```ts", ...Array.from({ length: 41 }, () => "const x = 1;"), "```"].join(
-      "\n",
-    );
+    const code = [
+      "```ts",
+      ...Array.from({ length: 41 }, () => "const x = 1;"),
+      "```",
+    ].join("\n");
     expect(measureReadTime(entry("code", "code.mdx", { image }, code))).toBe(2);
   });
 

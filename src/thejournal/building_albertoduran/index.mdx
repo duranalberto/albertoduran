@@ -101,12 +101,12 @@ albertoduran/
 
 Routing is file-based and owned by `src/pages/`.
 
-| Route | File | Description |
-| :-- | :-- | :-- |
-| `/` | `src/pages/index.astro` | Home page |
-| `/profile/` | `src/pages/profile.astro` | Professional profile |
-| `/404/` | `src/pages/404.astro` | Static 404 page |
-| `/thejournal/` | `src/pages/thejournal.astro` | Journal index |
+| Route                    | File                                   | Description                                                         |
+| :----------------------- | :------------------------------------- | :------------------------------------------------------------------ |
+| `/`                      | `src/pages/index.astro`                | Home page                                                           |
+| `/profile/`              | `src/pages/profile.astro`              | Professional profile                                                |
+| `/404/`                  | `src/pages/404.astro`                  | Static 404 page                                                     |
+| `/thejournal/`           | `src/pages/thejournal.astro`           | Journal index                                                       |
 | `/thejournal/[...slug]/` | `src/pages/thejournal/[...slug].astro` | Standalone publications, vault roots, and nested vault publications |
 
 The site uses trailing slashes, so generated canonical routes include the final `/`.
@@ -121,16 +121,19 @@ Journal content is defined in:
 src/content.config.ts
 ```
 
-| Field | Required | Description |
-| :-- | :-- | :-- |
-| `title` | Yes | Display title |
-| `pubDate` | Yes | Publication date used for sorting |
-| `updatePubDate` | No | Last update date |
-| `description` | No | Card and metadata summary |
-| `image` | Required for standalone publications and vault roots | Publication image; vault children can inherit the root image |
-| `github` | No | Related GitHub repository URL |
-| `tags` | No | Tag list; defaults to `[]` |
-| `order` | No | Manual ordering value; defaults to `100` |
+| Field           | Required                                             | Description                                                                                           |
+| :-------------- | :--------------------------------------------------- | :---------------------------------------------------------------------------------------------------- |
+| `title`         | Yes                                                  | Display title                                                                                         |
+| `pubDate`       | Yes                                                  | Publication date used for sorting                                                                     |
+| `updatePubDate` | No                                                   | Last update date                                                                                      |
+| `description`   | No                                                   | Card and metadata summary                                                                             |
+| `image`         | Required for standalone publications and vault roots | Publication image; vault children can inherit the root image                                          |
+| `github`        | No                                                   | Related GitHub repository URL                                                                         |
+| `tags`          | No                                                   | Tag list; defaults to `[]`                                                                            |
+| `order`         | No                                                   | Manual ordering value; defaults to `100`                                                              |
+| `draft`         | No                                                   | Set `draft: true` to keep the publication out of generated pages, indexes, navigation, and pagination |
+
+Drafts are filtered before the journal manifest and static routes are generated. If a standalone publication has `draft: true`, only that publication is hidden. If an `index.md` or `index.mdx` file has `draft: true`, the index and everything below that folder are hidden; this hides a full vault from the root index or a nested section from a section index.
 
 ---
 

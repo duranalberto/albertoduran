@@ -30,6 +30,12 @@ For Mermaid diagrams, refer to the **`design-doc-mermaid`** skill for diagram de
 
 ## HOW TO USE THIS SKILL
 
+For any post that will live under `src/thejournal/`, review
+`docs/THEJOURNAL_PUBLICATION_GUIDE.md` before planning or delivering the file.
+The guide defines the reader-facing intent, 8-to-15 displayed minute target,
+standalone and vault file shapes, draft behavior, and the processor-owned
+publishing rules in `src/content/processors/`.
+
 When the user provides a topic, follow this sequence without skipping steps:
 
 1. **Receive** the topic or draft (`<TOPIC>` or source text).

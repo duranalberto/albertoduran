@@ -61,6 +61,7 @@ Run commands from the repository root:
 ## Documentation
 
 - `docs/PROJECT_CONTEXT.md` explains the architecture, routes, content model, and deployment target.
+- `docs/THEJOURNAL_PUBLICATION_GUIDE.md` defines how to publish reader-facing entries under `src/thejournal/`.
 - `docs/DEV_ENVIRONMENT.md` explains the DevContainer and local tool setup.
 - `docs/TESTING_STRATEGY.md` defines the required quality gates and CI workflow.
 - `docs/MERMAID_RENDERING.md` documents Mermaid rendering cache/version rules.
@@ -73,9 +74,12 @@ Run commands from the repository root:
 ## Development Rules
 
 - Keep the site static-first and use client JavaScript only for progressive enhancement.
+- Follow `docs/THEJOURNAL_PUBLICATION_GUIDE.md` when publishing or restructuring entries in `src/thejournal/`.
+- AI agents must not modify content under `src/thejournal/` unless explicitly asked to change journal content.
 - Preserve the Astro view-transition experience for internal navigation.
 - Keep TypeScript strict and avoid `any` unless the tradeoff is documented.
 - Prefer existing components, theme tokens, and DaisyUI conventions before adding new styling patterns.
+- Scope verification to the change; do not run every test suite when focused checks are enough.
 - Validate production behavior with `npm run build`, `npm run preview`, and the relevant tests before opening a PR.
 
 ## CI and Deployment

@@ -218,6 +218,8 @@ export function buildJournalManifest(
       entry.vaultId = vaultId;
     }
 
+    assertVaultHasChildEntries(entries, vaultId);
+
     vaultsManifest[vaultId] = {
       id: vaultId,
       title: rootIndex.title,
@@ -270,6 +272,8 @@ function buildNestedStructure(
     );
   }
 
+  assertVaultHasChildEntries(entries, currentPath, "Vault section");
+
   const items: VaultItem[] = [];
   const subfolderBuckets: Record<string, EntryContext[]> = {};
 
@@ -319,6 +323,21 @@ function buildNestedStructure(
   }
 
   return items.sort(sortByOrderThenTitle);
+}
+
+function assertVaultHasChildEntries(
+  entries: EntryContext[],
+  path: string,
+  label = "Vault",
+): void {
+  if (entries.length > 1) {
+    return;
+  }
+
+  throw new Error(
+    `[thejournal] ${label} "${path}" contains only an index entry. ` +
+      `Add at least one child publication, or make it a standalone publication at src/thejournal/${path}.mdx.`,
+  );
 }
 
 export function mapEntryToContext(

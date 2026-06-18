@@ -13,6 +13,17 @@ Before proposing implementation changes, an AI assistant should inspect the curr
 5. `docs/AI_SKILLS.md` for project-local AI skills and their source repositories.
 6. `docs/ROADMAP.md` for planned work and known future integrations.
 
+When creating, revising, moving, or publishing an entry under
+`src/thejournal/`, also review `docs/THEJOURNAL_PUBLICATION_GUIDE.md`. That
+guide is the source of truth for reader-facing journal intent, publication
+length, standalone article shape, vault structure, draft behavior, and the
+processor rules in `src/content/processors/`.
+
+AI assistants must not modify files under `src/thejournal/` unless the user
+explicitly asks for journal content changes. A request to update docs, code,
+tests, styling, processors, or publication policy is not permission to rewrite
+existing journal entries unless the user names that content work directly.
+
 If `.agents/context/` contains user-provided files, review them as local
 reference material before planning or implementing changes. Treat that directory
 as optional, clone-local context: useful for the current workspace, but not a
@@ -25,6 +36,16 @@ Repository files are always the final source of truth when docs and implementati
 ### Verification First
 
 Do not call a task complete without naming the verification performed or explaining why verification could not be run. Use `docs/TESTING_STRATEGY.md` to choose the minimum relevant checks.
+
+### Scoped Testing
+
+Do not run the full test suite by default. Choose the smallest meaningful
+verification for the files changed and the risk introduced, then explain that
+choice in the final response. For example, content-only changes under
+`src/thejournal/` usually do not require every unit test and every Playwright
+test; prefer the relevant content validation, build check, or focused route
+coverage unless the change touches shared processors, routing, runtime behavior,
+or layout.
 
 ### Dependency Guardrails
 

@@ -55,7 +55,12 @@ Journal entries are public-facing publications. They should help readers
 understand a project, design decision, workflow, or lesson. They are not the
 place for internal maintainer runbooks, source-anchor checklists, or change
 instructions unless the article intentionally teaches that workflow to a public
-audience.
+audience. Follow `docs/THEJOURNAL_PUBLICATION_GUIDE.md` before publishing or
+restructuring any entry under `src/thejournal/`.
+
+Published journal entries should display as at least 8 minutes and less than 16
+minutes of reading time. The manifest computes this from prose words and code
+fence lines, so authors should target a displayed read time of 8 to 15 minutes.
 
 The manifest builder in `src/content/processors/thejournal-manifest.ts` maps raw collection entries into:
 
@@ -161,6 +166,11 @@ const thejournal = defineCollection({
 | `draft`         | No                                                                     | Set `draft: true` to exclude a publication from all generated output    |
 
 A vault is any first-level folder under `src/thejournal/` with an `index.mdx`. Nested folders can form sub-vault sections when they also include an `index.mdx`.
+
+Vaults and nested vault sections must contain at least one child publication
+beyond their own index file. Do not create a vault or subdirectory that contains
+only `index.md` or `index.mdx`; use a standalone root-level publication file
+instead.
 
 The schema accepts `image` as optional because vault child entries can inherit the vault root image. The manifest builder enforces images for standalone publications and vault roots during build-time processing.
 

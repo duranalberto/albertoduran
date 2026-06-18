@@ -155,6 +155,14 @@ describe("thejournal manifest builder", () => {
     ).toThrow('Vault "orphan" is missing a required root index');
   });
 
+  it("rejects top-level vault folders with only a root index", () => {
+    expect(() =>
+      buildJournalManifest([
+        entry("empty-vault", "empty-vault/index.mdx", { image }),
+      ]),
+    ).toThrow('Vault "empty-vault" contains only an index entry');
+  });
+
   it("rejects nested vault sections without an index", () => {
     expect(() =>
       buildJournalManifest([
@@ -162,6 +170,18 @@ describe("thejournal manifest builder", () => {
         entry("vault/orphan/deep", "vault/orphan/deep.mdx"),
       ]),
     ).toThrow('Vault section "vault/orphan" is missing a required index');
+  });
+
+  it("rejects nested vault sections with only an index", () => {
+    expect(() =>
+      buildJournalManifest([
+        entry("vault", "vault/index.mdx", { image }),
+        entry("vault/intro", "vault/intro.mdx"),
+        entry("vault/empty-section", "vault/empty-section/index.mdx"),
+      ]),
+    ).toThrow(
+      'Vault section "vault/empty-section" contains only an index entry',
+    );
   });
 
   it("builds nested vaults, inherits child images, sorts items, and links traversal", () => {

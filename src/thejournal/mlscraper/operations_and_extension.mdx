@@ -1,0 +1,137 @@
+---
+title: "Operating MLScraper and adding providers"
+description: "How to run MLScraper locally, handle common failures, enable Telegram notifications, and add a provider through existing contracts."
+author: "Alberto Duran"
+tags: ["python", "testing", "operations"]
+pubDate: 2026-06-18
+order: 70
+---
+
+The fastest way to break a scraper is to treat operations as an afterthought. MLScraper has enough moving parts that a maintainer needs a repeatable path before changing a selector or adding a store. Run it in the dev container, preview URLs, watch health, keep secrets local, and test provider behavior before trusting a new loop.
+
+---
+
+## Local operation starts small
+
+The project is built for the VS Code dev container, which installs runtime dependencies, developer tools, Playwright Chromium, and the configured shell environment. That is the preferred path because browser fetch mode depends on system packages that are easy to miss on a bare host.
+
+The local command path is still straightforward.
+
+```bash
+python -m pip install -r requirements.txt
+python -m playwright install --with-deps chromium
+python app.py
+```
+
+The service listens on port `80`. Once it starts, `GET /health` is the first operational check. During startup, it returns `503`. After the runtime starts, it returns top-level status plus provider details such as job count, active jobs, queued jobs, blocked jobs, block reasons, and recent cycle timing.
+
+For routing changes, do not start the whole service first. Use `preview-url` to inspect exactly one job.
+
+```bash
+python app.py preview-url --provider lv --job-id "PlayStation"
+```
+
+That command uses the same job loader and provider preview helpers as the runtime. It lets a maintainer catch a route issue before the scraper fetches pages or writes new JSON.
+
+---
+
+## Common failures have a first file
+
+Operational issues usually point to one of a few files. No jobs loaded means `config/jobs.yaml` should be checked first. A Telegram warning at startup usually means `config/telegram.yaml` is absent, which is expected unless notifications are enabled. Browser startup errors point at Playwright installation and the dev container.
+
+Browser timeouts point at `FETCH_TIMEOUT_SECONDS` or `BROWSER_WAIT_SELECTOR`. Browser blocked reasons point at `BROWSER_BLOCK_SELECTORS`, provider access, or provider rate policy. High queued job counts point at `CONCURRENCY_LIMIT`. Empty persisted results point at provider parser tests and source markup.
+
+The important habit is to follow the state. Do not start by editing provider selectors if `/health` says the job never left the queue. Do not rewrite lifecycle code if the provider page was blocked and reconciliation was skipped. The health endpoint is the map for the next file to inspect.
+
+Logs complete the picture. The runtime logs provider cycle start and finish, provider backoff, missing motor configuration, and motor failures. Providers log malformed records or unexpected page structures. Telegram helpers log disabled config and send failures without crashing the scraper.
+
+---
+
+## Telegram is optional
+
+Telegram credentials live in `config/telegram.yaml`, which is ignored by Git. To enable notifications, copy the example file and fill in `api_token` plus `chat_id`.
+
+```bash
+cp config/telegram.yaml.example config/telegram.yaml
+```
+
+If the file is missing or blank, Telegram helpers disable notification sends and the service continues running. That behavior is useful in development because every contributor can run the scraper without a bot token.
+
+Notification routing is also conservative. New-item messages are skipped on the first scrape baseline so a newly configured job does not spam every existing listing. Price-drop messages require a parseable previous price, a parseable current price, and a reduction of at least fourteen percent.
+
+Telegram sends run through `run_in_executor` because the helper uses synchronous `requests.post`. The async runtime waits for the wrapper, but the blocking network call does not freeze the event loop. That keeps notification side effects behind the notifier boundary.
+
+---
+
+## Adding a provider follows the existing path
+
+A new provider should look boring beside the existing ones. Create a package under `provider/<provider_name>/`. Add a motor class that subclasses `shared.scraping.motor.Motor`. Set `PROVIDER_KEY`. Implement `scrape_page(self, body)` and return normalized items plus `next_url`.
+
+Then register a factory in `scraper/jobs/factories.py`. The factory must accept `job_id`, `url`, and `query`, even if the provider only uses some of those values. Add enum coercion in `scraper/jobs/loader.py` only for provider-owned YAML fields that need it.
+
+Add motor policy to `config/motors.yaml`, a safe example job to `config/jobs.yaml.example`, and provider docs if public configuration changes. Keep parser helpers inside the provider package with names such as `parser.py`, `urls.py`, `options.py`, or `selectors.py`. Avoid generic provider utility modules that become hiding places for shared logic.
+
+Provider tests should cover factory construction, loader coercion when new fields exist, parser behavior with small fixtures, pagination URL behavior, and empty or gated pages. Those tests are not ceremony. They protect the boundary that keeps provider changes from becoming runtime changes.
+
+---
+
+## Verification should match the change
+
+MLScraper uses `unittest` for its own regression suite. The main command is short.
+
+```bash
+python -m unittest discover -v
+```
+
+Optional developer checks cover types, linting, formatting, and pre-commit.
+
+```bash
+pyright
+ruff check .
+black --check .
+pre-commit run --all-files
+```
+
+Choose checks based on what changed. A provider parser change needs parser tests. A loader change needs job config tests. A fetcher change needs fetcher tests with fake responses. A persistence change needs tests that patch `DATA_PATH` and avoid tracked runtime data.
+
+The current test layout gives maintainers a useful map. `test_articles.py` covers records, streams, and lifecycle. `test_config.py` covers runtime and motor config. `test_fetchers.py` covers HTTP and browser behavior. `test_jobs.py` covers job loading and factories. `test_motor_flow.py` covers scrape flow, incomplete-page safeguards, reconciliation, cooldowns, and broadcast payloads.
+
+---
+
+## Keep runtime data out of source
+
+Files under `data/` are local runtime state. They can contain product history, local job choices, and operational evidence. Do not commit scrape output, and do not edit those files as part of normal code changes.
+
+The same rule applies to secrets. `config/telegram.yaml` is local and ignored. The example file documents the shape, but real `api_token` and `chat_id` values should stay outside Git. Missing credentials should be treated as a disabled notification channel, not as a failed application.
+
+Scraping safety belongs in operations too. Keep concurrency conservative. Respect provider limits and backoff behavior. Use browser mode only when a provider needs it. Review provider terms before adding targets. A scraper that can explain its limits is easier to maintain than one that hides them in aggressive defaults.
+
+---
+
+## A change checklist that fits the project
+
+The operational checklist should match the boundary being changed. A provider parser edit does not need the same evidence as a scheduler edit. A Telegram formatting change does not need route preview. Good review notes name the boundary, the test evidence, and any operational follow-up.
+
+### Before opening a pull request
+
+Use this checklist as the final pass.
+
+- Name the boundary changed, such as provider parser, job config, runtime health, fetch policy, lifecycle, persistence, or notifications.
+- Run the smallest test suite that proves that boundary.
+- Run `preview-url` when generated provider routes changed.
+- Confirm `config/telegram.yaml` and `data/` output are not part of the diff.
+- Document command, config, provider, or runtime behavior changes in the project docs.
+
+**The review should make future operation easier.** If a change adds a provider option, the next maintainer should know how to configure it, preview it, test it, and diagnose it. If the change only passes tests but leaves the operator guessing, the work is not finished.
+
+For provider additions, the pull request should include at least one safe example job and parser tests with small fixtures. It should also include documentation for option names and route limitations. The provider does not need to model every store filter on day one, but it should be honest about what it supports.
+
+For runtime changes, review `/health` output as part of the behavior. Adding state that cannot be inspected later creates future debugging work. The current runtime already reports active, queued, blocked, and cycle fields. New scheduler behavior should follow that pattern.
+
+For persistence changes, use disposable data paths and inspect the serialized shape. Product JSON is part of the public behavior of the scraper, even if it lives on disk. A field rename or lifecycle change should be treated as a data contract change.
+
+For notification changes, keep messages behind the notifier boundary. Provider packages should not format Telegram HTML. Motors should not know chat credentials. That separation lets the project add another notification target later without rewriting every parser.
+
+The last habit is the simplest one. Restart from a clean mental model before running the service. Know which jobs are configured, where they write, which provider limit applies, and whether Telegram is enabled. Scraping has enough outside uncertainty already. Local uncertainty should be removed before the first request leaves the machine.
+
+That mental model also helps during handoff. A short note that names the edited provider, the previewed job, the affected storage file, and the health signal to watch is more valuable than a broad summary. It gives the next maintainer a place to start when the store changes again.

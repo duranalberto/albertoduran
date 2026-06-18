@@ -39,8 +39,15 @@ npm run preview
 
 ## Required Tests by Change Type
 
+Run the smallest meaningful set of checks for the change. Do not run every test
+suite just because tests exist. Full `npm test` plus `npm run test:e2e` is for
+shared logic, routing, runtime behavior, layout changes, or release confidence,
+not for every documentation or journal-content edit.
+
 | Change type                                    | Required coverage                                                                                                                                                                                    |
 | :--------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Documentation-only changes                     | No automated tests required unless the docs include generated examples or command output that should be validated.                                                                                    |
+| Journal content-only changes under `src/thejournal/` | Content validation with `npm run check` or a focused build/route check when frontmatter, images, Mermaid, vault shape, or generated paths are affected. Avoid the full unit and E2E suites by default. |
 | Content manifest, journal routing, vault logic | Vitest tests for manifest shape, required images, draft filtering, sorting, child inheritance, and previous/next links.                                                                              |
 | Mermaid rendering or SVG handling              | Vitest tests for HAST utilities, page CSS hoisting, and theme transforms; Playwright check for rendered diagram shell behavior. Follow `docs/MERMAID_RENDERING.md` for release cache/version checks. |
 | Runtime browser behavior                       | Playwright tests against production preview.                                                                                                                                                         |

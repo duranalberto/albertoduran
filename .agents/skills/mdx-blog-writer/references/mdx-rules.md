@@ -2,6 +2,11 @@
 
 Complete formatting and structure rules for `.mdx` blog posts. Apply every rule on every post, every time.
 
+For files under `src/thejournal/`, follow `docs/THEJOURNAL_PUBLICATION_GUIDE.md`
+alongside this reference. Journal publications are reader-facing blog entries,
+should display as 8 to 15 minutes of reading time, and must follow the
+standalone or vault shapes enforced by `src/content/processors/`.
+
 ---
 
 ## Frontmatter Template
@@ -25,6 +30,13 @@ author: "Alberto Duran"
 - `tags` — 2 to 5 lowercase tags, no spaces (use hyphens for multi-word tags).
 - `pubDate` — ISO 8601 format: `YYYY-MM-DD`.
 - `author` — always "Alberto Duran" unless specified otherwise.
+
+**Journal file-shape rules:**
+
+- Use `src/thejournal/<slug>.mdx` for a single standalone publication.
+- Use `src/thejournal/<vault>/index.mdx` only when the vault has child publications.
+- Do not create a vault or nested vault section that contains only `index.md` or `index.mdx`.
+- Let vault children inherit the vault root image only when the shared image fits the child entry.
 
 ---
 

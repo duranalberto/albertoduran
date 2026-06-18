@@ -43,6 +43,11 @@ albertoduran.com journal publications in MDX. It includes rules for the local
 Astro content collection, frontmatter conventions, hook structure, writing
 voice, Markdown formatting, and when to include Mermaid diagrams.
 
+When the skill is used for a file under `src/thejournal/`, pair it with
+`docs/THEJOURNAL_PUBLICATION_GUIDE.md` so the draft follows the site's
+reader-facing publication intent, 8-to-15 displayed minute target, standalone
+and vault file shapes, and `src/content/processors/` publishing rules.
+
 The installed copy was extracted from a local Claude skill bundle provided as
 `mdx-blog-writer.skill`, from archive path `mdx-blog-writer/`. The original
 archive is not required after extraction; the committed artifact is the adapted

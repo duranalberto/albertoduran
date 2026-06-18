@@ -119,8 +119,8 @@ const projects: Projects[] = [
   {
     name: "Product Tracker (MLScraper)",
     tech: "Python, FastAPI",
-    desc: "Analytics-driven platform monitoring e-commerce items daily with Telegram alerts.",
-    link: "/project/MLScraper",
+    desc: "Scheduled product tracking vault covering provider loops, YAML jobs, health checks, persistence, and Telegram alerts.",
+    link: "/thejournal/mlscraper/",
     github_link: "github.com/duranalberto/MLScraper",
     image: "/a.jpg",
   },

@@ -158,9 +158,9 @@ The choice belongs in the manifest because read time is shared presentation data
 
 ## Building nested vault structure
 
-After entries become contexts, `buildJournalManifest()` groups them by vault. It creates a `rootVaults` bucket for each first-level folder, places the vault index first, and then asks `buildNestedStructure()` to turn the bucket into a tree.
+After entries become contexts, `buildJournalManifest()` groups them by vault. It creates a `rootVaults` bucket for each first-level folder, places the vault index first, checks that the folder is actually a multi-entry publication, and then asks `buildNestedStructure()` to turn the bucket into a tree.
 
-Every vault root must have an index. Every nested section must also have an index. If a folder contains entries but no index file, the builder throws a descriptive error.
+Every vault root must have an index. Every nested section must also have an index. Each vault or nested section must contain at least one child publication beyond its own index file. If a folder contains entries but no index file, or if it contains only an index file, the builder throws a descriptive error.
 
 ```ts
 if (!rootIndex || !isIndexFileForPath(rootIndex.filepath, vaultId)) {
@@ -172,6 +172,8 @@ if (!rootIndex || !isIndexFileForPath(rootIndex.filepath, vaultId)) {
 ```
 
 This rule protects the reader experience. A folder without an index has no section title, no landing context, and no stable place in the vault explorer. The source tree might technically be navigable, but it would not be a coherent publication section.
+
+The index-only rule protects the same boundary from the other side. A folder with only `index.mdx` is a standalone article wearing vault clothing. If there is no child entry to explore, the source should live at `src/thejournal/<slug>.mdx` instead of `src/thejournal/<slug>/index.mdx`.
 
 ### Entries and nested groups
 

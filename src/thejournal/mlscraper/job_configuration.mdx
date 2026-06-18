@@ -1,0 +1,120 @@
+---
+title: "From YAML jobs to provider motors"
+description: "How MLScraper loads job configuration, validates provider options, and previews generated URLs before a scraper loop runs."
+author: "Alberto Duran"
+tags: ["python", "configuration", "scraping"]
+pubDate: 2026-06-18
+order: 30
+---
+
+A copied store URL is convenient until it becomes the only thing the scraper understands. MLScraper takes a different path. A job can provide an explicit URL when it needs one, but the normal route is a stable `job_id`, a provider key, and provider-owned options that generate the final URL and storage path before any loop starts.
+
+---
+
+## The shared job contract
+
+The job catalogue lives in `config/jobs.yaml`. The loader expects a top-level `jobs` list, and each entry needs a provider key plus a stable `job_id`. Every provider factory also accepts `url` and `query`. That shared shape gives the runtime one way to talk to all providers without forcing every store to support the same filters.
+
+The smallest generated job looks like this.
+
+```yaml
+jobs:
+  - provider: lv
+    job_id: Ventilador Liverpool
+    query: ventilador
+```
+
+`provider` selects a factory. `job_id` gives the job a provider-local identity for labels and storage naming. `query` is human-readable search text when the provider supports generated search URLs. A provider can ignore `query` when another provider-owned option already defines the route.
+
+`job_id` needs to stay stable. Factories turn it into storage filenames such as `liverpool/ventilador-liverpool.json` or `mercado_libre/nintendo-ds__consolas-videojuegos.json`. If the name changes, the scraper starts writing to a different file and loses continuity with the old product history.
+
+The loader also rejects duplicate `(provider, job_id)` pairs. Reusing `Apple` for Liverpool and Palacio de Hierro is fine because those providers write to different namespaces. Defining two Liverpool jobs with the same `job_id` is not fine because both would want the same runtime identity.
+
+---
+
+## Explicit URLs are the escape hatch
+
+When a job contains a non-blank `url`, the loader treats it as the authoritative route input. Provider-specific generated options are left alone by enum coercion, and the factory uses the URL unchanged. The factory logs a warning if generated options are present beside that explicit URL because those options no longer decide routing.
+
+That rule is the project's practical escape hatch. Store URLs often include copied refinements, custom filters, or route shapes that the provider option catalogue does not model yet. MLScraper lets the operator paste that URL and still get stable storage, runtime labels, health data, and notifications.
+
+The tradeoff is intentional. Explicit URLs are easy to run but harder to validate. Generated URLs are more constrained but easier to reason about. The project keeps both paths, with a clear precedence rule so a maintainer never has to guess which one wins.
+
+This precedence also keeps provider loaders from becoming too clever. If the URL is explicit, it is used. If the URL is absent, the provider owns the structured options. There is no partial merge where a copied browser URL receives extra generated filters later.
+
+---
+
+## Provider options stay provider owned
+
+The providers share the job contract but not the full option vocabulary. Mercado Libre can use seller, category, state, query, or explicit URL. Amazon can use seller, brand, query, or explicit URL. Liverpool can use page, query, and seeded `talla` filters for supported shoe routes. Palacio de Hierro can use page and one or more brand filters.
+
+| Provider | Key | Generated option families |
+| --- | --- | --- |
+| Amazon Mexico | `az` | Search text, known seller, documented brand, or explicit copied URL. |
+| Mercado Libre | `ml` | Global search, seller route, category route, item state, or explicit copied URL. |
+| Liverpool | `lv` | Search text, documented page, seeded size filters, or explicit copied URL. |
+| Palacio de Hierro | `ph` | Global search, documented page, page-scoped brands, or explicit copied URL. |
+
+The loader handles enum coercion for provider-owned options. It converts YAML strings into provider enums for known catalogues and skips invalid entries with warnings. Liverpool and Palacio de Hierro also resolve page names through provider helpers, so the YAML can use documented page labels without importing Python enums.
+
+Unknown keys are not rejected in the loader. That is a small but useful design choice. The loader validates what it owns, then passes the entry forward. The factory decides which keyword arguments matter to that provider. That keeps the loader from knowing too much about every provider constructor.
+
+---
+
+## Factories build URLs and storage paths
+
+The registry maps provider keys to factory functions. Each factory must declare `job_id`, `url`, and `query`, even when the provider does not use all three in every path. `MotorRegistry` validates that signature when factories are registered. That keeps the shared job contract from drifting silently.
+
+Factories do two jobs. They build the final provider URL and they create the storage path. Storage paths are relative to `DATA_PATH`, grouped by provider, and built from a slugged `job_id` plus an optional qualifier. The qualifier records generated route context such as a seller, category, brand, or state.
+
+That means routing and storage are born together. A Mercado Libre category job gets a URL built from Mercado Libre route rules and a file path grouped under `mercado_libre`. An explicit Amazon URL gets stored under `amazon` without pretending the pasted filters have been modeled as provider options.
+
+The storage path helper also keeps names stable and portable. It normalizes accents, strips unsafe characters, lowercases words, and falls back to a hash when a name has no usable characters. The result is safe enough for local JSON files without asking provider packages to duplicate path rules.
+
+---
+
+## Preview before scraping
+
+`python app.py preview-url --provider lv --job-id "PlayStation"` runs the URL generation path without starting the FastAPI service or scraper loops. That command loads the same YAML file, finds exactly one matching job, and returns the generated or explicit URL.
+
+Preview is the right tool when a maintainer changes a page name, seller, category, brand, or copied URL. It checks the routing result before the job starts fetching pages or writing JSON. For generated jobs, it catches option mistakes close to the config file. For explicit jobs, it confirms which URL the runtime will use.
+
+The command also protects against ambiguity. If no job matches, it raises an error. If multiple jobs match, it raises an error too. Those cases should not happen after loader validation, but the command still checks because preview is an operator-facing utility.
+
+This workflow is faster than starting the service for every routing edit. It also avoids the worst failure mode of scraper configuration work, where a malformed URL starts a loop, writes an empty result, and makes a real product history look like every item disappeared.
+
+---
+
+## The safe way to change jobs
+
+Treat job config as identity-bearing data. Add jobs slowly, keep `job_id` stable, and prefer generated options when they cover the route. Use explicit URLs for route shapes the project does not model yet. Preview the URL before running the scheduler. Then watch `/health` for block reasons and cycle timing after the next scrape.
+
+When a change affects provider options, add or adjust tests in the MLScraper project. `tests/test_jobs.py` covers loader behavior, registry behavior, slugging, storage paths, and provider factory construction. Provider parser tests cover the source markup or JSON shapes that make the generated URL useful in the first place.
+
+That split gives configuration changes a natural review path. YAML decides what to monitor. Loader and factories decide whether the job is valid. Provider code decides whether the fetched page can be parsed. Runtime health decides whether the job is behaving in operation.
+
+---
+
+## Reviewing a job change
+
+A good job review asks whether identity, routing, storage, and parser expectations still line up. The YAML entry is small, but it has consequences across the runtime. One field can change the final URL, the storage file, the provider parser path, and the health label shown during operation.
+
+### The review checklist
+
+Use this checklist before merging a job change.
+
+- Confirm `job_id` did not change unless the data history should intentionally move to a new file.
+- Confirm each provider-local `job_id` is unique.
+- Run `preview-url` for generated routes and inspect copied explicit URLs.
+- Confirm structured options are absent when `url` is the intended route source.
+- Confirm provider parser tests cover the page shape the job will fetch.
+
+**The safest config change is the one that can be explained before the scraper runs.** If a reviewer cannot predict the storage path and URL from the YAML entry, the job probably needs a clearer name, fewer mixed options, or a provider test that documents the route shape.
+
+Generated options are best when the route belongs to a known catalogue. They keep provider behavior inside provider code, and they let tests cover the route builder. Explicit URLs are best when a store exposes an unmodeled refinement that the project should not pretend to understand yet.
+
+That distinction prevents a common maintenance trap. A team sees one copied URL, adds a new generic field for it, and slowly turns the shared loader into a store-routing language. MLScraper resists that by keeping shared fields small and provider options provider-owned.
+
+When a provider grows new option families, update the provider docs, the example YAML, loader coercion, factory behavior, preview helpers, and tests together. Those files form one contract. Leaving one out creates a config path that looks supported but fails when a maintainer tries to operate it.
+
+The result is a configuration system with clear escape hatches and clear limits. It does not model every possible store route. It gives maintainers enough structure to preserve history and enough freedom to monitor useful pages while the provider catalogue catches up.

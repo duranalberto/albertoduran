@@ -51,6 +51,12 @@ theme output, diagram shell runtime, or diagram styles.
 
 The journal uses the `thejournal` content collection in `src/content.config.ts`. Source files live under `src/thejournal/`.
 
+Journal entries are public-facing publications. They should help readers
+understand a project, design decision, workflow, or lesson. They are not the
+place for internal maintainer runbooks, source-anchor checklists, or change
+instructions unless the article intentionally teaches that workflow to a public
+audience.
+
 The manifest builder in `src/content/processors/thejournal-manifest.ts` maps raw collection entries into:
 
 - Standalone publication contexts.

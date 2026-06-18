@@ -10,7 +10,6 @@ import ProjectsGrid from "@components/shared/ProjectsGrid.astro";
 import SectionHeader from "@components/ui/display/SectionHeader.astro";
 import OverlayPanel from "@components/ui/primitive/OverlayPanel.astro";
 import { entryManifest } from "@content/processors/thejournal";
-import about from "@data/about";
 import { sitesManifest } from "@data/site_manifest";
 import BaseLayout from "@layouts/BaseLayout.astro";
 import FlexShell from "@layouts/FlexShell.astro";
@@ -42,7 +41,7 @@ const isTestMode = process.env.ALBERTODURAN_TEST_MODE === "true";
 
     <FlexShell>
       <SectionHeader title="Projects" />
-      <ProjectsGrid projects={about.projects} />
+      <ProjectsGrid />
     </FlexShell>
 
     <AtlasStats noteToggleId={atlasNoteToggleId} />

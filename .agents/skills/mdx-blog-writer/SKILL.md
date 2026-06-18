@@ -1,17 +1,17 @@
 ---
 name: mdx-blog-writer
-description: "Write, humanize, adapt, or improve albertoduran.com journal posts in project-compatible MDX. Use when the user asks to write, draft, create, revise, polish, or format a blog post, article, publication, vault entry, or src/thejournal MDX file, even if they do not mention MDX. Produces complete Astro content collection entries with the local frontmatter conventions, a hooked intro paragraph, useful Mermaid diagrams when appropriate, and section separators."
+description: "Master skill for writing, humanizing, and delivering personal blog posts in MDX format. Use whenever the user asks to write, draft, create, or improve a blog post, article, or publication — even if they don't mention MDX explicitly. Also triggers for: 'write a post about X', 'help me blog about Y', 'draft an article on Z', 'turn this into a post'. Produces complete .mdx files with frontmatter, a hooked intro paragraph, Mermaid diagrams where they add value, and correct section separators."
 metadata:
   version: "3.0"
   author: "Alberto Duran"
   tags: "writing, blog, mdx, markdown, copywriting"
 ---
 
-# MDX Blog Post Writer
+# SKILL — MDX Blog Post Writer
 
-Project-local writing workflow for albertoduran.com journal entries. Use it to
-draft or revise files under `src/thejournal/` while matching the local Astro
-content schema, existing publication style, and Mermaid rendering constraints.
+> Master grid for writing, humanizing, and delivering personal blog posts in `.mdx` format.
+> Three systems unified: **Content Philosophy**, **Voice and Style**, and **Hard Rules**.
+> Helper files in `references/` handle humanizing and MDX formatting details.
 
 ---
 
@@ -24,13 +24,7 @@ Load these when you need full detail on a subsystem. Both are in `references/`:
 | `references/humanizer.md` | Full humanizer guidelines, banned phrases, and the complete checklist — load when reviewing a draft or when the user asks to humanize text |
 | `references/mdx-rules.md` | Frontmatter template, document structure, all Markdown rules, and the visual variety checklist — load when formatting or delivering the final `.mdx` file |
 
-For Mermaid diagrams, use the **`design-doc-mermaid`** skill for diagram design
-rules, node shapes, edge types, and styling. Review `docs/MERMAID_RENDERING.md`
-before changing Mermaid rendering code, generated diagram assets, or theme
-behavior. See Part 1C below for when to use each diagram type.
-
-For project context, inspect `docs/PROJECT_CONTEXT.md`, `src/content.config.ts`,
-and nearby files under `src/thejournal/` before creating a new publication.
+For Mermaid diagrams, refer to the **`design-doc-mermaid`** skill for diagram design rules, node shapes, edge types, and styling. See Part 1C below for when to use each diagram type.
 
 ---
 
@@ -39,18 +33,12 @@ and nearby files under `src/thejournal/` before creating a new publication.
 When the user provides a topic, follow this sequence without skipping steps:
 
 1. **Receive** the topic or draft (`<TOPIC>` or source text).
-2. **Inspect** the local journal schema and similar posts when writing a file.
-3. **Plan** the structure using the Content Architecture rules below.
-4. **Write** the intro paragraph using the Hook Rules (Part 1B).
-5. **Write** the body following Voice and Style rules (Part 2).
-6. **Identify diagram opportunities** using the Diagram Decision Guide (Part 1C).
-7. **Humanize** the draft using `references/humanizer.md`.
-8. **Format and deliver** the complete `.mdx` file using `references/mdx-rules.md`.
-
-When creating files, place standalone posts directly under `src/thejournal/`.
-Place vault roots at `src/thejournal/<vault>/index.mdx`; child entries live
-under that vault folder. Use repository-relative image paths that match existing
-content examples.
+2. **Plan** the structure using the Content Architecture rules below.
+3. **Write** the intro paragraph using the Hook Rules (Part 1B).
+4. **Write** the body following Voice and Style rules (Part 2).
+5. **Identify diagram opportunities** using the Diagram Decision Guide (Part 1C).
+6. **Humanize** the draft using `references/humanizer.md`.
+7. **Format and deliver** the complete `.mdx` file using `references/mdx-rules.md`.
 
 ---
 

@@ -1,36 +1,20 @@
 # MDX Rules — Reference Guide
 
-Complete formatting and structure rules for albertoduran.com `.mdx` journal
-posts. Apply every rule on every post, every time.
-
-Project facts:
-
-- Journal source files live under `src/thejournal/`.
-- The content collection is `thejournal` in `src/content.config.ts`.
-- Standalone posts and vault root `index.mdx` files need an `image`.
-- Child vault entries can inherit the vault root image, but add an image when
-  the entry needs its own card or social preview.
-- Existing posts include `author: "Alberto Duran"` as a house convention.
-- Routes use trailing slashes and are generated from the file path.
+Complete formatting and structure rules for `.mdx` blog posts. Apply every rule on every post, every time.
 
 ---
 
 ## Frontmatter Template
 
-Every post must begin with YAML frontmatter. Fill in required fields before
-delivering the file.
+Every post must begin with this YAML frontmatter block. Fill in all fields before delivering the file.
 
 ```yaml
 ---
 title: "Write a clear, specific, SEO-friendly title"
 description: "One or two sentences summarizing the post's main value."
-author: "Alberto Duran"
-image: "../assets/thejournal/stock/01.avif"
 tags: ["tag1", "tag2", "tag3"]
 pubDate: YYYY-MM-DD
-# updatePubDate: YYYY-MM-DD
-# github: "repository-name-or-url"
-# order: 100
+author: "Alberto Duran"
 ---
 ```
 
@@ -38,17 +22,9 @@ pubDate: YYYY-MM-DD
 
 - `title` — sentence case, under 65 characters, no trailing period.
 - `description` — between 120 and 160 characters, written for the SEO meta description.
-- `author` — always "Alberto Duran" unless specified otherwise. This is a project convention, not part of the current schema.
-- `image` — required for standalone posts and vault roots. Use the correct relative path from the MDX file to `src/assets/thejournal/...`.
-- `tags` — 2 to 6 lowercase tags. Prefer hyphens for multi-word tags unless an existing project tag uses spaces.
+- `tags` — 2 to 5 lowercase tags, no spaces (use hyphens for multi-word tags).
 - `pubDate` — ISO 8601 format: `YYYY-MM-DD`.
-- `updatePubDate` — optional. Use only when revising an existing publication after `pubDate`.
-- `github` — optional related repository slug or URL. Match existing posts, which often use a repository name.
-- `order` — optional manual ordering value for vault entries. Defaults to `100`.
-
-The active schema requires `title` and `pubDate`. It accepts `description`,
-`image`, `github`, `tags`, `updatePubDate`, and `order`. Keep `author` for
-consistency with existing content unless the user asks otherwise.
+- `author` — always "Alberto Duran" unless specified otherwise.
 
 ---
 
@@ -97,7 +73,6 @@ Content.
 - Always declare the language after the opening triple backticks of every code block.
 - When using MDX components (callouts, alerts, cards), import them at the top of the file, immediately after the frontmatter.
 - Keep the frontmatter block as plain YAML. No MDX syntax inside the frontmatter.
-- Do not add Mermaid `%%{init: ...}%%` theme blocks. The project renderer owns Mermaid theme output.
 
 ---
 

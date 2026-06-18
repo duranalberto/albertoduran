@@ -325,6 +325,9 @@ export function mapEntryToContext(
   entry: JournalManifestSourceEntry,
 ): EntryContext {
   const normalizedPath = normalizeJournalFilePath(entry.filePath);
+  const indexScope = getIndexScope(entry);
+  const id = indexScope ?? entry.id;
+
   if (entry.data.updatePubDate && !entry.data.pubDate) {
     throw new Error(
       `[thejournal] Entry "${entry.id}" has updatePubDate set but is missing pubDate. ` +
@@ -333,7 +336,7 @@ export function mapEntryToContext(
   }
 
   return {
-    id: entry.id,
+    id,
     filepath: normalizedPath,
     title: entry.data.title,
     readTime: measureReadTime(entry),

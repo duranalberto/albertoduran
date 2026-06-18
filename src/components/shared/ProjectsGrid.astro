@@ -1,9 +1,20 @@
 ---
+import { type EntryContext } from "@appTypes/content_context";
 import { entryManifest } from "@content/processors/thejournal";
 import JournalGrid from "./JournalGrid.astro";
 
 const catalog = Object.values(entryManifest)
-  .filter((entry) => entry.tags.some((tag) => tag.toLowerCase() == "project"))
+  .filter(
+    (entry) =>
+      entry.tags.some((tag) => tag.toLowerCase() === "project") &&
+      (!entry.vaultId || entry.id === entry.vaultId),
+  )
+  .sort((a: EntryContext, b: EntryContext) => {
+    const orderDelta = a.order - b.order;
+    if (orderDelta !== 0) return orderDelta;
+
+    return a.title.localeCompare(b.title);
+  })
   .slice(0, 3);
 ---
 

@@ -111,8 +111,8 @@ const projects: Projects[] = [
   {
     name: "Equity Valuation Engine",
     tech: "Python, CLI",
-    desc: "Equity valuation engine supporting DCF, PE, and ROE methodologies with suitability checks.",
-    link: "/project/equity-valuation-engine",
+    desc: "Equity valuation engine vault covering data loading, suitability checks, valuation models, assumptions, CLI output, and tests.",
+    link: "/thejournal/equity_valuation_engine/",
     github_link: "github.com/duranalberto/equity-valuation-engine",
     image: "/a.jpg",
   },

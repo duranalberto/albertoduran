@@ -4,7 +4,9 @@ import {
   type Education,
   type Experience,
   type Projects,
+  type RecruiterQuestion,
   type Skills,
+  type Strength,
 } from "@appTypes/about";
 import { skills as icons } from "@data/icons";
 
@@ -36,6 +38,72 @@ const skills: Skills[] = [
   },
 ];
 
+const strengths: Strength[] = [
+  {
+    title: "Architecture and Design Judgment",
+    description:
+      "Improved build initialization, dependency reuse, package structure, and runtime reliability in documentation systems where small changes could affect many generated publication pages.",
+  },
+  {
+    title: "Coding and Problem Solving",
+    description:
+      "Built a recursive markup-merging plugin to restore advanced syntax-highlight customization after upstream highlight.js behavior changed.",
+  },
+  {
+    title: "End-to-End Delivery",
+    description:
+      "Worked across implementation, testing, debugging, migration validation, and platform maintenance in both Oracle and TCS environments.",
+  },
+  {
+    title: "Platform Reliability",
+    description:
+      "Resolved race conditions, runtime initialization issues, migration defects, and production-impacting behavior in complex enterprise systems.",
+  },
+  {
+    title: "Tooling and Automation",
+    description:
+      "Built and maintained Python migration tooling and personal Python/FastAPI systems for scheduled data extraction, provider boundaries, structured output, and notifications.",
+  },
+  {
+    title: "Cross-Functional Collaboration",
+    description:
+      "Worked with engineers, technical writers, QA, business stakeholders, client stakeholders, and platform maintainers to deliver and validate software changes.",
+  },
+];
+
+const recruiterQuestions: RecruiterQuestion[] = [
+  {
+    question: "Why are you looking for a new role?",
+    answer:
+      "My Oracle role ended as part of a layoff after more than four years with the company. I did not resign. I valued the team, the collaboration, and the work I delivered there, and I am now looking for a role better aligned with my long-term direction.",
+  },
+  {
+    question: "What direction are you targeting next?",
+    answer:
+      "I am targeting backend-facing full-stack, internal tools, platform, and application modernization roles. My long-term goal is to grow toward software architecture, so I am looking for work that builds deeper ownership across systems, data flows, tooling, APIs, reliability, and product-facing delivery.",
+  },
+  {
+    question: "Why move beyond frontend-focused roles?",
+    answer:
+      "My recent work was frontend-heavy, but my strongest contributions were closer to platform engineering: runtime reliability, build initialization, dependency reuse, migration tooling, legacy modernization, and debugging production-impacting behavior. Frontend-only positions no longer fit the full profile I am building toward.",
+  },
+  {
+    question: "What kind of engineering work do you bring?",
+    answer:
+      "I bring experience across Oracle documentation platforms, generated publication systems, enterprise Java environments, Python migration tooling, security migration support, database/mainframe-connected workflows, QA validation, and cross-functional delivery.",
+  },
+  {
+    question: "What roles are the strongest fit?",
+    answer:
+      "Best-fit roles include full-stack engineer, web platform engineer, internal tools engineer, application modernization engineer, migration tools engineer, backend-facing software engineer, and developer tools/platform roles.",
+  },
+  {
+    question: "How should recruiters read your backend and cloud experience?",
+    answer:
+      "I have enterprise Java background, Python tooling experience, FastAPI/backend-facing project work, and strong platform reliability experience. I am also interested in developing with cloud providers when the opportunity allows ramp-up, but I am not positioning myself as a senior Spring Boot/AWS/cloud specialist.",
+  },
+];
+
 const experience: Experience[] = [
   {
     company: "ORACLE",
@@ -43,12 +111,12 @@ const experience: Experience[] = [
     period: "May 2021 – August 2025",
     location: "Guadalajara, Jalisco",
     achievements: [
-      "Platform Optimization: Re-architected internal publication pipelines to achieve a 90% reduction in package sizes, significantly lowering latency and accelerating server-side processing for docs.oracle.com.",
-      "Developer Tooling: Engineered a real-time live loading system that slashed local development load cycles from minutes to seconds, increasing team velocity and enabling instant feedback loops. ",
-      "Modernization & Migration: Led the full-stack migration of publication templates (Oracle JET 11 to 18), resolving complex architectural shifts and merge conflicts to ensure 100% backward compatibility with legacy content. ",
-      "Python Automation: Developed and maintained a Python-based migration tool to automate the transition of legacy publications into modern documentation systems, ensuring data integrity and reducing manual effort. ",
-      "Data Visualization: Enhanced analytics capabilities by integrating new data sources into Oracle APEX dashboards, enabling stakeholders to make data-driven decisions based on site traffic and user behavior. ",
-      "Algorithm Implementation: Designed a recursive merging plugin for highlight.js to restore custom code highlighting, bypassing deprecated HTML auto-merging limitations to correctly render complex nested styles. ",
+      "Platform Reliability: Improved runtime-generated documentation page templates by strengthening build initialization flows and resolving race conditions that affected stable page rendering.",
+      "Architecture and Optimization: Reduced internal pipeline inefficiencies by improving dependency reuse, package structure, and publication output behavior, cutting package sizes by up to 90%.",
+      "Coding and Problem Solving: Built a recursive markup-merging plugin to restore advanced syntax-highlight customization after highlight.js deprecated HTML auto-merging behavior.",
+      "Python Migration Tooling: Updated and maintained Python-based migration tooling to support evolving publication requirements and help move legacy documentation into modern platform workflows.",
+      "Modernization: Modernized and stabilized legacy publication interfaces, extending their useful life while reducing maintenance friction.",
+      "Web Platform Delivery: Developed and maintained production-facing documentation web interfaces using Preact, Oracle JET, JavaScript/TypeScript, HTML, and CSS while balancing stakeholder and platform constraints.",
     ],
   },
   {
@@ -57,10 +125,11 @@ const experience: Experience[] = [
     period: "July 2019 – April 2021",
     location: "Guadalajara, Jalisco",
     achievements: [
-      "Enterprise Security: Contributed to a large-scale security migration for a major financial institution, transitioning multiple enterprise entry points to CyberArk systems to protect critical backend and database infrastructures. ",
-      "Backend Engineering: Demonstrated technical versatility by developing and maintaining Java EE and Spring based projects, writing Perl scripts, and integrating with databases and mainframe systems to deliver robust enterprise solutions.",
-      "Quality Assurance: Improved system reliability by designing and executing targeted QA test cases, ensuring full compliance with rigorous business and technical requirements. ",
-      "Stakeholder Management: Delivered technical demos to client executives, effectively communicating system functionality, security enhancements, and project milestones. ",
+      "Enterprise Security Migration: Supported a large-scale CyberArk migration for a major financial institution, helping transition multiple application entry points toward more secure data access workflows.",
+      "Enterprise Systems Support: Worked across Java applications, Perl scripts, database-connected workflows, and mainframe-connected systems to support migration, validation, and compliance requirements.",
+      "Java and Integration Work: Contributed to Java EE and limited Spring-based enterprise components while coordinating implementation details with QA, business, and technical stakeholders.",
+      "Migration Validation: Designed and executed targeted QA test cases to validate migration behavior, security requirements, and system reliability.",
+      "Cross-Functional Delivery: Communicated security behavior, implementation details, and migration progress with business and technical stakeholders.",
     ],
   },
 ];
@@ -136,6 +205,8 @@ const projects: Projects[] = [
 
 export default {
   skills,
+  strengths,
+  recruiterQuestions,
   experience,
   education,
   certifications,

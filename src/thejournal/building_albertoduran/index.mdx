@@ -3,7 +3,7 @@ title: "Building albertoduran.com"
 description: "A technical map of the static-first Astro site, from MDX source and custom build integrations to Cloudflare deployment."
 author: "Alberto Duran"
 image: "../../assets/thejournal/stock/01.avif"
-tags: ["astro", "architecture", "mdx", "cloudflare"]
+tags: ["project", "astro", "architecture", "mdx", "cloudflare"]
 pubDate: 2026-06-17
 order: 10
 ---
@@ -57,15 +57,15 @@ A vault is a first-level folder under `src/thejournal/` with an `index.md` or `i
 
 This vault uses that rule deliberately. Each top-level folder covers one ownership boundary in the site. The sections are not topic buckets chosen after the fact. They mirror the architecture that makes the project work.
 
-| Section | What it owns |
-| ---- | ---- |
-| `foundations/` | Repository shape, development environment, and Cloudflare deployment. |
-| `publications/` | MDX collections, manifest rules, static routes, rendering, and code blocks. |
-| `mermaid/` | Build-time diagram rendering, caching, renderer services, SVG transforms, and assets. |
-| `performance/` | Perceived navigation speed, output size, image strategy, and font loading. |
-| `runtime/` | Browser-side enhancements for theme, article navigation, overlays, Mermaid shells, and Atlas data. |
-| `design/` | Tailwind tokens, DaisyUI themes, CSS partials, SVG icons, parallax, and UI rules. |
-| `quality/` | The architecture around checks, deterministic builds, unit coverage, and browser behavior coverage. |
+| Section         | What it owns                                                                                        |
+| --------------- | --------------------------------------------------------------------------------------------------- |
+| `foundations/`  | Repository shape, development environment, and Cloudflare deployment.                               |
+| `publications/` | MDX collections, manifest rules, static routes, rendering, and code blocks.                         |
+| `mermaid/`      | Build-time diagram rendering, caching, renderer services, SVG transforms, and assets.               |
+| `performance/`  | Perceived navigation speed, output size, image strategy, and font loading.                          |
+| `runtime/`      | Browser-side enhancements for theme, article navigation, overlays, Mermaid shells, and Atlas data.  |
+| `design/`       | Tailwind tokens, DaisyUI themes, CSS partials, SVG icons, parallax, and UI rules.                   |
+| `quality/`      | The architecture around checks, deterministic builds, unit coverage, and browser behavior coverage. |
 
 The vault is also a product of the system it documents. Its folder structure feeds the same manifest builder as every other journal section. The writing is content, but its placement is data.
 

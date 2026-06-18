@@ -46,6 +46,7 @@
 @import "./shared/_hero.css";
 
 /* ─── 7. LAYOUT ─────────────────────────────────────────── */
+@import "./layout/_page.css";
 @import "./layout/_parallax.css";
 
 /* ─── 8. UI ──────────────────────────────────────────────── */

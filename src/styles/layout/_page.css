@@ -1,0 +1,11 @@
+/* =========================================================
+   PAGE LAYOUT
+   Shared document-level spacing around the routed content.
+   ========================================================= */
+
+@layer components {
+  .site-main {
+    --site-footer-gap: clamp(4rem, 8vw, 7rem);
+    padding-block-end: calc(var(--site-footer-gap) + var(--safe-area-bottom));
+  }
+}

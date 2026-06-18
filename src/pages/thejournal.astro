@@ -25,7 +25,7 @@ const catalog = [...firstHalf, ...secondHalf];
 <BaseLayout siteManifest={sitesManifest["/thejournal/"]}>
   <JournalHero slot="hero" />
 
-  <FlexShell class="pb-14">
+  <FlexShell>
     {
       catalog.length === 0 && (
         <div class="flex justify-center">

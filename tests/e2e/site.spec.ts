@@ -66,6 +66,18 @@ async function expectLocatorHorizontallyInViewport(locator: Locator) {
   expect(box!.x + box!.width).toBeLessThanOrEqual(viewport!.width + 1);
 }
 
+async function expectSharedFooterSpacing(page: Page) {
+  const main = page.locator("main#main-content");
+
+  await expect(main).toHaveClass(/site-main/);
+
+  const paddingBottom = await main.evaluate((element) =>
+    Number.parseFloat(getComputedStyle(element).paddingBottom),
+  );
+
+  expect(paddingBottom).toBeGreaterThanOrEqual(64);
+}
+
 async function getFirstRowChildCount(locator: Locator) {
   return locator.evaluate((element) => {
     const rects = Array.from(element.children).map((child) =>
@@ -146,6 +158,7 @@ test.describe("production preview smoke coverage", () => {
       await expect(page.locator("main#main-content")).toBeVisible();
       await expect(page.getByRole("banner")).toBeVisible();
       await expect(page.getByRole("contentinfo")).toBeVisible();
+      await expectSharedFooterSpacing(page);
       expect(problems).toEqual([]);
     });
   }

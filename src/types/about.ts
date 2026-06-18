@@ -5,6 +5,16 @@ export interface Skills {
   skills_icons: Icon[];
 }
 
+export interface Strength {
+  title: string;
+  description: string;
+}
+
+export interface RecruiterQuestion {
+  question: string;
+  answer: string;
+}
+
 export interface Experience {
   company: string;
   role: string;

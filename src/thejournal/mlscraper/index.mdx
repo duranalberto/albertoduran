@@ -1,5 +1,5 @@
 ---
-title: "MLScraper"
+title: "Multi-source ecommerce price tracker"
 description: "How MLScraper turns store jobs into provider loops, product history, health checks, and Telegram alerts without hiding scraper failure."
 author: "Alberto Duran"
 image: "../../assets/thejournal/stock/08.avif"
@@ -56,14 +56,14 @@ The FastAPI app is deliberately quiet. `app.py` creates the application, starts 
 
 This vault follows the maintainer path through the system. It does not start with provider selectors because selectors are only one piece of the design. The more useful order begins with how a job enters the runtime, then moves through provider ownership, fetch behavior, state reconciliation, and operations.
 
-| Entry | Main question |
-| --- | --- |
-| `runtime_flow` | How does the FastAPI process keep scraping in the background and report service health? |
-| `job_configuration` | How does a YAML job become a provider motor with a stable URL and storage path? |
-| `provider_boundaries` | How do store packages own parsing while sharing one scheduler contract? |
-| `fetching_and_backoff` | How does the scraper handle rate limits, browser gates, timeouts, and blocks? |
-| `persistence_and_lifecycle` | How does product state move through active, hold, and finished records? |
-| `operations_and_extension` | How should a maintainer run the service, enable alerts, and add another provider? |
+| Entry                       | Main question                                                                           |
+| --------------------------- | --------------------------------------------------------------------------------------- |
+| `runtime_flow`              | How does the FastAPI process keep scraping in the background and report service health? |
+| `job_configuration`         | How does a YAML job become a provider motor with a stable URL and storage path?         |
+| `provider_boundaries`       | How do store packages own parsing while sharing one scheduler contract?                 |
+| `fetching_and_backoff`      | How does the scraper handle rate limits, browser gates, timeouts, and blocks?           |
+| `persistence_and_lifecycle` | How does product state move through active, hold, and finished records?                 |
+| `operations_and_extension`  | How should a maintainer run the service, enable alerts, and add another provider?       |
 
 Read the first two entries before changing configuration. Read the provider and fetching entries before changing selectors or URL rules. Read the persistence entry before touching runtime JSON. Read the operations entry before adding a store. That order saves the future maintainer from debugging the wrong layer first.
 

@@ -4,6 +4,7 @@ description: "How global.css acts as an ordered manifest for Tailwind, DaisyUI, 
 author: "Alberto Duran"
 tags: ["css", "tailwind", "architecture"]
 pubDate: 2026-06-17
+updatePubDate: 2026-06-19
 order: 10
 ---
 
@@ -88,11 +89,11 @@ This separation helps future visual work. If a rule describes a reusable treatme
 
 ## UI layer
 
-The UI layer imports strip background, panel primitives, heading anchors, code blocks, and prose tables. These partials map closely to reusable visual behaviors.
+The UI layer imports strip background, panel primitives, heading anchors, code blocks, prose tables, and ECharts figures. These partials map closely to reusable visual behaviors.
 
-`_strip-background.css` supports decorative icon ribbons. `_panel.css` supports primitive panel surfaces. `_heading-anchor.css` gives article headings their link affordance. `_code-block.css` styles Shiki output, line numbers, code wrappers, inline code, and copy-related structure. `_prose-table.css` handles table readability in article content.
+`_strip-background.css` supports decorative icon ribbons. `_panel.css` supports primitive panel surfaces. `_heading-anchor.css` gives article headings their link affordance. `_code-block.css` styles Shiki output, line numbers, code wrappers, inline code, and copy-related structure. `_prose-table.css` handles table readability in article content. `_echart.css` gives static and enhanced charts the same article frame, caption treatment, overflow behavior, and aspect-ratio contract.
 
-This layer is where MDX and UI meet. A code fence in an article becomes highlighted HTML from Astro and Shiki. The CSS partial makes that generated structure feel native to the site. A heading in MDX receives an anchor wrapper through rendering overrides. The CSS partial makes the anchor visible and usable without forcing authors to write custom markup.
+This layer is where MDX and UI meet. A code fence in an article becomes highlighted HTML from Astro and Shiki. The CSS partial makes that generated structure feel native to the site. A heading in MDX receives an anchor wrapper through rendering overrides. A chart in MDX receives generated SVG and the ECharts partial keeps the figure stable across inline, file-backed, and hydrated modes. The CSS partials make these generated pieces usable without forcing authors to write custom styling.
 
 ---
 
@@ -110,9 +111,9 @@ The page layer should still use tokens and shared primitives. It can specialize 
 
 MDX content enters the system after Astro renders it into HTML. Headings, paragraphs, code fences, tables, and Mermaid diagrams become real elements inside the article layout. The CSS architecture has to support that generated structure without asking every author to write custom classes.
 
-That is why the UI layer includes MDX partials. Heading anchors, code blocks, and prose tables are not normal hand-authored components, but they still need a consistent visual treatment. The renderer and component overrides create predictable markup. The partials style that markup.
+That is why the UI layer includes MDX partials. Heading anchors, code blocks, prose tables, and chart wrappers are not normal hand-authored article markup, but they still need a consistent visual treatment. The renderer, component overrides, and MDX components create predictable markup. The partials style that markup.
 
-The journal layer then adds article-specific context. A code block inside a publication lives inside the article column. A Mermaid diagram may also have a runtime shell and standalone asset link. A table may need horizontal overflow. These rules belong near the journal article styles because they are part of the reading experience.
+The journal layer then adds article-specific context. A code block inside a publication lives inside the article column. A Mermaid diagram may also have a runtime shell and standalone asset link. An ECharts figure may stay static or hydrate after it becomes visible. A table may need horizontal overflow. These rules belong near the journal article styles because they are part of the reading experience.
 
 The build pipeline and CSS pipeline meet here. Astro and MDX produce structure. CSS gives that structure a stable reading form.
 

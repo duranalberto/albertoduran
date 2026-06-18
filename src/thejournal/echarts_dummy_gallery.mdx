@@ -1,0 +1,769 @@
+---
+title: "ECharts dummy gallery"
+description: "A draft-only MDX publication that renders every local ECharts chart pattern for static SVG, SVG artifact, and enhancement testing."
+image: "../assets/thejournal/stock/09.avif"
+tags: ["charts", "mdx", "testing"]
+pubDate: 2026-06-18
+author: "Alberto Duran"
+order: 999
+draft: true
+---
+
+import EChart from "@components/ui/mdx/EChart.astro";
+import {
+  barChartOption,
+  bollingerBandsChartOption,
+  boxplotChartOption,
+  candlestickWithVolumeOption,
+  correlationHeatmapChartOption,
+  depthChartOption,
+  heatmapChartOption,
+  histogramChartOption,
+  lineChartOption,
+  macdChartOption,
+  ohlcChartOption,
+  orderBookChartOption,
+  pieChartOption,
+  rsiChartOption,
+  sankeyChartOption,
+  scatterChartOption,
+  treemapChartOption,
+} from "@integrations/echarts/options";
+
+export const lineOption = lineChartOption({
+  title: "Monthly visitors",
+  subtitle: "Static line chart",
+  name: "Visitors",
+  x: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+  y: [1200, 1560, 1410, 1840, 2100, 2480],
+});
+
+export const areaOption = lineChartOption({
+  title: "Newsletter signups",
+  subtitle: "Area chart using the line builder",
+  name: "Signups",
+  x: ["Week 1", "Week 2", "Week 3", "Week 4", "Week 5", "Week 6"],
+  y: [64, 79, 96, 118, 132, 149],
+  smooth: true,
+  area: true,
+});
+
+export const barOption = barChartOption({
+  title: "Article build output",
+  subtitle: "Vertical bar chart",
+  name: "Kilobytes",
+  x: ["HTML", "CSS", "JS", "Images"],
+  y: [48, 22, 16, 128],
+});
+
+export const horizontalBarOption = barChartOption({
+  title: "Reading flow checks",
+  subtitle: "Horizontal bar chart",
+  name: "Checks",
+  x: ["Headings", "Code", "Images", "Charts"],
+  y: [18, 12, 9, 10],
+  horizontal: true,
+});
+
+export const pieOption = pieChartOption({
+  title: "Traffic sources",
+  subtitle: "Pie chart",
+  name: "Sessions",
+  data: [
+    { name: "Search", value: 46 },
+    { name: "Direct", value: 22 },
+    { name: "Social", value: 18 },
+    { name: "Referral", value: 14 },
+  ],
+});
+
+export const donutOption = pieChartOption({
+  title: "Test coverage mix",
+  subtitle: "Donut chart",
+  name: "Coverage",
+  donut: true,
+  data: [
+    { name: "Unit", value: 52 },
+    { name: "E2E", value: 28 },
+    { name: "Manual", value: 20 },
+  ],
+});
+
+export const roseOption = pieChartOption({
+  title: "Editorial attention",
+  subtitle: "Rose pie chart",
+  name: "Hours",
+  rose: "area",
+  data: [
+    { name: "Research", value: 34 },
+    { name: "Drafting", value: 28 },
+    { name: "Charts", value: 18 },
+    { name: "Review", value: 12 },
+    { name: "Release", value: 8 },
+  ],
+});
+
+export const scatterOption = scatterChartOption({
+  title: "Article length and read time",
+  subtitle: "Scatter chart",
+  name: "Publication",
+  xName: "Words",
+  yName: "Minutes",
+  data: [
+    [900, 5],
+    [1400, 8],
+    [1800, 10],
+    [2400, 13],
+    [2900, 16],
+  ],
+});
+
+export const histogramOption = histogramChartOption({
+  title: "Paragraph length distribution",
+  subtitle: "Histogram rendered as bars",
+  name: "Paragraphs",
+  bins: 6,
+  values: [
+    42, 64, 57, 71, 92, 84, 103, 118, 76, 89, 95, 132, 149, 121, 110, 68, 73,
+    88, 97, 142, 154, 161, 126, 115,
+  ],
+});
+
+export const heatmapOption = heatmapChartOption({
+  title: "Publishing activity",
+  subtitle: "Heatmap chart",
+  name: "Drafts",
+  x: ["Mon", "Tue", "Wed", "Thu", "Fri"],
+  y: ["Morning", "Afternoon", "Night"],
+  data: [
+    [0, 0, 2],
+    [1, 0, 4],
+    [2, 0, 3],
+    [3, 0, 5],
+    [4, 0, 1],
+    [0, 1, 6],
+    [1, 1, 7],
+    [2, 1, 4],
+    [3, 1, 8],
+    [4, 1, 5],
+    [0, 2, 1],
+    [1, 2, 3],
+    [2, 2, 2],
+    [3, 2, 4],
+    [4, 2, 2],
+  ],
+});
+
+export const correlationHeatmapOption = correlationHeatmapChartOption({
+  title: "Signal correlation",
+  subtitle: "Market-style heatmap",
+  name: "Correlation",
+  x: ["Traffic", "Search", "RSS", "Social"],
+  y: ["Traffic", "Search", "RSS", "Social"],
+  data: [
+    [0, 0, 1],
+    [1, 0, 0.74],
+    [2, 0, 0.42],
+    [3, 0, -0.18],
+    [0, 1, 0.74],
+    [1, 1, 1],
+    [2, 1, 0.35],
+    [3, 1, -0.08],
+    [0, 2, 0.42],
+    [1, 2, 0.35],
+    [2, 2, 1],
+    [3, 2, 0.21],
+    [0, 3, -0.18],
+    [1, 3, -0.08],
+    [2, 3, 0.21],
+    [3, 3, 1],
+  ],
+});
+
+export const treemapOption = treemapChartOption({
+  title: "Publication effort",
+  subtitle: "Treemap chart",
+  name: "Effort",
+  data: [
+    { name: "Research", value: 34 },
+    { name: "Drafting", value: 28 },
+    { name: "Charts", value: 18 },
+    { name: "Review", value: 12 },
+    { name: "Release", value: 8 },
+  ],
+});
+
+export const sankeyOption = sankeyChartOption({
+  title: "Publication workflow",
+  subtitle: "Sankey chart",
+  nodes: [
+    { name: "Research" },
+    { name: "Outline" },
+    { name: "Draft" },
+    { name: "Charts" },
+    { name: "Review" },
+    { name: "Publish" },
+  ],
+  links: [
+    { source: "Research", target: "Outline", value: 8 },
+    { source: "Outline", target: "Draft", value: 7 },
+    { source: "Draft", target: "Charts", value: 3 },
+    { source: "Draft", target: "Review", value: 6 },
+    { source: "Charts", target: "Review", value: 3 },
+    { source: "Review", target: "Publish", value: 7 },
+  ],
+});
+
+export const boxplotOption = boxplotChartOption({
+  title: "Build duration spread",
+  subtitle: "Boxplot chart",
+  name: "Seconds",
+  data: [
+    { name: "Local", min: 16, q1: 18, median: 21, q3: 24, max: 32 },
+    { name: "CI", min: 38, q1: 44, median: 51, q3: 58, max: 74 },
+    { name: "Preview", min: 22, q1: 26, median: 31, q3: 34, max: 43 },
+  ],
+});
+
+export const financeData = [
+  {
+    date: "2026-05-11",
+    open: 102,
+    close: 108,
+    low: 99,
+    high: 111,
+    volume: 1280,
+  },
+  {
+    date: "2026-05-12",
+    open: 108,
+    close: 105,
+    low: 103,
+    high: 112,
+    volume: 1180,
+  },
+  {
+    date: "2026-05-13",
+    open: 105,
+    close: 114,
+    low: 104,
+    high: 116,
+    volume: 1540,
+  },
+  {
+    date: "2026-05-14",
+    open: 114,
+    close: 119,
+    low: 110,
+    high: 122,
+    volume: 1710,
+  },
+  {
+    date: "2026-05-15",
+    open: 119,
+    close: 116,
+    low: 113,
+    high: 121,
+    volume: 1490,
+  },
+  {
+    date: "2026-05-18",
+    open: 116,
+    close: 121,
+    low: 114,
+    high: 124,
+    volume: 1660,
+  },
+  {
+    date: "2026-05-19",
+    open: 121,
+    close: 127,
+    low: 119,
+    high: 130,
+    volume: 1900,
+  },
+  {
+    date: "2026-05-20",
+    open: 127,
+    close: 125,
+    low: 123,
+    high: 131,
+    volume: 1810,
+  },
+  {
+    date: "2026-05-21",
+    open: 125,
+    close: 132,
+    low: 124,
+    high: 134,
+    volume: 2090,
+  },
+  {
+    date: "2026-05-22",
+    open: 132,
+    close: 136,
+    low: 130,
+    high: 138,
+    volume: 2200,
+  },
+  {
+    date: "2026-05-26",
+    open: 136,
+    close: 133,
+    low: 131,
+    high: 139,
+    volume: 2040,
+  },
+  {
+    date: "2026-05-27",
+    open: 133,
+    close: 139,
+    low: 132,
+    high: 141,
+    volume: 2310,
+  },
+  {
+    date: "2026-05-28",
+    open: 139,
+    close: 144,
+    low: 137,
+    high: 146,
+    volume: 2460,
+  },
+  {
+    date: "2026-05-29",
+    open: 144,
+    close: 142,
+    low: 140,
+    high: 147,
+    volume: 2180,
+  },
+  {
+    date: "2026-05-30",
+    open: 142,
+    close: 148,
+    low: 141,
+    high: 151,
+    volume: 2630,
+  },
+  {
+    date: "2026-06-02",
+    open: 148,
+    close: 151,
+    low: 145,
+    high: 153,
+    volume: 2770,
+  },
+  {
+    date: "2026-06-03",
+    open: 151,
+    close: 147,
+    low: 145,
+    high: 154,
+    volume: 2490,
+  },
+  {
+    date: "2026-06-04",
+    open: 147,
+    close: 153,
+    low: 146,
+    high: 156,
+    volume: 2820,
+  },
+  {
+    date: "2026-06-05",
+    open: 153,
+    close: 158,
+    low: 151,
+    high: 160,
+    volume: 3010,
+  },
+  {
+    date: "2026-06-08",
+    open: 158,
+    close: 156,
+    low: 154,
+    high: 161,
+    volume: 2860,
+  },
+  {
+    date: "2026-06-09",
+    open: 156,
+    close: 162,
+    low: 155,
+    high: 164,
+    volume: 3180,
+  },
+  {
+    date: "2026-06-10",
+    open: 162,
+    close: 167,
+    low: 160,
+    high: 169,
+    volume: 3370,
+  },
+  {
+    date: "2026-06-11",
+    open: 167,
+    close: 165,
+    low: 163,
+    high: 170,
+    volume: 3210,
+  },
+  {
+    date: "2026-06-12",
+    open: 165,
+    close: 171,
+    low: 164,
+    high: 174,
+    volume: 3520,
+  },
+  {
+    date: "2026-06-15",
+    open: 171,
+    close: 176,
+    low: 169,
+    high: 179,
+    volume: 3760,
+  },
+  {
+    date: "2026-06-16",
+    open: 176,
+    close: 173,
+    low: 171,
+    high: 178,
+    volume: 3440,
+  },
+  {
+    date: "2026-06-17",
+    open: 173,
+    close: 180,
+    low: 172,
+    high: 182,
+    volume: 3890,
+  },
+  {
+    date: "2026-06-18",
+    open: 180,
+    close: 184,
+    low: 177,
+    high: 187,
+    volume: 4020,
+  },
+];
+
+export const candlestickOption = candlestickWithVolumeOption({
+  title: "Example equity tape",
+  subtitle: "Candlestick with volume pane",
+  priceName: "Price",
+  volumeName: "Volume",
+  data: financeData,
+});
+
+export const macdOption = macdChartOption({
+  title: "Price, volume, and MACD",
+  subtitle: "Composed finance layout",
+  data: financeData,
+});
+
+export const rsiOption = rsiChartOption({
+  title: "Close price and RSI",
+  subtitle: "Momentum pane",
+  data: financeData,
+});
+
+export const bollingerOption = bollingerBandsChartOption({
+  title: "Bollinger Bands",
+  subtitle: "Close price with upper, middle, and lower bands",
+  data: financeData,
+});
+
+export const depthOption = depthChartOption({
+  title: "Depth chart",
+  subtitle: "Cumulative bid and ask size",
+  bids: [
+    { price: 179, size: 14 },
+    { price: 178, size: 21 },
+    { price: 177, size: 28 },
+    { price: 176, size: 35 },
+  ],
+  asks: [
+    { price: 181, size: 12 },
+    { price: 182, size: 18 },
+    { price: 183, size: 24 },
+    { price: 184, size: 31 },
+  ],
+});
+
+export const orderBookOption = orderBookChartOption({
+  title: "Order book ladder",
+  subtitle: "Bid and ask size by level",
+  bids: [
+    { price: 180, size: 20 },
+    { price: 179, size: 34 },
+    { price: 178, size: 28 },
+  ],
+  asks: [
+    { price: 181, size: 18 },
+    { price: 182, size: 26 },
+    { price: 183, size: 31 },
+  ],
+});
+
+export const ohlcOption = ohlcChartOption({
+  title: "OHLC custom series",
+  subtitle: "Static-only raw/custom option",
+  data: financeData.slice(0, 12),
+});
+
+This draft is a local chart bench for the MDX ECharts component. It keeps one example of each supported chart pattern in a real journal publication so article layout, build-time SVG render, no-script behavior, external SVG artifacts, and optional browser enhancement can be checked together.
+
+---
+
+## Standard article charts
+
+These are the everyday publication shapes: line, area, vertical bar, and horizontal bar. The first chart also tests the preferred `hydrate` prop and a client-side formatter preset.
+
+<EChart
+  id="dummy-line"
+  title="Monthly visitors"
+  caption="Line chart rendered as static SVG, then enhanced on load."
+  description="Line chart showing monthly visitors from January through June."
+  option={lineOption}
+  clientOption={lineOption}
+  width={760}
+  height={420}
+  hydrate="load"
+  optionClientPreset="currency"
+/>
+
+<EChart
+  id="dummy-area"
+  title="Newsletter signups"
+  caption="Area chart rendered through the line chart helper."
+  description="Area chart showing weekly newsletter signups across six weeks."
+  option={areaOption}
+  width={760}
+  height={420}
+/>
+
+<EChart
+  id="dummy-bar"
+  title="Article build output"
+  caption="Bar chart with default static rendering."
+  description="Vertical bar chart comparing generated HTML, CSS, JavaScript, and image output."
+  option={barOption}
+  width={760}
+  height={420}
+/>
+
+<EChart
+  id="dummy-horizontal-bar"
+  title="Reading flow checks"
+  caption="Horizontal bar chart using the legacy enhance alias."
+  description="Horizontal bar chart comparing heading, code, image, and chart checks."
+  option={horizontalBarOption}
+  clientOption={horizontalBarOption}
+  width={760}
+  height={420}
+  enhance="visible"
+/>
+
+---
+
+## Proportion and density charts
+
+Pie, donut, rose, heatmap, histogram, scatter, and correlation charts cover the comparison-heavy shapes used in reports and technical notes.
+
+<EChart
+  id="dummy-pie"
+  title="Traffic sources"
+  caption="Pie chart rendered as static SVG."
+  description="Pie chart showing traffic source distribution across search, direct, social, and referral traffic."
+  option={pieOption}
+  width={720}
+  height={420}
+/>
+
+<EChart
+  id="dummy-donut"
+  title="Test coverage mix"
+  caption="Donut chart using the pie chart helper."
+  description="Donut chart showing unit, end-to-end, and manual coverage shares."
+  option={donutOption}
+  width={720}
+  height={420}
+/>
+
+<EChart
+  id="dummy-rose"
+  title="Editorial attention"
+  caption="Rose pie chart emitted as a hashed SVG artifact."
+  description="Rose pie chart showing relative editorial attention across research, drafting, charts, review, and release."
+  option={roseOption}
+  width={720}
+  height={440}
+  render="svg-file"
+  cacheKey="dummy-rose"
+/>
+
+<EChart
+  id="dummy-heatmap"
+  title="Publishing activity"
+  caption="Heatmap chart with idle enhancement."
+  description="Heatmap chart showing draft activity by weekday and time of day."
+  option={heatmapOption}
+  clientOption={heatmapOption}
+  width={760}
+  height={460}
+  hydrate="idle"
+/>
+
+<EChart
+  id="dummy-correlation"
+  title="Signal correlation"
+  caption="Correlation heatmap with a percentage formatter preset."
+  description="Correlation heatmap showing relationships among traffic, search, RSS, and social signals."
+  option={correlationHeatmapOption}
+  clientOption={correlationHeatmapOption}
+  width={760}
+  height={460}
+  hydrate="media"
+  media="(min-width: 900px)"
+  optionClientPreset="percent"
+/>
+
+<EChart
+  id="dummy-histogram"
+  title="Paragraph length distribution"
+  caption="Histogram generated as a bar chart."
+  description="Histogram showing paragraph length distribution across a sample article."
+  option={histogramOption}
+  width={760}
+  height={420}
+/>
+
+<EChart
+  id="dummy-scatter"
+  title="Article length and read time"
+  caption="Scatter chart using the reusable helper."
+  description="Scatter chart comparing article word count and estimated reading time."
+  option={scatterOption}
+  width={760}
+  height={420}
+/>
+
+---
+
+## Flow and hierarchy charts
+
+Treemap, Sankey, and boxplot support denser editorial graphics without requiring author-side raw ECharts boilerplate.
+
+<EChart
+  id="dummy-treemap"
+  title="Publication effort"
+  caption="Treemap chart emitted as inline SVG."
+  description="Treemap chart showing relative effort across research, drafting, charts, review, and release."
+  option={treemapOption}
+  width={760}
+  height={440}
+/>
+
+<EChart
+  id="dummy-sankey"
+  title="Publication workflow"
+  caption="Sankey chart showing flow through the publishing process."
+  description="Sankey chart showing flow from research through outline, draft, charts, review, and publish."
+  option={sankeyOption}
+  width={760}
+  height={460}
+/>
+
+<EChart
+  id="dummy-boxplot"
+  title="Build duration spread"
+  caption="Boxplot chart showing build duration distribution."
+  description="Boxplot chart comparing local, CI, and preview build duration spreads."
+  option={boxplotOption}
+  width={760}
+  height={420}
+/>
+
+---
+
+## Finance layouts
+
+The finance section covers native candlesticks, composed indicators, depth, order book, and a static-only custom OHLC option.
+
+<EChart
+  id="dummy-candlestick"
+  title="Example equity tape"
+  caption="Candlestick chart with a synchronized volume pane."
+  description="Candlestick chart showing trading sessions with a synchronized volume pane."
+  option={candlestickOption}
+  clientOption={candlestickOption}
+  width={900}
+  height={560}
+  hydrate="load"
+  optionClientPreset="financeOhlc"
+/>
+
+<EChart
+  id="dummy-macd"
+  title="Price, volume, and MACD"
+  caption="Three-pane composed finance layout."
+  description="Candlestick chart with synchronized volume and MACD panes."
+  option={macdOption}
+  width={900}
+  height={620}
+/>
+
+<EChart
+  id="dummy-rsi"
+  title="Close price and RSI"
+  caption="Two-pane momentum layout."
+  description="Line chart showing close price with an RSI momentum pane."
+  option={rsiOption}
+  width={900}
+  height={520}
+/>
+
+<EChart
+  id="dummy-bollinger"
+  title="Bollinger Bands"
+  caption="Close price with upper, middle, and lower bands."
+  description="Line chart showing close price with Bollinger Band overlays."
+  option={bollingerOption}
+  width={900}
+  height={500}
+/>
+
+<EChart
+  id="dummy-depth"
+  title="Depth chart"
+  caption="Cumulative bid and ask liquidity."
+  description="Depth chart showing cumulative bid and ask size by price."
+  option={depthOption}
+  width={760}
+  height={420}
+/>
+
+<EChart
+  id="dummy-order-book"
+  title="Order book ladder"
+  caption="Bid and ask size by level."
+  description="Horizontal bar chart showing bid and ask size by order book level."
+  option={orderBookOption}
+  width={760}
+  height={420}
+/>
+
+<EChart
+  id="dummy-ohlc"
+  title="OHLC custom series"
+  caption="Static-only custom series example."
+  description="OHLC chart rendered with a custom ECharts series."
+  option={ohlcOption}
+  width={760}
+  height={420}
+/>

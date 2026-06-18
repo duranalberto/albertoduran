@@ -1,0 +1,133 @@
+---
+import Article from "@components/thejournal/article/Article.astro";
+import EChart from "@components/ui/mdx/EChart.astro";
+import BaseLayout from "@layouts/BaseLayout.astro";
+import {
+  barChartOption,
+  heatmapChartOption,
+  lineChartOption,
+  pieChartOption,
+} from "@integrations/echarts/options";
+
+export function getStaticPaths() {
+  if (process.env.ALBERTODURAN_TEST_MODE !== "true") return [];
+
+  return [{ params: { fixture: "charts" } }];
+}
+
+const siteManifest = {
+  description: "Test-only ECharts fixture page.",
+  pageTitle: "ECharts Fixture",
+  label: "ECharts Fixture",
+};
+
+const revenueOption = lineChartOption({
+  title: "Quarterly revenue",
+  x: ["Q1", "Q2", "Q3", "Q4"],
+  y: [12.4, 14.2, 16.1, 18.7],
+  name: "Revenue",
+  area: true,
+});
+
+const enhancedOption = barChartOption({
+  title: "Build output",
+  x: ["HTML", "CSS", "JS"],
+  y: [42, 18, 7],
+  name: "Kilobytes",
+});
+
+const donutOption = pieChartOption({
+  title: "Coverage",
+  name: "Coverage",
+  donut: true,
+  data: [
+    { name: "Unit", value: 48 },
+    { name: "E2E", value: 22 },
+    { name: "Manual", value: 12 },
+  ],
+});
+
+const externalOption = lineChartOption({
+  title: "External artifact",
+  x: ["A", "B", "C"],
+  y: [3, 5, 4],
+  name: "Value",
+});
+
+const mediaOption = heatmapChartOption({
+  title: "Media enhancement",
+  x: ["A", "B"],
+  y: ["One", "Two"],
+  data: [
+    [0, 0, 1],
+    [1, 0, 2],
+    [0, 1, 3],
+    [1, 1, 4],
+  ],
+});
+---
+
+<BaseLayout siteManifest={siteManifest}>
+  <div class="py-8 px-4">
+    <Article>
+      <h1>ECharts Fixture</h1>
+
+      <EChart
+        id="static-chart"
+        title="Quarterly revenue"
+        caption="Static SVG baseline"
+        description="Line chart showing quarterly revenue increasing from Q1 to Q4."
+        option={revenueOption}
+        width={760}
+        height={420}
+      />
+
+      <EChart
+        id="enhanced-chart"
+        title="Build output"
+        caption="Enhanced on page load"
+        description="Bar chart comparing generated HTML, CSS, and JavaScript output."
+        option={enhancedOption}
+        clientOption={enhancedOption}
+        width={760}
+        height={420}
+        enhance="load"
+      />
+
+      <EChart
+        id="donut-chart"
+        title="Coverage"
+        caption="Second static chart"
+        description="Donut chart showing coverage split across unit, E2E, and manual checks."
+        option={donutOption}
+        width={640}
+        height={420}
+      />
+
+      <EChart
+        id="external-chart"
+        title="External artifact"
+        caption="Static chart emitted as a hashed SVG asset"
+        description="Line chart rendered as an external SVG artifact."
+        option={externalOption}
+        width={640}
+        height={360}
+        render="svg-file"
+        cacheKey="fixture-external-chart"
+      />
+
+      <EChart
+        id="media-chart"
+        title="Media enhancement"
+        caption="Enhanced only when the media query matches"
+        description="Heatmap chart enhanced only on wider viewports."
+        option={mediaOption}
+        clientOption={mediaOption}
+        width={640}
+        height={360}
+        hydrate="media"
+        media="(min-width: 900px)"
+      />
+    </Article>
+  </div>
+</BaseLayout>

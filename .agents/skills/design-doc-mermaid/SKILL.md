@@ -10,6 +10,7 @@ Mermaid diagram and documentation system with specialized guides and code-to-dia
 ## Table of Contents
 
 - [Decision Tree](#decision-tree)
+- [Maintenance Rule](#maintenance-rule)
 - [Available Guides and Resources](#available-guides-and-resources)
 - [Usage Patterns](#usage-patterns)
 - [Resilient Workflow](#resilient-workflow)
@@ -70,6 +71,10 @@ flowchart TD
     class Activity,Deploy,Arch,Sequence,CodeToDiag,DesignDoc,Unicode,Scripts guide
     class Generate,Execute,RunValidation,Output action
 ```
+
+## Maintenance Rule
+
+Keep this skill project-agnostic. Updates may refine diagram quality, templates, references, utilities, workflows, or reusable examples, but must not depend on paths, docs, services, build systems, naming conventions, or architecture that only exist in this repository. Put project-specific guidance in local context or project documentation instead.
 
 ## Available Guides and Resources
 

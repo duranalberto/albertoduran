@@ -4,10 +4,11 @@ description: "A map of the small browser modules that enhance a static site with
 author: "Alberto Duran"
 tags: ["runtime", "frontend", "astro"]
 pubDate: 2026-06-17
+updatePubDate: 2026-06-19
 order: 50
 ---
 
-The site is static by default, but it is not inert. A small runtime layer adds the parts that only the browser can know or feel, such as the reader's theme preference, scroll position, focus target, viewport size, local timezone, and a request to inspect a diagram more closely. This is progressive enhancement, which means the HTML works first and browser code improves it afterward. The boundary is the important part. Runtime code improves a page that already exists.
+The site is static by default, but it is not inert. A small runtime layer adds the parts that only the browser can know or feel, such as the reader's theme preference, scroll position, focus target, viewport size, local timezone, and a request to inspect a diagram or chart more closely. This is progressive enhancement, which means the HTML works first and browser code improves it afterward. The boundary is the important part. Runtime code improves a page that already exists.
 
 ---
 
@@ -15,7 +16,7 @@ The site is static by default, but it is not inert. A small runtime layer adds t
 
 The build creates article routes, renders MDX, calculates manifest context, transforms Mermaid diagrams, generates responsive images, and writes HTML files. Runtime code starts after that work is complete. It should never need to fetch an article body, parse frontmatter, or construct the journal tree.
 
-This boundary gives the site a clear design model. With JavaScript disabled, a reader should still see article text, headings, images, code blocks, tables, breadcrumbs, pagination, inline Mermaid SVGs, and the basic structure of the page. With JavaScript enabled, the same page becomes more comfortable. Theme state persists. The On This Page list tracks scroll position. Mobile panels trap focus. Mermaid diagrams can expand into popovers. The Atlas schedule can show the reader's local time.
+This boundary gives the site a clear design model. With JavaScript disabled, a reader should still see article text, headings, images, code blocks, tables, breadcrumbs, pagination, inline Mermaid SVGs, static ECharts SVGs, and the basic structure of the page. With JavaScript enabled, the same page becomes more comfortable. Theme state persists. The On This Page list tracks scroll position. Mobile panels trap focus. Mermaid diagrams can expand into popovers. ECharts can hydrate when an article asks for browser inspection. The Atlas schedule can show the reader's local time.
 
 ```mermaid
 flowchart TD
@@ -25,6 +26,7 @@ flowchart TD
     Read --> Toc[📌 On This Page]
     Read --> Overlay[🔐 overlay panel]
     Read --> Mermaid[🖼️ diagram shell]
+    Read --> Charts[📊 chart shell]
     Read --> Atlas[🕒 local time]
 
     classDef build fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
@@ -33,7 +35,7 @@ flowchart TD
 
     class Build,Html build
     class Read page
-    class Theme,Toc,Overlay,Mermaid,Atlas runtime
+    class Theme,Toc,Overlay,Mermaid,Charts,Atlas runtime
 ```
 
 The runtime modules are intentionally boring in the best sense. They are not a second application hidden inside the site. They are small pieces of behavior attached to semantic HTML.
@@ -48,11 +50,12 @@ The runtime code lives under `src/runtime/`.
 - `on-this-page.ts` tracks active article headings while scrolling.
 - `overlay-panel.ts` improves mobile panels and modal focus behavior.
 - `mermaid-diagram-shell.ts` expands inline diagrams and updates theme-specific links.
+- `elements/echart-shell.ts` hydrates static ECharts output only when an article opts in.
 - `atlas-schedule.ts` localizes Atlas schedule time in the browser.
 
-Each module is scoped to one concern. Theme management does not know about article headings. The article navigation tracker does not know about overlays. The Mermaid shell does not render Mermaid syntax. The Atlas element does not fetch match data. That separation keeps the runtime layer small and makes each behavior easier to reason about.
+Each module is scoped to one concern. Theme management does not know about article headings. The article navigation tracker does not know about overlays. The Mermaid shell does not render Mermaid syntax. The ECharts shell does not create the first visible chart. The Atlas element does not fetch match data. That separation keeps the runtime layer small and makes each behavior easier to reason about.
 
-The import strategy reflects that scope. `BaseLayout.astro` imports the global pieces that should exist across pages, such as the theme manager and Mermaid diagram shell. Components import the runtime behavior they need, such as `OverlayPanel.astro` importing `overlay-panel.ts`. Custom elements attach themselves when their tags appear in the document.
+The import strategy reflects that scope. `BaseLayout.astro` imports the global pieces that should exist across pages, such as the theme manager and Mermaid diagram shell. Components import the runtime behavior they need, such as `OverlayPanel.astro` importing `overlay-panel.ts` and `EChart.astro` importing `echart-shell` only for hydrated charts. Custom elements attach themselves when their tags appear in the document.
 
 That gives the project a practical module boundary. The layout owns site-wide behavior. Components own local behavior. The build owns publication data.
 
@@ -98,13 +101,13 @@ The Atlas widget shows why runtime enhancement still matters on a static site. M
 
 That is the right split. The build owns the match data. The browser owns the reader's locale. The static page stays meaningful, and the enhanced page becomes more personal without making an API request.
 
-The same idea appears in diagram popovers. The build owns the rendered SVG. The browser owns the moment when a reader asks to expand it, so the shell clones the inline SVG only when the popover opens.
+The same idea appears in diagram popovers and ECharts hydration. The build owns the rendered SVG. The browser owns the moment when a reader asks to inspect it, so the Mermaid shell clones diagrams on demand and the ECharts shell replaces a static surface only after the chosen hydration trigger fires.
 
 ---
 
 ## The shape of a runtime contract
 
-Each runtime feature depends on a small markup contract. The theme manager expects one toggle input ID and the document theme attribute. On This Page expects a navigation container, heading links, and real heading IDs. Overlay behavior expects checkbox toggles, labeled controls, and a modal element beside the input. The Mermaid shell expects diagram source attributes and a popover target. Atlas time localization expects a date element with a raw ISO value.
+Each runtime feature depends on a small markup contract. The theme manager expects one toggle input ID and the document theme attribute. On This Page expects a navigation container, heading links, and real heading IDs. Overlay behavior expects checkbox toggles, labeled controls, and a modal element beside the input. The Mermaid shell expects diagram source attributes and a popover target. The ECharts shell expects serialized chart data only when hydration is requested. Atlas time localization expects a date element with a raw ISO value.
 
 Those contracts are intentionally visible in the HTML instead of hidden in a framework state tree. A reader sees normal content. A maintainer sees the hooks that attach behavior. CSS can respond to data attributes. JavaScript can bind only the elements that opt into a feature.
 

@@ -4,16 +4,17 @@ description: "A map of the checks, tests, deterministic builds, browser coverage
 author: "Alberto Duran"
 tags: ["testing", "quality", "ci"]
 pubDate: 2026-06-17
+updatePubDate: 2026-06-19
 order: 70
 ---
 
-Quality is part of how this site is built, not a separate ritual after the code is done. The project has custom content manifests, build-time Mermaid rendering, a post-build HTML minifier, an external-data content loader, runtime overlays, theme persistence, responsive article layouts, and static deployment. The quality stack exists to keep those moving pieces aligned with the architecture.
+Quality is part of how this site is built, not a separate ritual after the code is done. The project has custom content manifests, build-time Mermaid rendering, static ECharts rendering, a post-build HTML minifier, an external-data content loader, runtime overlays, theme persistence, responsive article layouts, and static deployment. The quality stack exists to keep those moving pieces aligned with the architecture.
 
 ---
 
 ## Why quality belongs in the architecture
 
-The site is static, but it is not simple in the sense of being plain HTML files typed by hand. Astro collects content, the journal manifest decides route context, the Mermaid integration rewrites diagrams into SVG output, the Atlas loader fetches data during the build, and runtime modules enhance browser behavior. Each layer has its own contract.
+The site is static, but it is not simple in the sense of being plain HTML files typed by hand. Astro collects content, the journal manifest decides route context, the Mermaid integration rewrites diagrams into SVG output, ECharts renders charts into SVG, the Atlas loader fetches data during the build, and runtime modules enhance browser behavior. Each layer has its own contract.
 
 The quality system follows those contracts. Type and Astro checks protect component and content shape. Unit tests protect pure transformation logic. Deterministic build flags make output reproducible. Playwright covers behavior that only exists in a real browser. CI runs the same gates before changes reach deployment.
 
@@ -78,9 +79,9 @@ This is the right kind of determinism. It keeps quality gates repeatable while s
 
 ## Custom systems
 
-The highest-value tests sit around the custom systems. The journal manifest decides which entries publish, which vaults exist, which images are required, how read time is measured, how paths resolve, and how previous and next links connect. Mermaid tests cover sanitation, ID rewriting, theme merging, inline color hoisting, dispatcher guards, and page CSS hoisting. The HTML minifier test protects code-oriented fragments. Atlas loader tests cover data normalization and fallback paths.
+The highest-value tests sit around the custom systems. The journal manifest decides which entries publish, which vaults exist, which images are required, how read time is measured, how paths resolve, and how previous and next links connect. Mermaid tests cover sanitation, ID rewriting, theme merging, inline color hoisting, dispatcher guards, and page CSS hoisting. ECharts tests cover static SVG rendering, artifact hashing, serialization guards, option builders, indicator math, and hydration behavior. The HTML minifier test protects code-oriented fragments. Atlas loader tests cover data normalization and fallback paths.
 
-These are the places where generic framework confidence is not enough. Astro can build a page, but it does not know this site's vault rules. Mermaid can render a diagram, but it does not know this site's light and dark asset contract. A minifier can reduce HTML, but it does not know code samples are publication content unless the project enforces that rule.
+These are the places where generic framework confidence is not enough. Astro can build a page, but it does not know this site's vault rules. Mermaid can render a diagram, but it does not know this site's light and dark asset contract. ECharts can render charts, but it does not know this site's static-first MDX contract. A minifier can reduce HTML, but it does not know code samples are publication content unless the project enforces that rule.
 
 The quality stack therefore spends energy where the site has made local architectural choices.
 
@@ -88,7 +89,7 @@ The quality stack therefore spends energy where the site has made local architec
 
 ## Browser behavior
 
-Playwright covers the pieces that only a browser can prove. That includes route smoke coverage, browser console cleanliness, hero geometry, responsive overflow, sidebar and dock breakpoints, catalog links, overlay focus, scroll lock, article landmarks, breadcrumbs, article navigation, theme persistence, Mermaid popovers, and no-JS behavior.
+Playwright covers the pieces that only a browser can prove. That includes route smoke coverage, browser console cleanliness, hero geometry, responsive overflow, sidebar and dock breakpoints, catalog links, overlay focus, scroll lock, article landmarks, breadcrumbs, article navigation, theme persistence, Mermaid popovers, ECharts hydration, static chart fallbacks, and no-JS behavior.
 
 Those checks are part of the website's build story because the site is static but enhanced. A generated page can be structurally correct while a focus trap, route swap, or responsive layout still needs real browser behavior. Playwright runs against `astro preview`, not the development server, so the shape is close to production delivery.
 
@@ -98,7 +99,7 @@ This browser layer also validates design decisions. The article sidebars wait un
 
 ## The quality boundary
 
-The quality stack is not trying to prove every pixel of the site. It is trying to protect the decisions that make the site work. Static routing should come from the manifest. Diagrams should be rendered before the browser receives the page. Code blocks should survive minification. External Atlas data should become a local content entry. Runtime modules should enhance without replacing content.
+The quality stack is not trying to prove every pixel of the site. It is trying to protect the decisions that make the site work. Static routing should come from the manifest. Diagrams should be rendered before the browser receives the page. Charts should be readable before hydration. Code blocks should survive minification. External Atlas data should become a local content entry. Runtime modules should enhance without replacing content.
 
 That boundary keeps the suite meaningful. A publication paragraph does not need a browser test. A manifest rule that controls whether the publication exists does. A decorative color value does not need a unit test. A theme lifecycle that persists through Astro swaps benefits from browser coverage.
 
@@ -132,7 +133,7 @@ The quality section has three focused articles.
 
 `testing_strategy` explains the command layers, deterministic flags, coverage posture, and CI flow.
 
-`manifest_and_mermaid_tests` explains how Vitest protects custom build-time systems such as the journal manifest, Mermaid pipeline, HTML minifier, and Atlas loader.
+`manifest_and_mermaid_tests` explains how Vitest protects custom build-time systems such as the journal manifest, Mermaid pipeline, ECharts pipeline, HTML minifier, and Atlas loader.
 
 `e2e_accessibility` explains how Playwright validates production preview behavior, responsive layouts, overlays, theme persistence, no-JS states, and Mermaid popovers.
 
@@ -142,7 +143,7 @@ Together, those entries explain how the site keeps custom architecture dependabl
 
 ## What this protects for readers
 
-Readers never see the quality stack directly, but they feel the results. Article routes exist where links point. Vault sidebars match the publication tree. Code blocks keep their spacing. Mermaid diagrams appear without a client-side renderer. The homepage Atlas section has stable structure. Overlays focus correctly. The theme stays chosen across navigation.
+Readers never see the quality stack directly, but they feel the results. Article routes exist where links point. Vault sidebars match the publication tree. Code blocks keep their spacing. Mermaid diagrams appear without a client-side renderer. ECharts figures remain readable without JavaScript. The homepage Atlas section has stable structure. Overlays focus correctly. The theme stays chosen across navigation.
 
 That is the reason quality belongs in a journal about how the site was built. The tests and checks are not an internal hobby. They are part of the construction method that lets custom publishing features remain usable as the site grows.
 

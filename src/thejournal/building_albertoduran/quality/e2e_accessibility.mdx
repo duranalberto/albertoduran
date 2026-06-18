@@ -1,13 +1,14 @@
 ---
 title: "Production preview, responsiveness, and accessibility behavior"
-description: "How Playwright validates browser-only behavior such as overlays, responsive layouts, view transitions, themes, and Mermaid popovers."
+description: "How Playwright validates browser-only behavior such as overlays, responsive layouts, view transitions, themes, Mermaid popovers, and ECharts hydration."
 author: "Alberto Duran"
 tags: ["playwright", "accessibility", "e2e"]
 pubDate: 2026-06-17
+updatePubDate: 2026-06-19
 order: 30
 ---
 
-Some parts of the site only become real in a browser. Focus moves. The viewport changes. The page scrolls. Astro swaps routes. Dialogs open. Mermaid popovers clone SVGs. End-to-end testing, often shortened to e2e, checks those flows through the same kind of browser session a reader uses. A static build can create the right files, but browser behavior needs a browser-shaped quality layer. That is why the project uses Playwright against production preview output.
+Some parts of the site only become real in a browser. Focus moves. The viewport changes. The page scrolls. Astro swaps routes. Dialogs open. Mermaid popovers clone SVGs. ECharts can replace a static chart surface after a chosen hydration trigger. End-to-end testing, often shortened to e2e, checks those flows through the same kind of browser session a reader uses. A static build can create the right files, but browser behavior needs a browser-shaped quality layer. That is why the project uses Playwright against production preview output.
 
 ---
 
@@ -47,12 +48,13 @@ flowchart TD
     Preview --> Theme[🎨 theme persistence]
     Preview --> Article[📖 article navigation]
     Preview --> Mermaid[🖼️ diagram popovers]
+    Preview --> Charts[📊 chart enhancement]
 
     classDef preview fill:#FFE4B5,stroke:#333,stroke-width:2px,color:black
     classDef browser fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
 
     class Preview preview
-    class Smoke,Responsive,Overlay,Theme,Article,Mermaid browser
+    class Smoke,Responsive,Overlay,Theme,Article,Mermaid,Charts browser
 ```
 
 ---
@@ -91,7 +93,7 @@ These checks are part of how the site protects its publication experience. A jou
 
 The e2e helper collects browser console errors and page errors during smoke coverage. That gives the suite a broad signal that runtime modules are not throwing while representative routes load.
 
-This matters because the runtime layer is intentionally small but touches important browser APIs. Theme management reads storage and applies document state. Overlays handle global events. On This Page observes headings and scroll. Mermaid shell uses custom elements and popovers. A representative console check helps keep those modules honest when pages load in preview.
+This matters because the runtime layer is intentionally small but touches important browser APIs. Theme management reads storage and applies document state. Overlays handle global events. On This Page observes headings and scroll. Mermaid shell uses custom elements and popovers. ECharts hydration uses custom elements, dynamic imports, media queries, intersection observers, and resize observers. A representative console check helps keep those modules honest when pages load in preview.
 
 The check is not a substitute for focused assertions, but it complements them. Focused assertions prove expected behavior. Console collection notices unexpected runtime failures during route loads.
 
@@ -107,11 +109,13 @@ The same principle applies to view-transition-driven navigation. The site serves
 
 ---
 
-## Mermaid popovers and no-JS behavior
+## Mermaid, ECharts, and no-JS behavior
 
 Mermaid popover behavior depends on custom elements, the Popover API, cloned SVG nodes, rewritten IDs, page CSS attachment, and theme-specific Open links. Unit tests cover the transform pipeline. Playwright covers the browser shell that expands the rendered diagram.
 
-No-JS behavior is also part of the browser layer. The site is static-first, so important content should remain available without runtime enhancement. Browser coverage can load pages with JavaScript disabled and confirm that core content remains visible.
+ECharts browser coverage checks the other visual path. The fixture route renders static SVG with JavaScript disabled, verifies file-backed chart assets, checks that `hydrate="load"` replaces a static surface with an enhanced ECharts surface, and confirms that `hydrate="media"` waits until the media query matches.
+
+No-JS behavior is also part of the browser layer. The site is static-first, so important content should remain available without runtime enhancement. Browser coverage can load pages with JavaScript disabled and confirm that core content, diagrams, and charts remain visible.
 
 This pairing is the heart of the site's frontend quality model. The build should produce complete pages. Runtime code should enrich those pages. Browser coverage checks both sides of that progressive enhancement contract.
 
@@ -119,9 +123,9 @@ This pairing is the heart of the site's frontend quality model. The build should
 
 ## No-JS as a design promise
 
-No-JS coverage is important because the site is built static-first. Article text, headings, links, code blocks, tables, and inline diagrams should not require client-side rendering. Runtime modules can add convenience, but the content should already be present.
+No-JS coverage is important because the site is built static-first. Article text, headings, links, code blocks, tables, inline diagrams, and static charts should not require client-side rendering. Runtime modules can add convenience, but the content should already be present.
 
-That promise shapes the whole build. Mermaid renders during the build. The manifest prepares route context. The Atlas widget has a build-time fallback display. Overlay content exists in the HTML. Browser tests with JavaScript disabled make that design promise observable.
+That promise shapes the whole build. Mermaid renders during the build. ECharts renders SVG during the build. The manifest prepares route context. The Atlas widget has a build-time fallback display. Overlay content exists in the HTML. Browser tests with JavaScript disabled make that design promise observable.
 
 The result is not anti-JavaScript. The site uses JavaScript where it helps. It simply does not make JavaScript the publishing substrate.
 

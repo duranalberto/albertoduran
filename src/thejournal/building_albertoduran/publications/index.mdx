@@ -4,10 +4,11 @@ description: "How MDX files become filtered manifests, vault navigation, rendere
 author: "Alberto Duran"
 tags: ["astro", "mdx", "content"]
 pubDate: 2026-06-17
+updatePubDate: 2026-06-19
 order: 20
 ---
 
-The journal looks calm from the outside. A reader opens an article, sees a title, a reading time, a vault sidebar, a table of contents, and maybe a diagram. Under that page, the site has already made dozens of decisions about whether the file should publish, where it lives, what image it owns, and which page comes next. This section explains that pipeline so the journal can keep growing without becoming a memory test.
+The journal looks calm from the outside. A reader opens an article, sees a title, a reading time, a vault sidebar, a table of contents, and maybe a diagram or chart. Under that page, the site has already made dozens of decisions about whether the file should publish, where it lives, what image it owns, and which page comes next. This section explains that pipeline so the journal can keep growing without becoming a memory test.
 
 ---
 
@@ -135,7 +136,7 @@ The publication system does not ask writers to write component-heavy MDX for com
 const components = {
   pre: CodeBlock,
   h2: HeadingAnchor,
-  h3: HeadingAnchorH3,
+  h3: HeadingAnchor,
   table: ProseTable,
   div: MermaidDiagramWrapper,
 };
@@ -144,6 +145,8 @@ const components = {
 That map is a small but important piece of the system. It lets a fenced code block become a Shiki-highlighted DaisyUI code panel. It lets normal `##` and `###` headings become copyable anchors. It lets Markdown tables become keyboard-scrollable regions. It lets Mermaid output become an expandable diagram shell without authors importing a component.
 
 The writer gets simple source. The reader gets the site's UI. The build gets one place to wire those choices together.
+
+Charts are the main exception to this no-import path. A data visualization needs values and an ECharts option object, so chart articles import `EChart` and the relevant option builder directly in MDX. That still follows the publication boundary because the component renders static SVG at build time before any browser enhancement is considered.
 
 ---
 
@@ -156,7 +159,7 @@ This `publications/` section is split by ownership boundary. Each article looks 
 | `collections` | Which frontmatter fields can authors write, and what does the schema validate. |
 | `manifest_rules` | Which content rules become build-time policy before pages render. |
 | `static_generation` | How the catch-all route turns published entries into static pages. |
-| `mdx_rendering` | How `render(post)` and component overrides shape article HTML. |
+| `mdx_rendering` | How `render(post)`, component overrides, and opt-in MDX components shape article HTML. |
 | `codeblocks` | How fenced code becomes theme-aware highlighted output. |
 
 Read them in that order if you are changing the publishing model. The collection article starts with the author contract. The manifest article explains the build policy. Static generation shows how those decisions become routes. The rendering and code block articles cover the final MDX presentation layer.

@@ -9,7 +9,6 @@ import VaultExplorer from "@components/thejournal/article/VaultExplorer.astro";
 import VaultNavContent from "@components/thejournal/article/VaultNavContent.astro";
 import CodeBlock from "@components/ui/mdx/CodeBlock.astro";
 import HeadingAnchor from "@components/ui/mdx/HeadingAnchor.astro";
-import HeadingAnchorH3 from "@components/ui/mdx/HeadingAnchorH3.astro";
 import ProseTable from "@components/ui/mdx/ProseTable.astro";
 import MermaidDiagramWrapper from "@components/ui/mdx/MermaidDiagramWrapper.astro";
 import OverlayPanel from "@components/ui/primitive/OverlayPanel.astro";
@@ -54,7 +53,7 @@ if (!vaultIcon || !otpIcon) {
 const components = {
   pre: CodeBlock,
   h2: HeadingAnchor,
-  h3: HeadingAnchorH3,
+  h3: HeadingAnchor,
   table: ProseTable,
   div: MermaidDiagramWrapper,
 };

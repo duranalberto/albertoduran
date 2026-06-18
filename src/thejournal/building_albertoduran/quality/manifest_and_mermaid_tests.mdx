@@ -1,35 +1,37 @@
 ---
 title: "Testing the risky build-time systems"
-description: "How Vitest covers the journal manifest, Mermaid transform pipeline, HTML minifier, Atlas loader, and other custom build logic."
+description: "How Vitest covers the journal manifest, Mermaid transform pipeline, ECharts chart pipeline, HTML minifier, Atlas loader, and custom build logic."
 author: "Alberto Duran"
-tags: ["testing", "mermaid", "manifest"]
+tags: ["testing", "mermaid", "echarts", "manifest"]
 pubDate: 2026-06-17
+updatePubDate: 2026-06-19
 order: 20
 ---
 
-The riskiest parts of this site run before the browser opens. The journal manifest decides which pages exist. The Mermaid integration rewrites diagrams into SVG assets. The HTML minifier rewrites generated files. The Atlas loader turns outside data into a local content entry. These systems are custom enough that generic framework confidence is not enough.
+The riskiest parts of this site run before the browser opens. The journal manifest decides which pages exist. The Mermaid integration rewrites diagrams into SVG assets. ECharts turns MDX chart options into static SVG. The HTML minifier rewrites generated files. The Atlas loader turns outside data into a local content entry. These systems are custom enough that generic framework confidence is not enough.
 
 ---
 
 ## Build-time focus
 
-Vitest is the right tool for these systems because they are mostly deterministic transformations. Given entries, the manifest should produce a route list, manifest map, vault tree, image inheritance, reading time, and pagination. Given SVG-like HTML, Mermaid utilities should sanitize, rewrite, merge, or hoist in predictable ways. Given source HTML, the minifier should preserve code fragments while reducing the rest. Given fixture data, the Atlas loader should store the expected content entry.
+Vitest is the right tool for these systems because they are mostly deterministic transformations. Given entries, the manifest should produce a route list, manifest map, vault tree, image inheritance, reading time, and pagination. Given SVG-like HTML, Mermaid utilities should sanitize, rewrite, merge, or hoist in predictable ways. Given chart inputs, ECharts helpers should render SVG, hash artifacts, serialize options, and build known chart shapes. Given source HTML, the minifier should preserve code fragments while reducing the rest. Given fixture data, the Atlas loader should store the expected content entry.
 
 ```mermaid
 flowchart LR
     Manifest[🧭 manifest rules] --> Routes[📍 generated routes]
     Mermaid[🖼️ Mermaid pipeline] --> Diagrams[🎨 SVG diagrams]
+    Charts[📊 ECharts helpers] --> ChartSvg[📈 SVG charts]
     Minifier[📦 HTML minifier] --> Html[📄 compact pages]
     Atlas[⚽ Atlas loader] --> Data[📊 content entry]
 
     classDef test fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
     classDef output fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
 
-    class Manifest,Mermaid,Minifier,Atlas test
-    class Routes,Diagrams,Html,Data output
+    class Manifest,Mermaid,Charts,Minifier,Atlas test
+    class Routes,Diagrams,ChartSvg,Html,Data output
 ```
 
-The common thread is that these checks protect project rules, not only library behavior. Astro, Mermaid, and html-minifier-terser all do useful work, but the site has local expectations about how their output should fit the publishing system.
+The common thread is that these checks protect project rules, not only library behavior. Astro, Mermaid, ECharts, and html-minifier-terser all do useful work, but the site has local expectations about how their output should fit the publishing system.
 
 ---
 
@@ -74,6 +76,18 @@ Mermaid diagrams are not simple images in this site. A diagram begins as a code 
 That path has more moving parts than an ordinary image import. It crosses markdown processing, renderer services, SVG processing, CSS handling, asset output, and runtime hooks. Unit tests cover the parts that can be expressed as transformations before the browser arrives.
 
 This lets diagrams remain author-friendly. Authors write Mermaid fences. The pipeline does the rest. The tests keep the pipeline's promises visible.
+
+---
+
+## ECharts tests
+
+`tests/unit/echarts.test.ts` covers the chart pipeline that can be checked without opening a browser. It verifies render and hydration normalization, including the deferred `png-file` and `light` modes. It checks that server-side SVG output contains real SVG, that ARIA defaults merge correctly, and that chart input hashes stay stable when object keys arrive in a different order.
+
+The suite also protects the artifact path. It checks that `svg-file` hashes include render mode, renderer version, ECharts version, dimensions, theme, option, and cache key. In development mode the artifact registration returns inline SVG. In build mode it records the asset and emits a hashed SVG file under `_app/charts/`.
+
+Serialization gets direct coverage because enhanced charts pass options through HTML data attributes. The tests reject functions, non-finite numbers, and other values that cannot safely cross that boundary. The client preset tests then prove that known formatter callbacks can be rebuilt in the browser from named presets.
+
+The option builder tests cover line, bar, pie, heatmap, correlation heatmap, scatter, histogram, treemap, Sankey, boxplot, candlestick, MACD, RSI, Bollinger Bands, depth, order book, and OHLC helpers. They also check deterministic finance math and histogram bins. That makes the builder catalog part of the tested publishing contract.
 
 ---
 

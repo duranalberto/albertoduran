@@ -4,10 +4,11 @@ description: "How Vite, Terser, Tailwind, DaisyUI, a custom HTML minifier, SVG c
 author: "Alberto Duran"
 tags: ["performance", "build", "optimization"]
 pubDate: 2026-06-17
+updatePubDate: 2026-06-19
 order: 20
 ---
 
-The build does not treat file optimization as one giant squeeze at the end. It uses several smaller decisions that understand the kind of file being produced. JavaScript and CSS go through Vite. Component CSS is limited by DaisyUI's include list. HTML is minified after Astro writes pages. Mermaid CSS is hoisted with cascade safety in mind. SVG icons are compressed where the project controls the markup. The result is lighter output without turning article content into an optimization casualty.
+The build does not treat file optimization as one giant squeeze at the end. It uses several smaller decisions that understand the kind of file being produced. JavaScript and CSS go through Vite. Component CSS is limited by DaisyUI's include list. HTML is minified after Astro writes pages. Mermaid CSS is hoisted with cascade safety in mind. ECharts can stay inline or emit hashed SVG files. SVG icons are compressed where the project controls the markup. The result is lighter output without turning article content into an optimization casualty.
 
 ---
 
@@ -23,18 +24,20 @@ flowchart TD
     Daisy[🧩 DaisyUI include list] --> Css[🎨 smaller component CSS]
     Html[📄 HTML minifier] --> Pages[🗜️ generated pages]
     Mermaid[🖼️ Mermaid hoisting] --> DiagramCss[🎯 diagram CSS]
+    Charts[📊 ECharts artifacts] --> ChartSvg[📈 chart SVG]
     Svg[🔣 SVG helpers] --> Icons[✨ compact icon markup]
     JsCss --> Dist[📁 dist output]
     Css --> Dist
     Pages --> Dist
     DiagramCss --> Dist
+    ChartSvg --> Dist
     Icons --> Dist
 
     classDef process fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
     classDef output fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
 
-    class Vite,Daisy,Html,Mermaid,Svg process
-    class JsCss,Css,Pages,DiagramCss,Icons,Dist output
+    class Vite,Daisy,Html,Mermaid,Charts,Svg process
+    class JsCss,Css,Pages,DiagramCss,ChartSvg,Icons,Dist output
 ```
 
 The goal is not the smallest possible number in a report. The goal is output that is small, readable by the browser, and faithful to the source material.
@@ -96,13 +99,17 @@ The minifier is also intentionally a custom Astro integration. That keeps it ins
 
 ---
 
-## SVG and Mermaid output
+## SVG, Mermaid, and chart output
 
 Mermaid page CSS hoisting reduces repeated inline style blocks in built article pages. It also keeps cascade behavior guarded by disabling unsafe CSS restructuring.
+
+ECharts optimization has a different shape. The default inline SVG mode keeps ordinary article charts close to the prose, while `render="svg-file"` emits a hashed asset under `/_app/charts/` when reuse or HTML size matters. In development, the same file mode falls back to inline SVG so authors can inspect charts without waiting for an emitted asset pass.
 
 Inline SVG icons are handled through `src/data/icons.ts` and helpers such as `compressSVGContent()` in `ribbon.ts`. That lets the site avoid icon fonts and still keep SVG payloads compact.
 
 The Mermaid work is a good example of project-specific optimization. Mermaid diagrams produce SVG with embedded style rules. The site needs those diagrams to work in light and dark themes, inline inside articles, and as standalone assets. The integration can inspect that exact output and hoist repeated CSS into a page-level style block while keeping theme behavior intact.
+
+The chart work follows the same static-output instinct without sharing the same machinery. ECharts renders SVG locally through its server-side renderer, so the optimization choice is whether the chart belongs inline or as an immutable file. That keeps chart performance tied to author intent instead of a global rule.
 
 The SVG icon path is similar. `src/data/icons.ts` loads skill icons from disk and defines small UI icons inline. `SVGIcon.astro` renders those icons with accessible labeling rules. `generateRibbonSVGData()` then compresses repeated SVG content, scopes IDs, rewrites references, and returns dimensions for pattern strips. A generic icon library would not know about that decorative ribbon use case.
 
@@ -132,7 +139,7 @@ This is the difference between optimization and flattening. Optimization respect
 
 ## The build lesson
 
-The file optimization story is a set of small, contextual decisions. Vite and Terser handle scripts and CSS bundles. Tailwind and DaisyUI keep the component surface limited. The HTML minifier reduces generated documents while protecting code-oriented fragments. Mermaid CSS hoisting removes repetition from diagram-heavy pages. SVG helpers compress and scope icon output. Cloudflare serves the finished files.
+The file optimization story is a set of small, contextual decisions. Vite and Terser handle scripts and CSS bundles. Tailwind and DaisyUI keep the component surface limited. The HTML minifier reduces generated documents while protecting code-oriented fragments. Mermaid CSS hoisting removes repetition from diagram-heavy pages. ECharts file mode moves repeated or large charts into hashed SVG assets. SVG helpers compress and scope icon output. Cloudflare serves the finished files.
 
 The shape is more important than any one tool. Work happens where context is strongest. The source stays readable. The output gets lighter. The browser receives pages that are already structured, styled, and ready to enhance.
 

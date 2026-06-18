@@ -12,6 +12,7 @@ const smokeRoutes = [
 const responsiveRoutes = [
   "/",
   "/profile/",
+  "/thejournal/building_albertoduran/echarts/chart_examples/",
   "/thejournal/sin_pluma/innodb_cluster/",
   "/thejournal/building_albertoduran/publications/codeblocks/",
   "/404.html",
@@ -499,6 +500,18 @@ test("article pages expose article navigation, headings, and vault context", asy
     page.getByRole("navigation", { name: "On this page" }).first(),
   ).toBeVisible();
   await expect(page.getByText("Vault Explorer").first()).toBeVisible();
+
+  const h2 = page.locator("h2#one-route-for-many-article-shapes");
+  const h3 = page.locator("h3#why-path-generation-stays-boring");
+
+  await expect(h2).toBeVisible();
+  await expect(h3).toBeVisible();
+  await expect(h2.locator("[data-anchor-trigger]")).toBeVisible();
+  await expect(h3.locator("[data-anchor-trigger]")).toBeVisible();
+  await expect(page.locator("h2#why-path-generation-stays-boring")).toHaveCount(
+    0,
+  );
+
   expect(problems).toEqual([]);
 });
 
@@ -550,10 +563,8 @@ test("mobile On This Page panel preserves selected heading scroll after close", 
     ),
   ).toBe(true);
 
-  await dialog
-    .getByRole("link", { name: "Headings and navigation" })
-    .click();
-  await expect(page).toHaveURL(/#headings-and-navigation$/);
+  await dialog.getByRole("link", { name: "Heading navigation" }).click();
+  await expect(page).toHaveURL(/#heading-navigation$/);
   await expect
     .poll(() => page.evaluate(() => window.scrollY))
     .toBeGreaterThan(pageScrollBeforeOpen + 500);
@@ -636,5 +647,76 @@ test("Mermaid diagram shell expands diagrams and switches asset links by theme",
   const clone = popover.locator("[data-diagram-popover-content] svg");
   await expect(clone).toBeVisible();
   await expect(clone).toHaveAttribute("id", `${inlineId}--expanded`);
+  expect(problems).toEqual([]);
+});
+
+test("ECharts MDX charts render static SVG without JavaScript", async ({
+  browser,
+}) => {
+  const context = await browser.newContext({
+    baseURL: "http://127.0.0.1:4325",
+    javaScriptEnabled: false,
+  });
+  const page = await context.newPage();
+
+  await page.goto("/fixtures/charts/");
+
+  const staticChart = page.locator("#static-chart");
+  await expect(staticChart).toBeVisible();
+  await expect(staticChart.locator("svg")).toBeVisible();
+
+  const externalChartImage = page.locator("#external-chart img");
+  await expect(externalChartImage).toBeVisible();
+  const externalSrc = await externalChartImage.getAttribute("src");
+  expect(externalSrc).toMatch(/^\/_app\/charts\/[a-f0-9]+\.svg$/);
+  const externalResponse = await page.request.get(externalSrc!);
+  expect(externalResponse.ok()).toBe(true);
+
+  await expect(page.locator("html")).toHaveClass(/no-js/);
+
+  await context.close();
+});
+
+test("ECharts MDX charts opt into browser enhancement", async ({ page }) => {
+  const problems = collectConsoleProblems(page);
+
+  await page.goto("/fixtures/charts/");
+
+  const staticShell = page.locator(
+    'echart-shell:has(#static-chart)[data-chart-enhance="none"]',
+  );
+  await expect(staticShell).toBeVisible();
+  await expect(staticShell).not.toHaveAttribute("data-enhanced", "true");
+
+  const enhancedShell = page.locator(
+    'echart-shell:has(#enhanced-chart)[data-chart-enhance="load"]',
+  );
+  await expect(enhancedShell).toHaveAttribute("data-enhanced", "true");
+  await expect(
+    enhancedShell.locator(".echart-enhanced-surface svg"),
+  ).toBeVisible();
+  expect(problems).toEqual([]);
+});
+
+test("ECharts MDX charts hydrate only when media query matches", async ({
+  page,
+}) => {
+  const problems = collectConsoleProblems(page);
+
+  await page.setViewportSize({ width: 800, height: 900 });
+  await page.goto("/fixtures/charts/");
+
+  const mediaShell = page.locator(
+    'echart-shell:has(#media-chart)[data-chart-hydrate="media"]',
+  );
+  await expect(mediaShell).toHaveAttribute("data-enhanced", "false");
+  await page.waitForTimeout(250);
+  await expect(mediaShell).toHaveAttribute("data-enhanced", "false");
+
+  await page.setViewportSize({ width: 1000, height: 900 });
+  await expect(mediaShell).toHaveAttribute("data-enhanced", "true");
+  await expect(
+    mediaShell.locator(".echart-enhanced-surface svg"),
+  ).toBeVisible();
   expect(problems).toEqual([]);
 });

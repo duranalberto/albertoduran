@@ -4,6 +4,7 @@ description: "How Astro diagnostics, Vitest, deterministic production builds, co
 author: "Alberto Duran"
 tags: ["testing", "vitest", "playwright"]
 pubDate: 2026-06-17
+updatePubDate: 2026-06-19
 order: 10
 ---
 
@@ -44,7 +45,7 @@ flowchart TD
 
 `npm run check` runs Astro and TypeScript diagnostics. It is the broad static gate for component props, content shapes, imports, and TypeScript errors. It gives the project a fast way to confirm that the source still makes sense to Astro.
 
-`npm test` runs Vitest unit and integration tests. This is where the project checks pure transformation rules, content manifest behavior, Mermaid utilities, HTML minification, Atlas loading, navigation helpers, and SVG ribbon helpers.
+`npm test` runs Vitest unit and integration tests. This is where the project checks pure transformation rules, content manifest behavior, Mermaid utilities, ECharts helpers, HTML minification, Atlas loading, navigation helpers, and SVG ribbon helpers.
 
 `npm run build:test` creates static output with deterministic environment flags. It exercises the production build path without depending on live sports data or live Mermaid renderer behavior.
 
@@ -73,13 +74,13 @@ Those flags keep the build faithful to the architecture while removing outside v
 
 ## Vitest layer
 
-Vitest covers the code that can be tested without a full browser. That includes manifest building, navigation helpers, Mermaid HAST utilities, Mermaid transform behavior, Mermaid page CSS hoisting, the custom HTML minifier, the Atlas loader, and SVG ribbon generation.
+Vitest covers the code that can be tested without a full browser. That includes manifest building, navigation helpers, Mermaid HAST utilities, Mermaid transform behavior, Mermaid page CSS hoisting, ECharts SSR and option helpers, the custom HTML minifier, the Atlas loader, and SVG ribbon generation.
 
 This is the right home for deterministic transformations. A manifest function can receive fixture entries and return published entries, route context, vault structure, and pagination links. A Mermaid utility can receive SVG-like HTML and return sanitized output. A ribbon helper can receive icon definitions and return dimensions with scoped IDs.
 
 Keeping these checks in Vitest makes them fast and focused. The browser does not need to open a page to prove that a draft vault is filtered or that repeated SVG IDs are scoped. Those are build rules, so they belong close to the build code.
 
-The test suite also documents the intended behavior. A future reader can open the tests and see which manifest rules, Mermaid transform rules, and loader rules are considered part of the site's contract.
+The test suite also documents the intended behavior. A future reader can open the tests and see which manifest rules, Mermaid transform rules, ECharts rendering rules, and loader rules are considered part of the site's contract.
 
 ---
 
@@ -89,7 +90,7 @@ Playwright runs against `astro preview` through `tests/e2e/run-preview-tests.mjs
 
 That shape matters because the browser tests are meant to see production output, not the development server. The site is static, so preview is a close match for the way the built pages will be served. The tests can inspect routes, layout, focus behavior, scroll state, and runtime enhancement against generated files.
 
-The e2e layer is smaller than the unit layer because it is more expensive and because it should focus on browser behavior. It covers smoke routes, responsive breakpoints, hero geometry, overlay interactions, theme persistence, article navigation, no-JS states, and Mermaid shell behavior.
+The e2e layer is smaller than the unit layer because it is more expensive and because it should focus on browser behavior. It covers smoke routes, responsive breakpoints, hero geometry, overlay interactions, theme persistence, article navigation, no-JS states, Mermaid shell behavior, and ECharts enhancement behavior.
 
 ---
 
@@ -97,7 +98,7 @@ The e2e layer is smaller than the unit layer because it is more expensive and be
 
 `npm run test:coverage` exists for Vitest coverage reporting, but coverage is a supporting signal rather than the core design goal. The important question is whether the high-risk contracts are covered at the right layer.
 
-For this site, high-risk means custom rules. The manifest decides which pages exist and how they relate. Mermaid transforms produce visible article diagrams. The minifier rewrites final HTML. The Atlas loader turns external data into content. Runtime modules control focus, theme continuity, and article navigation.
+For this site, high-risk means custom rules. The manifest decides which pages exist and how they relate. Mermaid transforms produce visible article diagrams. ECharts helpers produce static chart SVG and optional hydration data. The minifier rewrites final HTML. The Atlas loader turns external data into content. Runtime modules control focus, theme continuity, and article navigation.
 
 Line coverage can help reveal blind spots, but it cannot decide what matters. The strategy starts from architecture, then uses coverage as one way to see whether the tests are reaching enough of that architecture.
 
@@ -117,7 +118,7 @@ Clear command responsibilities also make CI easier to read. The workflow can run
 
 For a static site, it can be tempting to treat `astro build` as the main quality gate. A successful build is important, but this project has too many local rules for build success to be enough by itself.
 
-Astro can build pages even if a manifest traversal rule changes in a way that makes the publication order wrong. A minifier can produce smaller HTML while still harming code-oriented fragments if the preservation rule is removed. A page can render while an overlay focus loop feels wrong in a browser. A Mermaid SVG can exist while the theme-specific asset link is not updated correctly after a theme change.
+Astro can build pages even if a manifest traversal rule changes in a way that makes the publication order wrong. A minifier can produce smaller HTML while still harming code-oriented fragments if the preservation rule is removed. A page can render while an overlay focus loop feels wrong in a browser. A Mermaid SVG can exist while the theme-specific asset link is not updated correctly after a theme change. An ECharts figure can render while its hydration trigger or external SVG artifact is broken.
 
 The testing strategy exists because the site is more than generated files. It is generated files plus local publishing rules plus runtime enhancement. The quality layers map to that full shape.
 
@@ -151,4 +152,4 @@ That lets the site keep adding custom publishing features without losing confide
 
 The important habit is to choose the layer that matches the behavior. If a rule can be expressed as input and output, keep it in Vitest. If it depends on layout, focus, route swaps, or browser APIs, use Playwright. If it is source shape, let Astro and TypeScript check it. The quality stack stays useful because each layer has a job.
 
-The strategy also keeps future additions easier to place. A new content processor should come with focused transformation tests. A new runtime interaction should come with browser coverage. A new component shape should pass the source checks and fit the existing preview flows. The architecture tells the test where to live.
+The strategy also keeps future additions easier to place. A new content processor should come with focused transformation tests. A new runtime interaction should come with browser coverage. A new component shape should pass the source checks and fit the existing preview flows. A new chart builder should prove its option shape and any browser enhancement contract. The architecture tells the test where to live.

@@ -2,11 +2,6 @@
 
 Complete formatting and structure rules for `.mdx` blog posts. Apply every rule on every post, every time.
 
-For files under `src/thejournal/`, follow `docs/THEJOURNAL_PUBLICATION_GUIDE.md`
-alongside this reference. Journal publications are reader-facing blog entries,
-should display as 8 to 15 minutes of reading time, and must follow the
-standalone or vault shapes enforced by `src/content/processors/`.
-
 ---
 
 ## Frontmatter Template
@@ -19,7 +14,7 @@ title: "Write a clear, specific, SEO-friendly title"
 description: "One or two sentences summarizing the post's main value."
 tags: ["tag1", "tag2", "tag3"]
 pubDate: YYYY-MM-DD
-author: "Alberto Duran"
+author: "[Author name]"
 ---
 ```
 
@@ -29,14 +24,7 @@ author: "Alberto Duran"
 - `description` — between 120 and 160 characters, written for the SEO meta description.
 - `tags` — 2 to 5 lowercase tags, no spaces (use hyphens for multi-word tags).
 - `pubDate` — ISO 8601 format: `YYYY-MM-DD`.
-- `author` — always "Alberto Duran" unless specified otherwise.
-
-**Journal file-shape rules:**
-
-- Use `src/thejournal/<slug>.mdx` for a single standalone publication.
-- Use `src/thejournal/<vault>/index.mdx` only when the vault has child publications.
-- Do not create a vault or nested vault section that contains only `index.md` or `index.mdx`.
-- Let vault children inherit the vault root image only when the shared image fits the child entry.
+- `author` — use the user's provided byline first, then local context or publisher configuration. If no author is known, use a clear placeholder instead of inventing a name.
 
 ---
 
@@ -83,8 +71,10 @@ Content.
 
 - Code blocks inside the MDX file are plain strings. Do not let opening or closing triple backticks break the file structure.
 - Always declare the language after the opening triple backticks of every code block.
-- When using MDX components (callouts, alerts, cards), import them at the top of the file, immediately after the frontmatter.
+- Use MDX components only when the user, source material, or local publishing context confirms they exist. If component availability is unknown, use plain Markdown.
+- When using MDX components, import them at the top of the file, immediately after the frontmatter.
 - Keep the frontmatter block as plain YAML. No MDX syntax inside the frontmatter.
+- Do not invent component names, import paths, or props. Reuse only components found in source material or local context.
 
 ---
 
@@ -183,20 +173,51 @@ Use tables to compare options, list parameters, or present structured data. Tabl
 
 ---
 
-## Visual Variety Checklist
+## Adaptive Visual Variety Rules
 
-Before delivering the file, confirm the post passes every item:
+Use visual variety to improve comprehension, not to satisfy a mechanical quota. Short posts, essays, and narrative pieces can be simpler than technical tutorials.
+
+### Required for every complete MDX post
 
 - [ ] Hook paragraph present, 40–90 words, no heading above it.
 - [ ] Every H2 in the body preceded by `---` on its own line.
 - [ ] At least 2 H2 subheadings.
-- [ ] At least 1 H3 subheading.
-- [ ] At least 1 unordered or ordered list.
-- [ ] At least 1 bold emphasis (not just in headings).
-- [ ] At least 1 code block (technical posts) or 1 blockquote (opinion or narrative posts).
-- [ ] Mermaid diagram included if the post contains a process, workflow, system, sequence, or data model.
 - [ ] No section longer than 4 consecutive paragraphs without a visual break.
 - [ ] No paragraph shorter than 20 words or longer than 80 words.
+
+### Required when useful for the content
+
+- [ ] At least 1 H3 subheading when a section has meaningful subtopics.
+- [ ] At least 1 unordered or ordered list when multiple related items or steps appear.
+- [ ] At least 1 code block for technical posts that explain implementation details.
+- [ ] At least 1 blockquote for opinion, narrative, or principle-led posts when it highlights a memorable point.
+- [ ] Mermaid diagram included if the post contains a process, workflow, system, sequence, or data model that prose alone would make harder to follow.
+
+### Recommended, not mandatory
+
+- [ ] Bold emphasis for the most important phrase in a paragraph, only when it improves scanning.
+- [ ] Tables for genuine comparisons or structured data.
+- [ ] Images when they add context the prose cannot provide as clearly.
+
+---
+
+## Pre-Delivery Validation
+
+Before delivering a complete `.mdx` file, verify:
+
+- [ ] Frontmatter exists, is valid YAML, and has no empty placeholder values unless the user asked for placeholders.
+- [ ] `title`, `description`, `tags`, `pubDate`, and `author` are filled according to the field rules above.
+- [ ] The body contains no H1.
+- [ ] The hook paragraph appears immediately after frontmatter and imports.
+- [ ] Every H2 is preceded by a `---` separator with blank lines around it.
+- [ ] Every fenced code block has a language identifier.
+- [ ] All links use descriptive link text.
+- [ ] Images have meaningful alt text.
+- [ ] Mermaid diagrams have no `%%{init: ...}%%` theme blocks or custom `themeVariables`.
+- [ ] No unsupported facts, invented citations, or uncited direct quotes remain.
+- [ ] Banned words and phrases from the main skill and humanizer reference have been removed.
+- [ ] No em dashes appear in the delivered post body.
+- [ ] Colons appear only in code blocks, frontmatter, URLs, or technical syntax.
 
 ---
 

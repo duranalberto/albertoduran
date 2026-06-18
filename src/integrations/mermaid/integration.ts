@@ -28,6 +28,7 @@
 
 import type { AstroIntegration } from "astro";
 import { unified } from "@astrojs/markdown-remark";
+import type { RehypePlugins } from "@astrojs/markdown-remark";
 import type { Element as HastElement } from "hast";
 import { AstroDiskBus } from "../../lib/astro-disk-bus.ts";
 import { RENDERER_VERSION } from "./constants.ts";
@@ -44,6 +45,11 @@ export interface MermaidIntegrationOptions {
   cacheSubDir?: string;
 
   /**
+   * Additional rehype plugins to run through Astro's shared markdown processor.
+   */
+  rehypePlugins?: RehypePlugins;
+
+  /**
    * Branded theme palettes keyed by DaisyUI theme name (e.g. "light", "dark").
    * Keys must match the values used in `[data-theme]` on the html element.
    *
@@ -57,6 +63,7 @@ export function mermaidIntegration(
   options: MermaidIntegrationOptions = {},
 ): AstroIntegration {
   const cacheSubDir = options.cacheSubDir ?? "mermaid-cache";
+  const rehypePlugins = options.rehypePlugins ?? [];
 
   // An empty map means "no palettes provided" — renderers handle this branch
   // by omitting theme config from their payloads.
@@ -110,6 +117,7 @@ export function mermaidIntegration(
                   } satisfies MermaidPluginConfig,
                 ],
               ],
+              rehypePlugins,
             }),
           },
         });

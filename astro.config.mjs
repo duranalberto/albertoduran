@@ -3,8 +3,10 @@ import tailwindcss from "@tailwindcss/vite";
 import { defineConfig, fontProviders } from "astro/config";
 import {
   customHtmlMinifier,
+  echartsIntegration,
   mermaidIntegration,
 } from "./src/integrations/index.ts";
+import { rehypeMdxHeadingAnchors } from "./src/integrations/mdx-heading-anchors.ts";
 import {
   DARK_PALETTE,
   LIGHT_PALETTE,
@@ -21,11 +23,13 @@ export default defineConfig({
 
   integrations: [
     mermaidIntegration({
+      rehypePlugins: [rehypeMdxHeadingAnchors],
       themes: new Map([
         ["light", LIGHT_PALETTE],
         ["dark", DARK_PALETTE],
       ]),
     }),
+    echartsIntegration(),
     mdx(),
     customHtmlMinifier(),
   ],

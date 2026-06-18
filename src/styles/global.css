@@ -55,6 +55,7 @@
 @import "./ui/mdx/_heading-anchor.css";
 @import "./ui/mdx/_code-block.css";
 @import "./ui/mdx/_prose-table.css";
+@import "./ui/mdx/_echart.css";
 
 /* ─── 9. PAGE — INDEX ───────────────────────────────────── */
 @import "./index/_hero-panel.css";

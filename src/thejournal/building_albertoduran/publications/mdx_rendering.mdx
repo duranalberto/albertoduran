@@ -1,13 +1,14 @@
 ---
 title: "The MDX rendering pipeline"
-description: "How Astro renders compiled MDX entries and how component overrides shape code blocks, headings, tables, and Mermaid shells."
+description: "How Astro renders compiled MDX entries and how component overrides shape code blocks, headings, tables, Mermaid shells, and chart components."
 author: "Alberto Duran"
 tags: ["astro", "mdx", "rendering"]
 pubDate: 2026-06-17
+updatePubDate: 2026-06-19
 order: 40
 ---
 
-An MDX article starts as a file that a person can read in a text editor. MDX is Markdown with the option to use components, which makes it useful for technical writing that still needs article-specific UI. The rendered page is much richer. Headings copy links, tables scroll with keyboard access, code blocks have line numbers and theme-aware tokens, and Mermaid diagrams ship as SVG instead of raw source. The trick is to keep the authoring surface plain while letting the route substitute site components at render time.
+An MDX article starts as a file that a person can read in a text editor. MDX is Markdown with the option to use components, which makes it useful for technical writing that still needs article-specific UI. The rendered page is much richer. Headings copy links, tables scroll with keyboard access, code blocks have line numbers and theme-aware tokens, Mermaid diagrams ship as SVG, and ECharts can render data visuals during the build. The trick is to keep the authoring surface plain while using components only where they carry real meaning.
 
 ---
 
@@ -77,7 +78,7 @@ The route passes a component map into the rendered MDX content. That map is wher
 const components = {
   pre: CodeBlock,
   h2: HeadingAnchor,
-  h3: HeadingAnchorH3,
+  h3: HeadingAnchor,
   table: ProseTable,
   div: MermaidDiagramWrapper,
 };
@@ -89,11 +90,19 @@ This map is the bridge between author-friendly source and site-specific HTML. Au
 | ---- | ---- | ---- |
 | `pre` | `CodeBlock` | Wrap Shiki output in DaisyUI code chrome. |
 | `h2` | `HeadingAnchor` | Add copyable section links to major headings. |
-| `h3` | `HeadingAnchorH3` | Preserve H3 semantics while reusing heading anchor behavior. |
+| `h3` | `HeadingAnchor` | Preserve H3 semantics while reusing heading anchor behavior. |
 | `table` | `ProseTable` | Add a keyboard-scrollable table region. |
 | `div` | `MermaidDiagramWrapper` | Upgrade only Mermaid diagram containers. |
 
 The `div` override sounds broad, but the wrapper checks the class name before changing anything. Plain divs pass through unchanged. Only `.mermaid-diagram-container` gets the diagram shell.
+
+### Imported chart components
+
+ECharts follows a different path because a chart needs data and an option object. An author imports `EChart` from `@components/ui/mdx/EChart.astro` and usually imports a builder from `@integrations/echarts/options`. That is an opt-in MDX component, not a route-level override.
+
+The difference is useful. Headings, tables, code blocks, and Mermaid fences are ordinary Markdown patterns that every article can use. Charts are data components with dimensions, captions, descriptions, render modes, and optional hydration. Keeping that import visible in the article makes the chart's data and choices reviewable beside the prose.
+
+The implementation still respects the rendering contract. `EChart` renders static SVG during the build. Runtime enhancement can be requested with `hydrate`, but the chart remains readable before that enhancement runs.
 
 ---
 
@@ -103,13 +112,13 @@ The `div` override sounds broad, but the wrapper checks the class name before ch
 
 The client behavior lives in a custom element named `anchor-heading`. That element listens for clicks, writes the section URL to the clipboard when possible, and falls back to updating `window.location.hash` when clipboard access is unavailable.
 
-The H3 case needs a small wrapper. `HeadingAnchor` defaults to rendering an `h2`, so mapping both `h2` and `h3` to the same component would collapse subheadings into the wrong semantic level. `HeadingAnchorH3.astro` forwards props and passes `as="h3"`.
+The H3 case gets its semantic level from the MDX pipeline. `HeadingAnchor` defaults to rendering an `h2`, while generated `h3` nodes receive `as="h3"` before the route maps them to the shared component.
 
 ```astro
-<HeadingAnchor as="h3" {...props}><slot /></HeadingAnchor>
+<HeadingAnchor {...props}><slot /></HeadingAnchor>
 ```
 
-That wrapper exists for accessibility as much as convenience. Screen readers and outline tools should see the same heading hierarchy the author wrote in MDX.
+That transform exists for accessibility as much as convenience. Screen readers and outline tools should see the same heading hierarchy the author wrote in MDX.
 
 ---
 
@@ -180,7 +189,8 @@ The rendering pipeline gives authors a small set of reliable behaviors. They can
 - Use fenced code blocks with language identifiers so Shiki can highlight them correctly.
 - Use Markdown tables when the content is tabular, because the table override will handle overflow.
 - Use Mermaid code fences for workflows or architecture diagrams, and let the build render SVG output.
-- Avoid importing local UI components unless the article needs a special interactive or visual element.
+- Import `EChart` only when the article needs a data visualization with measured values.
+- Avoid importing other local UI components unless the article needs a special interactive or visual element.
 
 That last point is the real gift of the pipeline. MDX can embed components, but most posts should not need to. A journal is easier to maintain when ordinary article structure gets first-class treatment.
 

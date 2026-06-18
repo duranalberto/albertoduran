@@ -28,23 +28,46 @@ For Mermaid diagrams, refer to the **`design-doc-mermaid`** skill for diagram de
 
 ---
 
+## MAINTENANCE RULE
+
+Keep this skill project-agnostic. Updates may refine writing quality, MDX structure, references, workflows, or reusable examples, but must not depend on paths, docs, content collections, build systems, publishing rules, or conventions that only exist in this repository. Put project-specific guidance in local context or project documentation instead.
+
+---
+
 ## HOW TO USE THIS SKILL
 
-For any post that will live under `src/thejournal/`, review
-`docs/THEJOURNAL_PUBLICATION_GUIDE.md` before planning or delivering the file.
-The guide defines the reader-facing intent, 8-to-15 displayed minute target,
-standalone and vault file shapes, draft behavior, and the processor-owned
-publishing rules in `src/content/processors/`.
+First identify the requested output mode:
 
-When the user provides a topic, follow this sequence without skipping steps:
+- **Outline only** — deliver structure, angle, section titles, and key points.
+- **Draft only** — write prose without final MDX packaging unless requested.
+- **Complete MDX** — deliver a full `.mdx` file with frontmatter and formatting.
+- **Revise existing draft** — preserve the user's core ideas while improving structure, clarity, and MDX correctness.
+- **Humanize only** — rewrite for voice and readability without changing the structure more than necessary.
+
+When the user provides a topic or draft, follow this sequence without skipping steps:
 
 1. **Receive** the topic or draft (`<TOPIC>` or source text).
-2. **Plan** the structure using the Content Architecture rules below.
-3. **Write** the intro paragraph using the Hook Rules (Part 1B).
-4. **Write** the body following Voice and Style rules (Part 2).
-5. **Identify diagram opportunities** using the Diagram Decision Guide (Part 1C).
-6. **Humanize** the draft using `references/humanizer.md`.
-7. **Format and deliver** the complete `.mdx` file using `references/mdx-rules.md`.
+2. **Collect context** using the Context Intake rules below. If something important is missing and a reasonable assumption would be risky, ask a brief question. Otherwise, proceed with clear assumptions.
+3. **Plan** the structure using the Content Architecture rules below.
+4. **Check facts and source needs** using Part 1F before drafting claims that depend on current, specialized, or high-stakes information.
+5. **Write** the intro paragraph using the Hook Rules (Part 1B).
+6. **Write** the body following Voice and Style rules (Part 2).
+7. **Identify diagram opportunities** using the Diagram Decision Guide (Part 1C).
+8. **Humanize** the draft using `references/humanizer.md`.
+9. **Format and deliver** according to the requested output mode. For complete `.mdx`, load `references/mdx-rules.md`.
+
+### Context Intake
+
+Gather or infer these inputs before planning:
+
+- **Audience** — who the post is for and what they already know.
+- **Goal** — teach, persuade, document, announce, compare, or reflect.
+- **Angle** — the specific claim, lesson, or practical payoff.
+- **Target length** — short, standard, deep dive, or a user-provided word count.
+- **Author or byline** — use the user's provided value, local context, or a neutral placeholder.
+- **Source material** — draft text, notes, code, docs, links, or data the post must preserve.
+- **Research freshness** — whether the topic depends on current facts, recent releases, or volatile details.
+- **Publishing constraints** — frontmatter fields, component availability, style guide, or platform limits.
 
 ---
 
@@ -113,9 +136,9 @@ Add a diagram when the content includes one of the following. The third column s
 
 **Placement:** Place the diagram after the introductory sentence(s) of the section it belongs to, not at the end. Introduce it with one sentence before the code block.
 
-**Theming:** Do NOT add `%%{init: {...}}%%` theme directives or custom `themeVariables`. The system publisher applies its own theme and will override any custom theme. Adding one creates conflicts.
+**Theming:** Do NOT add `%%{init: {...}}%%` theme directives or custom `themeVariables`. The publisher may apply its own theme and override custom themes.
 
-**Styling:** Use `classDef` for node-level styling with high-contrast colors. Always specify the `color:` property in every `classDef`. Light background gets dark text; dark background gets light text. Load the appropriate `design-doc-mermaid` guide for full styling templates.
+**Styling:** Use simple Mermaid by default. Add `classDef` styling only when semantic grouping, contrast, or readability requires it. When you use `classDef`, specify the `color:` property in every class. Light background gets dark text; dark background gets light text. Load the appropriate `design-doc-mermaid` guide for full styling templates.
 
 **Minimal working example:**
 
@@ -147,6 +170,19 @@ If a reader finishes and thinks "okay, that was actually useful", the post has d
 - **Case study or behind-the-scenes story** — share what actually happened, not just theory.
 - **Unique perspective** — add your own take, not just what's already ranking.
 - **Analogy or metaphor** — use one (not several) to explain a complex idea. Keep it grounded.
+
+### 1F. Fact, Source, and Research Policy
+
+Never invent facts, citations, numbers, benchmarks, dates, quotes, product capabilities, or legal/compliance claims. If the source material does not support a claim, either verify it with a reliable source, qualify it as opinion, or remove it.
+
+Use current research or explicit source review when the post depends on:
+
+- Recent product releases, API behavior, prices, schedules, laws, standards, or company details.
+- Technical claims that could vary by version.
+- Medical, legal, financial, safety, security, or compliance guidance.
+- Statistics, direct quotes, benchmarks, or named third-party claims.
+
+When citing sources, use descriptive link text and keep quotations short. Prefer primary sources for technical details, official docs for product behavior, and source material supplied by the user when it is authoritative for the post.
 
 ---
 
@@ -237,7 +273,7 @@ Load **`references/mdx-rules.md`** when formatting and delivering the final `.md
 - Document structure template (hook, then `---` before every H2, then content).
 - All Markdown rules: headings, separators, paragraphs, emphasis, lists, blockquotes, code, links, images, and tables.
 - MDX-specific rules for component imports and code block syntax.
-- Visual variety checklist — run it before every delivery.
+- Adaptive visual variety rules and pre-delivery validation — run them before every complete `.mdx` delivery.
 
 ---
 
@@ -256,5 +292,5 @@ Load **`references/mdx-rules.md`** when formatting and delivering the final `.md
 | Specific link text | "Click here to learn more." | "Read the deployment guide." |
 | Code block with lang | ` ```\ncode\n``` ` | ` ```js\ncode\n``` ` |
 | Mermaid — no custom theme | `%%{init:...}%%` before graph | No init block — let the publisher theme it |
-| Mermaid — use classDef | Node with no styling | `classDef step fill:#90EE90,...,color:darkgreen` |
+| Mermaid — style only when useful | Styling every node by default | Use plain Mermaid unless grouping or contrast needs styling |
 | Mermaid — design rules | Guessing node shapes | Load `design-doc-mermaid` guide for the diagram type |

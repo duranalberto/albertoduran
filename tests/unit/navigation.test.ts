@@ -18,6 +18,12 @@ describe("navigation helpers", () => {
       path: "/profile/",
     });
 
+    expect(getCurrentSite("/projects/equity-valuation-engine")).toEqual({
+      site: "/projects/",
+      isRoot: false,
+      path: "/projects/equity-valuation-engine/",
+    });
+
     expect(getCurrentSite("/thejournal/my_first_publication")).toEqual({
       site: "/thejournal/",
       isRoot: false,

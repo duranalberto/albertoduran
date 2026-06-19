@@ -1,0 +1,61 @@
+---
+import type { ProjectPageConfig } from "@appTypes/project";
+import ProjectHero from "@components/projects/ProjectHero.astro";
+import ProjectVaultSection from "@components/projects/ProjectVaultSection.astro";
+import { entryManifest, vaultsManifest } from "@content/processors/thejournal";
+import BaseLayout from "@layouts/BaseLayout.astro";
+import FlexShell from "@layouts/FlexShell.astro";
+
+interface Props {
+  project: ProjectPageConfig;
+}
+
+const { project } = Astro.props;
+
+if (project.facts && project.facts.length > 4) {
+  throw new Error(
+    `[projects] "${project.title}" has ${project.facts.length} hero facts. Project pages support at most four facts.`,
+  );
+}
+
+const journalId = project.links?.journalId;
+const journalEntry = journalId ? entryManifest[journalId] : undefined;
+
+if (journalId && !journalEntry) {
+  throw new Error(
+    `[projects] "${project.title}" references missing Journal entry "${journalId}". Use an existing standalone publication or vault root ID.`,
+  );
+}
+
+if (
+  journalEntry?.vaultId &&
+  journalEntry.id !== journalEntry.vaultId
+) {
+  throw new Error(
+    `[projects] "${project.title}" references Journal child entry "${journalEntry.id}". Project pages may reference only standalone publications or vault roots.`,
+  );
+}
+
+const journalHref = journalEntry
+  ? `/thejournal/${journalEntry.id}/`
+  : undefined;
+const vault = journalEntry?.vaultId
+  ? vaultsManifest[journalEntry.vaultId]
+  : undefined;
+
+const siteManifest = {
+  label: project.title,
+  pageTitle: project.title,
+  description: project.description,
+};
+---
+
+<BaseLayout siteManifest={siteManifest} image={project.image}>
+  <ProjectHero slot="hero" project={project} journalHref={journalHref} />
+
+  <FlexShell class="flex flex-col gap-20 md:gap-28 lg:gap-32">
+    <slot />
+    {vault && <ProjectVaultSection vault={vault} />}
+  </FlexShell>
+</BaseLayout>
+

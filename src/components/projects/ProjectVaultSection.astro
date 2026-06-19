@@ -1,0 +1,64 @@
+---
+import type { VaultContext } from "@appTypes/content_context";
+import List from "@components/ui/display/List.astro";
+import SectionHeader from "@components/ui/display/SectionHeader.astro";
+import { buildProjectVaultGroups } from "@utils/project_vault";
+
+interface Props {
+  vault: VaultContext;
+}
+
+const { vault } = Astro.props;
+const groups = buildProjectVaultGroups(vault);
+---
+
+<section id="project-vault" class="w-full" aria-labelledby="project-vault-title">
+  <SectionHeader
+    id="project-vault-title"
+    title="Technical deep dives"
+    linkHref={`/thejournal/${vault.id}/`}
+    linkLabel="Read the project overview"
+  />
+
+  <p class="mb-10 max-w-3xl text-base leading-relaxed text-base-content/70 md:text-lg">
+    Follow the project beyond the landing page. Each publication focuses on one
+    architectural boundary, implementation decision, or operational lesson.
+  </p>
+
+  <div class="flex flex-col gap-10 md:gap-12">
+    {
+      groups.map((group) => {
+        const ancestors = group.path.slice(0, -1);
+
+        return (
+          <section
+            class="rounded-box border border-base-300 bg-base-200/40 p-4 shadow-sm sm:p-6"
+            data-vault-group={group.id}
+            data-vault-depth={group.depth}
+            aria-labelledby={`vault-group-${group.id.replaceAll("/", "-")}`}
+          >
+            <header class="mb-5">
+              {ancestors.length > 0 && (
+                <p class="mb-2 text-xs font-bold uppercase tracking-widest text-primary">
+                  {ancestors.join(" / ")}
+                </p>
+              )}
+              <h3
+                id={`vault-group-${group.id.replaceAll("/", "-")}`}
+                class="font-display text-2xl font-semibold text-base-content"
+              >
+                {group.title}
+              </h3>
+            </header>
+
+            <List
+              items={group.items}
+              aria-label={`${group.path.join(" / ")} publications`}
+              class="shadow-sm"
+            />
+          </section>
+        );
+      })
+    }
+  </div>
+</section>

@@ -13,7 +13,7 @@ import { sitesManifest } from "@data/site_manifest";
 const rawPath = Astro.url.pathname;
 const normalizedPath = rawPath.endsWith("/") ? rawPath : `${rawPath}/`;
 
-const navSites: Sites[] = ["/profile/", "/thejournal/"];
+const navSites: Sites[] = ["/profile/", "/projects/", "/thejournal/"];
 const currentSite: CurrentSite = getCurrentSite(normalizedPath);
 const menuIcon = ui.menu;
 

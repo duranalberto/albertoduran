@@ -11,9 +11,10 @@ import type { SiteManifest } from "@appTypes/navigation";
 interface Props {
   siteManifest: SiteManifest;
   image?: ImageMetadata;
+  mainClass?: string;
 }
 
-const { siteManifest, image = kirby } = Astro.props;
+const { siteManifest, image = kirby, mainClass } = Astro.props;
 
 const hasHero = Astro.slots.has("hero");
 const optimizedImage = await getImage({ src: image, format: "webp" });
@@ -113,7 +114,7 @@ const socialImageURL = new URL(optimizedImage.src, Astro.site);
 
     <main
       id="main-content"
-      class="site-main grow outline-none"
+      class:list={["site-main grow outline-none", mainClass]}
       transition:name="page-main"
       transition:animate="fade"
     >

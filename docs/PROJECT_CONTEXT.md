@@ -108,11 +108,21 @@ Routing is file-based and owned by `src/pages/`.
 | :----------------------- | :------------------------------------- | :---------------------------------------------------------- |
 | `/`                      | `src/pages/index.astro`                | Home page                                                   |
 | `/profile/`              | `src/pages/profile.astro`              | Professional profile                                        |
+| `/projects/<slug>/`      | `src/pages/projects/<slug>.astro`      | Hand-authored project showcase landing pages                |
 | `/404/`                  | `src/pages/404.astro`                  | Static 404 page                                             |
 | `/thejournal/`           | `src/pages/thejournal.astro`           | Journal index                                               |
 | `/thejournal/[...slug]/` | `src/pages/thejournal/[...slug].astro` | Standalone articles, vault roots, and nested vault articles |
 
 Astro is configured with `trailingSlash: "always"`, so generated canonical URLs include trailing slashes.
+
+Project showcase routes use `ProjectLayout.astro` and a typed
+`ProjectPageConfig`. Their bodies remain hand-authored Astro so each project can
+choose the most useful landing-page sections. An optional Journal ID adds a
+publication action and, for vault roots, a grouped list of every child
+publication. Featured project cards use the explicit registry in
+`src/data/project_pages.ts`, with their existing Journal routes as the fallback
+until a landing page is registered. See `docs/PROJECT_PAGE_GUIDE.md` for the
+authoring and registration contract.
 
 ## theJournal Content Model
 

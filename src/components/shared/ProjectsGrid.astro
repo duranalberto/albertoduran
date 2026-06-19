@@ -1,21 +1,15 @@
 ---
-import { type EntryContext } from "@appTypes/content_context";
-import { entryManifest } from "@content/processors/thejournal";
-import JournalGrid from "./JournalGrid.astro";
-
-const catalog = Object.values(entryManifest)
-  .filter(
-    (entry) =>
-      entry.tags.some((tag) => tag.toLowerCase() === "project") &&
-      (!entry.vaultId || entry.id === entry.vaultId),
-  )
-  .sort((a: EntryContext, b: EntryContext) => {
-    const orderDelta = a.order - b.order;
-    if (orderDelta !== 0) return orderDelta;
-
-    return a.title.localeCompare(b.title);
-  })
-  .slice(0, 3);
+import ProjectCard from "@components/projects/ProjectCard.astro";
+import { projectCatalog } from "@data/projects";
 ---
 
-<JournalGrid catalog={catalog} />
+<div
+  class="grid w-full auto-rows-fr grid-cols-1 place-items-stretch gap-8 md:grid-cols-2 lg:gap-10"
+  data-project-grid
+>
+  {
+    projectCatalog.map((project, index) => (
+      <ProjectCard project={project} index={index} />
+    ))
+  }
+</div>

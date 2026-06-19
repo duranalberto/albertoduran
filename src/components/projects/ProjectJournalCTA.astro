@@ -1,0 +1,28 @@
+---
+import Button from "@components/ui/primitive/Button.astro";
+import { ui } from "@data/icons";
+
+interface Props {
+  href: string;
+  projectTitle: string;
+}
+
+const { href, projectTitle } = Astro.props;
+const journalIcon = ui.vault;
+
+if (!journalIcon) {
+  throw new Error(
+    "Required Journal CTA icon (vault) is missing from @data/icons",
+  );
+}
+---
+
+<Button
+  href={href}
+  icon={journalIcon}
+  label="Technical details"
+  variant="btn-outline"
+  size="btn-sm"
+  ariaLabel={`See how ${projectTitle} works in The Journal`}
+  class="border-base-300 hover:border-primary hover:bg-primary hover:text-primary-content"
+/>

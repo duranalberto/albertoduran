@@ -5,11 +5,12 @@ import { Picture } from "astro:assets";
 
 interface Props {
   entry: EntryContext;
+  href?: string | undefined;
 }
 
-const { entry } = Astro.props;
+const { entry, href: hrefOverride } = Astro.props;
 
-const href = `/thejournal/${entry.id}/`;
+const href = hrefOverride ?? `/thejournal/${entry.id}/`;
 const isVault = !!entry.vaultId;
 const isVaultRoot = isVault && entry.id === entry.vaultId;
 const isVaultItem = isVault && entry.id !== entry.vaultId;

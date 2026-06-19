@@ -1,0 +1,468 @@
+---
+import type { ProjectPageConfig } from "@appTypes/project";
+import coverImage from "@assets/thejournal/stock/01.avif";
+import AlbertoDuranBuildFlow from "@components/projects/AlbertoDuranBuildFlow.mdx";
+import Callout from "@components/ui/display/Callout.astro";
+import SectionHeader from "@components/ui/display/SectionHeader.astro";
+import Steps, { type StepItem } from "@components/ui/display/Steps.astro";
+import MermaidDiagramWrapper from "@components/ui/mdx/MermaidDiagramWrapper.astro";
+import ProjectLayout from "@layouts/ProjectLayout.astro";
+
+const project: ProjectPageConfig = {
+  title: "albertoduran.com",
+  eyebrow: "Portfolio · Publishing System",
+  description:
+    "A static-first personal site where portfolio work, long-form technical writing, and custom build tooling share one deliberate Astro architecture.",
+  image: coverImage,
+  imageAlt:
+    "A bright development workspace with source code open on a laptop",
+  facts: [
+    { label: "Role", value: "Design & Engineering" },
+    { label: "Platform", value: "Astro 6" },
+    { label: "Rendering", value: "Static-first" },
+    { label: "Delivery", value: "Cloudflare edge" },
+  ],
+  links: {
+    journalId: "building_albertoduran",
+  },
+};
+
+const productSurfaces = [
+  {
+    label: "Professional profile",
+    title: "A focused engineering story",
+    description:
+      "Experience, strengths, skills, and selected work are organized for fast evaluation without flattening the career behind them.",
+    href: "/profile/",
+  },
+  {
+    label: "Project showcases",
+    title: "Context before implementation detail",
+    description:
+      "Landing pages explain why a project matters, then hand curious readers to the technical record that supports the story.",
+    href: "/projects/albertoduran/",
+  },
+  {
+    label: "The Journal",
+    title: "Long-form engineering knowledge",
+    description:
+      "Standalone publications and structured vaults preserve architecture, workflows, tradeoffs, and lessons as navigable content.",
+    href: "/thejournal/",
+  },
+  {
+    label: "Technical media",
+    title: "Diagrams and data belong in the explanation",
+    description:
+      "Mermaid and ECharts are first-class publishing tools rather than screenshots detached from their source and accessibility context.",
+    href: "/thejournal/building_albertoduran/echarts/",
+  },
+];
+
+const architectureHighlights = [
+  {
+    marker: "01",
+    title: "Content becomes routes before deployment",
+    description:
+      "Collections validate MDX, the manifest filters drafts and builds vault context, and Astro generates every known publication route ahead of the request path.",
+    href: "/thejournal/building_albertoduran/publications/static_generation/",
+  },
+  {
+    marker: "02",
+    title: "Visual explanations arrive as static assets",
+    description:
+      "Mermaid diagrams and ECharts figures render during the build, giving readers useful SVG even when JavaScript is unavailable.",
+    href: "/thejournal/building_albertoduran/mermaid/pipeline/",
+  },
+  {
+    marker: "03",
+    title: "Runtime code stays deliberately narrow",
+    description:
+      "Theme persistence, overlays, chart enhancement, and article navigation improve complete HTML instead of becoming prerequisites for reading it.",
+    href: "/thejournal/building_albertoduran/runtime/",
+  },
+  {
+    marker: "04",
+    title: "Production receives finished work",
+    description:
+      "Cloudflare serves generated routes and immutable assets from the edge; it does not need to understand MDX, vaults, diagrams, or page assembly.",
+    href: "/thejournal/building_albertoduran/foundations/cloudflare_deployment/",
+  },
+];
+
+const publishingCapabilities = [
+  {
+    title: "Typed content and visible publishing rules",
+    description:
+      "Schemas, draft filtering, image requirements, read-time calculation, and manifest context fail early instead of leaking ambiguity into routes.",
+    href: "/thejournal/building_albertoduran/publications/manifest_rules/",
+  },
+  {
+    title: "Directory-driven vault navigation",
+    description:
+      "Folders become ordered reading paths with nested sections, previous and next links, breadcrumbs, and responsive navigation generated from one model.",
+    href: "/thejournal/building_albertoduran/publications/collections/",
+  },
+  {
+    title: "MDX with a controlled component vocabulary",
+    description:
+      "Articles can use callouts, mockups, steps, lists, diagrams, charts, code, and tables without giving up consistent typography or static output.",
+    href: "/thejournal/building_albertoduran/publications/mdx_rendering/",
+  },
+];
+
+const readerExperience = [
+  {
+    title: "Theme continuity without a flash",
+    description:
+      "An inline bootstrap, semantic tokens, and a small runtime manager keep light and dark modes aligned across Astro navigation.",
+    href: "/thejournal/building_albertoduran/runtime/theme_system/",
+  },
+  {
+    title: "Navigation that respects the reading surface",
+    description:
+      "Vault explorers, heading tracking, pagination, overlays, and desktop sidebars adapt without making the article depend on a client application.",
+    href: "/thejournal/building_albertoduran/runtime/on_this_page/",
+  },
+  {
+    title: "Images and fonts prepared ahead of time",
+    description:
+      "Responsive image variants, deliberate formats, local fonts, and selected preloads protect visual quality without treating weight as an afterthought.",
+    href: "/thejournal/building_albertoduran/performance/image_and_font_strategy/",
+  },
+  {
+    title: "Generated output receives a final pass",
+    description:
+      "Vite optimization, controlled CSS loading, safe HTML minification, and static asset emission keep the delivered artifact purposeful.",
+    href: "/thejournal/building_albertoduran/performance/file_optimization/",
+  },
+];
+
+const deliverySteps: StepItem[] = [
+  { label: "Validate source", marker: "1", color: "success" },
+  { label: "Resolve content", marker: "2", color: "success" },
+  { label: "Render assets", marker: "3", color: "success" },
+  { label: "Test output", marker: "4", color: "success" },
+  { label: "Deliver files", marker: "5", color: "success" },
+];
+
+const mermaidComponents = { div: MermaidDiagramWrapper };
+---
+
+<ProjectLayout project={project}>
+  <section id="overview" class="w-full" aria-labelledby="overview-title">
+    <SectionHeader
+      id="overview-title"
+      title="A portfolio built like a product"
+    />
+
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12">
+      <div class="flex flex-col gap-5 lg:col-span-7">
+        <p class="text-xl leading-relaxed text-base-content md:text-2xl">
+          This site is more than a collection of profile cards and articles. It
+          is a publishing system designed to make technical work approachable
+          at two speeds: a useful overview for a first visit and a detailed
+          trail of engineering decisions for readers who want to go deeper.
+        </p>
+        <p class="max-w-3xl text-base leading-relaxed text-base-content/70 md:text-lg">
+          Expensive work settles during the build. Content becomes typed route
+          data, diagrams and charts become static SVG, local images are
+          optimized, and every page ships with meaningful HTML before browser
+          enhancements begin. The result stays fast without flattening the
+          documentation or hiding how the system works.
+        </p>
+      </div>
+
+      <Callout
+        variant="information"
+        title="The reader-facing promise"
+        class="lg:col-span-5"
+      >
+        <p>
+          A reader can navigate publications, inspect diagrams, and understand
+          the project with JavaScript disabled. Browser code adds comfort—not
+          missing content.
+        </p>
+      </Callout>
+    </div>
+  </section>
+
+  <section
+    id="product-surfaces"
+    class="w-full"
+    aria-labelledby="product-surfaces-title"
+  >
+    <SectionHeader
+      id="product-surfaces-title"
+      title="One platform, several ways in"
+    />
+
+    <p class="mb-10 max-w-4xl text-lg leading-relaxed text-base-content/75">
+      The same system serves visitors with different intent. Someone can scan a
+      professional profile, understand a project at landing-page speed, read a
+      focused publication, or follow an entire architecture vault without
+      crossing into a separate product.
+    </p>
+
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+      {
+        productSurfaces.map((surface) => (
+          <a
+            href={surface.href}
+            class="group card card-border h-full bg-base-200 text-base-content shadow-sm transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          >
+            <article class="card-body gap-4">
+              <p class="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+                {surface.label}
+              </p>
+              <h3 class="card-title font-display text-xl transition-colors group-hover:text-primary">
+                {surface.title}
+              </h3>
+              <p class="grow leading-relaxed text-base-content/70">
+                {surface.description}
+              </p>
+              <span class="text-sm font-bold text-primary">
+                See this surface &rarr;
+              </span>
+            </article>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+
+  <section
+    id="build-flow"
+    class="w-full"
+    aria-labelledby="build-flow-title"
+  >
+    <SectionHeader id="build-flow-title" title="From source to reader" />
+
+    <div class="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-end">
+      <p class="text-lg leading-relaxed text-base-content/75">
+        Source files move through named ownership boundaries. Collections and
+        manifests decide what exists, integrations perform the expensive visual
+        work, Astro emits the complete file graph, and Cloudflare delivers it.
+        The browser only enhances what is already useful.
+      </p>
+      <p class="text-base leading-relaxed text-base-content/65">
+        This separation keeps content policy, build machinery, delivery, and
+        interaction independently understandable. A failure in an optional
+        runtime feature does not erase the page beneath it.
+      </p>
+    </div>
+
+    <AlbertoDuranBuildFlow components={mermaidComponents} />
+  </section>
+
+  <section
+    id="architecture"
+    class="w-full"
+    aria-labelledby="architecture-title"
+  >
+    <SectionHeader
+      id="architecture-title"
+      title="Decisions that shape the experience"
+    />
+
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+      {
+        architectureHighlights.map((item) => (
+          <a
+            href={item.href}
+            class="group card card-border h-full bg-base-100 text-base-content shadow-sm transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          >
+            <article class="card-body gap-5">
+              <span
+                class="font-mono text-sm font-bold text-primary"
+                aria-hidden="true"
+              >
+                {item.marker}
+              </span>
+              <h3 class="card-title font-display text-xl transition-colors group-hover:text-primary">
+                {item.title}
+              </h3>
+              <p class="grow leading-relaxed text-base-content/70">
+                {item.description}
+              </p>
+              <span class="text-sm font-bold text-primary">
+                Read the implementation detail &rarr;
+              </span>
+            </article>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+
+  <section
+    id="publishing-system"
+    class="w-full"
+    aria-labelledby="publishing-system-title"
+  >
+    <SectionHeader
+      id="publishing-system-title"
+      title="The Journal behaves like a publishing system"
+    />
+
+    <div class="mb-10 grid grid-cols-1 gap-6 lg:grid-cols-12">
+      <p class="text-xl leading-relaxed text-base-content lg:col-span-7">
+        An article is not only rendered Markdown. It is simultaneously a route,
+        a navigation node, a searchable card, a breadcrumb destination, and a
+        neighbor in a deliberate reading sequence.
+      </p>
+      <Callout
+        variant="note"
+        title="Why this matters"
+        class="lg:col-span-5"
+      >
+        <p>
+          Authors add content through documented rules. Readers receive a
+          coherent library without needing to understand the filesystem behind
+          it.
+        </p>
+      </Callout>
+    </div>
+
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      {
+        publishingCapabilities.map((capability) => (
+          <a
+            href={capability.href}
+            class="group rounded-box border border-base-300 bg-base-100 p-6 text-base-content shadow-sm transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          >
+            <h3 class="mb-3 font-display text-xl font-semibold transition-colors group-hover:text-primary">
+              {capability.title}
+            </h3>
+            <p class="mb-5 leading-relaxed text-base-content/70">
+              {capability.description}
+            </p>
+            <span class="text-sm font-bold text-primary">
+              Follow the publishing detail &rarr;
+            </span>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+
+  <section
+    id="reader-experience"
+    class="w-full"
+    aria-labelledby="reader-experience-title"
+  >
+    <SectionHeader
+      id="reader-experience-title"
+      title="Static does not mean stripped down"
+    />
+
+    <p class="mb-10 max-w-4xl text-lg leading-relaxed text-base-content/75">
+      The browser receives a complete document first, then adds the details only
+      a live environment can provide: remembered preferences, responsive
+      overlays, scroll-aware navigation, and closer inspection of technical
+      visuals.
+    </p>
+
+    <div class="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-2">
+      {
+        readerExperience.map((feature) => (
+          <a
+            href={feature.href}
+            class="group flex gap-5 border-t border-base-300 pt-6 text-base-content focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+          >
+            <span
+              class="mt-1 block size-2 shrink-0 rounded-full bg-primary"
+              aria-hidden="true"
+            />
+            <span>
+              <strong class="font-display text-lg transition-colors group-hover:text-primary">
+                {feature.title}
+              </strong>
+              <span class="mt-2 block leading-relaxed text-base-content/70">
+                {feature.description}
+              </span>
+              <span class="mt-3 block text-sm font-bold text-primary">
+                Read the design decision &rarr;
+              </span>
+            </span>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+
+  <section
+    id="delivery"
+    class="w-full"
+    aria-labelledby="delivery-title"
+  >
+    <SectionHeader id="delivery-title" title="Delivery is part of the design" />
+
+    <Steps
+      items={deliverySteps}
+      aria-label="Static site delivery sequence"
+      class="mb-10 w-full"
+    />
+
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-2">
+      <div>
+        <h3 class="mb-4 font-display text-2xl font-semibold text-base-content">
+          Quality follows the architecture
+        </h3>
+        <p class="text-base leading-relaxed text-base-content/70 md:text-lg">
+          Astro diagnostics protect source and content shapes. Vitest covers
+          manifest rules, SVG transforms, charts, loaders, and minification. A
+          deterministic production build replaces unstable outside inputs, and
+          Playwright verifies the generated site in a real browser.
+        </p>
+      </div>
+
+      <div>
+        <h3 class="mb-4 font-display text-2xl font-semibold text-base-content">
+          Hosting stays deliberately quiet
+        </h3>
+        <p class="text-base leading-relaxed text-base-content/70 md:text-lg">
+          Production is a handoff of complete files: routes, metadata, fonts,
+          optimized images, themed diagram assets, chart SVG, CSS, and small
+          runtime modules. The edge serves the file graph rather than rebuilding
+          the application for each visitor.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section
+    id="outcomes"
+    class="overflow-hidden rounded-box bg-primary text-primary-content shadow-xl"
+    aria-labelledby="outcomes-title"
+  >
+    <div class="grid grid-cols-1 gap-10 p-8 md:p-12 lg:grid-cols-12 lg:items-center lg:p-16">
+      <div class="lg:col-span-7">
+        <p class="mb-4 text-xs font-bold uppercase tracking-[0.2em] opacity-70">
+          The outcome
+        </p>
+        <h2
+          id="outcomes-title"
+          class="font-display text-3xl font-bold leading-tight sm:text-4xl"
+        >
+          One site can serve a quick introduction and still reward technical
+          curiosity.
+        </h2>
+      </div>
+
+      <ul class="flex flex-col gap-4 lg:col-span-5" aria-label="Project outcomes">
+        <li class="flex gap-3 border-b border-primary-content/20 pb-4">
+          <span aria-hidden="true">✓</span>
+          <span>Discover the work quickly through focused landing surfaces.</span>
+        </li>
+        <li class="flex gap-3 border-b border-primary-content/20 pb-4">
+          <span aria-hidden="true">✓</span>
+          <span>Understand the architecture through visual, linked explanations.</span>
+        </li>
+        <li class="flex gap-3">
+          <span aria-hidden="true">✓</span>
+          <span>Inspect the detailed decisions in the technical deep dives below.</span>
+        </li>
+      </ul>
+    </div>
+  </section>
+</ProjectLayout>

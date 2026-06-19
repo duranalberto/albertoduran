@@ -13,6 +13,12 @@ export const sitesManifest: Record<Sites, SiteManifest> = {
     description:
       "Results-oriented Software Engineer with experience designing, optimizing, and deploying web applications and enterprise solutions. Analytical and delivery-focused, with an emphasis on scalable, maintainable systems that support business and user needs.",
   },
+  "/projects/": {
+    label: "Projects",
+    pageTitle: "My Projects | Alberto Duran",
+    description:
+      "Selected engineering projects spanning static publishing, financial analysis, commerce automation, and distributed systems.",
+  },
   "/thejournal/": {
     label: "TheJournal.",
     pageTitle: "TheJournal - Insights & Documentation",

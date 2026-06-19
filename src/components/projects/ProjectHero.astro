@@ -1,0 +1,140 @@
+---
+import type { ProjectPageConfig } from "@appTypes/project";
+import ProjectJournalCTA from "@components/projects/ProjectJournalCTA.astro";
+import Button from "@components/ui/primitive/Button.astro";
+import { social, ui } from "@data/icons";
+import { Picture } from "astro:assets";
+
+interface Props {
+  project: ProjectPageConfig;
+  journalHref?: string | undefined;
+}
+
+const { project, journalHref } = Astro.props;
+const githubIcon = social.github;
+const liveIcon = ui.arrowUpRight;
+const hasExternalActions = Boolean(
+  project.links?.githubUrl || project.links?.liveUrl,
+);
+const hasActions = Boolean(
+  hasExternalActions || journalHref,
+);
+---
+
+<section
+  class="hero-section project-hero relative font-sans"
+  aria-labelledby="project-title"
+>
+  <div class="hero-shell">
+    <div class="hero-grid items-center">
+      <div class="hero-primary xl:col-span-7">
+        <div class="hero-eyebrow" aria-hidden="true">
+          <span class="hero-eyebrow-line"></span>
+          <p class="hero-eyebrow-label">
+            {project.eyebrow ?? "Project Showcase"}
+          </p>
+        </div>
+
+        <h1
+          id="project-title"
+          class="hero-heading font-display mb-6 text-4xl text-base-content sm:text-5xl md:text-6xl xl:text-7xl"
+        >
+          {project.title}
+        </h1>
+
+        <p
+          class="hero-description mb-8 text-lg leading-relaxed text-neutral-content md:text-xl"
+        >
+          {project.description}
+        </p>
+
+        {
+          project.facts && project.facts.length > 0 && (
+            <dl
+              class="mb-8 grid w-full grid-cols-2 gap-x-6 gap-y-5 border-y border-base-300 py-5 sm:grid-cols-4"
+              aria-label="Project facts"
+            >
+              {project.facts.map((fact) => (
+                <div class="min-w-0">
+                  <dt class="mb-1 text-xs font-bold uppercase tracking-widest text-base-content/60">
+                    {fact.label}
+                  </dt>
+                  <dd class="break-words font-display text-sm font-semibold text-base-content">
+                    {fact.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          )
+        }
+
+        {
+          hasActions && (
+            <nav class="flex flex-wrap items-center gap-3" aria-label="Project links">
+              {hasExternalActions && (
+                <Fragment>
+                  {project.links?.githubUrl && githubIcon && (
+                    <Button
+                      href={project.links.githubUrl}
+                      icon={githubIcon}
+                      label="Repository"
+                      ariaLabel={`View the ${project.title} source code on GitHub`}
+                      isExternal
+                      variant="btn-outline"
+                      size="btn-sm"
+                      class="border-base-300 hover:border-primary hover:bg-primary hover:text-primary-content"
+                    />
+                  )}
+
+                  {project.links?.liveUrl && liveIcon && (
+                    <Button
+                      href={project.links.liveUrl}
+                      icon={liveIcon}
+                      label="Visit live site"
+                      ariaLabel={`Visit the live ${project.title} site`}
+                      isExternal
+                      variant="btn-outline"
+                      size="btn-sm"
+                      class="border-base-300 hover:border-primary hover:bg-primary hover:text-primary-content"
+                    />
+                  )}
+                </Fragment>
+              )}
+
+              {journalHref && (
+                <ProjectJournalCTA
+                  href={journalHref}
+                  projectTitle={project.title}
+                />
+              )}
+            </nav>
+          )
+        }
+      </div>
+
+      <div class="min-w-0 xl:col-span-5">
+        <figure
+          class="relative aspect-[4/3] w-full overflow-hidden rounded-box border border-base-300 bg-base-200 shadow-xl"
+        >
+          <Picture
+            src={project.image}
+            alt={project.imageAlt}
+            widths={[480, 720, 960, 1280]}
+            formats={["avif", "webp"]}
+            sizes="(max-width: 1279px) 100vw, 40vw"
+            quality={80}
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
+            class="h-full w-full select-none object-cover"
+            draggable={false}
+          />
+          <div
+            class="pointer-events-none absolute inset-0 ring-1 ring-inset ring-base-content/10"
+            aria-hidden="true"
+          ></div>
+        </figure>
+      </div>
+    </div>
+  </div>
+</section>

@@ -3,6 +3,7 @@ import Button from "../primitive/Button.astro";
 
 interface Props {
   title: string;
+  id?: string | undefined;
   level?: 2 | 3;
   linkHref?: string;
   linkLabel?: string;
@@ -11,6 +12,7 @@ interface Props {
 
 const {
   title,
+  id,
   level = 2,
   linkHref,
   linkLabel,
@@ -24,6 +26,7 @@ const HeadingTag = level === 3 ? "h3" : "h2";
 >
   <div class="flex items-center h-10 md:h-12 gap-4 border-l-4 border-primary">
     <HeadingTag
+      id={id}
       class="pl-4 text-3xl sm:text-4xl font-display font-semibold tracking-tight text-base-content"
     >
       {title}

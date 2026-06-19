@@ -1,4 +1,4 @@
-export type Sites = "/" | "/profile/" | "/thejournal/" | "404";
+export type Sites = "/" | "/profile/" | "/projects/" | "/thejournal/" | "404";
 
 export interface SiteManifest {
   label: string;
@@ -15,7 +15,11 @@ export interface CurrentSite {
 export const getCurrentSite = (path: string): CurrentSite => {
   const normalizedPath = path.endsWith("/") ? path : `${path}/`;
 
-  const specificSites: Exclude<Sites, "/">[] = ["/thejournal/", "/profile/"];
+  const specificSites: Exclude<Sites, "/">[] = [
+    "/thejournal/",
+    "/projects/",
+    "/profile/",
+  ];
 
   const match = specificSites.find((site) => normalizedPath.startsWith(site));
 

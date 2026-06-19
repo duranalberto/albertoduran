@@ -67,6 +67,7 @@ Run commands from the repository root:
 - `docs/MERMAID_RENDERING.md` documents Mermaid rendering cache/version rules.
 - `docs/GIT_WORKFLOW.md` documents branching, verification, and merge expectations.
 - `docs/UI_STYLE_GUIDE.md` captures UI implementation rules.
+- `docs/PROJECT_PAGE_GUIDE.md` defines how to build and register project showcase landing pages.
 - `docs/AI_PROTOCOL.md` defines how AI assistants should work in this repo.
 - `docs/AI_SKILLS.md` documents project-local Codex skills.
 - `docs/ROADMAP.md` tracks planned work.

@@ -1,0 +1,309 @@
+---
+import type { ProjectPageConfig } from "@appTypes/project";
+import coverImage from "@assets/thejournal/stock/06.avif";
+import EquityValuationFlow from "@components/projects/EquityValuationFlow.mdx";
+import Callout from "@components/ui/display/Callout.astro";
+import SectionHeader from "@components/ui/display/SectionHeader.astro";
+import Steps, { type StepItem } from "@components/ui/display/Steps.astro";
+import MermaidDiagramWrapper from "@components/ui/mdx/MermaidDiagramWrapper.astro";
+import ProjectLayout from "@layouts/ProjectLayout.astro";
+
+const project: ProjectPageConfig = {
+  title: "Equity Valuation Engine",
+  eyebrow: "Finance · Decision Support",
+  description:
+    "An auditable Python valuation engine that turns uneven market data into model-specific checks, scenario estimates, and an explainable consolidated view.",
+  image: coverImage,
+  imageAlt:
+    "A financial market chart with candlesticks and trend lines on a dark display",
+  facts: [
+    { label: "Interface", value: "CLI · JSON" },
+    { label: "Data", value: "yfinance" },
+    { label: "Methods", value: "DCF · Multiples · NAV" },
+    { label: "Analysis", value: "Bear · Base · Bull" },
+  ],
+  links: {
+    githubUrl: "https://github.com/duranalberto/equity-valuation-engine",
+    journalId: "equity_valuation_engine",
+  },
+};
+
+const foundations = [
+  {
+    marker: "01",
+    title: "One domain model absorbs noisy source data",
+    description:
+      "A repository boundary and field descriptors turn yfinance labels, statements, and history into one StockMetrics aggregate before valuation logic begins.",
+    href: "/thejournal/equity_valuation_engine/data_to_metrics/",
+  },
+  {
+    marker: "02",
+    title: "Missing data stays visible",
+    description:
+      "Safe defaults keep a run moving, while source misses and failed derived formulas remain attached as diagnostics instead of disappearing behind zeroes.",
+    href: "/thejournal/equity_valuation_engine/missing_data_diagnostics/",
+  },
+  {
+    marker: "03",
+    title: "Every model earns the right to run",
+    description:
+      "DCF, multiples, dividend, and asset models apply their own suitability rules, then expose skipped methods and the reasons behind them.",
+    href: "/thejournal/equity_valuation_engine/suitability_gates/",
+  },
+];
+
+const modelFamilies = [
+  {
+    label: "Cash flow",
+    title: "DCF and Reverse DCF",
+    description:
+      "Forward DCF estimates intrinsic value from projected cash flows; Reverse DCF asks what growth the current market price already assumes.",
+  },
+  {
+    label: "Market comparison",
+    title: "P/E, EV/EBITDA, and P/S",
+    description:
+      "Comparable-value models use earnings, operating performance, revenue, and configured multiples without pretending one method fits every business.",
+  },
+  {
+    label: "Business structure",
+    title: "ROE, DDM, and NAV",
+    description:
+      "Return, dividend, and asset-based models provide alternate lenses when cash-flow or market-multiple approaches are not the best fit.",
+  },
+];
+
+const valuationSteps: StepItem[] = [
+  { label: "Normalize", marker: "1", color: "success" },
+  { label: "Diagnose", marker: "2", color: "success" },
+  { label: "Qualify", marker: "3", color: "success" },
+  { label: "Value", marker: "4", color: "success" },
+  { label: "Explain", marker: "5", color: "success" },
+];
+
+const mermaidComponents = { div: MermaidDiagramWrapper };
+---
+
+<ProjectLayout project={project}>
+  <section id="overview" class="w-full" aria-labelledby="overview-title">
+    <SectionHeader
+      id="overview-title"
+      title="A valuation result should explain itself"
+    />
+
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12">
+      <div class="flex flex-col gap-5 lg:col-span-7">
+        <p class="text-xl leading-relaxed text-base-content md:text-2xl">
+          Valuation software can make uncertain inputs look authoritative simply
+          by returning a precise number. This engine takes the opposite path:
+          it keeps data quality, model fit, assumptions, and skipped methods
+          beside the estimate they produced.
+        </p>
+        <p class="max-w-3xl text-base leading-relaxed text-base-content/70 md:text-lg">
+          A single ticker becomes a structured analytical run. Raw market data
+          is normalized once, weaknesses are recorded, each valuation method is
+          checked for suitability, and eligible models produce comparable
+          scenarios for a consolidated summary.
+        </p>
+      </div>
+
+      <Callout
+        variant="information"
+        title="Designed against false precision"
+        class="lg:col-span-5"
+      >
+        <p>
+          The useful product is not only the intrinsic-value estimate. It is the
+          visible argument connecting source data, assumptions, model choice,
+          and output.
+        </p>
+      </Callout>
+    </div>
+  </section>
+
+  <section
+    id="valuation-flow"
+    class="w-full"
+    aria-labelledby="valuation-flow-title"
+  >
+    <SectionHeader
+      id="valuation-flow-title"
+      title="From ticker symbol to inspectable answer"
+    />
+    <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
+      The pipeline separates acquisition, domain modeling, analytical policy,
+      formula execution, and presentation. Each boundary passes forward a
+      structured result instead of quietly recalculating another layer's work.
+    </p>
+    <EquityValuationFlow components={mermaidComponents} />
+  </section>
+
+  <section
+    id="analytical-foundations"
+    class="w-full"
+    aria-labelledby="analytical-foundations-title"
+  >
+    <SectionHeader
+      id="analytical-foundations-title"
+      title="Trust is built before a formula runs"
+    />
+
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      {
+        foundations.map((item) => (
+          <a
+            href={item.href}
+            aria-label={`Read ${item.title} technical detail`}
+            class="group card card-border h-full bg-base-100 text-base-content shadow-sm transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          >
+            <article class="card-body gap-5">
+              <span class="font-mono text-sm font-bold text-primary" aria-hidden="true">
+                {item.marker}
+              </span>
+              <h3 class="card-title font-display text-xl transition-colors group-hover:text-primary">
+                {item.title}
+              </h3>
+              <p class="grow leading-relaxed text-base-content/70">
+                {item.description}
+              </p>
+              <span class="text-sm font-bold text-primary">
+                Inspect this boundary &rarr;
+              </span>
+            </article>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+
+  <section id="models" class="w-full" aria-labelledby="models-title">
+    <SectionHeader id="models-title" title="Several lenses, one execution contract" />
+
+    <div class="mb-10 grid grid-cols-1 gap-6 lg:grid-cols-12">
+      <p class="text-xl leading-relaxed text-base-content lg:col-span-7">
+        The model catalog is intentionally plural. Different businesses expose
+        value through cash flow, earnings, revenue, dividends, returns, or net
+        assets, so the engine gives each method a defined lane instead of
+        forcing agreement.
+      </p>
+      <Callout variant="note" title="Diagnostic by design" class="lg:col-span-5">
+        <p>
+          Reverse DCF stays outside the composite value. It explains the growth
+          implied by the market price rather than voting on intrinsic value.
+        </p>
+      </Callout>
+    </div>
+
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+      {
+        modelFamilies.map((family) => (
+          <article class="rounded-box border border-base-300 bg-base-200 p-6 text-base-content shadow-sm">
+            <p class="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-primary">
+              {family.label}
+            </p>
+            <h3 class="mb-3 font-display text-xl font-semibold">{family.title}</h3>
+            <p class="leading-relaxed text-base-content/70">{family.description}</p>
+          </article>
+        ))
+      }
+    </div>
+
+    <a
+      href="/thejournal/equity_valuation_engine/model_execution/"
+      class="mt-6 inline-flex font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+    >
+      See how valuation managers isolate each model &rarr;
+    </a>
+  </section>
+
+  <section id="scenarios" class="w-full" aria-labelledby="scenarios-title">
+    <SectionHeader id="scenarios-title" title="Assumptions remain part of the output" />
+
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:items-center">
+      <div>
+        <p class="mb-5 text-xl leading-relaxed text-base-content">
+          Growth is not smuggled into a formula as one unexplained percentage.
+          The engine selects a signal, records its source, constrains unstable
+          values, and turns it into Bear, Base, and Bull paths shared by the
+          models that need projections.
+        </p>
+        <p class="leading-relaxed text-base-content/70">
+          Optional weighted blending and sector mean reversion remain explicit.
+          When evidence is too thin for the richer path, the system falls back
+          and records why.
+        </p>
+      </div>
+      <a
+        href="/thejournal/equity_valuation_engine/growth_scenarios/"
+        class="group rounded-box border border-base-300 bg-primary p-8 text-primary-content shadow-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+      >
+        <p class="mb-3 text-xs font-bold uppercase tracking-[0.2em] opacity-70">
+          Scenario engine
+        </p>
+        <h3 class="mb-3 font-display text-2xl font-semibold">
+          See how signals become projections
+        </h3>
+        <p class="leading-relaxed opacity-80">
+          Follow selection, clamping, scenario multipliers, and mean reversion
+          into the GrowthAssumption audit record.
+        </p>
+        <span class="mt-5 block font-bold">Read the decision path &rarr;</span>
+      </a>
+    </div>
+  </section>
+
+  <section id="delivery" class="w-full" aria-labelledby="delivery-title">
+    <SectionHeader id="delivery-title" title="One run, five visible stages" />
+    <Steps
+      items={valuationSteps}
+      aria-label="Equity valuation lifecycle"
+      class="mb-10 w-full"
+    />
+
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-2">
+      <div>
+        <h3 class="mb-4 font-display text-2xl font-semibold text-base-content">
+          Human-readable at the terminal
+        </h3>
+        <p class="text-lg leading-relaxed text-base-content/70">
+          CLI tables make checks, scenarios, and comparisons useful during
+          exploration without hiding skipped methods or analytical warnings.
+        </p>
+      </div>
+      <div>
+        <h3 class="mb-4 font-display text-2xl font-semibold text-base-content">
+          Structured for the next interface
+        </h3>
+        <p class="text-lg leading-relaxed text-base-content/70">
+          Compact JSON carries metrics, checks, reports, skips, and the summary
+          as an integration surface rather than scraping values back out of
+          terminal text.
+        </p>
+      </div>
+    </div>
+
+    <a
+      href="/thejournal/equity_valuation_engine/summary_outputs/"
+      class="mt-6 inline-flex font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+    >
+      Follow scenario reports into the final output &rarr;
+    </a>
+  </section>
+
+  <section
+    id="outcome"
+    class="overflow-hidden rounded-box bg-primary p-8 text-primary-content shadow-xl md:p-12 lg:p-16"
+    aria-labelledby="outcome-title"
+  >
+    <p class="mb-4 text-xs font-bold uppercase tracking-[0.2em] opacity-70">
+      The outcome
+    </p>
+    <h2 id="outcome-title" class="max-w-4xl font-display text-3xl font-bold leading-tight sm:text-4xl">
+      A valuation run that can be questioned, traced, and compared—not merely quoted.
+    </h2>
+    <p class="mt-6 max-w-3xl text-lg leading-relaxed opacity-80">
+      The estimates are analytical tools, not investment advice. Their value
+      comes from making assumptions and weaknesses easier to inspect.
+    </p>
+  </section>
+</ProjectLayout>

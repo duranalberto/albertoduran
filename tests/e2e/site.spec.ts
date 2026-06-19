@@ -3,6 +3,11 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 const smokeRoutes = [
   "/",
   "/profile/",
+  "/projects/",
+  "/projects/albertoduran/",
+  "/projects/equity-valuation-engine/",
+  "/projects/mlscraper/",
+  "/projects/sin-pluma/",
   "/thejournal/",
   "/thejournal/my_first_publication/",
   "/thejournal/building_albertoduran/",
@@ -11,7 +16,12 @@ const smokeRoutes = [
 
 const responsiveRoutes = [
   "/",
+  "/projects/",
   "/profile/",
+  "/projects/albertoduran/",
+  "/projects/equity-valuation-engine/",
+  "/projects/mlscraper/",
+  "/projects/sin-pluma/",
   "/thejournal/building_albertoduran/echarts/chart_examples/",
   "/thejournal/sin_pluma/innodb_cluster/",
   "/thejournal/building_albertoduran/publications/codeblocks/",
@@ -214,7 +224,7 @@ test("top-level heroes keep eyebrow and heading geometry aligned", async ({
     { width: 390, height: 844 },
     { width: 1440, height: 900 },
   ];
-  const routes = ["/", "/profile/", "/thejournal/"];
+  const routes = ["/", "/profile/", "/projects/", "/thejournal/"];
 
   for (const viewport of viewports) {
     await page.setViewportSize(viewport);
@@ -251,6 +261,424 @@ test("top-level heroes keep eyebrow and heading geometry aligned", async ({
     }
   }
 });
+
+test("projects index presents four compact showcases and ordered navigation", async ({
+  page,
+}) => {
+  const problems = collectConsoleProblems(page);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/projects/");
+
+  await expect(page).toHaveTitle("My Projects | Alberto Duran");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "My Projects" }),
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+
+  const mainNavigation = page.getByRole("navigation", {
+    name: "Main Navigation",
+  });
+  await expect(mainNavigation.getByRole("link")).toHaveText([
+    "Professional Profile",
+    "Projects",
+    "TheJournal.",
+  ]);
+  await expect(
+    mainNavigation.getByRole("link", { name: "Projects" }),
+  ).toHaveAttribute("aria-current", "page");
+
+  const expectedProjects = [
+    ["albertoduran.com", "/projects/albertoduran/"],
+    ["Equity Valuation Engine", "/projects/equity-valuation-engine/"],
+    ["MLScraper", "/projects/mlscraper/"],
+    ["Sin Pluma", "/projects/sin-pluma/"],
+  ] as const;
+
+  const showcases = page.locator("[data-project-showcase]");
+  await expect(showcases).toHaveCount(4);
+
+  for (const [title, href] of expectedProjects) {
+    const showcase = page.getByRole("link", {
+      name: `Open the ${title} project showcase`,
+    });
+    await expect(showcase).toHaveAttribute("href", href);
+    await expect(
+      showcase.getByRole("heading", { level: 2, name: title }),
+    ).toBeVisible();
+    await expect(showcase.getByRole("img")).toBeVisible();
+
+    const height = await showcase.evaluate(
+      (element) => element.getBoundingClientRect().height,
+    );
+    expect(height).toBeLessThan(836);
+  }
+
+  const firstShowcase = showcases.first();
+  const secondShowcase = showcases.nth(1);
+  await expect
+    .poll(() =>
+      firstShowcase.evaluate(
+        (element) => getComputedStyle(element).borderTopWidth,
+      ),
+    )
+    .toBe("0px");
+  await expect
+    .poll(() =>
+      secondShowcase.evaluate(
+        (element) => getComputedStyle(element).borderTopWidth,
+      ),
+    )
+    .not.toBe("0px");
+
+  const finalShowcaseBottom = await showcases
+    .last()
+    .evaluate((element) => element.getBoundingClientRect().bottom);
+  const footerTop = await page
+    .locator("body > footer")
+    .evaluate((element) => element.getBoundingClientRect().top);
+  expect(Math.abs(footerTop - finalShowcaseBottom)).toBeLessThanOrEqual(1);
+
+  const lightBackground = await firstShowcase.evaluate(
+    (element) => getComputedStyle(element).backgroundColor,
+  );
+  await page.locator("#theme-toggle-input").check({ force: true });
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect
+    .poll(() =>
+      firstShowcase.evaluate(
+        (element) => getComputedStyle(element).backgroundColor,
+      ),
+    )
+    .not.toBe(lightBackground);
+
+  await expectNoPageHorizontalOverflow(page);
+  expect(problems).toEqual([]);
+});
+
+for (const route of ["/", "/profile/"] as const) {
+  test(`${route} presents four accessible project cards in a responsive grid`, async ({
+    page,
+  }) => {
+    const problems = collectConsoleProblems(page);
+    const expectedProjects = [
+      ["albertoduran.com", "/projects/albertoduran/"],
+      ["Equity Valuation Engine", "/projects/equity-valuation-engine/"],
+      ["MLScraper", "/projects/mlscraper/"],
+      ["Sin Pluma", "/projects/sin-pluma/"],
+    ] as const;
+
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(route);
+
+    const grid = page.locator("[data-project-grid]");
+    const cards = grid.locator("[data-project-card]");
+    await expect(cards).toHaveCount(4);
+    await expect(
+      page.getByRole("link", { name: "View all projects" }),
+    ).toHaveCount(0);
+
+    for (const [index, [title, href]] of expectedProjects.entries()) {
+      const card = grid.getByRole("link", {
+        name: `Explore the ${title} project`,
+      });
+      await expect(card).toHaveAttribute("href", href);
+      await expect(
+        card.getByRole("heading", { level: 3, name: title }),
+      ).toBeVisible();
+      await expect(card.getByRole("img")).toHaveCount(0);
+      await expect(card.locator("[data-project-ordinal]")).toHaveText(
+        String(index + 1).padStart(2, "0"),
+      );
+    }
+
+    const desktopBoxes = await cards.evaluateAll((elements) =>
+      elements.map((element) => {
+        const rect = element.getBoundingClientRect();
+        return { height: rect.height, left: rect.left, top: rect.top };
+      }),
+    );
+    expect(Math.abs(desktopBoxes[0]!.top - desktopBoxes[1]!.top)).toBeLessThan(
+      2,
+    );
+    expect(desktopBoxes[1]!.left).toBeGreaterThan(desktopBoxes[0]!.left);
+    expect(desktopBoxes[2]!.top).toBeGreaterThan(desktopBoxes[0]!.top);
+    expect(Math.max(...desktopBoxes.map(({ height }) => height))).toBeCloseTo(
+      Math.min(...desktopBoxes.map(({ height }) => height)),
+      0,
+    );
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    const mobileBoxes = await cards.evaluateAll((elements) =>
+      elements.map((element) => {
+        const rect = element.getBoundingClientRect();
+        return { left: rect.left, top: rect.top };
+      }),
+    );
+    expect(new Set(mobileBoxes.map(({ top }) => Math.round(top))).size).toBe(4);
+    expect(new Set(mobileBoxes.map(({ left }) => Math.round(left))).size).toBe(
+      1,
+    );
+
+    const firstCard = cards.first().locator("article");
+    const lightBackground = await firstCard.evaluate(
+      (element) => getComputedStyle(element).backgroundColor,
+    );
+    await page.locator("#theme-toggle-input").check({ force: true });
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    await expect
+      .poll(() =>
+        firstCard.evaluate(
+          (element) => getComputedStyle(element).backgroundColor,
+        ),
+      )
+      .not.toBe(lightBackground);
+
+    await expectNoPageHorizontalOverflow(page);
+    expect(problems).toEqual([]);
+  });
+}
+
+test("project showcase renders its hero actions, body, and grouped vault", async ({
+  page,
+}) => {
+  const problems = collectConsoleProblems(page);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/projects/albertoduran/");
+
+  await expect(page).toHaveTitle("albertoduran.com");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "albertoduran.com" }),
+  ).toBeVisible();
+  await expect(page.locator('dl[aria-label="Project facts"] dd')).toHaveCount(
+    4,
+  );
+
+  const journalLink = page.getByRole("link", {
+    name: "See how albertoduran.com works in The Journal",
+  });
+
+  await expect(
+    page.getByRole("link", { name: /source code on GitHub/ }),
+  ).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /Visit the live/ })).toHaveCount(
+    0,
+  );
+  await expect(journalLink).toHaveAttribute(
+    "href",
+    "/thejournal/building_albertoduran/",
+  );
+  await expect(journalLink).not.toHaveAttribute("target", "_blank");
+  await expect(journalLink).toContainText("Technical details");
+  await expect(journalLink).toHaveClass(/btn-outline/);
+  await expect(journalLink).toHaveClass(/btn-sm/);
+
+  await expect(
+    page.locator(".mermaid-diagram-container").first(),
+  ).toBeVisible();
+  await expect(page.locator("#project-vault-coverage")).toHaveCount(0);
+
+  await expect(
+    page.getByRole("heading", {
+      level: 2,
+      name: "A portfolio built like a product",
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      level: 2,
+      name: "One platform, several ways in",
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      level: 2,
+      name: "The Journal behaves like a publishing system",
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      level: 2,
+      name: "Static does not mean stripped down",
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", {
+      name: /Typed content and visible publishing rules/,
+    }),
+  ).toHaveAttribute(
+    "href",
+    "/thejournal/building_albertoduran/publications/manifest_rules/",
+  );
+  await expect(
+    page.getByRole("heading", { level: 2, name: "Technical deep dives" }),
+  ).toBeVisible();
+
+  const foundationList = page.getByRole("list", {
+    name: "Foundation map publications",
+  });
+  await expect(foundationList).toBeVisible();
+  await expect(
+    foundationList.getByRole("link", {
+      name: "Read Foundation map in The Journal",
+    }),
+  ).toHaveAttribute("href", "/thejournal/building_albertoduran/foundations/");
+  await expect(
+    foundationList.getByText(
+      "A short guide to the repository shape, local development environment, and Cloudflare deployment target behind albertoduran.com.",
+    ),
+  ).toBeVisible();
+
+  const vaultList = page.locator("#project-vault .publication-list").first();
+  const lightBackground = await vaultList.evaluate(
+    (element) => getComputedStyle(element).backgroundColor,
+  );
+  await page.locator("#theme-toggle-input").check({ force: true });
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect
+    .poll(() =>
+      vaultList.evaluate(
+        (element) => getComputedStyle(element).backgroundColor,
+      ),
+    )
+    .not.toBe(lightBackground);
+
+  await expectNoPageHorizontalOverflow(page);
+  expect(problems).toEqual([]);
+});
+
+const projectShowcases = [
+  {
+    route: "/projects/equity-valuation-engine/",
+    title: "Equity Valuation Engine",
+    github: "https://github.com/duranalberto/equity-valuation-engine",
+    journal: "/thejournal/equity_valuation_engine/",
+    heading: "Trust is built before a formula runs",
+    detailHref: "/thejournal/equity_valuation_engine/data_to_metrics/",
+    detailName:
+      "Read One domain model absorbs noisy source data technical detail",
+  },
+  {
+    route: "/projects/mlscraper/",
+    title: "MLScraper",
+    github: "https://github.com/duranalberto/MLScraper",
+    journal: "/thejournal/mlscraper/",
+    heading: "Provider complexity stays maintainable",
+    detailHref: "/thejournal/mlscraper/job_configuration/",
+    detailName: /Jobs can be checked before they run/,
+  },
+  {
+    route: "/projects/sin-pluma/",
+    title: "Sin Pluma",
+    github: "https://github.com/duranalberto/SinPluma",
+    journal: "/thejournal/sin_pluma/",
+    heading: "From first discovery to the next draft",
+    detailHref: "/thejournal/sin_pluma/frontend/",
+    detailName: /Explore the frontend engineering/,
+  },
+] as const;
+
+for (const showcase of projectShowcases) {
+  test(`${showcase.title} renders a complete project showcase`, async ({
+    page,
+  }) => {
+    const problems = collectConsoleProblems(page);
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(showcase.route);
+
+    await expect(page).toHaveTitle(showcase.title);
+    await expect(
+      page.getByRole("heading", { level: 1, name: showcase.title }),
+    ).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+    await expect(page.locator('dl[aria-label="Project facts"] dd')).toHaveCount(
+      4,
+    );
+
+    const sourceLink = page.getByRole("link", {
+      name: `View the ${showcase.title} source code on GitHub`,
+    });
+    await expect(sourceLink).toHaveAttribute("href", showcase.github);
+    await expect(sourceLink).toHaveAttribute("target", "_blank");
+    await expect(sourceLink).toHaveAttribute("rel", "noopener noreferrer");
+
+    const journalLink = page.getByRole("link", {
+      name: `See how ${showcase.title} works in The Journal`,
+    });
+    await expect(journalLink).toHaveAttribute("href", showcase.journal);
+    await expect(journalLink).not.toHaveAttribute("target", "_blank");
+    await expect(journalLink).toContainText("Technical details");
+    await expect(sourceLink).toHaveClass(/btn-outline/);
+    await expect(sourceLink).toHaveClass(/btn-sm/);
+    await expect(journalLink).toHaveClass(/btn-outline/);
+    await expect(journalLink).toHaveClass(/btn-sm/);
+    await expect(journalLink.locator("svg")).toHaveAttribute("fill", "none");
+    await expect(journalLink.locator("svg")).toHaveAttribute(
+      "stroke",
+      "currentColor",
+    );
+    await expect(
+      page.getByRole("link", { name: /Visit the live/ }),
+    ).toHaveCount(0);
+
+    await expect(
+      page.getByRole("heading", { level: 2, name: showcase.heading }),
+    ).toBeVisible();
+    await expect(
+      page.locator(".mermaid-diagram-container").first(),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: showcase.detailName }).first(),
+    ).toHaveAttribute("href", showcase.detailHref);
+    await expect(
+      page.getByRole("heading", { level: 2, name: "Technical deep dives" }),
+    ).toBeVisible();
+    await expect(
+      page.locator(`#project-vault a[href^="${showcase.journal}"]`).first(),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Vault publications", { exact: true }),
+    ).toHaveCount(1);
+
+    const vaultList = page.locator("#project-vault .publication-list").first();
+    const lightBackground = await vaultList.evaluate(
+      (element) => getComputedStyle(element).backgroundColor,
+    );
+    await page.locator("#theme-toggle-input").check({ force: true });
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    await expect
+      .poll(() =>
+        vaultList.evaluate(
+          (element) => getComputedStyle(element).backgroundColor,
+        ),
+      )
+      .not.toBe(lightBackground);
+
+    if (showcase.title === "Sin Pluma") {
+      const projectImage = page.getByRole("img", {
+        name: "A typewriter and writing desk representing the Sin Pluma publishing platform",
+      });
+      await expect(projectImage).toBeVisible();
+
+      const callout = page
+        .getByText("Product and system are one case study", { exact: true })
+        .locator("xpath=ancestor::aside");
+      await expect(callout).toHaveCSS("align-self", "flex-start");
+      await expect(callout).toHaveCSS("margin-top", "0px");
+      await expect(callout).toHaveCSS("margin-bottom", "0px");
+
+      await expect(
+        page.getByRole("img", {
+          name: "Sin Pluma rich-text editor showing a chapter with an analysis action",
+        }),
+      ).toBeVisible();
+    }
+
+    await expectNoPageHorizontalOverflow(page);
+    expect(problems).toEqual([]);
+  });
+}
 
 test("responsive pages avoid horizontal overflow at breakpoint edges", async ({
   page,

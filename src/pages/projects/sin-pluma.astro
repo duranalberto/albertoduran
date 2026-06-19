@@ -1,0 +1,311 @@
+---
+import type { ProjectPageConfig } from "@appTypes/project";
+import editorImage from "@assets/thejournal/pub/sinpluma_04.png";
+import coverImage from "@assets/thejournal/stock/07.avif";
+import SinPlumaArchitecture from "@components/projects/SinPlumaArchitecture.mdx";
+import Callout from "@components/ui/display/Callout.astro";
+import MockupBrowser from "@components/ui/display/MockupBrowser.astro";
+import SectionHeader from "@components/ui/display/SectionHeader.astro";
+import Steps, { type StepItem } from "@components/ui/display/Steps.astro";
+import MermaidDiagramWrapper from "@components/ui/mdx/MermaidDiagramWrapper.astro";
+import ProjectLayout from "@layouts/ProjectLayout.astro";
+import { Picture } from "astro:assets";
+
+const project: ProjectPageConfig = {
+  title: "Sin Pluma",
+  eyebrow: "Writing Platform · Distributed Systems",
+  description:
+    "A full-stack writing platform where rich editing, discovery, secure sessions, machine-learning assistance, and resilient storage operate as one product.",
+  image: coverImage,
+  imageAlt:
+    "A typewriter and writing desk representing the Sin Pluma publishing platform",
+  facts: [
+    { label: "Experience", value: "React · Slate" },
+    { label: "API", value: "Flask REST" },
+    { label: "Data", value: "MySQL · Redis · MinIO" },
+    { label: "Operations", value: "Docker Compose" },
+  ],
+  links: {
+    githubUrl: "https://github.com/duranalberto/SinPluma",
+    journalId: "sin_pluma",
+  },
+};
+
+const journeys = [
+  {
+    label: "Discover",
+    title: "Find and follow written work",
+    description:
+      "Readers browse works, inspect author profiles and synopses, follow notebooks, and return to structured chapter collections.",
+  },
+  {
+    label: "Compose",
+    title: "Write in a focused rich-text editor",
+    description:
+      "Slate preserves structured page content while React and Redux coordinate editing, navigation, session state, and API activity.",
+  },
+  {
+    label: "Organize",
+    title: "Build works from notebooks and pages",
+    description:
+      "A clear domain model connects users, notebooks, ordered pages, genres, reading lists, tags, and media without flattening everything into documents.",
+  },
+  {
+    label: "Analyze",
+    title: "Bring language assistance into the page",
+    description:
+      "An isolated linguistics service classifies sentence sentiment and returns annotations the editor can display without owning publishing data.",
+  },
+];
+
+const platformCapabilities = [
+  {
+    title: "REST contracts keep the product replaceable",
+    description:
+      "The Flask API owns business rules and validation without knowing whether React, a mobile client, or another interface made the request.",
+    href: "/thejournal/sin_pluma/flask_service/",
+  },
+  {
+    title: "Authentication supports a real logout",
+    description:
+      "Short-lived access tokens, refresh tokens, an Axios refresh queue, and Redis-backed revocation combine continuity with server-enforced logout.",
+    href: "/thejournal/sin_pluma/jwt/",
+  },
+  {
+    title: "Storage matches the shape of the data",
+    description:
+      "MySQL owns transactional content, MinIO owns uploaded objects, and Redis owns ephemeral security state instead of forcing one database to do every job.",
+    href: "/thejournal/sin_pluma/architecture/",
+  },
+];
+
+const requestSteps: StepItem[] = [
+  { label: "Enter through Nginx", marker: "1", color: "success" },
+  { label: "Validate in Flask", marker: "2", color: "success" },
+  { label: "Coordinate services", marker: "3", color: "success" },
+  { label: "Commit durable state", marker: "4", color: "success" },
+  { label: "Update the experience", marker: "5", color: "success" },
+];
+
+const mermaidComponents = { div: MermaidDiagramWrapper };
+---
+
+<ProjectLayout project={project}>
+  <section id="overview" class="w-full" aria-labelledby="overview-title">
+    <SectionHeader id="overview-title" title="A writing product with infrastructure underneath" />
+
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12">
+      <div class="flex flex-col gap-5 lg:col-span-7">
+        <p class="text-xl leading-relaxed text-base-content md:text-2xl">
+          Sin Pluma gives writers a place to compose and organize long-form
+          work, while readers can discover authors, follow notebooks, and move
+          through ordered pages. The product surface stays approachable even as
+          the system beneath it coordinates ten containers.
+        </p>
+        <p class="max-w-3xl text-base leading-relaxed text-base-content/70 md:text-lg">
+          The architecture is not complexity for its own sake. Each service owns
+          a distinct concern: the editor handles composition, Flask handles
+          domain rules, a linguistics service handles inference, and specialized
+          stores protect transactional, binary, and ephemeral data.
+        </p>
+      </div>
+
+      <Callout
+        variant="information"
+        title="Product and system are one case study"
+        class="my-0 self-start lg:col-span-5"
+      >
+        <p>
+          The reader experience explains why the services exist. The service
+          boundaries explain how that experience can evolve without turning the
+          application into one inseparable process.
+        </p>
+      </Callout>
+    </div>
+  </section>
+
+  <section id="journeys" class="w-full" aria-labelledby="journeys-title">
+    <SectionHeader id="journeys-title" title="From first discovery to the next draft" />
+
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+      {
+        journeys.map((journey) => (
+          <article class="card card-border h-full bg-base-200 text-base-content shadow-sm">
+            <div class="card-body gap-4">
+              <p class="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+                {journey.label}
+              </p>
+              <h3 class="card-title font-display text-xl">{journey.title}</h3>
+              <p class="grow leading-relaxed text-base-content/70">{journey.description}</p>
+            </div>
+          </article>
+        ))
+      }
+    </div>
+  </section>
+
+  <section id="editor" class="w-full" aria-labelledby="editor-title">
+    <SectionHeader id="editor-title" title="The architecture begins with a writing surface" />
+
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-center">
+      <div class="lg:col-span-4">
+        <p class="mb-5 text-xl leading-relaxed text-base-content">
+          The Slate editor works with structured page content rather than a
+          plain textarea. React composes the workspace, Redux holds shared state,
+          and Axios manages authenticated communication with the API.
+        </p>
+        <a
+          href="/thejournal/sin_pluma/frontend/"
+          class="inline-flex font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+        >
+          Explore the frontend engineering &rarr;
+        </a>
+      </div>
+
+      <MockupBrowser
+        url="sinpluma.local/editor"
+        class="lg:col-span-8"
+        aria-label="Sin Pluma editor preview"
+      >
+        <Picture
+          src={editorImage}
+          alt="Sin Pluma rich-text editor showing a chapter with an analysis action"
+          widths={[640, 960, 1280, 1588]}
+          formats={["avif", "webp"]}
+          sizes="(max-width: 1023px) 100vw, 66vw"
+          quality={80}
+          loading="lazy"
+          decoding="async"
+          class="block h-auto w-full select-none"
+          draggable={false}
+        />
+        <span slot="caption">
+          The writing interface keeps editing central while API, authentication,
+          and language analysis remain behind explicit boundaries.
+        </span>
+      </MockupBrowser>
+    </div>
+  </section>
+
+  <section id="architecture" class="w-full" aria-labelledby="architecture-title">
+    <SectionHeader id="architecture-title" title="Specialized services behind one entry point" />
+    <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
+      Nginx exposes one public surface and routes requests inward. React owns the
+      browser experience, Flask coordinates business behavior, and the storage
+      layer separates content, objects, and revocation state.
+    </p>
+    <SinPlumaArchitecture components={mermaidComponents} />
+  </section>
+
+  <section
+    id="service-boundaries"
+    class="w-full"
+    aria-labelledby="service-boundaries-title"
+  >
+    <SectionHeader id="service-boundaries-title" title="Boundaries that support the product" />
+
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      {
+        platformCapabilities.map((capability) => (
+          <a
+            href={capability.href}
+            class="group rounded-box border border-base-300 bg-base-100 p-6 text-base-content shadow-sm transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          >
+            <h3 class="mb-3 font-display text-xl font-semibold transition-colors group-hover:text-primary">
+              {capability.title}
+            </h3>
+            <p class="mb-5 leading-relaxed text-base-content/70">{capability.description}</p>
+            <span class="text-sm font-bold text-primary">
+              Read the implementation detail &rarr;
+            </span>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+
+  <section id="availability" class="w-full" aria-labelledby="availability-title">
+    <SectionHeader id="availability-title" title="The database can lose a node without losing the product" />
+
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-center">
+      <div class="lg:col-span-7">
+        <p class="mb-5 text-xl leading-relaxed text-base-content">
+          Three MySQL nodes use Group Replication behind MySQL Router. The API
+          connects to one logical endpoint while the cluster maintains quorum,
+          elects a primary, and brings returning members back into sync.
+        </p>
+        <p class="leading-relaxed text-base-content/70 md:text-lg">
+          An idempotent MySQL Shell bootstrap configures the cluster and seeds the
+          schema. Docker volumes preserve data across container restarts, and the
+          application remains isolated from individual database addresses.
+        </p>
+      </div>
+      <a
+        href="/thejournal/sin_pluma/innodb_cluster/"
+        class="group rounded-box bg-primary p-8 text-primary-content shadow-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary lg:col-span-5"
+      >
+        <p class="mb-3 text-xs font-bold uppercase tracking-[0.2em] opacity-70">
+          High availability
+        </p>
+        <h3 class="mb-3 font-display text-2xl font-semibold">
+          Follow failover from router to replicas
+        </h3>
+        <p class="leading-relaxed opacity-80">
+          Inspect cluster bootstrapping, quorum behavior, recovery, schema
+          choices, and the production hardening beyond the demonstration.
+        </p>
+        <span class="mt-5 block font-bold">Read the cluster design &rarr;</span>
+      </a>
+    </div>
+  </section>
+
+  <section id="delivery" class="w-full" aria-labelledby="delivery-title">
+    <SectionHeader id="delivery-title" title="A request crosses clear ownership boundaries" />
+    <Steps
+      items={requestSteps}
+      aria-label="Sin Pluma request and publishing lifecycle"
+      class="mb-10 w-full"
+    />
+
+    <div class="grid grid-cols-1 gap-8 md:grid-cols-2">
+      <div>
+        <h3 class="mb-4 font-display text-2xl font-semibold text-base-content">
+          Networks limit the blast radius
+        </h3>
+        <p class="text-lg leading-relaxed text-base-content/70">
+          Public, frontend, backend, and cluster networks expose only the
+          connections each container needs. The API reaches the router, not the
+          individual database nodes.
+        </p>
+      </div>
+      <div>
+        <h3 class="mb-4 font-display text-2xl font-semibold text-base-content">
+          One command assembles the environment
+        </h3>
+        <p class="text-lg leading-relaxed text-base-content/70">
+          Docker Compose starts the product, supporting services, cluster
+          bootstrap, and routing as a reproducible system rather than a manual
+          list of local dependencies.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section
+    id="outcome"
+    class="overflow-hidden rounded-box bg-primary p-8 text-primary-content shadow-xl md:p-12 lg:p-16"
+    aria-labelledby="outcome-title"
+  >
+    <p class="mb-4 text-xs font-bold uppercase tracking-[0.2em] opacity-70">
+      The outcome
+    </p>
+    <h2 id="outcome-title" class="max-w-4xl font-display text-3xl font-bold leading-tight sm:text-4xl">
+      A complete writing experience and a distributed-systems case study in the same product.
+    </h2>
+    <p class="mt-6 max-w-3xl text-lg leading-relaxed opacity-80">
+      Sin Pluma connects a useful domain, deliberate service boundaries, secure
+      sessions, specialized storage, and automated high availability without
+      asking readers or writers to think in containers.
+    </p>
+  </section>
+</ProjectLayout>

@@ -1,0 +1,286 @@
+---
+import type { ProjectPageConfig } from "@appTypes/project";
+import coverImage from "@assets/thejournal/stock/08.avif";
+import MLScraperFlow from "@components/projects/MLScraperFlow.mdx";
+import Callout from "@components/ui/display/Callout.astro";
+import SectionHeader from "@components/ui/display/SectionHeader.astro";
+import Steps, { type StepItem } from "@components/ui/display/Steps.astro";
+import MermaidDiagramWrapper from "@components/ui/mdx/MermaidDiagramWrapper.astro";
+import ProjectLayout from "@layouts/ProjectLayout.astro";
+
+const project: ProjectPageConfig = {
+  title: "MLScraper",
+  eyebrow: "Commerce Automation · Observability",
+  description:
+    "A multi-source price tracker that turns store jobs into independent provider loops, durable product history, operational health, and useful alerts.",
+  image: coverImage,
+  imageAlt: "Red sale tags and a gift advertising a fifty-percent discount",
+  facts: [
+    { label: "Runtime", value: "FastAPI · asyncio" },
+    { label: "Config", value: "YAML jobs" },
+    { label: "Fetch", value: "HTTP · Playwright" },
+    { label: "Alerts", value: "Telegram" },
+  ],
+  links: {
+    githubUrl: "https://github.com/duranalberto/MLScraper",
+    journalId: "mlscraper",
+  },
+};
+
+const operatingCapabilities = [
+  {
+    title: "Jobs can be checked before they run",
+    description:
+      "Validated YAML becomes provider options, generated URLs, and safe storage paths; a preview command exposes the result without starting every loop.",
+    href: "/thejournal/mlscraper/job_configuration/",
+  },
+  {
+    title: "Store differences stay at the edge",
+    description:
+      "Amazon, Mercado Libre, Liverpool, and Palacio de Hierro own their parsing and URL rules while sharing scheduling and lifecycle contracts.",
+    href: "/thejournal/mlscraper/provider_boundaries/",
+  },
+  {
+    title: "Fetch policy matches the provider",
+    description:
+      "Ordinary pages can use lightweight HTTP while browser-gated sources opt into Playwright, usable-page checks, and explicit block reasons.",
+    href: "/thejournal/mlscraper/fetching_and_backoff/",
+  },
+];
+
+const stateCapabilities = [
+  {
+    label: "History",
+    title: "Changes become product memory",
+    description:
+      "Price and title updates retain their previous values, so a listing becomes a history rather than a disposable scrape result.",
+  },
+  {
+    label: "Lifecycle",
+    title: "Missing does not immediately mean gone",
+    description:
+      "Active, hold, and finished streams distinguish a temporary absence from a listing that has genuinely left the catalog.",
+  },
+  {
+    label: "Safety",
+    title: "Incomplete cycles cannot corrupt state",
+    description:
+      "Reconciliation only runs after a complete scrape, preventing blocked or partial pages from marking valid products as missing.",
+  },
+];
+
+const scrapeSteps: StepItem[] = [
+  { label: "Load job", marker: "1", color: "success" },
+  { label: "Fetch pages", marker: "2", color: "success" },
+  { label: "Parse items", marker: "3", color: "success" },
+  { label: "Reconcile", marker: "4", color: "success" },
+  { label: "Report", marker: "5", color: "success" },
+];
+
+const mermaidComponents = { div: MermaidDiagramWrapper };
+---
+
+<ProjectLayout project={project}>
+  <section id="overview" class="w-full" aria-labelledby="overview-title">
+    <SectionHeader
+      id="overview-title"
+      title="A scraper designed for the days scraping goes wrong"
+    />
+
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12">
+      <div class="flex flex-col gap-5 lg:col-span-7">
+        <p class="text-xl leading-relaxed text-base-content md:text-2xl">
+          Price tracking is not only extracting a number. Stores rate-limit,
+          change markup, gate pages behind browsers, and temporarily remove
+          listings. MLScraper treats those conditions as operational states the
+          service should expose and recover from.
+        </p>
+        <p class="max-w-3xl text-base leading-relaxed text-base-content/70 md:text-lg">
+          Configured jobs become isolated provider loops. Each loop fetches with
+          the right strategy, normalizes products, preserves history, reports
+          health, and emits alerts without forcing provider-specific behavior
+          into the FastAPI shell.
+        </p>
+      </div>
+
+      <Callout
+        variant="information"
+        title="Failure is product state"
+        class="lg:col-span-5"
+      >
+        <p>
+          A process-level green light is not enough. Operators can see blocked
+          jobs, queue pressure, provider errors, cycle timing, and cooldowns
+          before touching a selector.
+        </p>
+      </Callout>
+    </div>
+  </section>
+
+  <section id="runtime" class="w-full" aria-labelledby="runtime-title">
+    <SectionHeader id="runtime-title" title="One service, independent provider loops" />
+    <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
+      FastAPI owns startup and readiness. The scraper runtime owns configuration,
+      concurrency, fetch policy, reconciliation, notification routing, and the
+      long-running schedule.
+    </p>
+    <MLScraperFlow components={mermaidComponents} />
+  </section>
+
+  <section
+    id="provider-design"
+    class="w-full"
+    aria-labelledby="provider-design-title"
+  >
+    <SectionHeader
+      id="provider-design-title"
+      title="Provider complexity stays maintainable"
+    />
+
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      {
+        operatingCapabilities.map((capability) => (
+          <a
+            href={capability.href}
+            class="group rounded-box border border-base-300 bg-base-100 p-6 text-base-content shadow-sm transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          >
+            <h3 class="mb-3 font-display text-xl font-semibold transition-colors group-hover:text-primary">
+              {capability.title}
+            </h3>
+            <p class="mb-5 leading-relaxed text-base-content/70">
+              {capability.description}
+            </p>
+            <span class="text-sm font-bold text-primary">
+              Follow this contract &rarr;
+            </span>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+
+  <section id="resilience" class="w-full" aria-labelledby="resilience-title">
+    <SectionHeader id="resilience-title" title="Backoff protects both the source and the service" />
+
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-center">
+      <div class="lg:col-span-7">
+        <p class="mb-5 text-xl leading-relaxed text-base-content">
+          Network retry and scheduler backoff solve different problems. Fetchers
+          retry short-lived request failures; provider loops slow down after
+          broader failures without freezing unrelated stores.
+        </p>
+        <p class="leading-relaxed text-base-content/70 md:text-lg">
+          Browser mode waits for a page that is actually usable, not merely one
+          that returned HTML. Block signals become health context, and incomplete
+          cycles stop before destructive reconciliation.
+        </p>
+      </div>
+      <Callout variant="note" title="The next file should be obvious" class="lg:col-span-5">
+        <p>
+          Health separates scheduler pressure, provider blocking, and parser
+          failure so maintainers can investigate the correct boundary first.
+        </p>
+      </Callout>
+    </div>
+  </section>
+
+  <section id="product-state" class="w-full" aria-labelledby="product-state-title">
+    <SectionHeader id="product-state-title" title="A listing becomes durable product state" />
+
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+      {
+        stateCapabilities.map((capability) => (
+          <article class="rounded-box border border-base-300 bg-base-200 p-6 text-base-content shadow-sm">
+            <p class="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-primary">
+              {capability.label}
+            </p>
+            <h3 class="mb-3 font-display text-xl font-semibold">{capability.title}</h3>
+            <p class="leading-relaxed text-base-content/70">{capability.description}</p>
+          </article>
+        ))
+      }
+    </div>
+
+    <a
+      href="/thejournal/mlscraper/persistence_and_lifecycle/"
+      class="mt-6 inline-flex font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+    >
+      See how streams preserve product history &rarr;
+    </a>
+  </section>
+
+  <section id="operations" class="w-full" aria-labelledby="operations-title">
+    <SectionHeader id="operations-title" title="Operations are part of the interface" />
+
+    <div class="mb-10 grid grid-cols-1 gap-6 md:grid-cols-2">
+      <div class="rounded-box border border-base-300 bg-base-100 p-7 shadow-sm">
+        <h3 class="mb-4 font-display text-2xl font-semibold text-base-content">
+          Health built for an operator
+        </h3>
+        <p class="leading-relaxed text-base-content/70 md:text-lg">
+          The readiness surface reports provider status, active and queued jobs,
+          block reasons, cycle counts, timing, and recent errors—not just whether
+          the HTTP process answers.
+        </p>
+      </div>
+      <div class="rounded-box border border-base-300 bg-base-100 p-7 shadow-sm">
+        <h3 class="mb-4 font-display text-2xl font-semibold text-base-content">
+          Alerts behind a clean boundary
+        </h3>
+        <p class="leading-relaxed text-base-content/70 md:text-lg">
+          Motors publish normalized change events. Telegram remains optional and
+          only turns meaningful price reductions into messages after the first
+          baseline cycle.
+        </p>
+      </div>
+    </div>
+
+    <a
+      href="/thejournal/mlscraper/runtime_flow/"
+      class="mr-6 inline-flex font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+    >
+      Inspect runtime health &rarr;
+    </a>
+    <a
+      href="/thejournal/mlscraper/operations_and_extension/"
+      class="inline-flex font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+    >
+      Operate and extend the service &rarr;
+    </a>
+  </section>
+
+  <section id="cycle" class="w-full" aria-labelledby="cycle-title">
+    <SectionHeader id="cycle-title" title="The scrape cycle stays legible" />
+    <Steps
+      items={scrapeSteps}
+      aria-label="MLScraper product tracking cycle"
+      class="mb-10 w-full"
+    />
+
+    <Callout variant="information" title="Responsible scraping">
+      <p>
+        Conservative concurrency, visible cooldowns, explicit browser mode, and
+        provider-level backoff reduce unnecessary source pressure. A new store
+        should enter through the existing contracts rather than bypassing those
+        safeguards.
+      </p>
+    </Callout>
+  </section>
+
+  <section
+    id="outcome"
+    class="overflow-hidden rounded-box bg-primary p-8 text-primary-content shadow-xl md:p-12 lg:p-16"
+    aria-labelledby="outcome-title"
+  >
+    <p class="mb-4 text-xs font-bold uppercase tracking-[0.2em] opacity-70">
+      The outcome
+    </p>
+    <h2 id="outcome-title" class="max-w-4xl font-display text-3xl font-bold leading-tight sm:text-4xl">
+      A price tracker that explains when it is working, waiting, blocked, or recovering.
+    </h2>
+    <p class="mt-6 max-w-3xl text-lg leading-relaxed opacity-80">
+      Provider differences remain local, product history remains durable, and
+      operational failures remain visible enough to act on.
+    </p>
+  </section>
+</ProjectLayout>

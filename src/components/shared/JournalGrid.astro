@@ -4,9 +4,10 @@ import JournalCard from "@components/shared/JournalCard.astro";
 
 interface Props {
   catalog: EntryContext[];
+  hrefByEntryId?: Readonly<Record<string, string>>;
 }
 
-const { catalog } = Astro.props;
+const { catalog, hrefByEntryId = {} } = Astro.props;
 ---
 
 <div
@@ -14,6 +15,8 @@ const { catalog } = Astro.props;
 >
   {
     catalog.length > 0 &&
-      catalog.map((entry: EntryContext) => <JournalCard entry={entry} />)
+      catalog.map((entry: EntryContext) => (
+        <JournalCard entry={entry} href={hrefByEntryId[entry.id]} />
+      ))
   }
 </div>

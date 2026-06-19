@@ -67,6 +67,48 @@ async function expectLocatorHorizontallyInViewport(locator: Locator) {
   expect(box!.x + box!.width).toBeLessThanOrEqual(viewport!.width + 1);
 }
 
+async function expectMockupScreenshotNotDraggable(image: Locator) {
+  await image.scrollIntoViewIfNeeded();
+  await expect(image).toBeVisible();
+
+  const interactionStyles = await image.evaluate((element) => {
+    const styles = getComputedStyle(element);
+
+    return {
+      pointerEvents: styles.pointerEvents,
+      userSelect: styles.userSelect,
+      webkitUserDrag: styles.getPropertyValue("-webkit-user-drag"),
+    };
+  });
+
+  expect(interactionStyles).toEqual({
+    pointerEvents: "none",
+    userSelect: "none",
+    webkitUserDrag: "none",
+  });
+
+  await image.evaluate((element) => {
+    element.setAttribute("data-drag-started", "false");
+    element.addEventListener(
+      "dragstart",
+      () => element.setAttribute("data-drag-started", "true"),
+      { once: true },
+    );
+  });
+
+  const box = await image.boundingBox();
+  expect(box).not.toBeNull();
+
+  const startX = box!.x + Math.min(box!.width / 2, 40);
+  const startY = box!.y + Math.min(box!.height / 2, 40);
+  await image.page().mouse.move(startX, startY);
+  await image.page().mouse.down();
+  await image.page().mouse.move(startX + 40, startY + 20, { steps: 8 });
+  await image.page().mouse.up();
+
+  await expect(image).toHaveAttribute("data-drag-started", "false");
+}
+
 async function expectSharedFooterSpacing(page: Page) {
   const main = page.locator("main#main-content");
 
@@ -227,6 +269,171 @@ test("responsive pages avoid horizontal overflow at breakpoint edges", async ({
       );
     }
   }
+});
+
+test("MDX list rows remain semantic, themed, safe, and responsive", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/thejournal/echarts_dummy_gallery/");
+
+  const list = page.getByRole("list", {
+    name: "Publication component inventory",
+  });
+  await expect(list).toBeVisible();
+  await expect(list.getByRole("listitem")).toHaveCount(3);
+
+  const externalAction = list.getByRole("link", {
+    name: "Open the DaisyUI list documentation in a new tab",
+  });
+  await expect(externalAction).toHaveAttribute("target", "_blank");
+  await expect(externalAction).toHaveAttribute("rel", "noopener noreferrer");
+
+  const lightBackground = await list.evaluate(
+    (element) => getComputedStyle(element).backgroundColor,
+  );
+  await page.locator("#theme-toggle-input").check({ force: true });
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect
+    .poll(() =>
+      list.evaluate((element) => getComputedStyle(element).backgroundColor),
+    )
+    .not.toBe(lightBackground);
+
+  await expectNoPageHorizontalOverflow(page);
+  await expectLocatorHorizontallyInViewport(list);
+});
+
+test("publication callouts render semantic variants and rich content", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/thejournal/echarts_dummy_gallery/");
+
+  const callouts = page.locator(".callout-card");
+  await expect(callouts).toHaveCount(5);
+
+  for (const variant of [
+    "note",
+    "information",
+    "warning",
+    "caution",
+    "error",
+  ]) {
+    await expect(
+      page.locator(`[data-callout-variant="${variant}"]`),
+    ).toBeVisible();
+  }
+
+  await expect(
+    page.locator('[data-callout-variant="note"] .callout-title'),
+  ).toHaveText("Notes");
+  await expect(
+    page.locator('[data-callout-variant="information"] .callout-title'),
+  ).toHaveText("Build context");
+  await expect(page.locator('[data-callout-variant="warning"] li')).toHaveCount(
+    3,
+  );
+  await expect(
+    page.locator('[data-callout-variant="error"] pre'),
+  ).toContainText("schema_identifier_too_long");
+
+  const icons = callouts.locator(".callout-icon");
+  await expect(icons).toHaveCount(5);
+  for (const icon of await icons.all()) {
+    await expect(icon).toHaveAttribute("aria-hidden", "true");
+  }
+
+  const customPalette = page.locator('[data-gallery-callout="custom-palette"]');
+  await expect(customPalette).toHaveAttribute(
+    "style",
+    /--callout-icon-surface:/,
+  );
+  await expect(customPalette).toHaveAttribute(
+    "data-callout-variant",
+    "caution",
+  );
+  await expect(customPalette.locator(".callout-title")).toHaveText(
+    "Custom editorial checkpoint",
+  );
+
+  const lightBackground = await customPalette.evaluate(
+    (element) => getComputedStyle(element).backgroundColor,
+  );
+  await page.locator("#theme-toggle-input").check({ force: true });
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect
+    .poll(() =>
+      customPalette.evaluate(
+        (element) => getComputedStyle(element).backgroundColor,
+      ),
+    )
+    .not.toBe(lightBackground);
+
+  await expectNoPageHorizontalOverflow(page);
+  for (const callout of await callouts.all()) {
+    await expectLocatorHorizontallyInViewport(callout);
+  }
+});
+
+test("publication mockups render browser chrome and keep screenshots static", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/thejournal/echarts_dummy_gallery/");
+
+  const browserScreenshot = page.locator(
+    'figure[aria-label="Production publication browser screenshot"]',
+  );
+  await expect(browserScreenshot).toBeVisible();
+  await expect(browserScreenshot).toContainText(
+    "https://albertoduran.com/thejournal/sin_pluma/",
+  );
+  await expect(browserScreenshot.locator("figcaption")).toContainText(
+    "production-style route",
+  );
+
+  const customBrowser = page.locator(
+    'figure[aria-label="Local publication preview browser state"]',
+  );
+  await expect(customBrowser).toContainText("Preview");
+  await expect(customBrowser).toContainText(
+    "localhost:4321/thejournal/component-gallery",
+  );
+  await customBrowser.locator("[data-browser-demo-control]").click({
+    trial: true,
+  });
+
+  const lightBackground = await customBrowser
+    .locator(".mockup-browser-content")
+    .evaluate((element) => getComputedStyle(element).backgroundColor);
+  await page.locator("#theme-toggle-input").check({ force: true });
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect
+    .poll(() =>
+      customBrowser
+        .locator(".mockup-browser-content")
+        .evaluate((element) => getComputedStyle(element).backgroundColor),
+    )
+    .not.toBe(lightBackground);
+
+  await expectMockupScreenshotNotDraggable(
+    browserScreenshot.locator(".mockup-browser-content > img"),
+  );
+  await expectMockupScreenshotNotDraggable(
+    page
+      .locator('figure[aria-label="Mobile publication screenshot"]')
+      .locator(".mockup-phone-display > img"),
+  );
+  await expectMockupScreenshotNotDraggable(
+    page
+      .locator('figure[aria-labelledby="gallery-window-preview-title"]')
+      .locator(".mockup-window-body > img"),
+  );
+
+  await expectNoPageHorizontalOverflow(page);
+  await expectLocatorHorizontallyInViewport(browserScreenshot);
+  await expectLocatorHorizontallyInViewport(customBrowser);
 });
 
 test("home hero waits for wide desktop before showing the side panel", async ({

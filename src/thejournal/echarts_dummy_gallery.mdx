@@ -1,14 +1,20 @@
 ---
-title: "ECharts dummy gallery"
-description: "A draft-only MDX publication that renders every local ECharts chart pattern for static SVG, SVG artifact, and enhancement testing."
+title: "MDX component dummy gallery"
+description: "A draft-only MDX gallery for testing ECharts and reusable Callout, Chat, List, Steps, MockupBrowser, MockupPhone, and MockupWindow components across themes and layouts."
 image: "../assets/thejournal/stock/09.avif"
-tags: ["charts", "mdx", "testing"]
+tags: ["charts", "components", "daisyui", "mdx", "testing"]
 pubDate: 2026-06-18
 author: "Alberto Duran"
 order: 999
-draft: true
 ---
 
+import Callout from "@components/ui/display/Callout.astro";
+import ChatBubble from "@components/ui/display/ChatBubble.astro";
+import List from "@components/ui/display/List.astro";
+import MockupBrowser from "@components/ui/display/MockupBrowser.astro";
+import MockupPhone from "@components/ui/display/MockupPhone.astro";
+import MockupWindow from "@components/ui/display/MockupWindow.astro";
+import Steps from "@components/ui/display/Steps.astro";
 import EChart from "@components/ui/mdx/EChart.astro";
 import {
   barChartOption,
@@ -29,6 +35,12 @@ import {
   scatterChartOption,
   treemapChartOption,
 } from "@integrations/echarts/options";
+import { Image } from "astro:assets";
+import windowPreview from "../assets/thejournal/pub/sinpluma_03.png";
+import mobilePreview from "../assets/thejournal/pub/sinpluma_08.png";
+import chatAvatar from "../assets/thejournal/stock/01.avif";
+import platformAvatar from "../assets/thejournal/stock/02.avif";
+import editorialAvatar from "../assets/thejournal/stock/03.avif";
 
 export const lineOption = lineChartOption({
   title: "Monthly visitors",
@@ -516,7 +528,478 @@ export const ohlcOption = ohlcChartOption({
   data: financeData.slice(0, 12),
 });
 
-This draft is a local chart bench for the MDX ECharts component. It keeps one example of each supported chart pattern in a real journal publication so article layout, build-time SVG render, no-script behavior, external SVG artifacts, and optional browser enhancement can be checked together.
+export const galleryCalloutIcon = {
+  text: "",
+  viewBox: "0 0 24 24",
+  content: '<path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="9"/>',
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 2,
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+};
+
+This draft is a local rendering bench for the MDX components available to journal authors. It puts callouts, chat messages, information-rich lists, browser and device mockups, progress steps, and every supported ECharts pattern inside a real publication, where theme changes, narrow layouts, static builds, asset optimization, and optional browser enhancement can all be checked together.
+
+---
+
+## Publication display components
+
+These examples exercise the reusable DaisyUI wrappers with different slot combinations, colors, alignments, and content densities. They stay static on purpose, since the components provide publication structure and leave application state or interaction to their consumers.
+
+### Callout cards
+
+The five cards cover every semantic variant, default and custom titles, a
+custom icon, a fully overridden theme-aware palette, and rich MDX content. The
+long error detail and code sample also stress narrow layouts.
+
+<Callout variant="note" aria-label="General publication notes">
+  <p>
+    This gallery uses fixture data. Visit the
+    <a href="#standard-article-charts">standard chart examples</a> for the
+    ordinary static rendering patterns.
+  </p>
+</Callout>
+
+<Callout
+  variant="information"
+  title="Build context"
+  icon={galleryCalloutIcon}
+  data-gallery-callout="custom-icon"
+>
+  <p>
+    The command <code>npm run build:test</code> enables deterministic Mermaid
+    rendering while keeping the publication output representative.
+  </p>
+</Callout>
+
+<Callout variant="warning" title="Before publishing">
+  <ul>
+    <li>Confirm the frontmatter image and publication date.</li>
+    <li>Check the page in both themes and at a narrow viewport.</li>
+    <li>Keep every visual tied to a point in the surrounding prose.</li>
+  </ul>
+</Callout>
+
+<Callout
+  variant="caution"
+  title="Custom editorial checkpoint"
+  data-gallery-callout="custom-palette"
+  palette={{
+    accent: "var(--color-accent)",
+    surface:
+      "color-mix(in oklab, var(--color-accent) 12%, var(--color-base-100))",
+    border:
+      "color-mix(in oklab, var(--color-accent) 45%, var(--color-base-300))",
+    title: "var(--color-base-content)",
+    content: "var(--color-base-content)",
+    icon: "var(--color-accent)",
+    iconSurface:
+      "color-mix(in oklab, var(--color-accent) 20%, var(--color-base-100))",
+  }}
+>
+  Palette overrides replace every color region while the card remains a caution
+  and keeps its default caution icon.
+</Callout>
+
+<Callout variant="error" title="Provider import failed">
+  <p>
+    The provider rejected the payload because the schema identifier exceeded the
+    supported length. Shorten the identifier, regenerate the fixture, and retry
+    the import without discarding the original response body.
+  </p>
+  <pre className="whitespace-pre-wrap rounded-box bg-neutral p-3 text-sm text-neutral-content">
+    <code>{`HTTP 422
+code: schema_identifier_too_long`}</code>
+  </pre>
+</Callout>
+
+### Chat bubbles
+
+The first group covers an avatar message, an aligned reply, and a standalone system state. Together they test every optional region while keeping the message content readable in both site themes.
+
+<div className="my-8 space-y-4" aria-label="Chat bubble component examples">
+  <ChatBubble aria-labelledby="gallery-reviewer-name">
+    <Image
+      slot="image"
+      src={chatAvatar}
+      alt=""
+      width={80}
+      height={80}
+      loading="lazy"
+    />
+    <strong id="gallery-reviewer-name" slot="header">Reviewer</strong>
+    The retry explanation is clear now. Add the provider response code to the
+    example so the failure path is easier to recognize.
+    <time slot="footer" datetime="2026-06-19T09:14:00Z">09:14 UTC</time>
+  </ChatBubble>
+
+<ChatBubble
+  align="end"
+  color="primary"
+  aria-labelledby="gallery-maintainer-name"
+  bubbleClass="shadow-lg"
+>
+  <strong id="gallery-maintainer-name" slot="header">
+    Maintainer
+  </strong>
+  Good catch. The example now includes the 429 response and the retry hint.
+  <span slot="footer">Delivered</span>
+</ChatBubble>
+
+  <ChatBubble
+    color="warning"
+    aria-label="Message from deployment monitor"
+    bubbleClass="font-mono"
+  >
+    <strong slot="header">Deployment monitor</strong>
+    Preview health check is taking longer than expected.
+    <span slot="footer">Attempt 2 of 3</span>
+  </ChatBubble>
+</div>
+
+### Phone mockups
+
+The phone pair compares a direct image child with a fully composed interface. The screenshot checks Astro image output and device cropping, while the offline state checks theme tokens and consumer-owned screen layout.
+
+<div className="my-8 grid items-start justify-items-center gap-10 xl:grid-cols-2">
+  <MockupPhone
+    aria-label="Mobile publication screenshot"
+    class="my-0 max-w-sm"
+    phoneClass="shadow-2xl"
+  >
+    <Image
+      src={mobilePreview}
+      alt="Mobile publication preview with a navigation panel and article content"
+      widths={[320, 462]}
+      sizes="(max-width: 462px) 100vw, 462px"
+      loading="lazy"
+    />
+    <span slot="caption">Direct image content with the native phone crop.</span>
+  </MockupPhone>
+
+  <MockupPhone
+    aria-label="Mobile offline application state"
+    class="my-0 max-w-sm"
+    displayClass="bg-base-200"
+    captionClass="text-warning"
+  >
+    <div className="grid h-full place-items-center p-8 text-center">
+      <div>
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-warning">
+          Offline
+        </p>
+        <p className="mt-4 text-lg leading-relaxed text-base-content">
+          Your changes are stored locally and will sync when the connection
+          returns.
+        </p>
+      </div>
+    </div>
+    <span slot="caption">Composed screen content using semantic theme colors.</span>
+  </MockupPhone>
+</div>
+
+### Browser mockups
+
+The first browser example gives an optimized screenshot meaningful route
+context. The second replaces the generated address display with a compact
+preview toolbar and composes a theme-aware page state with an ordinary link.
+
+<MockupBrowser
+  url="https://albertoduran.com/thejournal/sin_pluma/"
+  aria-label="Production publication browser screenshot"
+  browserClass="shadow-2xl"
+  contentClass="p-0"
+>
+  <Image
+    src={windowPreview}
+    alt="Desktop publication interface with navigation and article content"
+    widths={[640, 960, 1280]}
+    sizes="(max-width: 1024px) 100vw, 960px"
+    loading="lazy"
+  />
+  <span slot="caption">
+    The publication screenshot at its production-style route.
+  </span>
+</MockupBrowser>
+
+<MockupBrowser
+  aria-label="Local publication preview browser state"
+  class="mx-auto max-w-4xl"
+  browserClass="shadow-xl"
+>
+  <div slot="toolbar" className="flex min-w-0 items-center gap-2">
+    <span className="badge badge-warning badge-sm">Preview</span>
+    <span className="truncate font-mono text-xs text-base-content/70">
+      localhost:4321/thejournal/component-gallery
+    </span>
+  </div>
+
+  <div className="grid min-h-64 place-items-center bg-base-200 p-8 text-center">
+    <div>
+      <p className="text-xs font-bold uppercase tracking-[0.2em] text-info">
+        Local build
+      </p>
+      <strong className="mt-3 block text-2xl text-base-content">
+        Publication preview ready
+      </strong>
+      <p className="mt-3 max-w-md text-sm leading-relaxed text-base-content/70">
+        The custom toolbar adds environment context without pretending to be an
+        editable browser address bar.
+      </p>
+      <a
+        href="#publication-display-components"
+        data-browser-demo-control
+        className="btn btn-primary btn-sm mt-5"
+      >
+        Review components
+      </a>
+    </div>
+  </div>
+  <span slot="caption">
+    Composed browser content keeps its links and controls interactive.
+  </span>
+</MockupBrowser>
+
+### Window mockups
+
+The window examples use the same frame for a visual application preview and a compact command result. This checks named slots, surface overrides, width constraints, captions, and long-content wrapping without pretending the frame is a full browser.
+
+<MockupWindow
+  aria-labelledby="gallery-window-preview-title"
+  windowClass="shadow-2xl"
+  bodyClass="p-0"
+>
+  <strong id="gallery-window-preview-title" slot="header">
+    Publication preview
+  </strong>
+  <Image
+    src={windowPreview}
+    alt="Desktop publication interface with navigation and article content"
+    widths={[640, 960, 1280]}
+    sizes="(max-width: 1024px) 100vw, 960px"
+    loading="lazy"
+  />
+  <span slot="caption">Image content inside the default themed window.</span>
+</MockupWindow>
+
+<MockupWindow
+  aria-label="Migration command result"
+  class="mx-auto max-w-3xl"
+  windowClass="shadow-xl"
+  contentClass="bg-neutral text-neutral-content"
+  headerClass="font-mono"
+  bodyClass="font-mono text-sm"
+  captionClass="font-mono"
+>
+  <span slot="header">migration.log</span>
+  <div className="whitespace-pre-line">{`✓ schema checked
+✓ 18 migrations applied
+✓ database ready`}</div>
+  <span slot="caption">
+    Compact terminal-style output with region overrides.
+  </span>
+</MockupWindow>
+
+### Information lists
+
+These examples frame the list as four publication patterns rather than a
+generic menu: component resources, release artifacts, service ownership, and a
+decision register. Together they cover local image media, text markers, wrapped
+descriptions, semantic statuses, actions, and deliberately sparse rows.
+
+#### Component resources
+
+Use this shape when each reference needs a short explanation or status that
+would make an ordinary Markdown link list too thin. The long description also
+acts as a narrow-layout stress case.
+
+<List
+  aria-label="Publication component inventory"
+  class="my-8 shadow-sm"
+  items={[
+    {
+      title: "Visual review fixture",
+      subtitle: "Local Astro image media",
+      description:
+        "Exercises optimized media, theme surfaces, status placement, and an internal publication link.",
+      media: { kind: "image", src: chatAvatar, alt: "Abstract review fixture" },
+      status: { label: "Ready", color: "success" },
+      action: { label: "Journal", href: "/thejournal/" },
+    },
+    {
+      title: "DaisyUI list contract",
+      subtitle: "External component reference",
+      description:
+        "Documents the row grid, growing content column, and wrapped description modifier used by this Astro component.",
+      media: { kind: "marker", label: "02" },
+      status: { label: "Reference", color: "info" },
+      action: {
+        label: "Open docs",
+        href: "https://daisyui.com/components/list/",
+        external: true,
+        ariaLabel: "Open the DaisyUI list documentation in a new tab",
+      },
+    },
+    {
+      title: "Editorial decision record",
+      subtitle: "Text-only row with no action",
+      description:
+        "Confirms that optional media, status, and action regions collapse without leaving empty grid columns.",
+    },
+  ]}
+/>
+
+#### Release artifacts and status
+
+An artifact inventory gives readers a compact snapshot of what a release
+produced and which outputs still need attention. Numbered markers make the rows
+easy to reference from the surrounding prose without implying live progress.
+
+<List
+  aria-label="Release artifact inventory"
+  class="my-8"
+  itemClass="bg-base-100"
+  items={[
+    {
+      title: "Static HTML bundle",
+      subtitle: "dist/ · 71 generated pages",
+      description:
+        "Contains the publication routes, optimized metadata, and no-JavaScript chart fallbacks.",
+      media: { kind: "marker", label: "01" },
+      status: { label: "Verified", color: "success" },
+      action: { label: "Browse", href: "/thejournal/" },
+    },
+    {
+      title: "Accessibility report",
+      subtitle: "Automated checks plus manual review",
+      description:
+        "Keyboard navigation and narrow-layout checks passed; contrast findings are awaiting editorial review.",
+      media: { kind: "marker", label: "02" },
+      status: { label: "Review", color: "warning" },
+    },
+    {
+      title: "Deployment manifest",
+      subtitle: "Immutable asset and route inventory",
+      media: { kind: "marker", label: "03" },
+      status: { label: "Generated", color: "info" },
+    },
+  ]}
+/>
+
+#### Service ownership
+
+Image-led rows work well for people, teams, projects, or services whose visual
+identity helps the reader scan ownership. The image alt text names what the
+image represents, while the status remains readable without relying on color.
+
+<List
+  aria-label="Publication service ownership"
+  class="my-8 shadow-sm"
+  items={[
+    {
+      title: "Rendering platform",
+      subtitle: "Static output and asset optimization",
+      description:
+        "Owns MDX compilation, image generation, Mermaid assets, and the final HTML build.",
+      media: {
+        kind: "image",
+        src: platformAvatar,
+        alt: "Rendering platform service artwork",
+      },
+      status: { label: "Healthy", color: "success" },
+      action: { label: "Architecture", href: "/thejournal/ai_ops_agent/" },
+    },
+    {
+      title: "Editorial review",
+      subtitle: "Content quality and publication policy",
+      description:
+        "Checks reader value, frontmatter, accessibility context, and whether each visual earns its place.",
+      media: {
+        kind: "image",
+        src: editorialAvatar,
+        alt: "Editorial review team artwork",
+      },
+      status: { label: "Available", color: "primary" },
+    },
+  ]}
+/>
+
+#### Decision register
+
+A decision summary can remain text-focused when imagery would be decorative.
+Badges expose the disposition, while descriptions preserve enough rationale for
+the list to stand on its own before the article expands each choice.
+
+<List
+  aria-label="Publication architecture decisions"
+  class="my-8"
+  items={[
+    {
+      title: "Render useful content without JavaScript",
+      subtitle: "ADR-001 · Rendering baseline",
+      description:
+        "Static HTML, SVG, and optimized images remain the default; browser behavior is an optional enhancement.",
+      status: { label: "Accepted", color: "accent" },
+    },
+    {
+      title: "Keep list actions link-only",
+      subtitle: "ADR-002 · Component scope",
+      description:
+        "Interactive buttons, menus, and selection state stay in purpose-built application components.",
+      status: { label: "Accepted", color: "accent" },
+    },
+    {
+      title: "Evaluate remote image support",
+      subtitle: "ADR-003 · Media inputs",
+      description:
+        "The first version accepts local Astro image metadata while remote sizing and policy remain unresolved.",
+      status: { label: "Deferred", color: "neutral" },
+    },
+  ]}
+/>
+
+### Progress steps
+
+The progress group covers responsive progress, a vertical warning state, and a horizontal descriptive sequence. It checks current-step coloring, per-item overrides, custom markers, and the uncolored state used for neutral process descriptions.
+
+<Steps
+  aria-label="Release progress"
+  currentStep={3}
+  activeColor="success"
+  items={[
+    { label: "Build", marker: "✓" },
+    { label: "Test", marker: "✓" },
+    { label: "Deploy", marker: "3" },
+    { label: "Verify", marker: "4" },
+  ]}
+/>
+
+<Steps
+  aria-label="Incident response progress"
+  orientation="vertical"
+  currentStep={2}
+  itemClass="font-medium"
+  class="my-8"
+  items={[
+    { label: "Alert acknowledged" },
+    { label: "Impact under investigation", color: "warning", marker: "!" },
+    { label: "Mitigation applied" },
+    { label: "Post-incident review" },
+  ]}
+/>
+
+<Steps
+  aria-label="Publication stages without a current position"
+  orientation="horizontal"
+  class="my-8"
+  items={[
+    { label: "Research", marker: "R", color: "info" },
+    { label: "Draft", marker: "D", color: "secondary" },
+    { label: "Review", marker: "V", color: "accent" },
+    { label: "Publish", marker: "P" },
+  ]}
+/>
 
 ---
 

@@ -23,7 +23,8 @@
   themes: light, dark;
   include:
     "button", "card", "navbar", "swap", "badge", "menu", "dropdown", "timeline",
-    "mockup", "footer", "modal", "join", "alert", "link", "table", "textrotate";
+    "mockup", "steps", "chat", "list", "footer", "modal", "join", "alert",
+    "link", "table", "input", "textrotate";
 }
 
 /* ─── 3. THEME TOKENS ──────────────────────────────────── */
@@ -51,6 +52,14 @@
 
 /* ─── 8. UI ──────────────────────────────────────────────── */
 @import "./ui/display/_strip-background.css";
+@import "./ui/display/_mockup-window.css";
+@import "./ui/display/_mockup-phone.css";
+@import "./ui/display/_mockup-browser.css";
+@import "./ui/display/_mockup-media.css";
+@import "./ui/display/_steps.css";
+@import "./ui/display/_chat.css";
+@import "./ui/display/_list.css";
+@import "./ui/display/_callout.css";
 @import "./ui/primitive/_panel.css";
 @import "./ui/mdx/_heading-anchor.css";
 @import "./ui/mdx/_code-block.css";

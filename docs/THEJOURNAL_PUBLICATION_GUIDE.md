@@ -149,6 +149,398 @@ This section only defines project-specific authoring rules for `src/thejournal/`
   `src/content/processors/`, follow the project-specific rule here and update
   the reusable skill only if the change remains project-agnostic.
 
+## Publication UI Components
+
+Journal authors may opt into `Callout`, `ChatBubble`, `List`, `MockupBrowser`,
+`MockupPhone`, `MockupWindow`, and `Steps` when a publication needs a
+recognizable interface pattern that ordinary Markdown cannot express clearly.
+These components are presentation tools, not decoration. Introduce each
+component in the surrounding prose and explain what the reader should notice.
+
+Import only the components used by the publication after its frontmatter.
+
+```mdx
+import Callout from "@components/ui/display/Callout.astro";
+import ChatBubble from "@components/ui/display/ChatBubble.astro";
+import List from "@components/ui/display/List.astro";
+import MockupBrowser from "@components/ui/display/MockupBrowser.astro";
+import MockupPhone from "@components/ui/display/MockupPhone.astro";
+import MockupWindow from "@components/ui/display/MockupWindow.astro";
+import Steps from "@components/ui/display/Steps.astro";
+```
+
+All seven components apply `not-prose`. Content placed inside them therefore
+needs its own spacing and typography classes. They render static HTML and do not
+add client-side state, navigation, message streaming, or application behavior.
+
+| Publication needs to show                             | Use             | Good fit                                                               | Prefer another format when                                |
+| :---------------------------------------------------- | :-------------- | :--------------------------------------------------------------------- | :-------------------------------------------------------- |
+| Supporting context, risk, caution, or failure detail  | `Callout`       | Important fact, prerequisite, risky action, irreversible consequence   | The information belongs in ordinary prose or changes live |
+| A short exchange or message state                     | `ChatBubble`    | Support dialogue, agent response, review feedback, system message      | The text is a quotation from prose; use a blockquote      |
+| An information-rich collection of peer items          | `List`          | Resources, artifacts, decisions, services, people, status inventory    | The items are simple bullets or require exact comparison  |
+| A web page where its route or browser context matters | `MockupBrowser` | Hosted report, route-specific UI, browser-visible error, local preview | Browser chrome or a URL adds no explanatory value         |
+| A mobile interface or narrow-screen screenshot        | `MockupPhone`   | App screen, responsive UI, mobile workflow result                      | Device framing adds no meaning; use a normal image        |
+| A generic desktop application or bounded output       | `MockupWindow`  | Dashboard, generated report, application surface, command result       | A visible browser route is part of the explanation        |
+| A linear sequence or current progress state           | `Steps`         | Release stages, onboarding, migration progress, branch-free checklist  | The flow branches, loops, or has handoffs; use Mermaid    |
+
+Use the dedicated component guides for complete props, slots, styling hooks,
+and accessibility contracts:
+
+- `docs/CALLOUT.md`
+- `docs/CHAT.md`
+- `docs/LIST.md`
+- `docs/MOCKUP_BROWSER.md`
+- `docs/MOCKUP_PHONE.md`
+- `docs/MOCKUP_WINDOW.md`
+- `docs/STEPS.md`
+
+### Callout Use Cases
+
+Use `Callout` for supporting information readers could reasonably miss while
+scanning: prerequisites, interpretation notes, risky operations, irreversible
+consequences, and visible failure explanations. The variant provides a default
+title and icon; a custom title adds specificity without changing its severity.
+
+```mdx
+<Callout variant="information" title="Build context">
+  The generated report uses fixture data and should not be treated as a live
+  production result.
+</Callout>
+
+<Callout variant="warning" title="Before deploying">
+  <ul>
+    <li>Confirm the target environment.</li>
+    <li>Keep the previous artifact available for rollback.</li>
+  </ul>
+</Callout>
+```
+
+Use `caution` when an action may be destructive or difficult to reverse, and
+`error` when explaining a known failure state or failed outcome. These are
+static publication notes, not live alerts.
+
+```mdx
+<Callout variant="caution" title="Irreversible migration">
+  Applying this migration removes legacy identifiers. Take a verified backup
+  before continuing.
+</Callout>
+
+<Callout variant="error" title="Import failed">
+  The provider rejected the file because its schema version is unsupported.
+</Callout>
+```
+
+Use ordinary prose when the information belongs in the main reading flow and a
+blockquote when reproducing someone else's words. Live validation, changing
+status, toast messages, and dismissible alerts belong to application feedback
+components with appropriate announcement behavior.
+
+### Chat Bubble Use Cases
+
+Use `ChatBubble` when the identity, direction, or delivery state of a message is
+part of the explanation. A pair of aligned bubbles can reconstruct a concise
+conversation without presenting a full chat application.
+
+```mdx
+<div className="my-8 space-y-3" aria-label="Review conversation">
+  <ChatBubble align="start" aria-label="Message from reviewer">
+    <strong slot="header">Reviewer</strong>
+    Why does this request retry after a 429 response?
+    <time slot="footer" datetime="2026-06-19T09:14:00Z">09:14 UTC</time>
+  </ChatBubble>
+
+  <ChatBubble
+    align="end"
+    color="primary"
+    aria-label="Reply from maintainer"
+  >
+    <strong slot="header">Maintainer</strong>
+    The provider's retry hint takes precedence over local backoff.
+    <span slot="footer">Resolved</span>
+  </ChatBubble>
+</div>
+```
+
+A single semantic bubble works well for a service or build message. It should
+still have a visible sender and an accessible label.
+
+```mdx
+<ChatBubble
+  color="success"
+  aria-labelledby="build-service-name"
+  bubbleClass="font-mono"
+>
+  <strong id="build-service-name" slot="header">
+    Build service
+  </strong>
+  70 pages generated successfully.
+  <span slot="footer">Completed in 1m 37s</span>
+</ChatBubble>
+```
+
+Do not use chat bubbles for long interviews, ordinary quotations, or every
+paragraph in a conversational article. Keep exchanges short enough that message
+alignment remains easy to scan. Live chat behavior and announcements belong to
+a separate conversation container, not to individual bubbles.
+
+### List Use Cases
+
+Use `List` when a publication needs to scan several peer items that each carry
+more context than a normal bullet: for example release artifacts, services and
+owners, architectural decisions, people, useful resources, or a status
+inventory. Introduce what the collection represents in the surrounding prose.
+
+```mdx
+<List
+  aria-label="Release artifacts"
+  class="my-8 shadow-sm"
+  items={[
+    {
+      title: "Static site bundle",
+      subtitle: "dist/ · 4.8 MB",
+      description: "HTML, CSS, client enhancements, and optimized images.",
+      media: { kind: "marker", label: "01" },
+      status: { label: "Verified", color: "success" },
+      action: { label: "Build notes", href: "/thejournal/build-output/" },
+    },
+    {
+      title: "Accessibility report",
+      subtitle: "Automated and manual checks",
+      media: { kind: "marker", label: "02" },
+      status: { label: "Review", color: "warning" },
+    },
+  ]}
+/>
+```
+
+Local images can identify people, projects, or services when the visual makes
+the rows easier to recognize. Import the asset through Astro and include useful
+alternative text unless the image repeats the title exactly.
+
+```mdx
+import maintainerPhoto from "@assets/thejournal/example/maintainer.png";
+
+<List
+  aria-label="Service ownership"
+  items={[
+    {
+      title: "Publication pipeline",
+      subtitle: "Maintained by the editorial platform team",
+      description: "Owns content validation, route generation, and manifests.",
+      media: {
+        kind: "image",
+        src: maintainerPhoto,
+        alt: "Editorial platform team",
+      },
+      status: { label: "Active", color: "info" },
+      action: {
+        label: "Reference",
+        href: "https://example.com/platform",
+        external: true,
+        ariaLabel: "Open the platform reference in a new tab",
+      },
+    },
+  ]}
+/>
+```
+
+Use ordinary Markdown for short bullets, a table when readers must compare
+exact fields across columns, `Steps` when order or current progress matters, and
+Mermaid when items connect through dependencies, branches, or handoffs. The
+component supports one link action per row; application controls and action
+toolbars belong in a purpose-built interface.
+
+### Mockup Phone Use Cases
+
+Use `MockupPhone` when the device-shaped viewport helps readers understand a
+mobile layout, crop, or responsive behavior. For a real screenshot, import the
+asset through Astro and let the image remain the direct child of the display.
+
+```mdx
+import { Image } from "astro:assets";
+import mobileDashboard from "@assets/thejournal/example/mobile-dashboard.png";
+
+<MockupPhone aria-label="Mobile dashboard screenshot">
+  <Image
+    src={mobileDashboard}
+    alt="Mobile dashboard showing weekly activity and two unread alerts"
+    widths={[320, 462]}
+    sizes="(max-width: 462px) 100vw, 462px"
+  />
+  <span slot="caption">The dashboard at the narrow mobile layout.</span>
+</MockupPhone>
+```
+
+The display slot can also demonstrate a simplified, theme-aware UI state
+without adding an image.
+
+```mdx
+<MockupPhone
+  aria-label="Mobile offline state"
+  displayClass="bg-base-200"
+  phoneClass="shadow-2xl"
+>
+  <div className="grid h-full place-items-center p-8 text-center">
+    <div>
+      <p className="text-sm font-semibold uppercase tracking-widest text-warning">
+        Offline
+      </p>
+      <p className="mt-3 text-lg text-base-content">
+        Saved changes will sync when the connection returns.
+      </p>
+    </div>
+  </div>
+  <span slot="caption">The application preserves work during an outage.</span>
+</MockupPhone>
+```
+
+Do not add a phone frame to every portrait image. Use a normal responsive image
+when the device boundary, camera notch, and viewport ratio do not help the
+reader understand the interface.
+
+### Mockup Browser Use Cases
+
+Use `MockupBrowser` when the visible route, hosted origin, or browser context is
+part of what the reader must understand. Good examples include a route-specific
+UI, hosted report, authentication redirect, browser-visible failure, or local
+preview. Use `MockupWindow` when the same content only needs a desktop boundary.
+
+```mdx
+import { Image } from "astro:assets";
+import valuationScreenshot from "@assets/thejournal/example/valuation.png";
+
+<MockupBrowser
+  url="https://reports.example.com/valuation/ACME"
+  aria-label="Hosted valuation report"
+  browserClass="shadow-2xl"
+>
+  <Image
+    src={valuationScreenshot}
+    alt="Valuation report showing an estimated fair value of 184 dollars"
+    widths={[640, 960, 1280]}
+    sizes="(max-width: 1024px) 100vw, 960px"
+  />
+  <span slot="caption">
+    The generated report at its shareable production route.
+  </span>
+</MockupBrowser>
+```
+
+Use the custom toolbar for environmental context that a single URL cannot
+express clearly. Keep it compact; it is explanatory chrome rather than a real
+browser control surface.
+
+```mdx
+<MockupBrowser aria-label="Local report preview">
+  <div slot="toolbar" className="flex min-w-0 items-center gap-2">
+    <span className="badge badge-warning">Preview</span>
+    <span className="truncate font-mono text-sm">
+      localhost:4321/reports/ACME
+    </span>
+  </div>
+
+  <div className="grid min-h-64 place-items-center bg-base-200 p-8">
+    Report preview ready
+  </div>
+</MockupBrowser>
+```
+
+Direct screenshots in browser, phone, and window mockups are intentionally
+non-draggable. Images nested inside composed interfaces keep their normal
+pointer behavior so links and controls remain usable. Do not present the static
+address display as navigation or an editable field.
+
+### Mockup Window Use Cases
+
+Use `MockupWindow` for desktop application states, generated reports, or visual
+output that benefits from a clear boundary but does not need browser chrome.
+The optional header should name the surface rather than imitate a browser
+toolbar; switch to `MockupBrowser` when the route or hosted origin matters.
+
+```mdx
+<MockupWindow
+  aria-labelledby="valuation-preview-title"
+  windowClass="shadow-2xl"
+  bodyClass="grid min-h-72 place-items-center"
+>
+  <strong id="valuation-preview-title" slot="header">Valuation summary</strong>
+
+<div className="grid gap-2 text-center">
+  <span className="text-sm text-base-content/70">Estimated fair value</span>
+  <strong className="text-4xl text-success">$184.20</strong>
+</div>
+
+  <span slot="caption">The summary surface after a successful model run.</span>
+</MockupWindow>
+```
+
+Class hooks can turn the same frame into a compact status or terminal-like
+result while preserving the shared window structure.
+
+```mdx
+<MockupWindow
+  aria-label="Migration command result"
+  class="mx-auto max-w-3xl"
+  contentClass="bg-neutral text-neutral-content"
+  headerClass="font-mono"
+  bodyClass="font-mono text-sm"
+>
+  <span slot="header">migration.log</span>
+  <pre className="m-0 whitespace-pre-wrap bg-transparent p-0 text-inherit">
+    {`✓ schema checked
+✓ 18 migrations applied
+✓ database ready`}
+  </pre>
+</MockupWindow>
+```
+
+Use the existing fenced-code renderer for source code readers need to copy or
+study. A mockup window is appropriate when the rendered result or application
+context is the point.
+
+### Steps Use Cases
+
+Use `Steps` for a linear, branch-free sequence or a snapshot of current
+progress. `currentStep` is 1-based and colors the path through the current item.
+
+```mdx
+<Steps
+  aria-label="Release progress"
+  currentStep={3}
+  activeColor="success"
+  items={[
+    { label: "Build", marker: "✓" },
+    { label: "Test", marker: "✓" },
+    { label: "Deploy", marker: "3" },
+    { label: "Verify", marker: "4" },
+  ]}
+/>
+```
+
+Use vertical orientation for longer labels or procedure-like content. An item
+color can override the active path when a stage needs a distinct status.
+
+```mdx
+<Steps
+  aria-label="Incident response stages"
+  orientation="vertical"
+  currentStep={2}
+  activeColor="primary"
+  itemClass="font-medium"
+  items={[
+    { label: "Alert acknowledged" },
+    { label: "Impact under investigation", color: "warning", marker: "!" },
+    { label: "Mitigation applied" },
+    { label: "Post-incident review" },
+  ]}
+/>
+```
+
+Omit `currentStep` when the publication is describing stages rather than a live
+position; explicit item colors can still communicate known outcomes. Use
+Mermaid instead when the reader needs to follow decisions, retries, loops,
+parallel work, or ownership handoffs.
+
 ## Visual Selection Guide
 
 Choose Mermaid when the visual explains structure: order, ownership,

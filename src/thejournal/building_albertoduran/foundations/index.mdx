@@ -1,7 +1,6 @@
 ---
 title: "Foundation map"
 description: "A short guide to the repository shape, local development environment, and Cloudflare deployment target behind albertoduran.com."
-author: "Alberto Duran"
 tags: ["architecture", "astro", "cloudflare"]
 pubDate: 2026-06-17
 order: 10
@@ -17,7 +16,7 @@ The foundation pages connect the high-level architecture to concrete files. They
 
 - `project_architecture` walks through the repository, route surface, and shared Astro document shell.
 - `devcontainer` explains the Node 22 VS Code environment and local workflow defaults.
-- `cloudflare_deployment` explains why the production artifact is a static `dist/` directory served by Workers Assets.
+- `cloudflare_deployment` explains why the production artifact is a static `dist/` directory served by Workers Static Assets.
 
 The foundation layer is intentionally small. It answers three questions that keep coming back through the rest of the site. Where does this code live. What environment was it built in. What shape does production expect from the build.
 
@@ -61,14 +60,14 @@ The first decision is architectural. The site keeps route files, layouts, compon
 
 The second decision is environmental. The devcontainer describes the machine that was used to build and maintain the project. Node 22, zsh, VS Code extensions, local fonts, and dependency installation are all described in files rather than remembered as setup lore.
 
-The third decision is deployment-oriented. Astro builds static output. Cloudflare Workers Assets serves that output. There is no application server assembling article pages per request. That makes build-time integrations more important because the deployment host expects finished files.
+The third decision is deployment-oriented. Astro builds static output. Cloudflare Workers Static Assets serves that output. There is no application server assembling article pages per request. That makes build-time integrations more important because the deployment host expects finished files.
 
 ```mermaid
 flowchart TD
     Repo[📁 Repository boundaries] --> Build[🏗️ Astro static build]
     Env[💻 Devcontainer environment] --> Build
     Build --> Dist[📦 dist output]
-    Dist --> Cloudflare[☁️ Cloudflare Workers Assets]
+    Dist --> Cloudflare[☁️ Cloudflare Workers Static Assets]
     Cloudflare --> Browser[🌐 Reader browser]
 
     classDef source fill:#FFE4B5,stroke:#333,stroke-width:2px,color:black
@@ -100,7 +99,7 @@ The rest of the vault assumes you know these three answers. Where the code lives
 
 ## Static first as a foundation
 
-The most important foundation decision is that the site is static-first. Astro builds pages ahead of time, the journal route receives static paths from the content manifest, and Cloudflare Pages serves generated files. That choice shapes the rest of the system.
+The most important foundation decision is that the site is static-first. Astro builds pages ahead of time, the journal route receives static paths from the content manifest, and Cloudflare Workers Static Assets serves generated files. That choice shapes the rest of the system.
 
 Static-first does not mean the site has no dynamic qualities. Mermaid diagrams are generated during the build. The Atlas widget fetches data during the build. Theme state, overlays, article navigation, and timezone formatting run in the browser. The distinction is timing. Durable content and structure are prepared before deployment. Browser behavior handles the reader's current context.
 
@@ -130,7 +129,7 @@ The same philosophy appears in package scripts. The project scripts describe the
 
 ## Deployment as a foundation
 
-Cloudflare Pages is the deployment target because it matches the static output model. Astro writes a `dist/` directory. The deployment serves files. `wrangler.json` records the project name, compatibility date, assets directory, and fallback behavior. The deploy target does not need to assemble journal pages on demand.
+Cloudflare Workers Static Assets is the deployment target because it matches the static output model. Astro writes a `dist/` directory. The deployment serves files. `wrangler.json` records the project name, compatibility date, assets directory, and fallback behavior. The deploy target does not need to assemble journal pages on demand.
 
 This keeps production close to the build. If the build prepares routes, diagrams, images, styles, and HTML, deployment can focus on delivery. That is the same architectural split used throughout the site. Each layer does the job it is best positioned to do.
 

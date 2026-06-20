@@ -1,7 +1,6 @@
 ---
 title: "Runtime enhancement map"
-description: "A map of the small browser modules that enhance a static site without becoming the foundation for rendering content."
-author: "Alberto Duran"
+description: "Browser modules own preference, viewport, focus, scroll, and local time while the static build remains responsible for readable content."
 tags: ["runtime", "frontend", "astro"]
 pubDate: 2026-06-17
 updatePubDate: 2026-06-19
@@ -51,7 +50,7 @@ The runtime code lives under `src/runtime/`.
 - `overlay-panel.ts` improves mobile panels and modal focus behavior.
 - `mermaid-diagram-shell.ts` expands inline diagrams and updates theme-specific links.
 - `elements/echart-shell.ts` hydrates static ECharts output only when an article opts in.
-- `atlas-schedule.ts` localizes Atlas schedule time in the browser.
+- The inline `atlas-schedule` element in `AtlasStats.astro` localizes Atlas schedule time in the browser. The similarly named runtime file exists but is not imported.
 
 Each module is scoped to one concern. Theme management does not know about article headings. The article navigation tracker does not know about overlays. The Mermaid shell does not render Mermaid syntax. The ECharts shell does not create the first visible chart. The Atlas element does not fetch match data. That separation keeps the runtime layer small and makes each behavior easier to reason about.
 
@@ -97,7 +96,7 @@ The implementation also respects where each behavior belongs. A sidebar link can
 
 ## Browser-only data
 
-The Atlas widget shows why runtime enhancement still matters on a static site. Match data is fetched during the build, but the reader's local timezone is only known in the browser. The component renders a Mexico City fallback time in the HTML. The `atlas-schedule` custom element then formats the same ISO date with `Intl.DateTimeFormat` for the reader's environment.
+The Atlas widget shows why runtime enhancement still matters on a static site. Match data is fetched during the build, but the reader's local timezone is only known in the browser. The component renders a Mexico City fallback time in the HTML. Its inline `atlas-schedule` custom element then formats the same ISO date with `Intl.DateTimeFormat` for the reader's environment.
 
 That is the right split. The build owns the match data. The browser owns the reader's locale. The static page stays meaningful, and the enhanced page becomes more personal without making an API request.
 
@@ -125,7 +124,7 @@ The result is a runtime layer that feels present but not heavy. It makes the sit
 
 ---
 
-## The build lesson
+## Admit browser code by necessity
 
 The runtime layer is small because the build layer is strong. Astro, the content manifest, the Mermaid integration, image transforms, and static routes do the durable work first. Browser modules then add state and interaction where the browser has unique information.
 

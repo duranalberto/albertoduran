@@ -1,7 +1,6 @@
 ---
 title: "The repository architecture"
-description: "A practical tour of the albertoduran.com source tree, route surface, and shared Astro layout boundaries."
-author: "Alberto Duran"
+description: "One publication change crosses content, manifest, route, layout, runtime, and style boundaries that keep the repository understandable."
 tags: ["architecture", "astro", "routes"]
 pubDate: 2026-06-17
 order: 10
@@ -41,13 +40,19 @@ That separation lets the same feature have multiple layers without mixing them. 
 
 The public routes are small compared with the source tree. Astro owns routing through `src/pages/`, and the journal catch-all handles standalone posts, vault roots, and nested vault entries.
 
-| Route | Source file | Purpose |
-| ---- | ---- | ---- |
-| `/` | `src/pages/index.astro` | Home page. |
-| `/profile/` | `src/pages/profile.astro` | Professional profile. |
-| `/thejournal/` | `src/pages/thejournal.astro` | Journal catalog. |
-| `/thejournal/[...slug]/` | `src/pages/thejournal/[...slug].astro` | Articles, vault roots, and nested entries. |
-| `/404/` | `src/pages/404.astro` | Static not-found page. |
+| Route                                | Source file                                        | Purpose                                          |
+| ------------------------------------ | -------------------------------------------------- | ------------------------------------------------ |
+| `/`                                  | `src/pages/index.astro`                            | Home page.                                       |
+| `/profile/`                          | `src/pages/profile.astro`                          | Professional profile.                            |
+| `/projects/`                         | `src/pages/projects/index.astro`                   | Project catalog.                                 |
+| `/projects/albertoduran/`            | `src/pages/projects/albertoduran.astro`            | This site's project case study.                  |
+| `/projects/equity-valuation-engine/` | `src/pages/projects/equity-valuation-engine.astro` | Equity valuation project.                        |
+| `/projects/mlscraper/`               | `src/pages/projects/mlscraper.astro`               | ML scraper project.                              |
+| `/projects/sin-pluma/`               | `src/pages/projects/sin-pluma.astro`               | Sin Pluma project.                               |
+| `/thejournal/`                       | `src/pages/thejournal.astro`                       | Journal catalog.                                 |
+| `/thejournal/[...slug]/`             | `src/pages/thejournal/[...slug].astro`             | Articles, vault roots, and nested entries.       |
+| `/fixtures/[fixture]/`               | `src/pages/fixtures/[fixture].astro`               | Generated test fixtures, not an editorial route. |
+| `/404/`                              | `src/pages/404.astro`                              | Static not-found page.                           |
 
 The catch-all route gets its paths from `publishedEntries`. That means journal source files do not become public pages until they pass collection loading, draft filtering, manifest building, and static path generation.
 
@@ -97,7 +102,9 @@ That `main` element is where Astro view transitions apply. The header, footer, a
 
 ### Metadata and fonts
 
-The layout receives a `siteManifest` and optional image. It computes preferred URLs from `Astro.url.pathname`, creates an optimized social image with `getImage()`, and registers Open Graph and Twitter metadata.
+The layout receives a `siteManifest` and optional image. It computes preferred URLs from `Astro.url.pathname`, creates an optimized social image with `getImage()`, and registers Open Graph and Twitter metadata. One mismatch remains. Open Graph receives `siteManifest.description`, while the standard description meta tag receives `siteManifest.pageTitle`.
+
+That mismatch is visible engineering debt, not an intended metadata strategy. A contributor changing the layout should send the description to both description fields and add a generated-page assertion so search metadata cannot drift from the article summary again.
 
 Fonts are also handled here. Inter, Montserrat, and Fira Code are registered through Astro's font support. Inter and Montserrat get selected preloads because they shape the first read. Fira Code is available for code blocks without becoming the main loading priority.
 

@@ -1,7 +1,6 @@
 ---
 title: "The MDX rendering pipeline"
-description: "How Astro renders compiled MDX entries and how component overrides shape code blocks, headings, tables, Mermaid shells, and chart components."
-author: "Alberto Duran"
+description: "Plain MDX syntax and explicit component imports follow different paths into the article's headings, tables, code, diagrams, and charts."
 tags: ["astro", "mdx", "rendering"]
 pubDate: 2026-06-17
 updatePubDate: 2026-06-19
@@ -27,11 +26,11 @@ This is the current Astro pattern used by the route. The code should not use sta
 
 The returned object gives the route the pieces it needs for article assembly. Each piece has a separate job in the final page.
 
-| Result piece | How the route uses it |
-| ---- | ---- |
-| `renderResult.Content` | Renders the compiled MDX body inside `Article`. |
-| `renderResult.headings` | Feeds desktop and mobile table of contents after filtering to H2 and H3. |
-| Entry frontmatter | Comes through the manifest context as title, dates, tags, image, and description. |
+| Result piece            | How the route uses it                                                             |
+| ----------------------- | --------------------------------------------------------------------------------- |
+| `renderResult.Content`  | Renders the compiled MDX body inside `Article`.                                   |
+| `renderResult.headings` | Feeds desktop and mobile table of contents after filtering to H2 and H3.          |
+| Entry frontmatter       | Comes through the manifest context as title, dates, tags, image, and description. |
 
 The split is practical. `renderResult.Content` is the body component. `renderResult.headings` is navigation data. The manifest context is publication metadata. Keeping those roles separate prevents the article body from becoming a data source for every header and navigation concern.
 
@@ -86,13 +85,13 @@ const components = {
 
 This map is the bridge between author-friendly source and site-specific HTML. Authors write normal Markdown. The route decides how common elements render inside the journal.
 
-| MDX element | Replacement component | Reason |
-| ---- | ---- | ---- |
-| `pre` | `CodeBlock` | Wrap Shiki output in DaisyUI code chrome. |
-| `h2` | `HeadingAnchor` | Add copyable section links to major headings. |
-| `h3` | `HeadingAnchor` | Preserve H3 semantics while reusing heading anchor behavior. |
-| `table` | `ProseTable` | Add a keyboard-scrollable table region. |
-| `div` | `MermaidDiagramWrapper` | Upgrade only Mermaid diagram containers. |
+| MDX element | Replacement component   | Reason                                                       |
+| ----------- | ----------------------- | ------------------------------------------------------------ |
+| `pre`       | `CodeBlock`             | Wrap Shiki output in DaisyUI code chrome.                    |
+| `h2`        | `HeadingAnchor`         | Add copyable section links to major headings.                |
+| `h3`        | `HeadingAnchor`         | Preserve H3 semantics while reusing heading anchor behavior. |
+| `table`     | `ProseTable`            | Add a keyboard-scrollable table region.                      |
+| `div`       | `MermaidDiagramWrapper` | Upgrade only Mermaid diagram containers.                     |
 
 The `div` override sounds broad, but the wrapper checks the class name before changing anything. Plain divs pass through unchanged. Only `.mermaid-diagram-container` gets the diagram shell.
 

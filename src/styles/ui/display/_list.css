@@ -14,8 +14,29 @@
   }
 
   .publication-list-row {
+    position: relative;
     min-width: 0;
     align-items: center;
+    transition:
+      color 150ms ease,
+      background-color 150ms ease;
+  }
+
+  .publication-list-row:has(.publication-list-row-link):hover {
+    color: var(--color-primary);
+    background-color: color-mix(in oklab, var(--color-primary) 8%, transparent);
+  }
+
+  .publication-list-row:has(.publication-list-row-link:focus-visible) {
+    outline: 2px solid var(--color-primary);
+    outline-offset: -2px;
+  }
+
+  .publication-list-row-link {
+    position: absolute;
+    z-index: 1;
+    inset: 0;
+    border-radius: inherit;
   }
 
   .publication-list-media,

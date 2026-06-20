@@ -1,7 +1,6 @@
 ---
 title: "Quality map"
-description: "A map of the checks, tests, deterministic builds, browser coverage, and CI guardrails that protect the site."
-author: "Alberto Duran"
+description: "The quality system matches evidence to risk while naming its missing lint, coverage threshold, cross-browser, and accessibility gates."
 tags: ["testing", "quality", "ci"]
 pubDate: 2026-06-17
 updatePubDate: 2026-06-19
@@ -16,7 +15,7 @@ Quality is part of how this site is built, not a separate ritual after the code 
 
 The site is static, but it is not simple in the sense of being plain HTML files typed by hand. Astro collects content, the journal manifest decides route context, the Mermaid integration rewrites diagrams into SVG output, ECharts renders charts into SVG, the Atlas loader fetches data during the build, and runtime modules enhance browser behavior. Each layer has its own contract.
 
-The quality system follows those contracts. Type and Astro checks protect component and content shape. Unit tests protect pure transformation logic. Deterministic build flags make output reproducible. Playwright covers behavior that only exists in a real browser. CI runs the same gates before changes reach deployment.
+The quality system follows those contracts. Type and Astro checks protect component and content shape. Unit tests protect pure transformation logic. Deterministic build flags make output reproducible. Playwright covers behavior that needs Chromium. CI runs the configured gates before changes reach deployment.
 
 ```mermaid
 flowchart TD
@@ -54,7 +53,7 @@ npm run test:e2e
 
 `npm run check` runs Astro and TypeScript diagnostics. `npm test` runs Vitest. `npm run build:test` creates a production-shaped build with deterministic fixture flags. `npm run test:e2e` runs that test build, starts Astro preview, and launches Playwright.
 
-There are also supporting scripts. `npm run test:coverage` runs Vitest with coverage. `npm run lint` exists, although lint is not currently part of the CI gate because ESLint still needs a flat configuration before it becomes mandatory. `npm run dev`, `npm run build`, and `npm run preview` support local development and production output.
+There are also supporting scripts. `npm run test:coverage` runs Vitest with coverage, but CI does not invoke it and the repository defines no coverage threshold. `npm run lint` exists but is also absent from CI. `npm run dev`, `npm run build`, and `npm run preview` support local development and production output.
 
 The scripts are direct on purpose. There is no hidden task runner that obscures which layer is running. The project can explain its quality story from the package scripts alone.
 
@@ -89,7 +88,7 @@ The quality stack therefore spends energy where the site has made local architec
 
 ## Browser behavior
 
-Playwright covers the pieces that only a browser can prove. That includes route smoke coverage, browser console cleanliness, hero geometry, responsive overflow, sidebar and dock breakpoints, catalog links, overlay focus, scroll lock, article landmarks, breadcrumbs, article navigation, theme persistence, Mermaid popovers, ECharts hydration, static chart fallbacks, and no-JS behavior.
+Playwright covers selected behaviors that only a browser can prove. That includes route smoke coverage, browser console cleanliness, responsive overflow, overlay focus, scroll lock, article landmarks, theme persistence, Mermaid popovers, ECharts hydration, static chart fallbacks, and no-JS behavior. The configured project is Chromium only.
 
 Those checks are part of the website's build story because the site is static but enhanced. A generated page can be structurally correct while a focus trap, route swap, or responsive layout still needs real browser behavior. Playwright runs against `astro preview`, not the development server, so the shape is close to production delivery.
 
@@ -109,7 +108,11 @@ The quality system therefore mirrors the architecture. Build-time rules get buil
 
 ## Source of confidence
 
-Each quality layer gives a different kind of confidence. `npm run check` says the source can be understood by Astro and TypeScript. Vitest says local rules behave with known inputs. The deterministic build says production output can be generated with stable fixtures. Playwright says a real browser can use representative pages. CI says the sequence is repeatable outside one developer's machine.
+Each quality layer gives a different kind of confidence. `npm run check` says the source can be understood by Astro and TypeScript. Vitest says local rules behave with known inputs. The deterministic build says production output can be generated with stable fixtures. Playwright says Chromium can use representative pages. CI says the configured sequence is repeatable outside one developer's machine.
+
+> Audit scope on 2026-06-20. The repository passed Astro checks across 130 files and 97 Vitest cases in 14 files. A deterministic build emitted 75 pages, 73 Mermaid asset pairs, and two ECharts SVG assets. Those dated counts describe one revision, not a permanent project badge.
+
+The gaps are equally relevant. CI has no lint gate or coverage threshold. Playwright does not run Firefox or WebKit. The suite has no Axe ruleset, documented screen-reader pass, keyboard-only manual audit, or dedicated reduced-motion coverage. Tested landmarks and focus flows are useful evidence, but they do not establish accessibility conformance.
 
 That variety matters because the site itself is layered. A single tool cannot represent the whole build. Astro checks do not know how focus moves inside a modal. Playwright does not need to prove every branch of the manifest builder. The HTML minifier is easier to reason about with direct input and output. Responsive overflow needs a viewport.
 
@@ -123,7 +126,7 @@ The quality map is useful because it shows where each kind of confidence comes f
 
 The workflow mirrors the local command map. That is useful because the same quality vocabulary appears in development and CI. A change that passes locally is moving through the same broad sequence that CI uses.
 
-The workflow also matches the deployment model. The site builds statically and deploys to Cloudflare Pages. CI does not need a database, server process, or hidden runtime environment to validate the core behavior. It needs Node, dependencies, a production-shaped build, and a browser.
+The workflow also matches the deployment model. The site builds statically and deploys to Cloudflare Workers Static Assets. CI does not need a database, server process, or hidden runtime environment to validate the core behavior. It needs Node, dependencies, a production-shaped build, and a browser.
 
 ---
 
@@ -135,7 +138,7 @@ The quality section has three focused articles.
 
 `manifest_and_mermaid_tests` explains how Vitest protects custom build-time systems such as the journal manifest, Mermaid pipeline, ECharts pipeline, HTML minifier, and Atlas loader.
 
-`e2e_accessibility` explains how Playwright validates production preview behavior, responsive layouts, overlays, theme persistence, no-JS states, and Mermaid popovers.
+`e2e_accessibility` explains what Chromium preview tests prove about responsive layouts, overlays, theme persistence, no-JS states, and Mermaid popovers. It also records what they cannot claim.
 
 Together, those entries explain how the site keeps custom architecture dependable without turning quality into a vague checklist.
 

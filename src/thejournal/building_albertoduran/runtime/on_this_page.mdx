@@ -1,7 +1,6 @@
 ---
 title: "Scroll-based article navigation"
-description: "How the On This Page tracker handles headings, sticky offsets, scroll edges, click suppression, and Astro cleanup."
-author: "Alberto Duran"
+description: "A heading list becomes reliable scroll navigation only after accounting for sticky offsets, page edges, clicks, and route cleanup."
 tags: ["runtime", "navigation", "accessibility"]
 pubDate: 2026-06-17
 order: 20
@@ -117,7 +116,7 @@ That is a recurring pattern in the site. Build data is centralized when it descr
 
 ---
 
-## The build lesson
+## Test the scroll edges
 
 On This Page is not a content generator. It is an enhancement for content that the build already rendered. The route creates a heading list. The component prints navigable anchors. The runtime measures the live document and adds state as the reader moves.
 

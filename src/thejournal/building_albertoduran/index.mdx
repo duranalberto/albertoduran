@@ -1,7 +1,6 @@
 ---
 title: "Building albertoduran.com"
-description: "A technical map of the static-first Astro site, from MDX source and custom build integrations to Cloudflare deployment."
-author: "Alberto Duran"
+description: "A technical case study of an Astro publishing product, including its build boundaries, reader experience, evidence, and unresolved risks."
 image: "../../assets/thejournal/stock/01.avif"
 tags: ["astro", "architecture", "mdx", "cloudflare"]
 pubDate: 2026-06-17
@@ -9,145 +8,88 @@ updatePubDate: 2026-06-19
 order: 10
 ---
 
-The easiest way to misunderstand this site is to treat it like a portfolio with a blog attached. The useful version is stranger. It is a static publishing system where MDX, navigation, diagrams, charts, images, route data, and the expensive work settle before the browser gets involved. This vault maps how those decisions fit together so the site reads like a built thing, not a pile of pages.
+albertoduran.com presents my work through a portfolio, project case studies, and a long-form technical journal. That public surface looks straightforward. Building it meant solving a less visible problem. The site had to keep rich articles, diagrams, charts, navigation, and a professional profile readable across devices without turning every visit into a client-rendered application. This vault follows the decisions, compromises, and unfinished work behind that result.
 
 ---
 
-## The project shape
+## The reader experience
 
-albertoduran.com is a static-first portfolio and long-form journal built with **Astro 6**, a framework that turns components and content into static pages. Tailwind 4 handles utility CSS, DaisyUI 5 supplies themed UI primitives, MDX lets Markdown include components, ECharts renders article charts, and Cloudflare Workers Assets serves the finished files. The public route surface is small, but the source behind it acts like a publishing engine with a portfolio folded into it.
+The public result is a portfolio and long-form journal. Articles have vault navigation, previous and next links, anchored headings, highlighted code, themed Mermaid diagrams, static ECharts figures, responsive images, and optional browser interaction. The same system publishes this case study, which gives the documentation a useful constraint. Its claims can be checked against the page delivering them.
 
-The guiding rule is simple. When the build knows enough to resolve something, the build should resolve it. Content collections load the writing. Manifest code turns folders into vaults. Integrations render Mermaid diagrams, render ECharts SVG, emit chart assets, and minify HTML. Astro writes static pages. Runtime scripts handle interaction after the readable page already exists.
+The journal does more than describe projects. It lets an experienced developer inspect implementation boundaries, gives a newer developer enough context to learn unfamiliar terms, and shows a hiring team how I reason about ownership, tradeoffs, failure modes, and verification. Those readers do not need the same route through the material.
 
-The main path from source to deployed page looks like this.
+---
+
+## Why the site starts with static output
+
+Astro compiles the site to files. MDX becomes HTML, the content manifest turns folders into publication policy, Mermaid fences become themed SVG, ECharts options become static figures, and images become responsive assets. Cloudflare Workers Static Assets receives the resulting `dist` directory.
 
 ```mermaid
-flowchart TD
-    Source[📝 MDX and data loaders] --> Collections[📚 Astro content collections]
-    Collections --> Processors[⚙️ processors and integrations]
-    Processors --> Output[📦 static HTML and assets]
-    Output --> Cloudflare[☁️ Cloudflare Workers Assets]
-    Cloudflare --> Runtime[⚡ small runtime enhancements]
-
-    classDef source fill:#FFE4B5,stroke:#333,stroke-width:2px,color:black
-    classDef build fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
-    classDef output fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
-    classDef edge fill:#E6E6FA,stroke:#333,stroke-width:2px,color:darkblue
-
-    class Source source
-    class Collections,Processors build
-    class Output output
-    class Cloudflare,Runtime edge
+flowchart LR
+    Source[MDX, components, and data] --> Policy[Schema and publication manifest]
+    Policy --> Build[Astro and build integrations]
+    Build --> Files[Static HTML and assets]
+    Files --> Host[Workers Static Assets]
+    Host --> Browser[Optional interaction]
 ```
 
-That path explains why many files that look like content are also part of the application design. A Mermaid code fence can create standalone SVG assets. An ECharts component can create an inline chart or a hashed SVG file. A folder index can create a vault. A frontmatter field can affect route generation, sidebar structure, pagination, and card metadata.
-
-### Static first does not mean plain
-
-The site still has runtime behavior. Theme state persists across navigation. Article sidebars update as the reader scrolls. Overlays manage focus and scroll lock. Mermaid diagrams expand into popovers. ECharts can hydrate when a chart needs browser inspection. The Atlas widget localizes match time in the browser.
-
-The difference is that those scripts do not carry the article. If JavaScript arrives late, the reader still gets rendered HTML, headings, code blocks, inline Mermaid SVG, static charts, images, and navigation landmarks. Runtime code improves the page that the build already produced.
-
-That order gives the project a clear shape. Build-time code owns content, routes, diagrams, charts, assets, and output weight. Runtime code owns reversible interaction. CSS owns the visual language and responsive behavior.
+Static output is an organizing constraint, not a performance result by itself. It removes request-time page assembly and gives every route a readable baseline before JavaScript runs. The repository has no recorded Lighthouse or Web Vitals baseline, and the current deterministic build warns about some JavaScript chunks above 500 kB. Those facts belong beside the design choice.
 
 ---
 
-## What a vault means
+## One publication request
 
-A vault is a first-level folder under `src/thejournal/` with an `index.md` or `index.mdx`. Nested folders can become sections when they also contain an index file. The manifest builder reads that directory shape and turns it into breadcrumbs, sidebar groups, previous and next links, and generated routes.
+A journal page begins as an `.mdx` file under `src/thejournal/`. The content collection validates supported frontmatter. The manifest filters drafts, checks vault invariants, inherits images, calculates read time, orders entries, and assigns navigation. `getStaticPaths()` gives the catch-all route a finite list of pages, then the route renders MDX into the article shell.
 
-This vault uses that rule deliberately. Each top-level folder covers one ownership boundary in the site. The sections are not topic buckets chosen after the fact. They mirror the architecture that makes the project work.
+That path exposes a useful ownership rule. The schema decides what an entry may contain. The manifest decides whether and where it publishes. The route assembles prepared context. Components and CSS present it. Runtime modules may improve interaction, but they do not decide what the article is.
 
-| Section         | What it owns                                                                                        |
-| --------------- | --------------------------------------------------------------------------------------------------- |
-| `foundations/`  | Repository shape, development environment, and Cloudflare deployment.                               |
-| `publications/` | MDX collections, manifest rules, static routes, rendering, and code blocks.                         |
-| `mermaid/`      | Build-time diagram rendering, caching, renderer services, SVG transforms, and assets.               |
-| `echarts/`      | Static-first chart rendering, option builders, SVG artifacts, hydration, and chart examples.        |
-| `performance/`  | Perceived navigation speed, output size, image strategy, and font loading.                          |
-| `runtime/`      | Theme, article navigation, overlays, Mermaid shells, chart hydration, and Atlas data.               |
-| `design/`       | Tailwind tokens, DaisyUI themes, CSS partials, SVG icons, parallax, and UI rules.                   |
-| `quality/`      | The architecture around checks, deterministic builds, unit coverage, and browser behavior coverage. |
-
-The vault is also a product of the system it documents. Its folder structure feeds the same manifest builder as every other journal section. The writing is content, but its placement is data.
-
-### Why section indexes exist
-
-Every section has an `index.mdx` because a folder without a landing page has no published explanation of its boundary. The section index tells readers why the folder exists, which child entries matter, and how the child pages relate.
-
-That requirement also keeps navigation honest. A nested folder cannot silently appear in the vault explorer without a title and purpose. The index page becomes the human-readable label for the group.
+Two metadata gaps show why tracing the whole path matters. The vault previously carried an unsupported `author` field, so this rewrite removes it. `updatePubDate` enters the schema and manifest but never reaches the article header. The standard description meta tag also receives the page title instead of the article description, although Open Graph receives the right value.
 
 ---
 
-## The source boundaries
+## Where the browser is allowed to help
 
-The repository is organized around ownership rather than file type alone. Astro components live under `components/`, but content policy does not. Runtime TypeScript lives under `runtime/`, but build integrations do not. That separation is the main reason the project can grow without turning every change into a scavenger hunt.
+The browser knows facts the build cannot know, including the reader's theme preference, viewport, current scroll position, focus location, and local timezone. Small runtime modules own those concerns. They preserve theme across Astro swaps, track the active heading, control overlays, expand finished Mermaid SVGs, hydrate selected charts, and localize the Atlas match time.
 
-The highest-value boundaries are these.
-
-- `src/pages/` owns public routes and static path generation.
-- `src/layouts/` owns document shells, shared page structure, and view transition placement.
-- `src/content/` owns journal manifests and content processing.
-- `src/integrations/` owns build extensions for Mermaid, ECharts, and HTML minification.
-- `src/runtime/` owns browser-side custom elements and lifecycle modules.
-- `src/styles/` owns global CSS, tokens, utilities, and page-specific partials.
-- `src/thejournal/` owns the MDX source tree that becomes the journal.
-
-Those folders also describe the mental model for editing. If the question is what pages exist, start with routes and content processors. If the question is what a page looks like, start with layouts, components, and styles. If the question is what the browser improves after load, start with runtime.
+The readable content remains in static HTML. A diagram arrives as SVG before its popover shell connects. A chart has a static figure before optional hydration. The Atlas widget has a Mexico City time before its inline custom element localizes it. This boundary keeps failures local and gives no-JavaScript tests something meaningful to verify.
 
 ---
 
-## Reading path
+## Eight ownership boundaries
 
-The best reading path follows the build from source to deployed behavior.
+The vault mirrors the repository rather than grouping articles by fashionable topics.
 
-1. Start with `foundations/` to learn the repository shape, reproducible environment, and static Cloudflare target.
-2. Read `publications/` to understand how MDX files become validated entries, manifests, routes, and rendered article pages.
-3. Move to `mermaid/` for the deepest custom build-time integration, where code fences become themed SVG assets.
-4. Read `echarts/` to see how MDX chart components become static SVG and optional browser-enhanced charts.
-5. Use `performance/` to see how navigation feel, output weight, images, and fonts are treated as separate concerns.
-6. Read `runtime/` to see how the browser enhances pages without becoming the rendering foundation.
-7. Keep `design/` close when touching tokens, CSS partials, icons, parallax, or reusable UI rules.
-8. Finish with `quality/` to understand how the project preserves behavior across its custom systems.
+| Section         | Decision it explains                                                                       |
+| --------------- | ------------------------------------------------------------------------------------------ |
+| `foundations/`  | Repository ownership, workspace repeatability, and the static deployment contract.         |
+| `publications/` | The path from MDX candidate to policy, route, and rendered article.                        |
+| `mermaid/`      | Remote rendering, caching, SVG transforms, theming, and generated diagram assets.          |
+| `echarts/`      | The boundary between quantitative charts, static SVG, and optional hydration.              |
+| `performance/`  | Build work, artifact weight, navigation behavior, images, fonts, and missing measurements. |
+| `runtime/`      | Browser-only state, focus, scroll, local time, and progressive enhancement.                |
+| `design/`       | Semantic tokens, CSS ordering, icons, editorial components, and motion.                    |
+| `quality/`      | Evidence matched to content rules, transforms, builds, and Chromium behavior.              |
 
-This is not an Astro beginner tutorial. It explains how one static site is built, why its boundaries exist, and which tradeoffs make the system feel fast and maintainable.
-
----
-
-## The build philosophy
-
-The project keeps a plain bias. Prefer files over hidden configuration. Prefer static output over request-time work. Prefer small runtime modules over a client app. Prefer typed content context over page-level guessing. Prefer CSS tokens over hardcoded color decisions.
-
-That bias is visible in the main systems. The journal manifest turns folder structure into data. The Mermaid integration turns diagrams into cacheable assets. The ECharts component turns chart options into static SVG. The HTML minifier runs after the static build. The runtime overlay and navigation modules bind to generated HTML instead of owning it.
-
-The result is a site that behaves like a polished application in the browser while still deploying as static files. That tension is the heart of the build. The pages are static, but the system that creates them is carefully assembled.
-
-> The site is fast because the build does the heavy work, and the browser only carries the parts that need to remain interactive.
-
-That principle is the thread through the rest of this vault. Every page explains a piece of that arrangement from the file tree outward.
+The sections meet through explicit contracts. That has a practical payoff during maintenance. A wrong publication order points to the manifest, while a missing route points to static path generation. A malformed SVG points to the transform layer, and a broken popover points to the runtime shell. The codebase still has leaks, but the intended ownership is visible.
 
 ---
 
-## Why this vault exists
+## Verified facts and honest limits
 
-This vault exists because the website is more than its final pages. It is a set of decisions that are easy to miss when looking only at the rendered result. A static site can look simple while still having a content manifest, MDX rendering rules, code block wrappers, diagram renderers, chart renderers, runtime modules, image strategies, and deployment constraints behind it.
+This vault was audited against the repository on 2026-06-20. `npm run check` passed across 130 files. Vitest passed 97 tests in 14 files. The deterministic build produced 75 pages, 73 Mermaid asset pairs, and two ECharts SVG assets. Playwright is configured for Chromium only.
 
-Writing those decisions down makes the site easier to extend. If a future article needs a diagram, the Mermaid section explains how that diagram enters the build. If a future article needs a chart, the ECharts section explains how data becomes static SVG. If a new page needs an overlay, the runtime section explains the existing panel contract. If a new UI surface needs color, the design section explains the token system. The vault turns hidden architecture into shared language.
+The same audit found boundaries the writing must respect. The external Mermaid Worker's source and telemetry are absent, so its internals remain unverified. Cloudflare caching, compression, DNS, certificates, and global delivery are platform capabilities until deployed configuration and response headers are captured. The browser suite checks selected accessibility behaviors but runs no Axe ruleset and documents no screen-reader audit.
 
-The entries are also meant to teach by following the actual code. They describe the shape of `src/content.config.ts`, `src/thejournal`, `src/integrations`, `src/runtime`, `src/styles`, and the deployment files. The goal is not an abstract guide to Astro. It is a guided tour of this Astro site.
-
----
-
-## How the sections connect
-
-The sections build on each other. Foundations explain the environment and static deployment model. Publications explain how MDX becomes routed journal pages. Mermaid explains one of the richest build-time transformations. ECharts explains the chart path for quantitative articles. Performance explains why the generated output stays light. Runtime explains the browser layer that enhances static pages. Design explains the visual system that keeps all those pages coherent. Quality explains how the custom rules stay dependable.
-
-That order is intentional. The reader first learns where the site lives and how it is deployed. Then they learn how content becomes pages. Then they learn about specialized systems such as diagrams, charts, performance, runtime, design, and quality. Each section adds a layer without undoing the static-first premise.
+The content itself needed repair. More than half the previous pages claimed the same eight-minute read, 29 descriptions began with "How," and 23 entries ended with the same lesson heading. The rewrite keeps useful implementation evidence but stops treating repeated length and structure as quality signals.
 
 ---
 
-## The reader promise
+## Choose a route through the case study
 
-The site should be understandable as a build, not only as a product. Every page in this vault should answer a practical question about construction. Where does this data come from? When is this rendered? Which layer owns this behavior? What does the browser receive? What does the build prepare first?
+Experienced developers can begin with `publications/manifest_rules`, `mermaid/pipeline`, or `quality/testing_strategy`. Those pages contain the densest local decisions and show where framework behavior ends and project policy begins.
 
-That promise is why the articles stay focused on construction. The audience here wants to understand how the site was made. The entries focus on architecture, data flow, rendering boundaries, and design rules because those are the decisions that make the final website possible.
+Developers newer to Astro should start with `foundations/project_architecture`, then read `publications/index` and `runtime/index`. Each section introduces the relevant term before following it into code, so prior knowledge of content collections, static generation, or custom elements is helpful but not required.
+
+Hiring teams can read the three section indexes for foundations, performance, and quality. Together they show scope, deployment judgment, known performance debt, test strategy, and the limits of current evidence. The Mermaid renderer boundary is a useful fourth stop because it shows how I document a dependency I cannot fully verify from this repository.
+
+Whichever route you take, the contributor boundary stays the same. Preserve readable static output, keep policy out of page assembly, label operational claims, and add evidence at the layer where a failure can occur. That is the engineering argument this site can defend today.

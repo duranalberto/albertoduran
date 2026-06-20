@@ -1,7 +1,6 @@
 ---
 title: "How ECharts renders in the build"
-description: "How the EChart MDX component renders static SVG, emits optional chart artifacts, and hydrates only when an article opts in."
-author: "Alberto Duran"
+description: "One option object becomes an accessible static SVG, an optional file asset, or a chart that hydrates only when the article requests it."
 tags: ["echarts", "astro", "mdx"]
 pubDate: 2026-06-19
 order: 10
@@ -118,13 +117,13 @@ Hydration is handled by `src/integrations/echarts/component.ts` and `src/runtime
 
 The supported modes are practical.
 
-| Mode | Behavior |
-| ---- | ---- |
-| `none` | Keep the static SVG and ship no chart client behavior. |
-| `load` | Enhance as soon as the shell connects. |
-| `idle` | Wait for `requestIdleCallback` when available. |
+| Mode      | Behavior                                                      |
+| --------- | ------------------------------------------------------------- |
+| `none`    | Keep the static SVG and ship no chart client behavior.        |
+| `load`    | Enhance as soon as the shell connects.                        |
+| `idle`    | Wait for `requestIdleCallback` when available.                |
 | `visible` | Wait for an intersection observer with a `200px` root margin. |
-| `media` | Wait until the supplied media query matches. |
+| `media`   | Wait until the supplied media query matches.                  |
 
 The deferred modes are explicit too. `render="png-file"` and `hydrate="light"` throw clear errors because the project is not carrying those workflows yet. That is better than accepting props that look supported but produce incomplete output.
 
@@ -170,7 +169,7 @@ Those tests protect the same idea from different angles. Vitest checks the build
 
 ---
 
-## The build lesson
+## Keep the static chart useful
 
 ECharts fits the site because it follows the same rule as the rest of the journal. Prepare the durable output before the browser arrives. Keep authoring close to the article. Add runtime behavior only when it improves the already readable page.
 

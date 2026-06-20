@@ -42,6 +42,8 @@ export interface ListAction {
 
 export interface ListItem {
   title: string;
+  href?: string;
+  ariaLabel?: string;
   subtitle?: string;
   description?: string;
   media?: ListItemMedia;
@@ -99,6 +101,10 @@ export function resolveListItems(items: ListItem[]): ResolvedListItem[] {
     if (item.action) {
       requireText(item.action.label, "action label", index);
       requireText(item.action.href, "action href", index);
+    }
+
+    if (item.href) {
+      requireText(item.href, "href", index);
     }
 
     return {

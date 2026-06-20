@@ -1,7 +1,6 @@
 ---
 title: "The CSS architecture"
-description: "How global.css acts as an ordered manifest for Tailwind, DaisyUI, theme tokens, utilities, layout, UI, and page styles."
-author: "Alberto Duran"
+description: "One ordered CSS manifest makes the cascade inspectable across Tailwind, DaisyUI, project tokens, shared components, and page rules."
 tags: ["css", "tailwind", "architecture"]
 pubDate: 2026-06-17
 updatePubDate: 2026-06-19
@@ -139,7 +138,7 @@ This discipline keeps the cascade useful. CSS is supposed to cascade. The proble
 
 ---
 
-## The build lesson
+## Protect the cascade order
 
 The CSS architecture keeps the design system understandable by making import order carry meaning. Tailwind and DaisyUI supply the framework layer. Theme files define tokens. Base and utility files create the browser foundation. Shared files define site-wide treatments. Layout and UI files define reusable structures. Page files specialize the final presentation.
 

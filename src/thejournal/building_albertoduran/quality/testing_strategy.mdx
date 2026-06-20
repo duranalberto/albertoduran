@@ -1,7 +1,6 @@
 ---
 title: "The testing strategy"
-description: "How Astro diagnostics, Vitest, deterministic production builds, coverage, and CI protect the site's highest-risk behavior."
-author: "Alberto Duran"
+description: "Diagnostics, unit tests, a deterministic build, and Chromium preview checks each cover a different failure class in the CI sequence."
 tags: ["testing", "vitest", "playwright"]
 pubDate: 2026-06-17
 updatePubDate: 2026-06-19
@@ -96,7 +95,7 @@ The e2e layer is smaller than the unit layer because it is more expensive and be
 
 ## Coverage posture
 
-`npm run test:coverage` exists for Vitest coverage reporting, but coverage is a supporting signal rather than the core design goal. The important question is whether the high-risk contracts are covered at the right layer.
+`npm run test:coverage` exists for Vitest coverage reporting, but CI does not run it and no threshold is configured. Coverage is therefore an optional diagnostic, not a merge gate. The more useful review question is whether high-risk contracts have focused tests at the right layer.
 
 For this site, high-risk means custom rules. The manifest decides which pages exist and how they relate. Mermaid transforms produce visible article diagrams. ECharts helpers produce static chart SVG and optional hydration data. The minifier rewrites final HTML. The Atlas loader turns external data into content. Runtime modules control focus, theme continuity, and article navigation.
 
@@ -144,7 +143,7 @@ The CI flow also respects the static deployment model. It does not provision a d
 
 ---
 
-## The build lesson
+## Match evidence to the risk
 
 The testing strategy is not an external checklist. It is a map of the site's architecture. Checks cover source shape. Vitest covers local build logic. Deterministic flags make production-shaped builds repeatable. Playwright covers browser-only behavior. CI runs the sequence consistently.
 

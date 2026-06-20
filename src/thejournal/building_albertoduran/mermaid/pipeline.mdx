@@ -1,13 +1,12 @@
 ---
 title: "Batch pipeline, disk cache, and remote cache"
-description: "How the Mermaid diagram pipeline coordinates concurrent MDX files, cache layers, batch rendering, and static SVG asset emission."
-author: "Alberto Duran"
+description: "Concurrent MDX files register diagrams with one build-scoped coordinator that handles cache lookup, batch rendering, and asset emission."
 tags: ["mermaid", "caching", "build"]
 pubDate: 2026-06-17
 order: 10
 ---
 
-The Mermaid pipeline exists because every unnecessary render has a cost. It can cost build time, Browser Rendering quota, public fallback patience, and cache stability. `DiagramPipeline` is the build-scoped coordinator that receives Mermaid fences from MDX, checks caches, batches render requests, and records the assets that need to be emitted. It keeps unchanged diagrams stable across builds.
+The Mermaid pipeline exists because every unnecessary render has a cost. It can cost build time, Browser Run quota, public fallback patience, and cache stability. `DiagramPipeline` is the build-scoped coordinator that receives Mermaid fences from MDX, checks caches, batches render requests, and records the assets that need to be emitted. It keeps unchanged diagrams stable across builds.
 
 ---
 
@@ -85,7 +84,7 @@ The pipeline also records each used asset so `emitAssets()` can write only diagr
 /_app/mermaid/{stableId}-{cacheKey}-dark.svg
 ```
 
-The inline SVG remains in article HTML. The standalone assets power Open Diagram links and production cache reuse. That split gives readers fast inline diagrams and gives the build a durable cache target for unchanged diagrams.
+The inline SVG remains in article HTML. The standalone assets power Open Diagram links and production cache reuse. That split gives readers immediate diagram markup and gives the build a durable reuse target for unchanged diagrams.
 
 Standalone assets receive background CSS and a background rectangle. The dark asset also receives unguarded dark CSS so it can render correctly as its own file rather than relying on a page-level `data-theme` wrapper.
 
@@ -141,7 +140,7 @@ That is why pipeline state matters. The integration needs to remember diagrams n
 
 ---
 
-## The build lesson
+## Keep registration build-scoped
 
 The Mermaid pipeline turns a code fence into a set of static artifacts. It registers diagrams during MDX processing, reuses cached SVG where possible, renders through provider contracts, transforms output into article-safe nodes, emits standalone assets, and supports deterministic fixture builds.
 

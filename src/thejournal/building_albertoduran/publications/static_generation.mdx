@@ -1,7 +1,6 @@
 ---
 title: "Static page generation and navigation"
-description: "How the journal catch-all route turns published entries into generated pages with sidebars, overlays, headings, and pagination."
-author: "Alberto Duran"
+description: "One published entry travels through static path generation and a thin catch-all route into a complete desktop and mobile article shell."
 tags: ["astro", "routing", "navigation"]
 pubDate: 2026-06-17
 order: 30
@@ -107,14 +106,14 @@ The 404 redirect is a route-level guardrail. In normal builds, `publishedEntries
 
 The route assembles the article inside `BaseLayout` and `FlexShell`. The visible article is a set of regions that appear or disappear based on context and viewport width.
 
-| Region | Component | When it appears |
-| ---- | ---- | ---- |
-| Header | `PublicationHeader` | Every article route. |
-| Left sidebar | `VaultExplorer` | Desktop view when `vaultContext` exists. |
-| Center content | `Article` with `renderResult.Content` | Every article route. |
-| Right sidebar | `OnThisPage` | Desktop view for H2 and H3 navigation. |
-| Pagination | `Pagination` | When `entry.previous` or `entry.next` resolves. |
-| Mobile dock | Labels that open overlays | Smaller screens, with vault button only for vault entries. |
+| Region         | Component                             | When it appears                                            |
+| -------------- | ------------------------------------- | ---------------------------------------------------------- |
+| Header         | `PublicationHeader`                   | Every article route.                                       |
+| Left sidebar   | `VaultExplorer`                       | Desktop view when `vaultContext` exists.                   |
+| Center content | `Article` with `renderResult.Content` | Every article route.                                       |
+| Right sidebar  | `OnThisPage`                          | Desktop view for H2 and H3 navigation.                     |
+| Pagination     | `Pagination`                          | When `entry.previous` or `entry.next` resolves.            |
+| Mobile dock    | Labels that open overlays             | Smaller screens, with vault button only for vault entries. |
 
 The center column is the stable part. It renders the header, article content, and pagination. The sidebars and overlays add navigation around that content without changing the source article.
 
@@ -248,7 +247,9 @@ const layoutProps = {
 
 This is another place where manifest policy pays off. By the time the route prepares layout props, image inheritance and image enforcement have already happened. The route does not need to know whether the image came from the child entry or the vault root.
 
-The article header gets the same `entry` context, so metadata and visible UI agree. If the title, image, date, tags, or read time look wrong, trace the entry context first.
+The article header gets the same `entry` context, but the document metadata does not fully agree today. `BaseLayout.astro` uses `siteManifest.description` for Open Graph and incorrectly places `siteManifest.pageTitle` in the standard description meta tag. The route hands off the right values; the shared layout wires one consumer incorrectly.
+
+The header has a separate gap. The manifest maps `updatePubDate` to `updatedDate`, but `PublicationHeader.astro` does not render it. If the title, image, publication date, tags, or read time look wrong, trace the entry context first. If the update date or standard description is missing, inspect the consumer before changing frontmatter.
 
 ---
 

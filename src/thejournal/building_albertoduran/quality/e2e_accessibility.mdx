@@ -1,7 +1,6 @@
 ---
-title: "Production preview, responsiveness, and accessibility behavior"
-description: "How Playwright validates browser-only behavior such as overlays, responsive layouts, view transitions, themes, Mermaid popovers, and ECharts hydration."
-author: "Alberto Duran"
+title: "Chromium preview and tested accessibility behaviors"
+description: "Chromium tests verify selected reader behaviors while leaving Axe rules, screen readers, reduced motion, Firefox, and WebKit uncovered."
 tags: ["playwright", "accessibility", "e2e"]
 pubDate: 2026-06-17
 updatePubDate: 2026-06-19
@@ -38,7 +37,7 @@ The responsive tests use viewport widths around important breakpoint edges: 390,
 
 Additional layout checks protect specific design decisions. Top-level heroes keep eyebrow and heading geometry aligned across routes. The homepage hero waits for wide desktop before showing the side panel. The profile skills grid waits until desktop width before switching to three columns. Journal article sidebars wait until the content column can stay readable, while the mobile dock appears when sidebars are hidden.
 
-These tests are accessibility and design checks at the same time. Horizontal overflow can make mobile pages hard to read. Premature sidebars can crush article content. Misaligned hero geometry can make top-level pages feel inconsistent. The browser layer proves those layout decisions against actual viewport sizes.
+These tests cover accessibility-related and design behavior at the same time. Horizontal overflow can make mobile pages hard to read. Premature sidebars can crush article content. Misaligned hero geometry can make top-level pages feel inconsistent. Chromium proves those layout decisions at the configured viewport sizes.
 
 ```mermaid
 flowchart TD
@@ -69,13 +68,13 @@ The same overlay primitive supports mobile article navigation panels. Browser co
 
 ---
 
-## Why accessibility is browser-shaped
+## Tested accessibility behaviors
 
-Accessibility is partly markup, but many accessibility behaviors are interactive. A dialog label can be inspected in static HTML. Focus movement, Escape close, keyboard activation, scroll lock, and route-swap cleanup require a browser session. The e2e suite covers those behaviors where they actually occur.
+Accessibility includes markup and interaction. A dialog label can be inspected in static HTML. Focus movement, Escape close, keyboard activation, scroll lock, and route-swap cleanup require a browser session. The e2e suite covers those named behaviors in Chromium where they occur.
 
 The same is true for responsive accessibility. A layout that fits desktop can become hard to use on a phone if it creates horizontal overflow or squeezes the reading column. Browser viewports make those conditions visible. That is why the tests check breakpoint edges instead of only one mobile and one desktop size.
 
-The site uses semantic HTML and progressive enhancement, but Playwright confirms that the enhanced experience keeps those semantics usable.
+The site uses semantic HTML and progressive enhancement, but these assertions cover only the interactions they name. They do not establish conformance with WCAG or replace assistive technology testing.
 
 ---
 
@@ -139,10 +138,10 @@ The e2e suite therefore reads the site the way a deployed browser would. It open
 
 ---
 
-## The build lesson
+## Expand the evidence boundary
 
 Playwright is used where the browser is the source of truth. Responsive layout, focus movement, scroll lock, route swaps, theme persistence, and diagram popovers all depend on browser behavior. Running those checks against `astro preview` keeps them close to production output.
 
-The e2e layer does not replace unit tests. It completes the quality stack by proving that the static site and its runtime enhancements behave as one experience in the environment readers actually use.
+The e2e layer does not replace unit tests. It shows that the static site and its runtime enhancements behave together in configured Chromium runs. Readers also use Firefox, WebKit, assistive technology, keyboard-only workflows, and reduced-motion settings that this suite does not cover.
 
-That final browser pass is what connects the built artifact back to the reader.
+The next evidence additions are an Axe ruleset, documented manual keyboard and screen-reader passes, Firefox and WebKit projects, and focused reduced-motion cases. Until those exist, the article should name tested behaviors rather than claim broad accessibility or browser compatibility.

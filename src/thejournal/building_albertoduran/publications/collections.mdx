@@ -1,7 +1,6 @@
 ---
 title: "Content collections and schema rules"
-description: "How the journal collection schema defines author metadata while manifest code enforces vault-specific publishing rules."
-author: "Alberto Duran"
+description: "The active Zod schema accepts less metadata than the MDX files carry, exposing fields that are unsupported, unused, or only partly wired."
 tags: ["astro", "schema", "mdx"]
 pubDate: 2026-06-17
 order: 10
@@ -49,7 +48,7 @@ The loader says which files are candidates. The schema says which metadata shape
 The glob pattern is doing more than collecting files. It defines a small authoring convention for public and private content inside `src/thejournal/`.
 
 ```ts
-pattern: "**/[^_]*.{md,mdx}"
+pattern: "**/[^_]*.{md,mdx}";
 ```
 
 The `**/` part allows files at any depth under the journal folder. The `{md,mdx}` part accepts both Markdown and MDX. The `[^_]*` basename rule excludes files whose name starts with `_`, which gives the repository a simple way to keep fragments, notes, or experiments near related articles without letting them become publication candidates.
@@ -66,27 +65,35 @@ That distinction is easy to miss because a content collection feels like a list 
 
 ## The frontmatter fields
 
-The active schema keeps the author contract compact. It supports enough metadata for cards, headers, routing context, and sorting without asking every post to repeat values the build can infer.
+The active schema keeps the frontmatter contract compact. It supports metadata for cards, headers, routing context, and sorting without asking every post to repeat values the build can infer. The source files currently carry one field that the contract does not accept, which is exactly the kind of drift a schema article should expose.
 
-| Field | Schema rule | Where it shows up |
-| ---- | ---- | ---- |
-| `title` | Required string. | Article header, manifest labels, sidebars, and cards. |
-| `github` | Optional string. | Repository button in the article header when present. |
-| `image` | Optional image metadata. | Header image, card image, and social metadata when required by policy. |
-| `description` | String with a default. | Metadata summary, cards, and layout manifest. |
-| `pubDate` | Required date after coercion. | Article header and sorting contexts. |
-| `updatePubDate` | Optional date after coercion. | Updated article metadata when an entry changes later. |
-| `tags` | String array with default `[]`. | Header tags and journal discovery surfaces. |
-| `order` | Number with default `100`. | Manual ordering inside vaults and nested sections. |
-| `draft` | Optional boolean. | Publication exclusion and draft subtree behavior. |
+| Field           | Schema rule                     | Where it shows up                                                                                                                    |
+| --------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `title`         | Required string.                | Article header, manifest labels, sidebars, and cards.                                                                                |
+| `github`        | Optional string.                | Repository button in the article header when present.                                                                                |
+| `image`         | Optional image metadata.        | Header image, card image, and social metadata when required by policy.                                                               |
+| `description`   | String with a default.          | Cards, the layout manifest, and Open Graph description. The standard description meta tag currently receives the page title instead. |
+| `pubDate`       | Required date after coercion.   | Article header and sorting contexts.                                                                                                 |
+| `updatePubDate` | Optional date after coercion.   | Mapped to `updatedDate` in the manifest, but not rendered by `PublicationHeader.astro`.                                              |
+| `tags`          | String array with default `[]`. | Header tags and journal discovery surfaces.                                                                                          |
+| `order`         | Number with default `100`.      | Manual ordering inside vaults and nested sections.                                                                                   |
+| `draft`         | Optional boolean.               | Publication exclusion and draft subtree behavior.                                                                                    |
 
 The schema uses `z.coerce.date()` for dates. That lets YAML strings like `2026-06-17` become `Date` objects for the rest of the build. Components can format dates without reparsing frontmatter.
 
 Defaults also keep authoring quiet. A missing `description` receives a fallback. Missing `tags` become an empty array. Missing `order` becomes `100`, which lets most entries sort naturally while still allowing a section index or important article to move earlier.
 
+### Fields that currently go nowhere
+
+All 41 files in this vault previously declared `author`, but `src/content.config.ts` has no `author` field and the article UI does not render a byline. The rewrite removes that unsupported frontmatter instead of advertising a contract the application does not have. Adding a byline later requires a schema field, manifest type, UI consumer, and test.
+
+`updatePubDate` has a different problem. The schema accepts it and the manifest maps it to `updatedDate`, yet `PublicationHeader.astro` displays only the publication date. The data is partly wired rather than unsupported. A contributor should either finish that route to the UI or remove dates that imply readers can see an update marker.
+
+The description path exposes a third mismatch. `BaseLayout.astro` passes `siteManifest.description` to the Open Graph description, while the standard `<meta name="description">` receives `siteManifest.pageTitle`. Search previews may therefore miss the article summary even though the frontmatter is valid. The case study records that defect rather than describing the intended behavior as finished.
+
 ---
 
-## The update date rule
+## The accepted update date
 
 The schema adds a refinement around `updatePubDate`. If an entry declares an update date, it must also declare a publication date. The current schema already requires `pubDate`, but the refinement keeps the relationship explicit and gives a clearer error when someone changes the schema later.
 
@@ -106,7 +113,7 @@ The schema adds a refinement around `updatePubDate`. If an entry declares an upd
 )
 ```
 
-The rule is small, but it captures an editorial truth. An update date only makes sense as the second point in a timeline. If the first point is missing, the article metadata would tell a half-story.
+The validation rule captures the data relationship, but it does not finish the reader experience. A valid update date can still disappear before presentation. Schema validity proves that an input is shaped correctly; it does not prove that a component consumes it.
 
 ### Why the schema stays conservative
 

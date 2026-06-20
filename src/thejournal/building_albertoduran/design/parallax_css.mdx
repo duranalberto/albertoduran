@@ -1,7 +1,6 @@
 ---
 title: "Parallax with CSS scroll timelines"
-description: "How ParallaxHero and CSS scroll timelines create depth without JavaScript while preserving fallbacks and reduced motion."
-author: "Alberto Duran"
+description: "The Atlas hero keeps its content in Astro markup while CSS owns depth, narrow viewport cropping, and reduced motion behavior."
 tags: ["css", "parallax", "motion"]
 pubDate: 2026-06-17
 order: 40
@@ -140,7 +139,7 @@ These details make the effect feel simple to use. The reader does not need to kn
 
 ---
 
-## The build lesson
+## Keep content outside motion
 
 Parallax on this site is a progressive visual layer. Astro provides a slot-based section. CSS defines the scroll timeline and fallback behavior. Image components provide optimized background assets. Reduced motion removes the movement cleanly. The browser gets a composed section whether or not the animation runs.
 

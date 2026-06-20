@@ -1,7 +1,6 @@
 ---
 title: "Testing the risky build-time systems"
-description: "How Vitest covers the journal manifest, Mermaid transform pipeline, ECharts chart pipeline, HTML minifier, Atlas loader, and custom build logic."
-author: "Alberto Duran"
+description: "Focused regression stories show how unit tests catch draft leaks, SVG ID collisions, unsafe chart options, and damaged generated markup."
 tags: ["testing", "mermaid", "echarts", "manifest"]
 pubDate: 2026-06-17
 updatePubDate: 2026-06-19
@@ -149,7 +148,7 @@ That documentation value matters for a project with custom publishing rules. A f
 
 ---
 
-## The build lesson
+## Write the regression at the failure
 
 The custom build-time systems are the places where the site expresses its own rules. The manifest expresses publishing structure. Mermaid transforms express diagram behavior. The minifier expresses content preservation. The Atlas loader expresses live-data normalization. SVG ribbon tests express decorative asset generation.
 

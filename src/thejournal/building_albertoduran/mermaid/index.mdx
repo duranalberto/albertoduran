@@ -1,7 +1,6 @@
 ---
 title: "Why the site has a custom Mermaid integration"
 description: "Why Mermaid diagrams render at build time through a custom Astro integration, external browser service, and static SVG assets."
-author: "Alberto Duran"
 tags: ["mermaid", "astro", "diagrams"]
 pubDate: 2026-06-17
 order: 30
@@ -17,7 +16,7 @@ The site is static-first, but Mermaid rendering still needs a browser environmen
 
 That creates a shape problem. The Astro site wants to build a static `dist/` folder. Mermaid wants a browser-like renderer. The project solves that by moving browser work into renderer services and keeping the Astro repository focused on registration, caching, transformation, and asset emission.
 
-The primary renderer is a self-owned Cloudflare Browser Rendering Worker. `mermaid.ink` remains as the public fallback. The Worker is the preferred steady-state path because it accepts batched work, renders all requested themes, and gives this repository a stable service contract.
+The primary renderer client targets an external Cloudflare Browser Run Worker. `mermaid.ink` remains as the public fallback. The Worker contract is preferred because the client sends batched work and requests all themes together. This repository does not contain the service source or production telemetry.
 
 ### The goals
 
@@ -83,7 +82,7 @@ integrations: [
   }),
   mdx(),
   customHtmlMinifier(),
-]
+];
 ```
 
 This ordering is part of the build architecture. Mermaid needs to intercept `mermaid` fences while the Markdown tree is still available. If MDX runs without the plugin, the fence becomes ordinary code and the diagram pipeline never sees it.
@@ -102,7 +101,7 @@ The Mermaid integration uses Astro build hooks to place work at the right moment
 
 ### Why the renderer is external
 
-The external renderer repo is `duranalberto/mermaid-cloudflare-browser-rendering`. The Astro site treats that service as a rendering dependency rather than a local module. This keeps browser launch, Mermaid execution, authentication, payload limits, and renderer lifecycle out of the static site repository.
+The Astro site treats the external service as a rendering dependency rather than a local module. That keeps browser execution outside the static repository, but it also means the implementation, deployment configuration, authentication checks, font loading, and production lifecycle cannot be verified here.
 
 The separation is important. The static site build remains a content and asset pipeline. The browser rendering service owns the browser. Each side does one kind of work.
 

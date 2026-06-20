@@ -1,7 +1,6 @@
 ---
 title: "Diagram expansion and theme-specific asset links"
-description: "How static Mermaid SVGs gain runtime expansion, cloned popovers, page CSS attachment, and light or dark asset links."
-author: "Alberto Duran"
+description: "An already-rendered diagram gains theme-aware asset links and disposable popover expansion without shipping Mermaid to the browser."
 tags: ["runtime", "mermaid", "svg"]
 pubDate: 2026-06-17
 order: 40
@@ -128,7 +127,7 @@ That disposable model is a good fit for custom elements. The element owns the co
 
 ---
 
-## The build lesson
+## Keep cloned diagrams disposable
 
 The Mermaid shell is small because the build pipeline does the durable work. Inline SVGs already exist. Standalone assets already exist. Page CSS already exists. The runtime only connects those artifacts to the current theme and to the reader's request for a larger view.
 

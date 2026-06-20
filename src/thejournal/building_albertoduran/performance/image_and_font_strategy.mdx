@@ -1,7 +1,6 @@
 ---
 title: "Images and fonts"
-description: "How Astro image optimization, responsive Picture usage, local font registration, and LCP choices shape the site's asset strategy."
-author: "Alberto Duran"
+description: "Images and fonts receive different loading treatment according to their role, with explicit priorities and an honest measurement gap."
 tags: ["performance", "images", "fonts"]
 pubDate: 2026-06-17
 order: 30
@@ -121,7 +120,7 @@ The Atlas section uses fixed generated dimensions for its sources. The backgroun
 
 ---
 
-## The build lesson
+## Preserve loading intent
 
 The image and font strategy is another version of the site's larger rule. Do as much useful work as possible before the browser gets involved, then give the browser honest hints about what matters first.
 

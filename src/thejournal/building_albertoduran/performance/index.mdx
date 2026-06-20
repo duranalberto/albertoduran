@@ -1,7 +1,6 @@
 ---
 title: "Performance map"
-description: "A map of the site's performance work across navigation feel, generated file weight, image handling, and font strategy."
-author: "Alberto Duran"
+description: "The site moves work into the build, but its current evidence covers artifacts and behavior rather than Web Vitals or navigation timing."
 tags: ["performance", "astro", "frontend"]
 pubDate: 2026-06-17
 order: 40
@@ -13,7 +12,7 @@ Performance on this site is not treated as a final cleanup step. It is part of t
 
 ## The performance shape
 
-The performance strategy has three layers. The first layer is generation. Astro turns MDX, layouts, images, fonts, Mermaid diagrams, and custom content loaders into a static site. The second layer is delivery. The generated files are minified, deduplicated where the project has enough information to do that safely, then served from Cloudflare Pages. The third layer is interaction. Small browser modules keep theme state, overlays, article navigation, and diagram expansion comfortable after the page has loaded.
+The performance strategy has three layers. The first layer is generation. Astro turns MDX, layouts, images, fonts, Mermaid diagrams, and custom content loaders into a static site. The second layer is delivery. The generated files are minified and served from Cloudflare Workers Static Assets. The third layer is interaction. Small browser modules keep theme state, overlays, article navigation, and diagram expansion comfortable after the page has loaded.
 
 Those layers are deliberately separate. Static generation should decide what content exists. Build optimization should reduce the weight of that content without changing meaning. Runtime enhancement should make an already-readable document easier to use. When those responsibilities stay separate, the site stays fast without becoming fragile.
 
@@ -46,15 +45,17 @@ Static output changes the performance problem. The site does not need a server t
 
 That is why many features in this codebase look slightly more elaborate than their visible UI suggests. The manifest builder does more than list posts because it prepares all route context ahead of time. The Mermaid integration does more than run a renderer because it produces inline SVG, standalone assets, page CSS, and theme variants before the reader arrives. The Atlas loader does more than fetch one score because it turns outside data into a stable content entry the homepage can render like any other source.
 
-The benefit is not only raw speed. It also gives the site a clear mental model. A page should be valid before JavaScript runs. A publication should have its image, title, read time, navigation neighbors, breadcrumbs, and article headings before the browser enhances anything. That rule keeps performance and maintainability tied together.
+The repository proves this division of work, but it does not prove raw speed. It contains no recorded Lighthouse run, Web Vitals dataset, navigation timing benchmark, or bundle budget. A page should still be valid before JavaScript runs, yet that architectural property must not be presented as a measured performance result.
+
+> Current evidence boundary. The deterministic build proves that static pages and assets can be generated. It also reports at least one minified JavaScript chunk above 500 kB. Performance claims need measurements, and the chunk warning remains an open item rather than a detail to edit away.
 
 ---
 
 ## Navigation should feel ready
 
-The navigation layer is where static output gets a more app-like feel. `BaseLayout.astro` imports Astro's `ClientRouter`, and the shared `<main>` uses a named transition with a fade animation. Internal page changes can swap content without a full visual reset, while the site still keeps the simplicity of static generation.
+The navigation layer is where static output gets an application-like transition. `BaseLayout.astro` imports Astro's `ClientRouter`, and the shared `<main>` uses a named transition with a fade animation. Internal page changes can swap content without a full visual reset, while the site still keeps the simplicity of static generation.
 
-The prefetch strategy is intentionally conservative. `astro.config.mjs` uses `prefetchAll: false` and `defaultStrategy: "tap"`. The site can warm likely next pages when a reader shows intent, but it does not ask the browser to crawl the whole journal in the background. That matters for a vault-style section because a tree of related pages can grow quickly. Prefetch should make navigation feel responsive, not compete with the page the reader is already viewing.
+The prefetch strategy is intentionally conservative. `astro.config.mjs` uses `prefetchAll: false` and `defaultStrategy: "tap"`. The site can warm likely next pages when a reader shows intent, but it does not ask the browser to crawl the whole journal in the background. That matters for a vault-style section because a tree of related pages can grow quickly. Whether this improves timing remains unmeasured in the repository.
 
 Theme code also participates in perceived performance. A page that swaps quickly but flashes the wrong theme feels broken. The inline theme bootstrap runs before the module scripts, while `theme_manager.ts` reapplies the theme during Astro lifecycle events. `astro:before-swap` applies the current theme to the incoming document, and `astro:after-swap` clears transition suppression after the page is ready. The reader sees continuity instead of a color reset.
 

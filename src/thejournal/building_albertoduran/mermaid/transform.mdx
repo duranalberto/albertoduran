@@ -1,7 +1,6 @@
 ---
 title: "Merging multi-theme SVGs with HAST"
-description: "How raw Mermaid SVG strings become sanitized, scoped, multi-theme HAST nodes that can render safely inside article pages."
-author: "Alberto Duran"
+description: "An SVG compiler pass removes scripts, cleans selected styles, rewrites IDs, scopes CSS, and merges light and dark renderer output."
 tags: ["mermaid", "svg", "hast"]
 pubDate: 2026-06-17
 order: 40
@@ -129,7 +128,7 @@ This is a good example of build and runtime cooperation. The build creates a dia
 
 ---
 
-## The build lesson
+## Preserve the transform boundary
 
 The transform layer is where raw renderer output becomes publication output. It sanitizes, scopes, rewrites, merges themes, and protects CSS behavior. HAST gives the integration a structured way to perform that work.
 

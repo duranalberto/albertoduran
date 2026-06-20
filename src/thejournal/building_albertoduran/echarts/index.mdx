@@ -1,7 +1,6 @@
 ---
 title: "ECharts in MDX publications"
 description: "Why the journal has a static-first ECharts path for data visuals, how it differs from Mermaid, and how the section is organized."
-author: "Alberto Duran"
 tags: ["echarts", "mdx", "charts"]
 pubDate: 2026-06-19
 order: 35
@@ -25,12 +24,12 @@ The ECharts path keeps that connection inside MDX. An article imports the `EChar
 
 The publication guide now gives authors a simple choice. Use Mermaid when the visual explains structure. Use ECharts when the visual explains data. That distinction prevents every visual problem from turning into the same tool choice.
 
-| Reader needs to understand | Preferred visual |
-| ---- | ---- |
-| A process, dependency, sequence, state, or component boundary | Mermaid |
-| A trend, ranking, distribution, proportion, correlation, or financial session | ECharts |
-| A measured flow with weighted links between stages | ECharts Sankey |
-| An unmeasured handoff between systems | Mermaid flowchart |
+| Reader needs to understand                                                    | Preferred visual  |
+| ----------------------------------------------------------------------------- | ----------------- |
+| A process, dependency, sequence, state, or component boundary                 | Mermaid           |
+| A trend, ranking, distribution, proportion, correlation, or financial session | ECharts           |
+| A measured flow with weighted links between stages                            | ECharts Sankey    |
+| An unmeasured handoff between systems                                         | Mermaid flowchart |
 
 This is why the vault has separate Mermaid and ECharts sections. They share the same static-first philosophy, but they do not share the same authoring model. Mermaid starts from a code fence. ECharts starts from a component and an option object.
 
@@ -52,13 +51,13 @@ Raw ECharts options are powerful, but they can get noisy inside an article. The 
 
 The current builder set covers everyday article charts and finance-specific charts.
 
-| Family | Builders |
-| ---- | ---- |
-| Common comparison | `lineChartOption`, `barChartOption`, `pieChartOption`, `scatterChartOption` |
+| Family                   | Builders                                                                                            |
+| ------------------------ | --------------------------------------------------------------------------------------------------- |
+| Common comparison        | `lineChartOption`, `barChartOption`, `pieChartOption`, `scatterChartOption`                         |
 | Density and distribution | `histogramChartOption`, `heatmapChartOption`, `correlationHeatmapChartOption`, `boxplotChartOption` |
-| Hierarchy and flow | `treemapChartOption`, `sankeyChartOption` |
-| Market views | `candlestickWithVolumeOption`, `macdChartOption`, `rsiChartOption`, `bollingerBandsChartOption` |
-| Market structure | `depthChartOption`, `orderBookChartOption`, `ohlcChartOption` |
+| Hierarchy and flow       | `treemapChartOption`, `sankeyChartOption`                                                           |
+| Market views             | `candlestickWithVolumeOption`, `macdChartOption`, `rsiChartOption`, `bollingerBandsChartOption`     |
+| Market structure         | `depthChartOption`, `orderBookChartOption`, `ohlcChartOption`                                       |
 
 Authors can still pass a raw ECharts option when a publication needs something unusual. The builders exist to make the ordinary path hard to misuse.
 
@@ -76,10 +75,10 @@ The same change also touched the publication rules. `docs/THEJOURNAL_PUBLICATION
 
 Read this section in the same way as the Mermaid section. Start with the implementation, then look at real article examples.
 
-| Article | Main question |
-| ---- | ---- |
+| Article          | Main question                                                                           |
+| ---------------- | --------------------------------------------------------------------------------------- |
 | `implementation` | How does the `EChart` component turn MDX data into static SVG and optional enhancement. |
-| `chart_examples` | Which chart shapes are available to journal authors, and what does each one fit. |
+| `chart_examples` | Which chart shapes are available to journal authors, and what does each one fit.        |
 
 The chart examples are intentionally part of this vault rather than only a hidden test fixture. A reader who understands the build should be able to see the visual vocabulary the build supports.
 

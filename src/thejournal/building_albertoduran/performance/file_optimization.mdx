@@ -1,7 +1,6 @@
 ---
 title: "Build-time file optimization"
-description: "How Vite, Terser, Tailwind, DaisyUI, a custom HTML minifier, SVG compression, and Mermaid CSS hoisting reduce output weight."
-author: "Alberto Duran"
+description: "A deterministic build shows what each optimizer changes and exposes the JavaScript chunk warning that still needs a measured budget."
 tags: ["performance", "build", "optimization"]
 pubDate: 2026-06-17
 updatePubDate: 2026-06-19
@@ -119,11 +118,13 @@ These optimizations are not isolated tricks. They are part of the visual archite
 
 ## Cloudflare delivery
 
-Cloudflare Pages receives the static output. At that point, the site has already done the semantic work. Routes are generated, HTML is minified, assets are bundled, images are transformed, diagrams exist as SVG, and CSS is ordered.
+Cloudflare Workers Static Assets receives the static output. At that point, the site has already done the semantic work. Routes are generated, HTML is minified, assets are bundled, images are transformed, diagrams exist as SVG, and CSS is ordered.
 
-That means Cloudflare can do what an edge host is good at. It can serve static files close to readers, apply compression, and cache output. It does not need to run application logic for each journal page. This keeps the deployment model simple and matches the static architecture described in the foundations section.
+That means Cloudflare receives static files and does not need to run application logic for each journal page. Workers Static Assets documents delivery, compression, and caching capabilities, but the repository does not prove the deployed account settings or observed response headers.
 
-There is a quiet advantage here. Because build optimization happens before deployment, the output can be inspected as files. The site does not depend on opaque server behavior to make pages fast. The deployment host is important, but it is not the only place performance exists.
+There is a practical advantage here. Because build optimization happens before deployment, the output can be inspected as files. The deployment host is still part of performance, but the repository can review generated size and structure before upload.
+
+The audit build also reported minified chunks above 500 kB. That warning is the most concrete JavaScript signal currently available, and it remains unresolved. The next step is to map those chunks to routes, set an explicit budget, and measure the effect before describing the output as light.
 
 ---
 
@@ -137,10 +138,10 @@ This is the difference between optimization and flattening. Optimization respect
 
 ---
 
-## The build lesson
+## Set a budget before optimizing
 
 The file optimization story is a set of small, contextual decisions. Vite and Terser handle scripts and CSS bundles. Tailwind and DaisyUI keep the component surface limited. The HTML minifier reduces generated documents while protecting code-oriented fragments. Mermaid CSS hoisting removes repetition from diagram-heavy pages. ECharts file mode moves repeated or large charts into hashed SVG assets. SVG helpers compress and scope icon output. Cloudflare serves the finished files.
 
-The shape is more important than any one tool. Work happens where context is strongest. The source stays readable. The output gets lighter. The browser receives pages that are already structured, styled, and ready to enhance.
+The shape is more important than any one tool. Work happens where context is strongest. The source stays readable, and the browser receives pages that are already structured and styled. Whether the output is light enough needs an artifact budget rather than an adjective.
 
-That is the project’s preferred optimization shape. Reduce output after meaning is established, and keep the source clear enough to keep improving.
+That is the project's preferred optimization shape. Reduce output after meaning is established, then record the before and after sizes so the change can be evaluated instead of admired.

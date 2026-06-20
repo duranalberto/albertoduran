@@ -1,7 +1,6 @@
 ---
-title: "How navigation feels instant"
-description: "How Astro ClientRouter, view transitions, tap prefetching, and theme lifecycle hooks make static navigation feel responsive."
-author: "Alberto Duran"
+title: "Responsive navigation without timing claims"
+description: "Static links gain prefetching, document swaps, and theme lifecycle hooks, though the repository has no navigation timing baseline yet."
 tags: ["performance", "navigation", "astro"]
 pubDate: 2026-06-17
 order: 10
@@ -117,7 +116,7 @@ Navigation speed is also influenced by which surfaces are easy to reach. The jou
 
 Because route context comes from the manifest, those link surfaces stay consistent. A previous link points to the previous published entry in traversal order. A vault child knows its parent tree. A mobile dock can open the same article navigation that appears as a sidebar on large screens. The router then makes movement through those links feel quick.
 
-The result is a publishing system where navigation performance and content structure support each other. The site feels faster because pages are nearby, paths are predictable, and the browser can swap a static document into a stable shell.
+The result is a publishing system where navigation behavior and content structure support each other. Pages are nearby, paths are predictable, and the browser can swap a static document into a stable shell. The repository does not measure whether those choices reduce navigation time.
 
 ---
 
@@ -131,10 +130,10 @@ This combination is especially useful for a long vault. The reader may jump from
 
 ---
 
-## The build lesson
+## Measure the navigation claim
 
-Instant-feeling navigation is not a single trick in this codebase. It is the result of choosing a static foundation, letting Astro handle client-side swaps, using tap prefetching with restraint, keeping the transition boundary at the main content region, and making theme state part of the navigation lifecycle.
+The navigation design combines a static foundation, Astro client-side swaps, tap prefetching, a transition boundary around main content, and theme lifecycle hooks. Those mechanisms are verified in source and selected browser tests. The word "instant" is not, because no cold-load or prefetched navigation timing has been recorded.
 
 That stack fits the site because the journal wants both traits. It wants the durability of static pages and the comfort of smooth reading sessions. The implementation does not ask the browser to become a full app shell. It gives the browser enough structure to make a static site feel alive.
 
-The important outcome is continuity. A reader can move through a vault without feeling the page reset around them, while every route remains a real static URL. That is the balance the navigation layer is built to preserve.
+The intended outcome is continuity while every route remains a static URL. A useful follow-up would measure one cold direct visit and one prefetched route swap on representative mobile and desktop conditions, then publish the timing and loaded chunks beside this design explanation.

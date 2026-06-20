@@ -1,7 +1,6 @@
 ---
 title: "Theme management and view transitions"
-description: "How theme state is applied before first paint, persisted across Astro navigation, and synchronized with DaisyUI controls."
-author: "Alberto Duran"
+description: "Theme correctness has three deadlines around first paint, user choice, and Astro route swaps, each owned by a different layer."
 tags: ["runtime", "themes", "astro"]
 pubDate: 2026-06-17
 order: 10
@@ -122,7 +121,7 @@ The approach also keeps authoring calm. A new component can choose `bg-base-100`
 
 ---
 
-## The build lesson
+## Protect all three theme moments
 
 The theme system works because it is split at the right boundaries. The document starts with a safe default. The inline bootstrap applies the real initial state before first paint. The runtime manager owns persistence, toggle binding, and Astro navigation. DaisyUI and Tailwind tokens own visual meaning. Mermaid shell behavior follows the same document attribute for theme-specific asset links.
 

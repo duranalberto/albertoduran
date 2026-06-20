@@ -1,7 +1,6 @@
 ---
 title: "Inside the publication system"
-description: "How MDX files become filtered manifests, vault navigation, rendered article pages, and static routes in the journal."
-author: "Alberto Duran"
+description: "The publication system behaves like a compiler whose policy stages turn MDX candidates into routes, navigation, and complete article pages."
 tags: ["astro", "mdx", "content"]
 pubDate: 2026-06-17
 updatePubDate: 2026-06-19
@@ -83,11 +82,11 @@ That contract keeps `src/pages/thejournal/[...slug].astro` small. The route stil
 
 The processor exports three shapes because the page layer has three different jobs. A single array would force the route and components to keep reshaping the same data. Separate outputs make each read path obvious.
 
-| Output | Shape | Primary reader |
-| ---- | ---- | ---- |
-| `publishedEntries` | Filtered Astro collection entries. | `getStaticPaths()` and `render(post)`. |
-| `entryManifest` | Flat lookup keyed by entry ID. | Article route, header, pagination, and path lookup. |
-| `vaultsManifest` | Nested vault tree keyed by vault ID. | Vault sidebar, breadcrumbs, and mobile vault overlay. |
+| Output             | Shape                                | Primary reader                                        |
+| ------------------ | ------------------------------------ | ----------------------------------------------------- |
+| `publishedEntries` | Filtered Astro collection entries.   | `getStaticPaths()` and `render(post)`.                |
+| `entryManifest`    | Flat lookup keyed by entry ID.       | Article route, header, pagination, and path lookup.   |
+| `vaultsManifest`   | Nested vault tree keyed by vault ID. | Vault sidebar, breadcrumbs, and mobile vault overlay. |
 
 `publishedEntries` keeps the original collection entry available because Astro's `render(post)` expects that object. `entryManifest` holds the site-specific context that components need, including read time, image inheritance, vault ID, previous ID, and next ID. `vaultsManifest` preserves the nested folder shape that a flat collection cannot express.
 
@@ -154,13 +153,13 @@ Charts are the main exception to this no-import path. A data visualization needs
 
 This `publications/` section is split by ownership boundary. Each article looks at a layer that can be changed independently, as long as its contract with the next layer stays intact.
 
-| Article | Main question |
-| ---- | ---- |
-| `collections` | Which frontmatter fields can authors write, and what does the schema validate. |
-| `manifest_rules` | Which content rules become build-time policy before pages render. |
-| `static_generation` | How the catch-all route turns published entries into static pages. |
-| `mdx_rendering` | How `render(post)`, component overrides, and opt-in MDX components shape article HTML. |
-| `codeblocks` | How fenced code becomes theme-aware highlighted output. |
+| Article             | Main question                                                                          |
+| ------------------- | -------------------------------------------------------------------------------------- |
+| `collections`       | Which frontmatter fields can authors write, and what does the schema validate.         |
+| `manifest_rules`    | Which content rules become build-time policy before pages render.                      |
+| `static_generation` | How the catch-all route turns published entries into static pages.                     |
+| `mdx_rendering`     | How `render(post)`, component overrides, and opt-in MDX components shape article HTML. |
+| `codeblocks`        | How fenced code becomes theme-aware highlighted output.                                |
 
 Read them in that order if you are changing the publishing model. The collection article starts with the author contract. The manifest article explains the build policy. Static generation shows how those decisions become routes. The rendering and code block articles cover the final MDX presentation layer.
 

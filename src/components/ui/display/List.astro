@@ -30,6 +30,13 @@ const resolvedItems = resolveListItems(items);
   {
     resolvedItems.map((item) => (
       <li class:list={["list-row publication-list-row", itemClass, item.class]}>
+        {item.href && (
+          <a
+            href={item.href}
+            aria-label={item.ariaLabel ?? `Read ${item.title}`}
+            class="publication-list-row-link"
+          />
+        )}
         {item.media?.kind === "image" && (
           <div class:list={["publication-list-media", item.media.class]}>
             <Image src={item.media.src} alt={item.media.alt} loading="lazy" />

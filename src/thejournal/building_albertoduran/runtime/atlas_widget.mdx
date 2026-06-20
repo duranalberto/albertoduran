@@ -1,7 +1,6 @@
 ---
 title: "Live data at build time"
-description: "How the Atlas widget fetches schedule data during the build, falls back deterministically in tests, and localizes time in the browser."
-author: "Alberto Duran"
+description: "An unstable ESPN page feeds build-time Atlas data, deterministic fixtures protect tests, and the browser localizes the rendered match time."
 tags: ["runtime", "data", "astro"]
 pubDate: 2026-06-17
 order: 50
@@ -21,7 +20,7 @@ The loader is registered as part of the Astro content layer, so the widget data 
 
 The loader clears the store before writing the current entry. That makes the collection behave like a single current snapshot rather than an accumulating history. The component can rely on one known ID, and the rest of the page can treat the result as ordinary build data.
 
-The data shape is deliberately small. It contains standing, record, points, home team, away team, raw date, stadium, and city. Those fields are exactly what the visual component needs. The loader does the translation from external API shape into local display shape before the component renders.
+The data shape is deliberately small. It contains standing, record, points, home team, away team, raw date, stadium, and city. Those fields are exactly what the visual component needs. The loader translates scraped ESPN page data into a local display shape before the component renders.
 
 ```mermaid
 flowchart TD
@@ -64,7 +63,7 @@ This is still build-time work. The homepage does not ask the reader's browser to
 
 `AtlasStats.astro` reads the content entry with `getEntry("atlasData", "current-match")`. It formats a Mexico City fallback time and uses manual AVIF and WebP background variants for responsive presentation.
 
-`atlas-schedule` localizes the schedule time in the browser.
+The `atlas-schedule` custom element localizes the schedule time in the browser. Its active implementation is an inline script inside `AtlasStats.astro`. A second implementation exists at `src/runtime/elements/atlas-schedule.ts`, but the component and shared layout do not import that file.
 
 The component combines three kinds of build output. The content entry supplies match data. Astro's image pipeline supplies optimized background and logo assets. The layout supplies a parallax section with glass panels. The result is a static homepage section with live-feeling content and controlled asset loading.
 
@@ -78,7 +77,9 @@ The Atlas logo uses Astro `Picture` with generated formats and responsive widths
 
 The raw match date is stored as an ISO value. During the build, `AtlasStats.astro` formats it in the `America/Mexico_City` timezone. That gives the static HTML a meaningful fallback tied to the club's context.
 
-The browser enhancement then formats the same raw date for the reader's locale. The custom element reads `#match-date`, checks `data-raw`, uses `Intl.DateTimeFormat().resolvedOptions().timeZone`, formats the date, and appends a simplified timezone label. If the value is missing or invalid, it leaves a safe display value.
+The browser enhancement then formats the same raw date for the reader's locale. The inline custom element reads `#match-date`, checks `data-raw`, uses `Intl.DateTimeFormat().resolvedOptions().timeZone`, formats the date, and appends a simplified timezone label. If the value is missing or invalid, it leaves a safe display value.
+
+The duplicate TypeScript module is a maintenance risk because a contributor can update it without changing production behavior. The sensible next step is to import one implementation from the component or remove the unused file, then keep a test around the chosen ownership boundary.
 
 This is the right split because the build cannot know the reader's timezone. It can know the club context. The browser can know the reader context. Both use the same raw date, and neither needs to fetch new match data.
 
@@ -124,8 +125,8 @@ That output matters because the Atlas section is part of the first impression of
 
 ---
 
-## The build lesson
+## Preserve the data boundary
 
-The Atlas widget shows how live data can belong in a static site. The external API is contacted during the build. The response is normalized into a small content entry. The component renders static HTML with optimized images and a Mexico City time fallback. The browser enhances only the timezone label.
+The Atlas widget shows how changing data can belong in a static site. An ESPN web page is read during the build, then its response is normalized into a small content entry. The component renders static HTML with optimized images and a Mexico City time fallback. The browser enhances only the timezone label.
 
-That is the same architecture used throughout the site. Durable data and layout decisions happen before deployment. The browser adds the part that depends on the reader. The result feels alive without asking every page view to rebuild the widget.
+ESPN markup is an unstable external dependency, not a documented project API. Changes to extraction need a captured fixture and a graceful no-match result. Changes to localization must touch the inline implementation that production uses, at least until the duplicate module is resolved.

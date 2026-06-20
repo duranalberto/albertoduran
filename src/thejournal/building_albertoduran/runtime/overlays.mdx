@@ -1,7 +1,6 @@
 ---
 title: "OverlayPanel, focus, and scroll lock"
-description: "How reusable overlay panels support mobile article navigation, focus trapping, Escape close, and no-JS fallback behavior."
-author: "Alberto Duran"
+description: "A checkbox-based overlay provides the static baseline, then browser code adds focus control, Escape handling, and scroll containment."
 tags: ["runtime", "accessibility", "overlays"]
 pubDate: 2026-06-17
 order: 30
@@ -125,7 +124,7 @@ That is why the overlay system fits the rest of the codebase. It uses HTML state
 
 ---
 
-## The build lesson
+## Restore focus before cleanup
 
 Overlay panels are built as reusable structure plus document-level behavior. `OverlayPanel.astro` defines the semantic contract, label requirements, DaisyUI modal structure, scroll region, and close controls. `overlay-panel.ts` adds focus flow, keyboard activation, Escape close, scroll lock, scroll containment, route-swap reset, and same-page hash handling.
 

@@ -1,13 +1,12 @@
 ---
 title: "Standalone assets, page CSS, and release guardrails"
-description: "How Mermaid SVG assets, page CSS hoisting, diagram expansion, and renderer version guardrails protect production output."
-author: "Alberto Duran"
+description: "One diagram produces inline markup, themed SVG files, hoisted page CSS, and runtime metadata tied to a renderer version."
 tags: ["mermaid", "svg", "testing"]
 pubDate: 2026-06-17
 order: 60
 ---
 
-The Mermaid system does more than replace code fences with inline SVG. It also emits standalone theme-specific assets, uses those assets as cacheable diagram pages, and hoists per-diagram CSS into page-level CSS. That gives readers fast inline diagrams and gives the build stable asset URLs for reuse.
+The Mermaid system does more than replace code fences with inline SVG. It also emits standalone theme-specific assets and hoists per-diagram CSS into page-level CSS. Readers receive inline diagrams, while the build receives stable asset URLs that it can reuse without claiming a measured speed result.
 
 ---
 
@@ -93,7 +92,7 @@ The same idea appears in other static asset systems. A stable URL is useful only
 
 ## Asset discipline
 
-This system is fast because it caches aggressively. It reuses memory cache, disk cache, remote production assets, and immutable standalone SVG files. That speed comes from treating diagram output as content-addressed build output.
+This system checks several reuse layers. It can read memory, disk, and remote production assets before requesting a render, then emit standalone SVG files with input-derived names. Those mechanisms avoid known work, but the repository contains no comparative build timing that would support a speed claim.
 
 The discipline is architectural rather than procedural. Cache keys include source and renderer version. Standalone assets include both light and dark variants. Page CSS hoisting avoids unsafe selector restructuring. Runtime expansion clones existing SVG instead of asking for a second render.
 
@@ -141,7 +140,7 @@ This is how static assets should behave. The URL represents a specific build pro
 
 ---
 
-## The build lesson
+## Invalidate assets deliberately
 
 Mermaid assets are treated like first-class publication output. Inline SVG serves the article. Standalone SVG serves direct inspection. Page CSS hoisting serves output weight and popover reuse. Cache keys and renderer versions keep asset URLs honest.
 

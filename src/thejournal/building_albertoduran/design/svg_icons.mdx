@@ -1,7 +1,6 @@
 ---
 title: "SVG icons without a library"
-description: "How the project loads SVG content from disk, renders accessible icons, and generates compressed ribbon backgrounds."
-author: "Alberto Duran"
+description: "Three SVG paths cover typed controls, file-loaded skill marks, and generated ribbons, each with a different trust boundary."
 tags: ["svg", "icons", "design"]
 pubDate: 2026-06-17
 order: 30
@@ -127,7 +126,7 @@ This lets the design use icons as both semantic UI and recognizable brand imager
 
 ---
 
-## The build lesson
+## Preserve SVG trust boundaries
 
 The SVG system is small because it is local. Icons live in a typed data map. A primitive renders them consistently. File-loaded skill icons and inline UI icons share one shape. Ribbon helpers reuse the same source material for decorative backgrounds while scoping IDs and compressing content.
 

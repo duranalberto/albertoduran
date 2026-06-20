@@ -1,13 +1,12 @@
 ---
 title: "Cloudflare Worker and mermaid.ink"
-description: "How the Mermaid renderer chain prefers a self-owned batch Worker and falls back to the slower public mermaid.ink service."
-author: "Alberto Duran"
+description: "Provider selection contains build failures across an external batch Worker, a public mermaid.ink fallback, and deterministic fixtures."
 tags: ["mermaid", "rendering", "cloudflare"]
 pubDate: 2026-06-17
 order: 30
 ---
 
-The renderer chain has two jobs. Prefer the fast service that I control, then use a public renderer when that path is unavailable. Both renderers produce SVG strings, but they have different payload contracts, rate behavior, and transform requirements. The site hides those differences behind one `fetchDiagrams()` call.
+The renderer chain has two jobs. Prefer the external batch service, then use a public renderer when that path is unavailable. Both providers produce SVG strings, but they have different payload contracts, rate behavior, and transform requirements. The site hides those differences behind one `fetchDiagrams()` call.
 
 ---
 
@@ -104,7 +103,7 @@ This is a small abstraction with a real payoff. It isolates the only part of the
 
 The Worker provider is build-oriented. It can render multiple diagrams and multiple themes in one request. It accepts theme config and font data. It returns raw SVG strings grouped by diagram. It is the provider that most closely matches the static site's needs.
 
-Because it is self-owned, the Worker can also encode the service constraints the site cares about: authentication, request size limits, theme isolation, and browser reset behavior. Those concerns belong near the renderer, not in the Astro article route.
+The client contract can carry authentication, request limits, and theme inputs, but this repository cannot verify how the Worker enforces them. Those operational concerns belong near the renderer service and require its source or telemetry before this case study can describe their behavior.
 
 The Worker output still needs transformation. It is raw renderer output, not final article markup. That is why provider choice and transform strategy remain separate.
 
@@ -140,7 +139,7 @@ The renderer module therefore creates variety upstream while preserving consiste
 
 ---
 
-## The build lesson
+## Add providers behind the contract
 
 The renderer layer is a provider boundary. It hides how SVG is obtained and exposes what the rest of the build needs. Worker, Ink, and fixture paths all feed the same downstream contract even though their request patterns, service limits, and SVG shapes differ.
 

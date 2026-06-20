@@ -1,7 +1,6 @@
 ---
 title: "The development environment"
-description: "How the VS Code devcontainer defines the Node 22 environment, editor defaults, extensions, and startup workflow."
-author: "Alberto Duran"
+description: "The devcontainer standardizes Node 22 and editor tooling while leaving dependency replay, network access, and production checks explicit."
 tags: ["devcontainer", "node", "tooling"]
 pubDate: 2026-06-17
 order: 20
@@ -49,7 +48,9 @@ The container also installs the GitHub CLI feature, forwards Astro's default por
 }
 ```
 
-The `postCreateCommand` is the most important startup choice. A new container runs `npm install` automatically, so the checked-out repository becomes a usable project without relying on a remembered first step.
+The `postCreateCommand` is the most consequential startup choice. A new container runs `npm install` automatically, so the checked-out repository becomes usable without a remembered first step. It does not provide the strict lockfile replay of `npm ci`, which is what the GitHub Actions workflow uses.
+
+That difference is a reproducibility gap rather than a container failure. `npm install` may update lockfile state when package metadata permits it, while `npm ci` removes the existing install and requires the lockfile to match. A contributor comparing local and CI dependency behavior should start there.
 
 ---
 
@@ -148,11 +149,11 @@ The editor configuration does not decide architecture, but it supports the peopl
 
 ## Container and deployment boundary
 
-The devcontainer is for development. Cloudflare Pages is for deployment. Keeping those roles separate is useful. The container gives contributors the tools to build, preview, and validate the site. The deployment host receives static output.
+The devcontainer is for development. Cloudflare Workers Static Assets is for deployment. Keeping those roles separate is useful. The container gives contributors the tools to build, preview, and validate the site. The deployment host receives static output.
 
 That boundary mirrors the rest of the project. Build-time work happens before deployment. Runtime work happens in the browser. Development tooling helps create the source and output but does not become part of the served page.
 
-The container is therefore a workspace foundation, not a production dependency.
+The container is therefore a workspace foundation, not a production dependency. Its host network mode, explicit DNS settings, and mutable install command are convenience choices that still need review on restricted corporate networks or when exact dependency replay matters.
 
 ---
 

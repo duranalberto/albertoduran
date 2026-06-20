@@ -1,7 +1,6 @@
 ---
 title: "Generating Mermaid themes from DaisyUI palettes"
-description: "How the site turns DaisyUI-aligned palettes into Mermaid base theme variables with contrast helpers and memoized output."
-author: "Alberto Duran"
+description: "Serializable Mermaid variables carry the site's semantic palettes across a renderer boundary without claiming unmeasured contrast."
 tags: ["mermaid", "daisyui", "themes"]
 pubDate: 2026-06-17
 order: 50
@@ -117,11 +116,11 @@ The result is not a one-to-one copy of website tokens. It is an adaptation. A di
 
 ## Contrast as a build concern
 
-Contrast helpers exist because diagram text and shapes can combine in many ways. A node fill can be light or dark. Text may need to sit on primary, secondary, base, or mixed colors. The theming layer chooses readable foregrounds before the renderer produces SVG.
+Contrast helpers exist because diagram text and shapes can combine in many ways. A node fill can be light or dark. Text may need to sit on primary, secondary, base, or mixed colors. The theming layer chooses candidate foregrounds before the renderer produces SVG.
 
 Doing this during the build is better than trying to patch diagram colors in the browser. The renderer lays out text using the chosen theme. The output assets already contain the intended visual relationships.
 
-This makes accessibility and visual fit part of the diagram build, not a post-render overlay.
+This makes color pairing part of the diagram build, but the repository does not record measured contrast values. The helper name and its color mixing are implementation evidence, not proof that every generated label meets an accessibility threshold.
 
 ---
 
@@ -135,9 +134,9 @@ This keeps the article experience coherent across theme changes. The reader sees
 
 ---
 
-## The build lesson
+## Verify contrast before release
 
-Mermaid theming is translation. Site palettes become Mermaid variables. Contrast helpers choose readable pairings. Mix helpers create diagram-specific surfaces that still belong to the local color family. Memoization keeps repeated theme generation cheap.
+Mermaid theming is translation. Site palettes become Mermaid variables. Contrast helpers choose candidate pairings. Mix helpers create diagram-specific surfaces that still belong to the local color family. Memoization avoids recalculating the same theme input.
 
 The final SVG is static, but its colors come from the same design thinking as the rest of the site. That is why the diagrams feel integrated rather than imported.
 
@@ -167,4 +166,4 @@ That is why the theming layer is broader than a few primary colors. It translate
 
 Because themes are generated before rendering, the SVG output already contains the intended visual values. The article does not need a runtime Mermaid theme engine. Standalone SVG files also carry the right styling for direct viewing.
 
-Runtime theme switching still matters for Open links and wrappers, but the expensive theme application happens during rendering. That keeps diagrams fast for readers and consistent for the build.
+Runtime theme switching still matters for Open links and wrappers, but theme application happens during rendering. That keeps the browser from running Mermaid and gives the build consistent diagram inputs. A speed claim would still need measurement.

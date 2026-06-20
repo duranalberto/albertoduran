@@ -47,11 +47,8 @@ function entryToListItem(
     ...(isSectionOverview
       ? { status: { label: "Section overview", color: "primary" } as const }
       : {}),
-    action: {
-      label: "Read page",
-      href: `/thejournal/${entry.id}/`,
-      ariaLabel: `Read ${entry.title} in The Journal`,
-    },
+    href: `/thejournal/${entry.id}/`,
+    ariaLabel: `Read ${entry.title} in The Journal`,
   };
 }
 

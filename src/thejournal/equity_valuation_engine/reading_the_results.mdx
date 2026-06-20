@@ -1,0 +1,259 @@
+---
+title: "How to read a valuation result"
+description: "Interpret scenario rows, skipped models, the equal-weight composite, model dispersion, and JSON without turning output into a target price."
+tags: ["valuation", "json", "analysis"]
+pubDate: 2026-06-20
+order: 80
+---
+
+import Callout from "@components/ui/display/Callout.astro";
+import MockupWindow from "@components/ui/display/MockupWindow.astro";
+
+A composite can sit almost exactly on the market price while its underlying models disagree by more than $25 per share. The average looks calm because high and low estimates cancel. Reading what ran and what skipped before studying any per-share value reveals how model spread can disappear behind one tidy number.
+
+---
+
+## Start with what ran and what skipped
+
+The runner collects a `ModelRunOutcome` for each manager. An outcome can contain a suitability result, valuation report, skip flag, and execution error. Successful reports become scenario rows. Skips become a dictionary with reasons and scores.
+
+Read this inventory before looking at any sample value. A report should identify every model that ran, every model that skipped, and any model excluded because its underlying data path is unreliable.
+
+A missing report without a reason is difficult to trust. The engine's explicit skipped payload makes absence inspectable. It also prevents fake zero estimates from entering the composite.
+
+---
+
+## Read each scenario row
+
+Each successful forward report exposes Bear, Base, and Bull results through a `scenarios` attribute. The summary extractor accepts common value fields such as `intrinsic_value_per_share`, `present_value`, or `intrinsic_value`.
+
+<MockupWindow aria-label="Fictional scenario result" bodyClass="p-5 font-mono text-sm">
+  <strong slot="header">Anonymous scenario table</strong>
+  <pre className="overflow-x-auto whitespace-pre-wrap">{`Model           Bear       Base       Bull
+DCF           $42.00     $58.00     $74.00
+ROE           $44.00     $53.00     $63.00
+EV/EBITDA     $39.00     $48.00     $57.00
+P/S           $48.00     $62.00     $76.00
+NAV           $28.00     $35.00     $42.00`}</pre>
+  <span slot="caption">Rows show scenario sensitivity. Columns allow cross-model comparison.</span>
+</MockupWindow>
+
+First move across one row. DCF spans $42 to $74, which signals strong sensitivity to its forward policy. Then move down the Base column. NAV and P/S disagree because adjusted assets and revenue multiples are different anchors.
+
+Bear and Bull are not confidence limits. They are named cases built from configured adjustments. A real adverse outcome can fall below Bear, and an exceptional outcome can exceed Bull.
+
+---
+
+## How the Base composite is calculated
+
+The summary uses every successful Base value with equal weight.
+
+```text
+Base values = 58, 53, 48, 62, 35
+
+sum = 256
+count = 5
+composite = 256 / 5 = 51.20
+```
+
+Equal weighting is transparent and reproducible. It does not express confidence in one model over another. Suitability scores, sector relevance, shared inputs, model family, and historical error do not change the weights.
+
+That makes the composite a compact center, not a consensus truth. If an asset model is inappropriate but passes, it gets the same vote as DCF. If two related multiple models share the same stale sector policy, their agreement is not independent.
+
+---
+
+## Why the dispersion band is not confidence
+
+The code computes population standard deviation across successful Base estimates. For the anonymous sample, the calculation is about $9.37.
+
+```text
+deviations from 51.20
+  6.80, 1.80, -3.20, 10.80, -16.20
+
+squared deviations
+  46.24, 3.24, 10.24, 116.64, 262.44
+
+population variance = 438.80 / 5 = 87.76
+population standard deviation = √87.76 = 9.37
+```
+
+The serialized field `confidence_band` is the composite plus or minus that value, about $41.83 to $60.57. No sampling model, coverage probability, or calibrated forecast distribution supports the word confidence.
+
+<Callout variant="information" title="Use the narrower label">
+  <p>Call this interval the model dispersion band. It measures how far included Base estimates spread around their equal-weight average. It does not estimate where true value probably lies.</p>
+</Callout>
+
+The separate agreement score divides standard deviation by current price. Lower values mean Base estimates are closer relative to the share price. The score still describes dispersion under this model set, not correctness.
+
+---
+
+## Separate model spread from scenario spread
+
+Model spread compares different methods under their Base policies. Scenario spread compares Bear, Base, and Bull within one method. Mixing them loses information.
+
+The sample P/S Base value at $62 and NAV Base value at $35 create model spread. DCF's $42 Bear and $74 Bull create scenario spread. The first asks why revenue and assets imply different values. The second asks why DCF changes when its assumptions move.
+
+A narrow model spread can still be fragile when models share one input or policy. A wide scenario spread can be appropriate for a business with uncertain economics. Neither spread is automatically good or bad.
+
+---
+
+## Follow one warning back to its source
+
+Suppose DCF warns that normalized free cash flow replaced the raw seed after an unusual capital-expenditure spike. Follow the chain.
+
+```mermaid
+flowchart LR
+    A[Provider cash flow] --> B[Mapped capex]
+    B --> C[Derived diagnostic]
+    C --> D[Missing registry]
+    D --> E[DCF suitability]
+    E --> F[Normalized seed]
+    F --> G[Scenario report]
+```
+
+Ask whether the provider sign and period are correct, whether the spending was genuinely unusual, how normalization was calculated, and whether the validator severity matches the economic risk. The report is an endpoint in that investigation, not the beginning and end.
+
+Repeated warnings may share one cause. Missing debt can affect ratios, WACC, and the equity bridge. Count causes rather than messages when judging data quality.
+
+---
+
+## Use JSON as the full audit trail
+
+The JSON document keeps `stock_metrics`, `missing_data`, `suitability`, `valuations`, `skipped_models`, and `summary` together. That makes it suitable for review, comparison, or a downstream interface.
+
+```json
+{
+  "ticker": "SAMPLE",
+  "stock_metrics": { "current_price": 50.0 },
+  "missing_data": [],
+  "suitability": {
+    "DDM": { "is_suitable": false, "total_score": 6 }
+  },
+  "valuations": {
+    "DCF": { "Base": 58.0 },
+    "P/S": { "Base": 62.0 }
+  },
+  "skipped_models": {
+    "DDM": { "reason": "No recurring dividend base" }
+  },
+  "summary": {
+    "composite_intrinsic_value": 51.2,
+    "model_agreement_score": 0.1874,
+    "confidence_band": [41.83, 60.57]
+  }
+}
+```
+
+The excerpt teaches the shape and is not guaranteed to match exact serializer nesting. Use output from the checked-out revision as the contract. Historical data is excluded, so preserve raw evidence separately when reproducibility matters.
+
+---
+
+## Cases where the composite should be ignored
+
+Ignore it when financial and trading currencies differ because conversion is not connected. Ignore it when a critical source value is implausible, periods are mismatched, or model assumptions lack a defensible date and source.
+
+Ignore it when only one weak model runs. The code can still produce a center and a collapsed band, but there is no cross-model information. Ignore it when negative estimates or an economically unsuitable successful model distort the mean.
+
+Ignore it when business change makes trailing metrics unrepresentative. A major acquisition, disposal, recapitalization, bankruptcy process, or regulatory shift can make historical normalization a poor description of the future.
+
+---
+
+## A responsible reading checklist
+
+Verify identity, periods, units, shares, and currencies. Read raw and derived diagnostics. Read suitability factors and skipped reasons. Inspect assumptions and their provenance. Compare scenarios within models and Base values across models.
+
+Recalculate the equal-weight average and dispersion if the summary matters. Preserve the code and configuration revision. Compare provider values with primary filings. State clearly that output is conditional and educational.
+
+The project is most persuasive when it helps you challenge its own answer. The final article opens the implementation contracts that make this trace possible and shows where a developer can extend them safely.
+
+---
+
+## Compare two runs without losing the cause
+
+Suppose a later run reports a $56 composite and $7 dispersion. Do not begin with the $4.80 increase. Compare the set of included models. If DDM now runs at $80 after a provider dividend appears, the model-set change can explain much of the movement.
+
+Use a compact difference table.
+
+| Layer | Earlier run | Later run | Question |
+| --- | --- | --- | --- |
+| Filing period | TTM A | TTM B | Did company evidence change |
+| Configuration | Revision A | Revision B | Did project policy change |
+| Models run | Five | Six | Did eligibility change |
+| DCF Base | $58 | $57 | Which assumption moved |
+| Composite | $51.20 | $56 | Is movement concentrated |
+| Dispersion | $9.37 | $7 | Did disagreement truly narrow |
+
+A lower dispersion can result from removing an outlier model, adding a model near the average, or moving several estimates together. Each cause has a different interpretation. The statistic alone does not tell you which occurred.
+
+Version the comparison inputs. Save both JSON files and a run record. Use a structural diff for investigation, but summarize financial causes in prose so a future reviewer does not have to infer meaning from field changes.
+
+```bash
+jq --sort-keys . earlier.json > earlier.sorted.json
+jq --sort-keys . later.json > later.sorted.json
+diff -u earlier.sorted.json later.sorted.json
+```
+
+The command reveals changes. It does not determine whether they are valid. Trace important differences to filings, provider behavior, code, or configuration.
+
+---
+
+## Write a one-page valuation note
+
+A useful note keeps the conditional nature of the result visible. Include the valuation date, evidence period, models run and skipped, Base range, composite policy, dispersion, central assumptions, major warnings, and conditions that would change the view.
+
+```text
+Company and valuation date
+  Anonymous sample company
+  fictional worked example
+
+Evidence
+  same-currency statements and price
+  $250m trailing free cash flow
+  100m diluted shares
+
+Models
+  five forward models included
+  DDM skipped
+  P/E excluded for date alignment
+
+Result
+  Base range $35 to $62
+  equal-weight center $51.20
+  model dispersion $9.37
+
+Main sensitivities
+  DCF WACC and terminal growth
+  P/S policy multiple
+  NAV asset haircuts
+
+Decision limits
+  illustrative configuration
+  no currency conversion path
+  not investment advice
+```
+
+Notice that the note leads with the range and construction rather than an undervalued label. It names excluded evidence and tells the reader which assumptions control the result.
+
+Add a monitoring condition when the work will be revisited. A new filing, material acquisition, financing change, guidance revision, or policy refresh can trigger a new run. Price movement alone may justify a new Reverse DCF question even when forward inputs remain unchanged.
+
+---
+
+## Detect a misleading calm summary
+
+Three patterns deserve caution. The first is a narrow spread among models using the same stale multiple policy. The second is a composite near price created by high and low estimates canceling. The third is a one-model summary with zero dispersion.
+
+In the sample, $35 NAV and $62 P/S partially cancel around the $51.20 center. The center looks calm because opposite arguments balance. It does not mean the arguments agree.
+
+Write one sentence for each included model that explains its economic anchor. If those sentences reveal conflicting stories, preserve the conflict in the conclusion. A summary should compress arithmetic, not erase reasoning.
+
+---
+
+## Hand the result to another reader
+
+Give a reviewer the JSON, run record, one-page note, and primary filing links. Ask them to reproduce the composite, identify the widest scenario row, and explain every skipped model. If they cannot, improve the handoff before debating the estimate.
+
+Ask the reviewer to challenge one source value and one assumption. A good handoff lets them trace both through suitability, scenarios, and summary without guessing which code path applied.
+
+Record disagreements separately from corrections. A wrong currency is a correction. A different terminal growth view is a judgment. Mixing the two can turn a data-quality problem into a false difference of opinion.
+
+The result is ready for discussion when another reader can reconstruct its argument and name its limits. Agreement with the final number is not required.

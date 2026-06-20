@@ -15,7 +15,7 @@ const project: ProjectPageConfig = {
   title: "albertoduran.com",
   eyebrow: "Portfolio · Publishing System",
   description:
-    "A portfolio and technical journal built as one inspectable Astro publishing system, with complete pages prepared before the browser adds interaction.",
+    "A personal site I began after a layoff so my work would have more room than a résumé or interview, now built as a static-first portfolio and publishing platform.",
   image: coverImage,
   imageAlt: "A bright development workspace with source code open on a laptop",
   facts: [
@@ -31,7 +31,7 @@ const project: ProjectPageConfig = {
 
 const productSurfaces = [
   {
-    label: "Professional profile",
+    label: "Professional Profile",
     title: "The working history behind the projects",
     description:
       "Experience, skills, and selected work give hiring teams a direct route through the career behind the code.",
@@ -164,35 +164,37 @@ const mermaidComponents = { div: MermaidDiagramWrapper };
   <section id="overview" class="w-full" aria-labelledby="overview-title">
     <SectionHeader
       id="overview-title"
-      title="A portfolio with an inspectable build"
+      title="More room than an interview"
     />
 
     <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12">
       <div class="flex flex-col gap-5 lg:col-span-7">
         <p class="text-xl leading-relaxed text-base-content md:text-2xl">
-          albertoduran.com brings my professional profile, project case studies,
-          and technical journal into one publishing system.
+          I started albertoduran.com after I was laid off. A résumé can list
+          experience, but it cannot show much of how I think or build, and a
+          short interview rarely leaves enough time to walk through the work
+          properly.
         </p>
         <p
           class="max-w-3xl text-base leading-relaxed text-base-content/70 md:text-lg"
         >
-          The build resolves content, routes, diagrams, charts, and responsive
-          images before deployment. Every page contains meaningful HTML before
-          browser enhancements begin. That boundary keeps the work inspectable,
-          though the project still needs a recorded Web Vitals baseline and a
-          budget for its largest JavaScript chunks.
+          What began as a personal introduction grew into a portfolio, a set of
+          project case studies, and a place for all kinds of writing. Astro
+          resolves the content, routes, diagrams, charts, and responsive images
+          before deployment, so the site itself can demonstrate the engineering
+          choices I want readers and hiring teams to inspect.
         </p>
       </div>
 
       <Callout
         variant="information"
-        title="The static baseline"
+        title="What visitors can find here"
         class="lg:col-span-5"
       >
         <p>
-          A visitor can navigate publications, inspect diagrams, and understand
-          the project with JavaScript disabled. Browser code adds theme state,
-          overlays, and closer inspection when those features are available.
+          The site brings my experience, projects, and writing into one place.
+          Visitors can get a quick introduction or spend more time reading how
+          I approached and built each project.
         </p>
       </Callout>
     </div>

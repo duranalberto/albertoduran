@@ -1,135 +1,192 @@
 ---
-title: "Product state and JSON persistence"
-description: "How MLScraper stores product snapshots, records price and title history, and moves missing listings through lifecycle states."
-author: "Alberto Duran"
-tags: ["python", "data", "persistence"]
+title: "How a product becomes price history"
+description: "Follow one stable product identifier through updates, temporary absence, recovery, JSON persistence, and MLScraper price-drop alerts."
+tags: ["python", "data", "persistence", "state-machines"]
 pubDate: 2026-06-18
-order: 60
+updatePubDate: 2026-06-20
+order: 70
 ---
 
-The hardest part of a price tracker is memory. A product that is missing today might be sold out, blocked by a partial page, or hidden behind a provider glitch. MLScraper keeps current products, temporary misses, finished listings, price history, and status transitions separate so one bad cycle does not erase the story.
+A store listing does not become history because the scraper saved it once. History appears when later observations can be connected to the same product without mistaking a title edit for a new item or a blocked page for a disappearance. MLScraper uses stable provider identifiers, explicit lifecycle states, and guarded reconciliation to preserve that connection. This chapter follows the record from its first sighting through price changes, temporary absence, recovery, and safe JSON writes.
 
 ---
 
-## Article is the persisted unit
+## Identity comes before state
 
-Every provider returns plain dictionaries with `identifier`, `title`, `price`, and usually `url`. The shared motor turns those dictionaries into `Article` instances. The identifier is the stable key. It lets the scraper decide whether an incoming item is new, changed, missing, or returning after a gap.
+Every provider returns an `identifier`, `title`, and `price`. The identifier decides whether two observations describe the same listing. Amazon uses an ASIN, while other providers expose their own stable product or listing keys.
 
-The persisted JSON record has a small required core.
+Titles are poor identity. Stores add campaign text, punctuation, color names, or shipping claims. Prices are worse because change is the event we want to record. A provider-owned stable key lets the article accept those changes without splitting one history into several records.
+
+The persisted `Article` contains current values and enough context to interpret when they were first seen, changed, or temporarily absent.
 
 ```json
 {
-  "identifier": "MLM123",
-  "title": "Nintendo 3DS",
-  "price": 3200.0,
-  "url": "https://example.test/item",
-  "datetime": "2026-05-16 12:00:00",
-  "status": "active"
+  "identifier": "provider-stable-id",
+  "title": "Product title",
+  "price": 123.45,
+  "url": "https://example.test/product",
+  "datetime": "2026-06-20 12:00:00",
+  "status": "active",
+  "history": [],
+  "status_history": [],
+  "hold_misses": 0,
+  "last_updated": null
 }
 ```
 
-Optional fields carry history. `last_updated` records the latest title or price change. `history` stores prior title and price values. `status_history` stores meaningful lifecycle transitions. `hold_misses` counts how many completed scrape cycles have missed a product while it is on hold.
+`datetime` records first sighting. `last_updated` changes when title or price changes. `history` holds prior values, while `status_history` records important lifecycle transitions. `hold_misses` counts complete cycles that failed to observe an on-hold product.
 
-The `Article` class does not store `job_id`. That belongs to the motor. A product record describes the listing. The motor describes the configured monitor that found it. Notification payloads can combine both when needed, but persisted product JSON stays focused on product state.
+Article equality and hashing use only the identifier. Streams can therefore find, delete, reactivate, or update a product even when its current descriptive fields differ from the saved record.
 
 ---
 
-## Streams keep states separate
+## Three streams make absence explicit
 
-Each motor owns three streams. `active` contains products that appeared in the latest complete scrape or returned after a gap. `on_hold` contains products that were active but went missing in a complete scrape. `finished` contains products that stayed missing long enough to cross the hold threshold.
+The motor keeps active, on-hold, and finished streams. These are in-memory views loaded from one JSON list and saved together after useful cycles.
 
-The lifecycle looks like this.
+The lifecycle below separates a current listing, a provisional absence, and a listing that has passed the configured missing threshold.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Active
-    Active --> Active: title or price changed
-    Active --> OnHold: missing once
-    OnHold --> Active: appears again
-    OnHold --> Finished: miss threshold reached
-    Finished --> Active: appears again
+    [*] --> active: New identifier in complete cycle
+    active --> active: Title or price changes
+    active --> on_hold: Missing from one complete cycle
+    on_hold --> active: Identifier returns
+    on_hold --> on_hold: Missing again below threshold
+    on_hold --> finished: Third complete miss
+    finished --> active: Identifier returns
 
-    classDef live fill:#90EE90,stroke:#333,stroke-width:2px,color:#064E3B
-    classDef hold fill:#FFD700,stroke:#333,stroke-width:2px,color:#000
-    classDef done fill:#FFB6C1,stroke:#B91C1C,stroke-width:2px,color:#000
+    note right of active
+      Current listing
+      Price and title can update
+    end note
 
-    class Active live
-    class OnHold hold
-    class Finished done
+    note right of on_hold
+      Absence is provisional
+      hold_misses tracks evidence
+    end note
+
+    note right of finished
+      Listing is no longer current
+      Earlier history remains
+    end note
 ```
 
-The hold state is the pressure valve. Without it, a single complete scrape that misses a product would finish that product immediately. With it, the scraper can tolerate temporary gaps while still cleaning up listings that remain gone.
+The first complete miss moves an active article to `on_hold` and sets `hold_misses` to one. A second complete miss keeps it on hold. The default `HOLD_MISS_THRESHOLD` is three, so the third miss moves the record to `finished` and resets the counter.
 
-`ArticleLifecycle` owns these transitions. Saving an active article checks whether it was previously finished, on hold, already active, or new. Returning products reset `hold_misses`. Changed products record title or price history. Products that cross the hold threshold record a finished status transition and move to `finished`.
+If an identifier returns from either on-hold or finished state, lifecycle reactivates the existing object. It resets misses, records a transition when returning from finished, and applies any new title or price. The product does not lose its earlier first-seen time and history.
 
----
-
-## History records old values
-
-When an active product changes title or price, `Article.update()` compares incoming values to the stored values. Only changed fields enter history. The history entry stores the old values and a timestamp. Then the current article receives the new values and updates `last_updated`.
-
-That means the first record in `history` is the previous state, not the current state. Notification code uses that shape for price-drop checks. It reads the latest previous price, parses the current price, calculates the percentage change, and sends a Telegram message only when the reduction crosses the threshold.
-
-History is capped by `MAX_HISTORY`, currently one hundred entries. That cap keeps long-running monitors from growing JSON without limit. The cap applies to both price and title history and status history.
-
-Status history is more selective. The code intentionally skips `on_hold` entries because hold can be noisy. It records meaningful transitions such as finished and reactivated. Consecutive duplicate statuses are ignored so replayed lifecycle work does not fill the record with repeated state.
+The threshold is a project default rather than proof that three cycles fit every store. Its purpose is to avoid treating one temporary omission as a final disappearance. A future configuration surface could make that policy adjustable per provider or watch.
 
 ---
 
-## Reconciliation runs only after complete scrapes
+## Complete results are required for reconciliation
 
-After a motor finishes pagination, it has a `results` list with the products seen during that scrape. If the scrape completed, the motor reconciles missing items. Active products not present in the new result list move to `on_hold`. On-hold products that remain missing increment `hold_misses`. Once the threshold is reached, they move to `finished`.
+Lifecycle only knows that a product was missing when the motor supplies a complete set of observed identifiers. A fetch timeout, browser gate, parser failure, or suspicious empty paginated page cannot support that conclusion.
 
-If the scrape did not complete, reconciliation is skipped. This check protects state when fetch failed, browser mode hit a gate, parser code raised, or a suspicious empty paginated page appeared. A partial scrape should not decide that hundreds of existing products disappeared.
+The motor starts every cycle with `_scrape_incomplete` set to false. Fetch and provider paths set it when they cannot establish a usable page sequence. After pagination, the motor calls missing-item reconciliation only when that flag remains false.
 
-That single guard is the difference between product history and scrape noise. The scraper can still store new or updated products it safely parsed before the failure, but it will not punish products that were absent from an incomplete result set.
+This guard prevents destructive false evidence. Imagine a watch with 40 active products. If a browser gate returned zero parsed items and reconciliation ran, every active record would move toward finished. The next successful cycle would spend its time reactivating products that never left the store.
 
-The threshold lives on `Motor` as `HOLD_MISS_THRESHOLD`, currently three. The number is small enough to retire stale listings, but large enough to absorb short provider gaps. Different providers can override motor behavior if a store needs different policy later.
+A valid complete page can still return no match for a particular identifier. That absence counts. The design does not ignore missing products. It requires the observation to be trustworthy before changing their status.
 
----
-
-## JSON writes stay below DATA_PATH
-
-Product records live below `DATA_PATH`, which defaults to `./data`. Factories pass relative storage paths such as `amazon/macbook__amazon-mx.json` or `palacio_de_hierro/macbook.json`. The file manager resolves those paths under `DATA_PATH` and rejects parent-directory traversal.
-
-Writes go through a temporary file. If a target file exists, the writer first tries to copy it to a `.bak` file. Then it writes the temporary content and replaces the target atomically. Reads expect a JSON list. If the primary file is invalid, the loader attempts to recover from the backup.
-
-That is a modest persistence system, but it fits the project. MLScraper does not need a database to remember product histories for configured jobs. It needs safe file paths, predictable JSON, backup recovery, and async writes that do not block the event loop.
-
-Runtime data is not source code. The repository keeps `data/.gitignore`, and the docs repeat the rule because it matters. Product histories are operational state. They can include local monitoring choices and should not be changed as part of ordinary code edits.
+Provider code contributes to this decision. Liverpool marks missing `__NEXT_DATA__` incomplete. Mercado Libre can report a blocked or unsupported result. Palacio treats missing product tiles as incomplete. Shared fetch failures and parse exceptions do the same.
 
 ---
 
-## Debugging starts from the record
+## Updates preserve old values before replacing them
 
-When output looks wrong, start with the JSON record and work backward. Check the status. If a product is on hold, look at `hold_misses` and whether recent provider health showed incomplete scrapes. If a price-drop alert fired, inspect the current price and the first history entry.
+When a matching active article changes, `Article.update()` compares the incoming title and price with current values. Unchanged observations return false and add no history noise.
 
-Then move to the motor. The motor tells you which provider, job, URL, and storage path produced the record. From there, inspect the provider parser and the fetch policy. A title parsing issue belongs near the provider. A premature finished status belongs near lifecycle or incomplete scrape handling. A missing file belongs near storage path generation.
+For changed fields, the method captures old values in an `ArticleHistory` record, applies the new values, and sets `last_updated`. If both title and price change in one observation, the same history entry can preserve both earlier values.
 
-This debugging order keeps the final symptom from becoming the first assumption. The persisted article tells you what state MLScraper believed. The lifecycle tells you why it moved. The provider and fetcher tell you whether that belief came from a complete page.
+History order puts the latest change first. Notification routing reads the first entry when evaluating a price change. The article caps history at `MAX_HISTORY`, currently 100 entries, so a frequently changing listing cannot grow its local file forever.
+
+Status history serves a different purpose. It records lifecycle changes that matter to finished and reactivated behavior. Mixing those transitions with price history would make both harder to read.
+
+An update callback receives the serialized article after lifecycle applies the change. The payload also includes motor context such as `job_id` and provider. That gives notification code enough information to format a message without opening the JSON file again.
 
 ---
 
-## What not to edit by hand
+## Notifications consume history rather than inventing it
 
-Runtime JSON is tempting because it is readable. A maintainer can open a file, see the current price, and change a status by hand. That should be the rare exception. The JSON is a record of scraper decisions, and hand edits can hide the path that created a bad state.
+New-item and update events leave the motor through the same broadcast boundary. The notifier routes them according to event type and optional Telegram configuration.
 
-### Safe persistence habits
+The first successful run suppresses new-item messages. An empty file makes every observation new to MLScraper, but those products probably existed before the watch. Silencing the baseline avoids treating setup as a burst of discoveries.
 
-Use these habits during maintenance.
+Later updated items only trigger price-drop evaluation when the newest history entry contains a prior price. The router parses both prices, ignores unusable or nonpositive earlier values, and computes percentage change.
 
-- Change provider parsing when incoming product fields are wrong.
-- Change lifecycle code when state transitions are wrong.
-- Change factory storage paths only when a job's identity model changes.
-- Preserve `.bak` files while investigating JSON corruption.
-- Use temporary `DATA_PATH` values in tests instead of tracked runtime data.
+The implemented threshold is a reduction of at least 14 percent. A price moving from 1000 to 900 is saved as history but does not notify. A move from 1000 to 860 reaches the threshold and can send when Telegram is enabled.
 
-**The safest persistence fix changes the rule, not one record.** If one product moved to `finished` too early because a provider returned a blocked page, the durable fix is incomplete scrape handling or provider block detection. Editing the JSON only makes the symptom disappear once.
+This order protects the data model from notification preferences. The article remembers every supported title or price change. Notification routing selects a smaller set for external attention. Changing the alert threshold should not rewrite product history.
 
-There are valid manual recovery cases. A local file can be repaired after an interrupted experiment. A backup can be restored after invalid JSON. A one-off local monitor can be cleaned up by the operator who owns it. Those actions should stay local and should not become repository changes.
+---
 
-The backup behavior exists for recovery, not version control. The writer copies an existing file to `.bak`, writes a temporary file, and replaces the target. If the primary JSON cannot be read later, the reader attempts the backup. That gives the service a second chance after a bad write or local edit.
+## One JSON file contains all three states
 
-Tests should model persistence without touching real product history. `TemporaryDirectory` and `PatchedDataPath` let tests exercise path safety, backup recovery, repository load, and repository save against disposable files. That keeps the production-shaped behavior without bringing operational state into source.
+Each motor owns a relative storage path below `DATA_PATH`, which defaults to `./data`. The repository loads the JSON list and routes records into active, on-hold, or finished streams according to status.
 
-This is why the vault treats persistence as part of architecture. Product history is the value the scraper creates. The code around it should be careful, boring, and easy to test.
+Malformed records and duplicate identifiers are skipped during load. Missing or invalid hold counts normalize to a nonnegative integer. Unknown status values fall back through the article creation and stream rules instead of receiving arbitrary state.
+
+When saving, the repository serializes streams in a consistent order. The file remains a list of article dictionaries, which keeps inspection straightforward with ordinary tools.
+
+```bash
+jq '.[] | {identifier, price, status, hold_misses, history}' \
+  data/amazon/nintendo-switch-2__nintendo.json
+```
+
+Runtime files are not source fixtures. The repository’s `data/.gitignore` keeps ordinary scrape output out of version control. Tests use temporary directories and patched data roots so regression runs do not rewrite operational history.
+
+---
+
+## Writes defend the local file boundary
+
+The file manager reads `DATA_PATH` once and resolves every normal write beneath it. Storage paths must be relative. Absolute paths outside the root and parent traversal are rejected.
+
+Writes go through a temporary file in the destination directory. When a primary file already exists, the writer copies it to a `.bak` path before replacement when possible. The temporary file then replaces the primary path atomically at the filesystem level.
+
+Reads expect a JSON list. If the primary file is invalid and a usable backup exists, the loader recovers from that backup. A non-list payload without recovery becomes an empty list rather than a collection of malformed articles.
+
+These protections do not turn JSON into a transactional database. Two processes should not write the same motor file concurrently, and backups only preserve the previous version. Within the project’s single-service model, they reduce the chance that an interrupted write or corrupt primary destroys the last usable state.
+
+Do not edit runtime data as part of ordinary code changes. Manual changes can break identifier continuity, history ordering, lifecycle counts, and recovery evidence. Copy a file before investigation and prefer a temporary `DATA_PATH` for experiments.
+
+---
+
+## Debug a surprising record from the inside out
+
+Begin with the identifier. Confirm that the provider parser still returns the same key for the same listing. A changed identity explains duplicates and histories that appear to restart.
+
+Then inspect current status and `hold_misses`. An on-hold record should correspond to at least one complete miss. If the source was blocked, inspect motor completeness and block reasons because reconciliation should have been skipped.
+
+Read the newest history entry beside current title, price, and `last_updated`. That reveals what the update method believed changed. If a price alert looks wrong, verify the prior value is numeric and occupies the latest history entry.
+
+Finally, inspect the primary and backup files, storage path, and job ID. A newly slugged filename can explain missing old records even when lifecycle code is correct. A recovered backup can explain why the latest cycle appears absent.
+
+Tests mirror this order. Article tests cover equality and history. Lifecycle tests cover hold, finish, and reactivation. Motor tests cover complete and incomplete reconciliation. Persistence tests cover path safety, backups, malformed records, and stream ordering. Notification tests cover exact threshold behavior.
+
+---
+
+## JSON keeps the model visible and sets a ceiling
+
+One file per watch makes product state easy to inspect, copy, and back up. It also avoids a database service during local setup. For a personal scheduled tracker, that transparency is useful because the stored model remains legible during debugging.
+
+The same choice limits concurrent operation. The repository does not coordinate multiple writers, merge competing cycles, or lock records across processes. Two service instances targeting the same file could overwrite each other’s view even if each individual replacement is atomic.
+
+Querying across watches is also manual. Finding every active Nintendo product or calculating a long-term price series requires reading many files and interpreting history. A database would support those queries better if analytics became a product goal.
+
+Migration needs care because JSON records outlive code versions. Adding a required field, renaming a status, or changing history shape must preserve older files or include an explicit conversion. The current loaders already normalize some malformed values, but that is not a general schema migration system.
+
+Backup recovery protects the previous file, not every historical version. Important operational data still deserves external backup appropriate to its value. The `.bak` copy is a local recovery aid for replacement or primary corruption.
+
+These limits do not weaken the lifecycle design. They clarify its boundary. Stable identity, guarded reconciliation, and explicit transitions can survive a future storage adapter, while file-specific safety remains inside repository and file-manager behavior.
+
+---
+
+## Product memory is the project’s useful output
+
+Fetching creates observations. Stable identity connects them. Lifecycle interprets absence. History preserves change. The repository makes that state survive restarts, and notifications consume it without becoming its owner.
+
+This chain is why incomplete-page handling matters so much. A tracker cannot control store availability, but it can refuse to turn missing evidence into a destructive state transition. That restraint makes the saved JSON more valuable than a collection of latest prices.
+
+For the request conditions that protect reconciliation, return to [when a store blocks the scraper](/thejournal/mlscraper/fetching_and_backoff/). To run the service, inspect health, and extend the same lifecycle to another store, continue with [operating MLScraper and adding a store](/thejournal/mlscraper/operations_and_extension/).

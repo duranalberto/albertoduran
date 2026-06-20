@@ -1,140 +1,188 @@
 ---
-title: "Fetching, blocks, and backoff"
-description: "How MLScraper chooses between HTTP and browser fetching, detects blocked pages, and slows provider loops after failures."
-author: "Alberto Duran"
-tags: ["python", "playwright", "operations"]
+title: "When a store blocks the scraper"
+description: "Learn how MLScraper chooses HTTP or browser fetching, protects history after incomplete pages, and slows the right scope after failures."
+tags: ["python", "playwright", "scraping", "operations"]
 pubDate: 2026-06-18
-order: 50
+updatePubDate: 2026-06-20
+order: 60
 ---
 
-Scraping failure is not an edge case. A store can rate-limit HTTP, serve a transient Liverpool 404, gate Mercado Libre behind browser checks, or return a page that looks valid until the parser finds no products. MLScraper treats those outcomes as state. Fetchers report failure, motors skip unsafe reconciliation, and health exposes block reasons.
+A response can contain HTML and still be useless. The page may be a login gate, a traffic challenge, a half-rendered application shell, or a result template whose product data never arrived. MLScraper treats page usability as a policy decision rather than a truth implied by status code 200. This chapter follows both fetch strategies, the signals that mark a cycle incomplete, and the backoff layers that slow one request without freezing unrelated stores.
 
 ---
 
-## Fetch strategy is a policy choice
+## Fetch strategy belongs to motor policy
 
-Every motor receives fetch policy from `config/motors.yaml`. Defaults apply first, and provider-specific sections override them. The important switch is `FETCH_STRATEGY`, which chooses between `aiohttp` and `browser`. The default is lightweight HTTP. Browser mode uses Playwright Chromium for pages that need rendered content or selector-based readiness checks.
+Every motor receives `FETCH_STRATEGY` from `config/motors.yaml`. The shared default is `aiohttp`, while a provider can override it with `browser`. The shared motor asks a fetcher registry for the configured implementation and otherwise follows the same page algorithm.
 
-That choice belongs in config because provider behavior can change without changing the public motor contract. Mercado Libre currently uses browser mode in the sample config with a wait selector for search results and blocked selectors for account verification or suspicious traffic pages. Amazon uses longer page delays and fresh sessions.
+```yaml
+defaults:
+  FETCH_STRATEGY: aiohttp
+  FETCH_TIMEOUT_SECONDS: 45
+  MAX_RATE_LIMIT_RETRIES: 3
+  RATE_LIMIT_SLEEP_CAP: 300
 
-The fetch path is easiest to understand as a guarded loop.
+MercadoLibre:
+  FETCH_STRATEGY: browser
+  FETCH_TIMEOUT_SECONDS: 30
+  BROWSER_WAIT_SELECTOR: "section.ui-search-results"
+  BLOCKED_BACKOFF_SECONDS: 3600
+```
+
+This keeps fetching independent from parsing. A Mercado Libre parser should describe result data and recognized gates. It should not launch Chromium. The motor should select a fetch strategy without learning provider selectors.
+
+HTTP mode is cheaper and easier to operate when the response contains usable product data. Browser mode earns its cost when the page needs JavaScript rendering or readiness checks. Choosing browser mode for every provider would add process weight without removing the need for parser validation.
+
+The strategy is observable configuration. Operators can inspect one provider’s timeout, page delays, block cooldown, and concurrency beside its fetch mode. Those settings describe how politely and cautiously the service approaches that source.
+
+---
+
+## The guarded path has several exits
+
+The motor only reconciles missing products after a complete page sequence. Fetchers and providers can stop that sequence for different reasons, but every incomplete exit protects saved history.
 
 ```mermaid
 flowchart TD
-    Start([🚀 Motor page fetch]) --> Strategy{⚙️ FETCH_STRATEGY}
-    Strategy -->|aiohttp| Http[🌐 HTTP request]
-    Strategy -->|browser| Browser[🖥️ Playwright page]
-    Http --> Status{📊 Response status}
-    Status -->|200| Content[📝 Return content]
-    Status -->|429 or 503| Rate[⏱️ Retry after delay]
-    Status -->|403 or hard 404| Fail[❌ Fetch failed]
-    Rate --> Limit{🔄 Retry limit hit?}
-    Limit -->|no| Http
-    Limit -->|yes| Block[🚨 Mark blocked]
-    Browser --> Gate{🛡️ Block selector found?}
-    Gate -->|yes| Block
-    Gate -->|no| Ready{✓ Wait selector ready?}
-    Ready -->|yes| Content
-    Ready -->|no timeout| Timeout[⏱️ Browser timeout]
-    Timeout --> Block
-    Content --> Parse[📦 Provider parser]
-    Fail --> Incomplete[⚠️ Incomplete scrape]
-    Block --> Incomplete
+    Start([🌐 Fetch current URL]) --> Mode{⚙️ Strategy}
+    Mode -->|aiohttp| HTTP[📥 Send HTTP request]
+    Mode -->|browser| Browser[🧭 Open browser page]
 
-    classDef startEnd fill:#E6E6FA,stroke:#333,stroke-width:2px,color:#1E3A8A
+    HTTP --> Status{📊 Response status}
+    Status -->|success| Content{✓ Content present?}
+    Status -->|rate limited| Hint[⏱️ Read retry delay]
+    Hint --> Retry{🔄 Attempts remain?}
+    Retry -->|yes| HTTP
+    Retry -->|no| Failed[⚠️ Mark fetch failed]
+
+    Browser --> Block{🚧 Block signal?}
+    Block -->|yes| Blocked[⚠️ Mark browser blocked]
+    Block -->|no| Ready{✓ Ready selector found?}
+    Ready -->|no before timeout| Timeout[⚠️ Mark browser timeout]
+    Ready -->|yes| Content
+
+    Content -->|no| Failed
+    Content -->|yes| Parse[📝 Parse provider page]
+    Parse --> Complete{✓ Page sequence complete?}
+    Complete -->|yes| Reconcile[🧭 Reconcile missing items]
+    Complete -->|no| Preserve[🛡️ Preserve lifecycle state]
+    Failed --> Preserve
+    Blocked --> Preserve
+    Timeout --> Preserve
+
+    classDef start fill:#E6E6FA,stroke:#333,stroke-width:2px,color:#1E3A8A
     classDef process fill:#90EE90,stroke:#333,stroke-width:2px,color:#064E3B
     classDef decision fill:#FFD700,stroke:#333,stroke-width:2px,color:#000
-    classDef error fill:#FFB6C1,stroke:#B91C1C,stroke-width:2px,color:#000
-    classDef output fill:#87CEEB,stroke:#333,stroke-width:2px,color:#0F172A
+    classDef warning fill:#FFB6C1,stroke:#B91C1C,stroke-width:2px,color:#000
+    classDef safe fill:#87CEEB,stroke:#333,stroke-width:2px,color:#0F172A
 
-    class Start startEnd
-    class Http,Browser,Rate,Content,Parse process
-    class Strategy,Status,Limit,Gate,Ready decision
-    class Fail,Block,Timeout,Incomplete error
+    class Start start
+    class HTTP,Browser,Hint,Parse,Reconcile process
+    class Mode,Status,Retry,Block,Ready,Content,Complete decision
+    class Failed,Blocked,Timeout warning
+    class Preserve safe
 ```
 
-This diagram leaves out provider parsing on purpose. Fetching should answer one question. Did the motor receive page content it can safely parse? If not, the motor should know the scrape is incomplete so it does not turn missing fetch data into finished products.
+The diagram’s important branch is the last one. A failed fetch does not return an authoritative empty catalogue. It marks `_scrape_incomplete`, sets a reason when needed, and bypasses missing-item reconciliation.
 
 ---
 
-## HTTP mode handles ordinary network failure
+## HTTP mode handles transient network behavior
 
-`AioHttpFetcher` sends requests with a random browser-like header profile and an explicit timeout. It treats status `200` as success. Status `429` and `503` enter rate-limit handling. The fetcher reads `Retry-After` when available, sleeps, and retries until the motor's configured rate-limit retry count is reached.
+`AioHttpFetcher` sends requests with a randomized browser-style header profile. It can reuse the motor’s session across pages or receive a fresh session for each page, depending on provider policy.
 
-When the rate-limit count is exhausted, the fetcher marks the motor blocked with a reason such as `http_429_rate_limited` or `http_503_rate_limited`. The cooldown uses the larger value between the retry wait and `BLOCKED_BACKOFF_SECONDS`, which lets provider policy decide how long to pause after a rate limit.
+Successful responses return text. Empty content, exhausted request exceptions, and nonrecoverable responses eventually return `None`. The shared motor translates that result into an incomplete cycle and records `fetch_failed` unless a more specific reason already exists.
 
-Other statuses are quieter. The fetcher logs unexpected responses when debug logging is enabled. Status `403` and most `404` responses break the retry loop because they are unlikely to succeed through immediate retry. Liverpool gets a special transient `404` exception because valid token routes can sometimes return that response.
+Rate limits have a focused retry path. For status 429, the fetcher reads `Retry-After` when available, accepts seconds or a date form, applies defaults for invalid values, and caps the delay with `RATE_LIMIT_SLEEP_CAP`. It also marks the motor blocked for that delay.
 
-The fetcher also retries client errors and timeouts with exponential sleeps. That path handles ordinary network noise without making provider code catch low-level exceptions. The motor receives `None` when fetch ultimately fails and marks the scrape incomplete.
+The configured retry count limits how many rate-limit attempts occur. Ordinary request exceptions use short exponential waits between attempts. These mechanisms address one page request. They do not change the recurring provider scheduler’s broader backoff state.
 
----
-
-## Browser mode waits for usable pages
-
-`BrowserFetcher` creates one shared Playwright Chromium context with a browser-like profile. It opens a new page for each fetch, loads the URL with `domcontentloaded`, and then polls until the configured wait selector exists or the timeout expires.
-
-While it waits, it checks blocked selectors. A blocked selector can be a CSS selector or a URL fragment rule written as `url*=needle`. If any blocked selector matches, the fetcher marks the motor blocked with `browser_blocked` and returns no content.
-
-Browser startup failure, navigation errors, empty content, and timeout each become specific blocked reasons. Those reasons flow into motor state and then into the provider health map. That gives an operator a better hint than "fetch failed." A browser startup error suggests environment setup. A blocked selector suggests provider access. A timeout suggests readiness or latency.
-
-Browser mode costs more than HTTP mode. It starts browser machinery, waits on selectors, and can become the slowest part of a provider loop. MLScraper keeps it explicit so a provider uses it only when ordinary HTTP cannot provide a reliable parse surface.
+HTTP mode cannot prove that returned HTML contains a real catalogue. Provider parsing still decides whether expected products or supported empty signals exist. Palacio, for example, marks a page incomplete when no product tiles appear because a selector miss may represent a changed template.
 
 ---
 
-## Incomplete pages protect product state
+## Browser mode waits for evidence of readiness
 
-The dangerous part of scraping is not a failed request. It is treating a failed request as a complete empty result. If the scraper believes a real page had no items, it will move previously active products toward `on_hold` and eventually `finished`.
+The browser fetcher lazily starts Playwright Chromium and reuses one browser context. The context uses a randomized header profile, Spanish Mexico locale, Mexico City timezone, and a desktop viewport. Each fetch opens and later closes an individual page.
 
-`Motor._scrape_page()` guards against that. When fetch returns no content, the motor marks `_scrape_incomplete`, sets a blocked reason when needed, and returns no next URL. When provider parsing raises, the motor records `parse_error` and marks the scrape incomplete. When a page has no items but still reports a next page, the motor treats that as suspicious and can mark a cooldown.
+Navigation waits for `domcontentloaded`, but that event does not make the result usable. The fetcher polls until the provider’s readiness selector exists, a block signal appears, or the configured deadline passes.
 
-After pagination ends, `Motor.scrape()` reconciles missing items only when the scrape completed. If `_scrape_incomplete` is true, it skips missing-item reconciliation and logs a warning. That is one of the most important safety decisions in the project. A temporary provider failure should not rewrite product history.
+Block signals can be CSS selectors or `url*=` fragments. Mercado Libre policy checks account verification and suspicious-traffic patterns. A match records `browser_blocked` and applies the motor’s blocked cooldown.
 
-This is why provider parsers need to report gates and incomplete pages honestly. A blocked Mercado Libre page is not an empty search. A missing Liverpool `__NEXT_DATA__` tag is not proof that every product vanished. The runtime needs that distinction to protect persisted state.
+If the readiness selector never appears, the motor records `browser_timeout`. Empty page content after readiness becomes `browser_empty_content`. Browser startup and navigation errors receive their own reasons. These labels let health distinguish missing dependencies from store gates and slow rendering.
 
----
-
-## Backoff happens at two levels
-
-Motor-level backoff marks one job blocked until a loop time in the future. `Motor.scrape()` checks `blocked_until` before it fetches. If the cooldown has not expired, the motor skips itself and leaves provider state visible through health.
-
-Provider-level backoff happens in `_run_provider_loop()`. If the provider loop raises outside the motor-level handling, the loop records an error and sleeps for `BACKOFF_INITIAL`. Repeated failures double that wait until `BACKOFF_MAX`. A successful cycle resets the provider backoff to the initial value.
-
-The two levels answer different questions. Motor backoff says one job or provider access path is temporarily blocked. Provider scheduler backoff says the whole provider loop hit an error that should slow the next cycle. Keeping both levels avoids punishing every provider for one motor's rate limit while still protecting the runtime from rapid repeated loop failures.
-
-Concurrency is a third control. `CONCURRENCY_LIMIT` decides how many jobs for a provider can scrape at once. The health endpoint reports active and queued counts, so an operator can see whether work is waiting behind that limit.
+The browser context does not make automation invisible, and the project does not claim otherwise. Its value is rendering and readiness inspection. A store can still block the request, change a selector, or return a page shape the provider does not support.
 
 ---
 
-## Failure should be visible
+## Parsing can reject a successfully fetched page
 
-MLScraper's fetch design does not make scraping reliable in the fantasy sense. Stores can still change markup, serve gates, throttle requests, and timeout. The design makes those states visible and keeps them from corrupting product history.
+A nonempty body reaches `scrape_page`, where provider code can identify conditions that the generic fetcher cannot understand. Mercado Libre parsing can return a blocked or incomplete reason. Liverpool marks missing or malformed `__NEXT_DATA__` incomplete. Palacio treats missing valid product tiles cautiously.
 
-The operator path is direct. Check `/health`, read provider block reasons, inspect the configured fetch strategy and selectors, then run focused provider tests. If a parser changed, update parser fixtures. If a route changed, preview the URL. If the provider is gating browser requests, adjust policy or slow down.
+Parser exceptions also stop the page sequence. The motor catches them, records `parse_error`, and avoids reconciliation. A malformed individual item can sometimes be skipped while valid siblings remain, but a broken page-level structure must not become a complete empty result.
 
-The important part is that the system has names for failure. `browser_timeout`, `browser_blocked`, `fetch_failed`, `parse_error`, and rate-limit reasons are small labels, but they turn a stalled scraper into something a maintainer can reason about.
+An empty page followed by a next URL is suspicious in shared code. The motor marks that sequence incomplete and can apply the provider cooldown. Continuing pagination after zero parsed items could waste requests and later reconcile from a partial result set.
+
+Completeness therefore comes from several layers. The fetcher says whether it obtained usable content. The provider says whether the page shape was understood. The motor says whether the whole page sequence finished without an incomplete signal.
 
 ---
 
-## Tuning without guessing
+## Backoff has three different scopes
 
-Fetch policy has several knobs, and they should not be changed blindly. `PAGE_DELAY_RANGE` affects pagination pace. `FRESH_SESSION_PER_PAGE` changes session reuse. `MAX_RATE_LIMIT_RETRIES` and `RATE_LIMIT_SLEEP_CAP` affect HTTP backoff. `BLOCKED_BACKOFF_SECONDS` controls cooldown after known blocks. `CONCURRENCY_LIMIT` controls provider pressure.
+Request retry handles a transient failure around one URL. Rate-limit hints and short exception delays live here. The goal is to avoid abandoning a page after one temporary network event.
 
-### Signals to check first
+Motor cooldown handles a watch that encountered a block or gate. `blocked_until` prevents that motor from fetching again before its deadline. The provider loop can continue running other motors while the blocked watch waits.
 
-Use observed state before changing policy.
+Scheduler backoff handles an exception that escapes a provider cycle. The loop starts with `BACKOFF_INITIAL`, doubles the delay after repeated failures, and caps it at `BACKOFF_MAX`. A successful cycle resets the provider delay.
 
-- If the provider shows queued jobs, inspect `CONCURRENCY_LIMIT` before changing selectors.
-- If the motor shows `browser_timeout`, inspect `FETCH_TIMEOUT_SECONDS` and the wait selector.
-- If the motor shows `browser_blocked`, inspect blocked selectors and provider access behavior.
-- If rate-limit reasons appear, reduce concurrency or increase backoff before adding parser fallbacks.
-- If persisted results are empty after a complete scrape, inspect parser tests and source markup.
+These delays should not be merged. A 429 response may include a precise short retry hint. A known browser gate may deserve a longer provider cooldown. An orchestration failure may need exponential scheduler recovery. Each signal has a different owner and blast radius.
 
-**The fetcher should describe what went wrong before a maintainer changes policy.** A vague failure invites random tuning. A precise blocked reason points at the next configuration value or provider fixture.
+The normal cycle interval is separate again. After a successful provider cycle, the loop currently sleeps for 400 seconds. That is periodic scheduling, not punishment for failure.
 
-There is also a difference between slowing down and hiding failure. Increasing timeouts can help slow pages, but it will not fix a selector that never appears. Increasing retries can help transient HTTP errors, but it will not fix a provider gate. A good change should match the health signal that motivated it.
+---
 
-Browser mode deserves special caution. It can solve pages that need rendering, but it can also make cycles slower and operational setup heavier. Use it when the provider needs rendered state or blocked-page selectors. Keep HTTP mode for pages that return parseable content directly.
+## Tune from evidence instead of impatience
 
-When fetch behavior changes, update tests close to the behavior. `tests/test_fetchers.py` should cover timeout, rate-limit, blocked selectors, and browser failures with fakes. Provider parser tests should cover markup changes. Motor flow tests should cover incomplete scrapes and reconciliation guards.
+When a provider appears slow, begin with health. Compare active and queued jobs with `CONCURRENCY_LIMIT`. Read block reasons, cycle duration, and the most recent provider error. Then inspect logs for request attempts, page readiness, and parser messages.
 
-That testing split mirrors runtime ownership. Fetchers decide whether content is usable. Providers decide whether content contains items. Motors decide whether missing items can be reconciled. Tuning is safer when each layer proves its part.
+| Signal                  | First configuration or code to inspect                                    |
+| ----------------------- | ------------------------------------------------------------------------- |
+| `browser_startup_error` | Playwright installation and browser dependencies.                         |
+| `browser_timeout`       | Timeout value, readiness selector, and current page rendering.            |
+| `browser_blocked`       | Block selectors, cooldown, and whether the source is refusing automation. |
+| `fetch_failed`          | Network errors, response status, retries, and URL correctness.            |
+| `parse_error`           | Provider fixture, page-level parser assumptions, and current markup.      |
+| Persistent queue        | Provider limit, page count, delays, and cycle duration.                   |
+
+Increasing timeouts can help a slow page and hide a bad selector. Increasing concurrency can shorten a queue and increase source pressure. Removing cooldown can produce more requests while learning nothing new. Every tuning change needs a signal and a way to verify the result.
+
+Provider-specific settings keep experiments contained. A Mercado Libre browser timeout change should not alter Amazon’s lightweight HTTP behavior. Defaults remain useful for common policy, while provider overrides document exceptional needs.
+
+---
+
+## Similar symptoms can require opposite responses
+
+Suppose browser health reports `browser_timeout` after every Mercado Libre attempt. Increasing the timeout is reasonable only if logs or a controlled inspection show that the readiness selector eventually appears. If the selector no longer exists, more waiting only lengthens every failed cycle.
+
+Now suppose HTTP requests receive status 429 with a valid retry hint. Replacing `aiohttp` with a browser does not address the source’s request limit. The useful response is to honor the delay, review job volume and provider concurrency, and decide whether the watch should continue.
+
+A parser can return zero items from a page that visually contains products. That points toward markup or payload assumptions. Lowering page delays cannot repair it. The provider needs a small fixture reproducing the new shape and a parser change that keeps incomplete behavior safe while the fix is reviewed.
+
+The opposite case also occurs. A valid complete search may contain no products. Providers need a reliable source signal before treating that result as authoritative. Without one, conservative incomplete handling preserves old state but can delay legitimate missing-item transitions.
+
+Repeated `fetch_failed` on one explicit URL can begin in configuration. Preview confirms the string MLScraper will request but not whether redirects, expired tokens, or copied session parameters make sense. Inspect the route before changing retries.
+
+Browser startup errors are local environment failures. Store selectors are irrelevant until Chromium can launch. Installing the supported browser and system packages is the first fix, followed by the fetcher tests that exercise startup handling with fakes.
+
+These examples show why failure labels matter. The visible outcome may always be an absent product list, yet the corrective action ranges from waiting to stopping a job, repairing an environment, changing a parser, or fixing configuration.
+
+---
+
+## Responsible fetching is part of correctness
+
+Page delays, conservative concurrency, rate-limit handling, and visible cooldowns reduce unnecessary requests. They also make behavior easier to reason about because the service records when it is waiting instead of disguising delay as a hang.
+
+These mechanisms do not establish permission to scrape a source. Operators must review the source’s terms, applicable requirements, and the effect of their job volume. An explicit browser mode is a technical capability, not an instruction to bypass access controls.
+
+The safest response to a persistent block may be to stop the job. Repeated retries cannot turn a refusal into valid product data. MLScraper’s health signals are useful partly because they make that decision visible.
+
+The project’s core safeguard remains simple. When the service cannot establish a complete observation, it preserves existing product meaning. [How a product becomes price history](/thejournal/mlscraper/persistence_and_lifecycle/) explains the lifecycle protected by that choice. [Operating MLScraper and adding a store](/thejournal/mlscraper/operations_and_extension/) turns these signals into a diagnostic routine.

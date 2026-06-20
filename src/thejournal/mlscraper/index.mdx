@@ -1,136 +1,165 @@
 ---
-title: "Multi-source ecommerce price tracker"
-description: "How MLScraper turns store jobs into provider loops, product history, health checks, and Telegram alerts without hiding scraper failure."
-author: "Alberto Duran"
+title: "Building a price tracker that expects failure"
+description: "One missed bargain became MLScraper, a Python service that watches four stores, preserves price history, and treats unreliable pages with care."
 image: "../../assets/thejournal/stock/08.avif"
 tags: ["project", "python", "scraping", "fastapi"]
 pubDate: 2026-06-18
+updatePubDate: 2026-06-20
 github: "MLScraper"
 order: 10
 ---
 
-Price trackers sound simple until a store blocks a request, a listing disappears for one cycle, and a copied URL stops matching the generated route rules. MLScraper is useful because it treats those problems as normal operating conditions. This vault follows the service from YAML jobs to provider loops, product state, health checks, and alerts so the architecture reads like a system instead of a pile of scrapers.
+I saved a product after finding it at an unusually low price. Five minutes later I came back ready to buy it, but it was sold out. The disappointment turned into a habit: I kept reopening the store, found more bargains, and watched several disappear within minutes. Eventually I stopped asking only whether I could catch the next one. I wanted to know how many discounted products appeared while I was not looking.
+
+That question became MLScraper. It started as a way to watch searches for me and grew into a service that tracks four Mexican storefronts, remembers price changes, and distinguishes missing products from incomplete pages. There was an unintended result too. The tracker found enough deals that I began buying things I did not need, so I eventually made myself stop using it.
 
 ---
 
-## The shape of the service
+## From deal hunting to dependable monitoring
 
-MLScraper is a scheduled scraper service with a small FastAPI shell. The app exposes a readiness endpoint, starts the scraper in the lifespan hook, and lets the background runtime own the long-running work. That split keeps HTTP routing small while the scraper handles provider loops, concurrency, retries, persistence, and notifications.
+Automating the search was only the first step. A useful tracker needed to remember earlier observations, notice meaningful changes, and survive long enough for those changes to matter. A script that printed the current price once would not answer the question that started the project.
 
-The runtime path is easiest to read as one pipeline.
+That turns one shopping query into a repeated process. The service must decide what page to request, fetch it without putting needless pressure on the store, translate store-specific markup into a common product shape, compare that shape with saved state, and report what happened. Any weak step can make the final alert misleading.
+
+The hardest bug is often a believable result. An empty response is easy to store. It is also easy to misread as proof that every listing vanished. MLScraper therefore treats fetching, parsing, reconciliation, persistence, scheduling, and notifications as separate decisions. A failure in one stage does not get to impersonate success in another.
+
+That became the main engineering problem behind the project. A scraper that works once proves that a page can be parsed. A tracker has to preserve meaning across many imperfect runs and explain why its saved data changed.
+
+---
+
+## The service in one picture
+
+The system has one human input and two useful outputs. An operator describes a watch in YAML. MLScraper visits the relevant store pages, records product state in JSON, exposes runtime health, and can send selected changes to Telegram.
 
 ```mermaid
-flowchart TD
-    Config[⚙️ config/jobs.yaml] --> Loader[📥 job loader]
-    Loader --> Registry[🔌 provider registry]
-    Registry --> Motors[⚙️ provider motors]
-    Motors --> Fetch[🌐 fetch pages]
-    Fetch --> Parse[📝 parse products]
-    Parse --> State[📦 Article streams]
-    State --> Persist[(💾 JSON under DATA_PATH)]
-    State --> Notify[📨 notification events]
-    Notify --> Telegram[📲 Telegram]
-    Motors --> Health[📊 provider health]
-    Health --> Endpoint[🌐 GET /health]
+graph LR
+    Operator([👤 Operator]) -->|writes watches| Jobs[⚙️ YAML jobs]
 
-    classDef config fill:#FFE4B5,stroke:#333,stroke-width:2px,color:#000
-    classDef process fill:#90EE90,stroke:#333,stroke-width:2px,color:#064E3B
+    subgraph MLS[MLScraper service]
+        Preview[🔎 URL preview]
+        Runtime[🔄 Provider loops]
+        Normalize[📦 Normalized products]
+        Lifecycle[🧭 Product lifecycle]
+        Health[📊 Health endpoint]
+    end
+
+    Jobs --> Preview
+    Jobs --> Runtime
+    Runtime -->|HTTP or browser| Stores[🌐 Store pages]
+    Stores --> Normalize
+    Normalize --> Lifecycle
+    Lifecycle --> History[(💾 JSON history)]
+    Lifecycle --> Alerts[📨 Optional Telegram alerts]
+    Runtime --> Health
+
+    classDef actor fill:#FFE4B5,stroke:#333,stroke-width:2px,color:#000
+    classDef config fill:#FFD700,stroke:#333,stroke-width:2px,color:#000
+    classDef service fill:#90EE90,stroke:#333,stroke-width:2px,color:#064E3B
+    classDef external fill:#87CEEB,stroke:#333,stroke-width:2px,color:#0F172A
     classDef data fill:#E6E6FA,stroke:#333,stroke-width:2px,color:#1E3A8A
-    classDef output fill:#87CEEB,stroke:#333,stroke-width:2px,color:#0F172A
-    classDef notify fill:#FFD700,stroke:#333,stroke-width:2px,color:#000
 
-    class Config config
-    class Loader,Registry,Motors,Fetch,Parse,State process
-    class Persist data
-    class Notify,Telegram notify
-    class Health,Endpoint output
+    class Operator actor
+    class Jobs config
+    class Preview,Runtime,Normalize,Lifecycle,Health service
+    class Stores,Alerts external
+    class History data
 ```
 
-That shape matters because scraping code gets messy when the provider parser, scheduler, storage layer, and notification code all know about each other. MLScraper avoids that by making each boundary pass a small contract forward. Jobs become motors. Motors produce normalized items. Streams reconcile state. Notifications receive serialized product payloads with motor context attached.
+FastAPI provides the process boundary and the `GET /health` route. The scraper runtime starts in the application lifespan, loads configured watches, groups them by provider, and runs an independent loop for each store. HTTP requests do not start scrapes. They only reveal whether the background work is starting, running, waiting, blocked, or recovering.
 
-The FastAPI app is deliberately quiet. `app.py` creates the application, starts `Scrapper.run()` as an async task, and exposes `GET /health`. When the service is still starting, the endpoint returns `503`. After the runtime starts, the endpoint reports the top-level status and per-provider details such as active jobs, queued jobs, blocked jobs, block reasons, cycle count, and recent cycle timing.
-
----
-
-## What the vault covers
-
-This vault follows the maintainer path through the system. It does not start with provider selectors because selectors are only one piece of the design. The more useful order begins with how a job enters the runtime, then moves through provider ownership, fetch behavior, state reconciliation, and operations.
-
-| Entry                       | Main question                                                                           |
-| --------------------------- | --------------------------------------------------------------------------------------- |
-| `runtime_flow`              | How does the FastAPI process keep scraping in the background and report service health? |
-| `job_configuration`         | How does a YAML job become a provider motor with a stable URL and storage path?         |
-| `provider_boundaries`       | How do store packages own parsing while sharing one scheduler contract?                 |
-| `fetching_and_backoff`      | How does the scraper handle rate limits, browser gates, timeouts, and blocks?           |
-| `persistence_and_lifecycle` | How does product state move through active, hold, and finished records?                 |
-| `operations_and_extension`  | How should a maintainer run the service, enable alerts, and add another provider?       |
-
-Read the first two entries before changing configuration. Read the provider and fetching entries before changing selectors or URL rules. Read the persistence entry before touching runtime JSON. Read the operations entry before adding a store. That order saves the future maintainer from debugging the wrong layer first.
+The local JSON files are operational state rather than a public database. Each configured watch owns a file below `DATA_PATH`. Records retain the current title and price, earlier values, lifecycle status, and enough timestamps to reconstruct what changed. That modest storage choice keeps the project easy to run while still demanding careful write and recovery behavior.
 
 ---
 
-## The project boundaries
+## One product shape hides four different stores
 
-The repository has a clear ownership map. `app.py` owns the FastAPI entrypoint and the command-line URL preview command. `scraper/` owns job assembly, scheduling, provider concurrency, health aggregation, and notification routing. `shared/` owns product records, streams, motor behavior, fetchers, config coercion, and persistence contracts used by every provider.
+MLScraper currently supports Amazon Mexico, Mercado Libre, Liverpool, and Palacio de Hierro. Those names look like a simple provider list. In practice, each store exposes product information through a different page shape and a different routing vocabulary.
 
-Provider packages own the store-specific pieces. Amazon, Mercado Libre, Liverpool, and Palacio de Hierro each keep URL construction, option enums, parser helpers, and motor parsing close to their store package. That lets a Liverpool JSON change stay in Liverpool code instead of leaking into shared scraper logic.
+| Provider          | Key  | Product source                         | Important difference                                                        |
+| ----------------- | ---- | -------------------------------------- | --------------------------------------------------------------------------- |
+| Amazon Mexico     | `az` | HTML search result cards               | Stable ASIN values identify products and pagination follows result links.   |
+| Mercado Libre     | `ml` | DOM cards or embedded Nordic state     | Browser gates and partial responses can carry explicit incomplete reasons.  |
+| Liverpool         | `lv` | The `__NEXT_DATA__` JSON payload       | Generated page routes can require seller-filter resolution before scraping. |
+| Palacio de Hierro | `ph` | Constructor product attributes in HTML | Pagination advances through a `start` offset and reported result count.     |
 
-`utils/` holds supporting pieces that cut across runtime boundaries. File persistence resolves safe paths under `DATA_PATH`, writes through temporary files, and keeps a backup copy. Header helpers provide browser-like request profiles. Telegram helpers read ignored local credentials and turn notification payloads into chat messages.
+Every provider returns the same small item contract. A product needs a stable `identifier`, a `title`, and a numeric `price`. A product URL is optional but useful for notifications. The provider also returns the next page URL when pagination should continue.
 
-The config directory is another boundary. `jobs.yaml` defines what to scrape. `motors.yaml` defines motor policy such as fetch strategy, delay ranges, concurrency, browser selectors, and block cooldowns. `scrapper.yaml` defines scheduler backoff. That separation keeps a product monitor from carrying scheduler policy inside a provider parser.
+That common shape lets the rest of the service ignore store markup. Lifecycle code compares identifiers. Persistence serializes articles. Notification routing examines history. Scheduler code counts active and blocked jobs. None of those layers needs to know what an Amazon result card or Liverpool payload looks like.
 
----
-
-## Where the current source differs
-
-The older Product Tracker article described an earlier version of the project. The current snapshot no longer presents the same public dashboard story. The current source emphasizes scheduled provider loops, `/health`, URL preview, YAML job validation, browser fetch mode, blocked-page reporting, JSON persistence, and Telegram notifications.
-
-That difference changes the writing angle. A single architecture tour would flatten the useful parts. The current project is better as a vault because every boundary deserves its own page. The root gives the map. The child entries explain the contracts that make the system maintainable.
-
-The old route has been removed rather than redirected. The public project surface is now `/thejournal/mlscraper/`, with child entries below that path. Internal project links should point to the vault root so readers land on the map before choosing the detail they need.
+This boundary is also the project’s best extension point. A store change stays near its parser and URL helpers. A new provider implements the same page contract and registers a factory. The scheduler does not gain a new branch for every store, which keeps the shared path understandable as the provider list grows.
 
 ---
 
-## How to read the code
+## Failure is recorded before it can damage history
 
-Start with `app.py`. It shows the smallest public surface of the service. The lifespan hook creates `Scrapper`, starts `run()` in the background, and cancels the task on shutdown. The same file also exposes the `preview-url` command, which is the safe way to inspect one configured job without starting the scraper loops.
+Network failure, browser blocking, parser failure, and a valid empty result are different events. Treating them all as an empty list would make the code shorter and the history less trustworthy. MLScraper marks failed or suspicious cycles as incomplete and skips missing-item reconciliation for those cycles.
 
-Next read `scraper/jobs/loader.py`, `scraper/jobs/factories.py`, and `scraper/jobs/registry.py`. Those files explain how plain YAML becomes concrete motors. The loader validates the shared job contract and coerces provider-owned options. Factories build provider URLs and storage paths. The registry keeps provider keys mapped to motor factories.
+That guard matters because reconciliation changes product status. After a complete scrape, an active product that was not observed moves to `on_hold`. Repeated complete misses can move it to `finished`. A blocked page should never trigger that progression, because the service did not gather enough evidence to say the product was absent.
 
-After jobs, read `scraper/runtime/orchestrator.py`. It groups motors by provider, starts one loop per provider, applies provider semaphores, updates health, and routes notifications. `provider_runtime.py` is worth reading beside it because that helper makes queued and active job counts visible instead of leaving concurrency as an invisible semaphore.
+The fetch layer supplies several signals. Lightweight requests handle ordinary pages and retry transient failures. Browser mode waits for a configured selector and checks known block selectors or URL fragments. Motors can record reasons such as `fetch_failed`, `browser_timeout`, `browser_blocked`, or `parse_error`. Health aggregates those reasons for the operator.
 
-Then read `shared/scraping/motor.py`. That file is the center of the scraper contract. It owns pagination, fetch dispatch, parse calls, item saving, incomplete scrape guards, reconciliation, and serialized notification payloads. A provider motor has one main responsibility inside that larger algorithm. It parses one fetched page into items and a next URL.
-
-Finish with one provider and one persistence path. Liverpool is a good provider to read first because it parses product data from `__NEXT_DATA__`. `shared/articles/lifecycle.py`, `shared/articles/stream.py`, and `utils/file_manager.py` then show how a product becomes history on disk instead of a temporary result from one scrape cycle.
+Backoff happens at the scope where the problem appears. A rate-limited request pauses its own fetch path. A blocked motor can enter a cooldown. A provider loop that raises outside an individual motor sleeps and increases its scheduler backoff. Other provider loops continue because one store should not freeze every watch.
 
 ---
 
-## Responsible scraping
+## Product history needs more than the latest price
 
-MLScraper watches public store pages, but that does not make scraping free of operational judgment. The project keeps concurrency conservative, makes browser mode explicit, stores runtime data locally, and treats blocks as visible health signals. That posture is part of the architecture, not a footnote.
+A listing enters the service as an observation. The stable provider identifier decides whether that observation belongs to a new product or an existing record. If the title or price changed, the article keeps the prior value in history before accepting the new one.
 
-The point of the system is not to pretend every fetch succeeds. The point is to know which provider is blocked, which job is queued, which product disappeared for a cycle, and which price change is worth a notification. Once those facts are visible, the scraper becomes easier to operate and easier to change.
+Absence also becomes evidence, but more cautiously. The first complete miss moves an active product to `on_hold`. The default threshold is three misses, after which the product moves to `finished`. If it returns before then, the same record becomes active again instead of creating a duplicate product.
+
+This lifecycle gives notification routing better information. The first successful scrape establishes a baseline and suppresses new-item messages. Later new products can notify. A price update only becomes a price-drop alert when history contains a usable previous price and the reduction reaches the implemented threshold of 14 percent.
+
+The threshold is a code decision, not a claim about the ideal bargain. Its value in this case study is architectural. Providers report normalized facts, lifecycle code decides what changed, and notification code decides whether that change deserves an external message. Those responsibilities can evolve independently.
 
 ---
 
-## What to change first
+## The health endpoint is part of the product
 
-When a maintainer opens MLScraper with a bug report, the safest first move is to identify the boundary that owns the symptom. A broken product title usually belongs to a provider parser. A missing route usually belongs to URL generation or YAML coercion. A finished product that should still be active belongs to lifecycle or incomplete scrape handling.
+A process can answer HTTP while its useful work is stuck. MLScraper’s health response therefore includes more than a top-level status. It reports each provider’s cycle state, configured concurrency, job count, active work, queued work, blocked jobs, block reasons, timing, and recent errors.
 
-### A maintainer reading path
+Those fields shorten diagnosis. A growing queue points toward the provider concurrency limit or slow page work. A `browser_blocked` reason points toward browser policy or a store gate. A parser error points toward provider fixtures and selectors. A service with no loaded motors exposes `idle_no_motors` rather than crashing into a restart loop.
 
-Use the codebase in this order when you need to change behavior.
+This is one place where the project sells itself through restraint. It does not promise that scraping is stable. It gives the operator a vocabulary for instability. That makes maintenance less like guessing at a blank terminal and more like following a signal to the layer that produced it.
 
-- Start with `app.py` only when the public service surface or URL preview command changed.
-- Start with `scraper/jobs/loader.py` and `scraper/jobs/factories.py` when a YAML field or generated route changed.
-- Start with `shared/scraping/motor.py` when pagination, reconciliation, or notifications changed.
-- Start with the provider package when selectors, item fields, pagination URLs, or blocked-page detection changed.
-- Start with `utils/file_manager.py` only when persisted JSON, backups, or path safety changed.
+---
 
-That reading order is deliberately boring. It keeps a maintainer from fixing the symptom at the layer that noticed it rather than the layer that caused it. **The best MLScraper changes preserve the boundary that made the bug easy to locate.**
+## What the project proves and what it does not
 
-The same rule applies to writing this vault. Each child entry follows one ownership boundary instead of copying package names into a tour. The goal is not to document every function. The goal is to give a future reader enough context to predict where a behavior lives before they open the source.
+MLScraper demonstrates how I organize a changing external dependency. The provider adapters isolate store knowledge. The runtime isolates provider failures. The lifecycle protects meaning across observations. Persistence protects local state. Health explains what the background process is doing. Offline tests exercise those boundaries with fixtures and fakes.
 
-This is also why the vault root should stay short compared with its children. The root is the map. It tells readers which paths matter and warns them away from the old standalone story. The child pages do the slower work of explaining contracts, failure modes, and maintenance habits.
+The project does not include a hosted dashboard, user accounts, a relational database, or a general notification platform. Telegram is optional and currently the only external channel. The scheduler interval and price-drop threshold are code constants. The stores can change without warning, so a checked-in parser can never guarantee future live compatibility.
 
-The project can grow from here without changing that shape. A future dashboard would become another runtime or interface entry. A new provider would extend the provider boundary entry. A new storage backend would expand persistence. The vault should grow by ownership, not by release chronology.
+Those limits make the case study more useful. They distinguish implemented behavior from plausible future work. A dashboard could consume the same article and health data. Another notification adapter could sit behind the broadcast boundary. A database could replace JSON through a repository change. None of those possibilities needs to be presented as finished work.
+
+Responsible operation matters too. Conservative provider limits, page delays, visible cooldowns, and explicit browser mode reduce needless source pressure. They do not grant permission to scrape a particular site. Anyone running the project remains responsible for reviewing the source’s terms, local requirements, and the effect of their configuration.
+
+---
+
+## Why I kept the first version operationally small
+
+A local JSON store and one FastAPI process are modest choices, but they expose the central problem without requiring infrastructure to carry the story. The project can demonstrate identity, lifecycle, failure isolation, and recovery while remaining possible to run on one machine.
+
+The in-process scheduler also makes ownership visible. FastAPI controls lifetime, provider loops control recurring work, and motors control page sequences. A queue or external scheduler could replace parts of that arrangement later, but adding one now would introduce delivery semantics that the current use case does not need.
+
+The same restraint applies to notifications. Telegram proves that normalized change events can leave the scraper through a separate boundary. Adding email, webhooks, and push messages before the event contract was clear would create more integrations without improving the meaning of the underlying state.
+
+There is a cost to this simplicity. One process owns scheduling and writing, JSON is unsuitable for concurrent writers, and health lives in memory. The service does not offer distributed coordination or historical operational metrics. Those are explicit limits rather than hidden capabilities.
+
+For a portfolio case study, this shape keeps attention on judgment. The interesting question is not how many services can surround a scraper. It is whether one failed observation can be prevented from damaging saved product meaning, and whether an operator can understand the decision afterward.
+
+---
+
+## Choose a path through the case study
+
+Readers new to scraping should begin with [your first MLScraper price watch](/thejournal/mlscraper/first_price_watch/). It introduces jobs, providers, product identifiers, baselines, health, and alerts through one example before opening the internal modules.
+
+The next step is [how a YAML job becomes a store URL](/thejournal/mlscraper/job_configuration/). That chapter explains why `job_id` is durable identity, when a generated route is safer than a copied URL, and how preview reveals the final route before the scheduler starts.
+
+Readers interested in execution can continue with [what happens during one scrape cycle](/thejournal/mlscraper/runtime_flow/) and [why every store needs its own adapter](/thejournal/mlscraper/provider_boundaries/). Together they show how shared runtime behavior meets provider-specific parsing without mixing the two.
+
+The failure and data chapters cover the heart of the design. [When a store blocks the scraper](/thejournal/mlscraper/fetching_and_backoff/) follows fetching, incomplete pages, cooldowns, and backoff. [How a product becomes price history](/thejournal/mlscraper/persistence_and_lifecycle/) follows one stable identifier through updates, temporary absence, recovery, and alerts.
+
+Finish with [operating MLScraper and adding a store](/thejournal/mlscraper/operations_and_extension/). It turns the earlier concepts into a diagnostic routine and an extension checklist. By that point, the repository should feel less like four unrelated scrapers and more like one service with four adapters.
+
+The source is available through the project’s GitHub link above. The most interesting code is not the selector that works today. It is the set of decisions that limit what a failed selector is allowed to damage tomorrow.

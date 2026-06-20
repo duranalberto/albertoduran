@@ -210,7 +210,8 @@ function normalizesvgIntrinsicSize(svgEl: HastElement): void {
     if (cleaned) {
       svgEl.properties.style = cleaned;
     } else {
-      const { style: _removed, ...rest } = svgEl.properties;
+      const rest = { ...svgEl.properties };
+      delete rest.style;
       svgEl.properties = rest;
     }
   }

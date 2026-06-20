@@ -1,89 +1,38 @@
 ---
-title: "Provider boundaries in MLScraper"
-description: "How provider packages own URL rules, options, parsing, and fallbacks while sharing one motor and job construction contract."
-author: "Alberto Duran"
-tags: ["python", "architecture", "scraping"]
+title: "Why every store needs its own adapter"
+description: "Compare four ecommerce page formats and learn how MLScraper isolates store-specific URLs and parsing behind one product contract."
+tags: ["python", "architecture", "scraping", "adapters"]
 pubDate: 2026-06-18
-order: 40
+updatePubDate: 2026-06-20
+order: 50
 ---
 
-Store scrapers age at different speeds. Amazon changes result markup, Liverpool moves data through a Next.js payload, and Mercado Libre can gate a search behind browser behavior. MLScraper survives that variety by keeping provider knowledge inside provider packages while every store still implements the same motor contract.
-
----
-
-## The boundary is intentional
-
-The project has two kinds of code. Shared code owns the scrape algorithm, lifecycle rules, fetch strategy, config coercion, and persistence. Provider code owns URL rules, option enums, selectors, parser fallbacks, and store-specific blocked-page behavior. The repository is built so those two groups meet at a narrow contract.
-
-The component map looks like this.
-
-```mermaid
-graph TB
-    App[🌐 app.py<br/>FastAPI and preview CLI]
-    Config[⚙️ config files<br/>jobs motors scrapper]
-
-    subgraph "Scraper runtime"
-        Loader[📥 job loader]
-        Registry[🔌 registry and factories]
-        Orchestrator[🔄 Scrapper loops]
-        Health[📊 provider health]
-    end
-
-    subgraph "Shared contracts"
-        Motor[⚙️ Motor base]
-        Fetchers[🌐 fetchers]
-        Lifecycle[📦 article lifecycle]
-        Storage[(💾 JSON persistence)]
-    end
-
-    subgraph "Provider packages"
-        Amazon[📦 Amazon]
-        Mercado[📦 Mercado Libre]
-        Liverpool[📦 Liverpool]
-        Palacio[📦 Palacio de Hierro]
-    end
-
-    App --> Config
-    Config --> Loader
-    Loader --> Registry
-    Registry --> Amazon
-    Registry --> Mercado
-    Registry --> Liverpool
-    Registry --> Palacio
-    Amazon --> Motor
-    Mercado --> Motor
-    Liverpool --> Motor
-    Palacio --> Motor
-    Orchestrator --> Motor
-    Motor --> Fetchers
-    Motor --> Lifecycle
-    Lifecycle --> Storage
-    Orchestrator --> Health
-
-    classDef entry fill:#87CEEB,stroke:#333,stroke-width:2px,color:#0F172A
-    classDef runtime fill:#90EE90,stroke:#333,stroke-width:2px,color:#064E3B
-    classDef shared fill:#E6E6FA,stroke:#333,stroke-width:2px,color:#1E3A8A
-    classDef provider fill:#FFE4B5,stroke:#333,stroke-width:2px,color:#000
-    classDef data fill:#FFD700,stroke:#333,stroke-width:2px,color:#000
-
-    class App entry
-    class Config data
-    class Loader,Registry,Orchestrator,Health runtime
-    class Motor,Fetchers,Lifecycle,Storage shared
-    class Amazon,Mercado,Liverpool,Palacio provider
-```
-
-The key dependency rule is simple. `shared/` must not import from `provider/` or `scraper/`. Shared code should be reusable by every provider and by the runtime. Provider packages can depend on shared contracts because they implement those contracts. Scraper runtime code can assemble providers because runtime orchestration is its job.
-
-That rule prevents a small parser fix from pulling the scheduler into provider code or a provider selector into shared code. It also gives tests cleaner targets. Parser tests can focus on provider output. Motor tests can focus on lifecycle and fetch behavior. Job tests can focus on configuration and factories.
+Two store pages can show the same product and share almost nothing useful in their source. One hides data in a Next.js payload, another annotates HTML tiles, and another may return a browser gate instead of results. MLScraper handles that variety with provider adapters. This chapter shows what each adapter owns, the small product contract they share, and why isolating store knowledge makes failures easier to test and repair.
 
 ---
 
-## Every provider implements one page contract
+## An adapter translates one store into one language
 
-The main provider method is `scrape_page`. The shared motor fetches content, builds a body with the current URL, calls the provider, and receives normalized items plus an optional next page URL. The provider does not save JSON, reconcile missing items, send Telegram messages, or schedule the next cycle.
+The rest of MLScraper wants a simple answer from every page. It needs a list of products and the URL of the next page, when one exists. It does not want Amazon selectors, Liverpool JSON paths, or Mercado Libre gate detection mixed into lifecycle code.
 
-The contract is intentionally small.
+Each provider package performs that translation. It owns store route builders, documented option values, parsing assumptions, pagination details, and store-specific incomplete states. The shared motor owns the repeated algorithm around those details.
+
+| Concern             | Provider adapter owns                                       | Shared service owns                                     |
+| ------------------- | ----------------------------------------------------------- | ------------------------------------------------------- |
+| Job input           | Store-specific option names and values                      | Common identity, URL, and query fields                  |
+| Route creation      | Domain paths, filter tokens, and pagination parameters      | Loading and validating the selected job                 |
+| Page interpretation | Selectors, payload paths, gates, and malformed-page signals | Fetch dispatch and complete-cycle coordination          |
+| Product output      | Stable store identifier, title, price, and optional URL     | History comparison and lifecycle transitions            |
+| Failure response    | Whether the page is blocked, incomplete, or safely empty    | Cooldowns, health counters, and missing-item protection |
+| Durable effects     | No direct storage or notification work                      | JSON persistence and change callbacks                   |
+
+This is an adapter pattern in practical clothing. The provider side speaks a store’s language. The shared side speaks product observations. The narrow contract between them prevents store changes from spreading through the scheduler and data model.
+
+---
+
+## The page contract stays intentionally small
+
+Every provider motor implements `scrape_page`. The method receives fetched content and the current URL, then returns normalized dictionaries and an optional next URL.
 
 ```python
 def scrape_page(self, body: dict) -> tuple[list[dict], str | None]:
@@ -100,68 +49,112 @@ def scrape_page(self, body: dict) -> tuple[list[dict], str | None]:
     )
 ```
 
-`identifier`, `title`, and `price` are required. `url` is optional but useful for alerts. `next_url` is `None` when pagination ends. If a provider sees a blocked or incomplete page, it should mark that state through existing motor behavior rather than returning an empty page that looks like a real disappearance.
+The required fields are `identifier`, `title`, and `price`. The product URL is optional. `next_url` becomes `None` when pagination ends or when an incomplete condition stops the cycle.
 
-This contract gives the shared motor enough information to update streams. A new identifier becomes an active product. A matching identifier with a different title or price records history. A previously active identifier that does not appear in a complete scrape moves toward hold and eventually finished.
+Stable identifiers carry the most weight. The shared article model compares products by identifier, not title. A provider should choose the store’s durable listing key, such as an Amazon ASIN, instead of deriving identity from text that can change.
 
----
+The provider does not write JSON, move products between lifecycle streams, calculate price-drop percentages, send Telegram messages, or schedule its next cycle. Those behaviors operate on the normalized contract and belong to shared or runtime code.
 
-## Providers parse different source shapes
-
-Amazon parses HTML search result cards. It reads `data-component-type="s-search-result"`, uses the ASIN as the stable identifier, skips items without prices, and builds canonical product URLs from the ASIN. That parser is defensive because Amazon search pages include sponsored or incomplete cards.
-
-Mercado Libre delegates most work to `provider/mercado_libre/parser.py`. The motor receives a parsed result that can include items, a next URL, a blocked reason, or an incomplete reason. Blocked pages set motor state and cooldown. Incomplete pages skip reconciliation so a gated or partial response does not finish real products.
-
-Liverpool reads product records from the `__NEXT_DATA__` script tag. That makes it less dependent on visible HTML classes. If the script tag is missing, empty, malformed, or shaped differently than expected, the motor marks the scrape incomplete and stops pagination for that cycle.
-
-Palacio de Hierro parses Constructor-backed product tiles from data attributes. It reads identifiers, names, prices, product links, total count, and page size from the HTML. Pagination increments the `start` query parameter until the page would exceed the reported total.
-
-The providers are different because the stores are different. The shared contract is what keeps those differences contained.
+Incomplete behavior is the one deliberate side channel. A provider that recognizes a gate or malformed page can mark the motor incomplete before returning. That signal tells shared reconciliation that the product list is not trustworthy evidence of absence.
 
 ---
 
-## URL generation is also provider code
+## Amazon reads familiar HTML cards
 
-Provider packages own route generation because store route rules are not generic. A Mercado Libre seller category route has different constraints from an Amazon brand refinement or a Liverpool seller-filtered page route. Factories call provider URL builders instead of assembling route strings inside the loader.
+Amazon Mexico is the most conventional adapter in the project. Its parser finds `div` elements marked with `data-component-type="s-search-result"`, reads the `data-asin` value, extracts a title and price, and builds a canonical product URL from the ASIN.
 
-That split keeps the loader from becoming a second provider layer. The loader validates shared structure and coerces known provider values. The factory decides how those values become a motor. The provider URL module decides how route pieces become a final URL.
+Cards without an ASIN, title, or price are skipped. A search page can include sponsored, incomplete, or decorative elements that resemble products, so the parser prefers omission over inventing a zero-value listing.
 
-The same boundary helps preview. `preview_job_url()` calls provider preview helpers with the same fields the factories use. The preview command can therefore show the final URL without constructing motors or starting a runtime loop.
+Pagination looks for the next-page link and joins relative paths against the Amazon Mexico domain. The provider returns that route to the shared motor, which handles session policy and page delays before fetching it.
 
-When adding a provider, follow the same shape. Create `provider/<name>/`, implement a motor subclass, set `PROVIDER_KEY`, add URL and option helpers as needed, register a factory with a short key, and add parser plus configuration tests. Avoid shared scraper logic under the provider package.
-
----
-
-## The registry keeps assembly boring
-
-`MotorRegistry` maps provider keys to factory functions. It validates that each factory declares `job_id`, `url`, and `query`. That validation is small, but it stops a common drift where one provider slowly stops accepting the shared job contract.
-
-The registry stores job entries separately from factories. `get_motors()` registers default factories once, loads jobs, clears old entries, registers current entries, and builds motors. If a provider key has no factory, the registry logs an error and skips that entry rather than crashing the whole application.
-
-This behavior makes provider addition incremental. A provider can add its package, URL helpers, factory, docs, and tests without changing the scheduler. Once the factory is registered, the runtime sees it through the same path as every other provider.
-
-The result is not glamorous, which is exactly the point. The provider boundary turns store-specific mess into one predictable motor list. After that, the runtime can apply the same concurrency, health, persistence, and notification rules to every store.
+Amazon route generation also belongs inside the package. Known seller and brand options map to documented refinement values. The builder controls query encoding and filter order, while the job factory only asks it to produce a route from structured options.
 
 ---
 
-## Changing providers without crossing the line
+## Mercado Libre has more than one product shape
 
-Provider work usually starts from a store change. A selector stops matching, a JSON payload moves, a route builder needs another documented option, or pagination behaves differently. The right fix should stay close to the provider package unless the shared motor contract itself is wrong.
+Mercado Libre delegates its parsing to a focused `parser.py` module because its result data can arrive through ordinary DOM cards or embedded Nordic state. The parser first checks for known blocked-page signals, then tries the supported result shapes.
 
-### Boundary rules for provider edits
+The result object can carry items, a next URL, a blocked reason, or an incomplete reason. A recognized account verification or suspicious-traffic page marks the motor blocked and applies the provider cooldown. An unsupported or partial result shape marks the cycle incomplete without pretending the page contained zero products.
 
-Use these rules when reviewing provider work.
+Pagination needs more than a next-link selector. Helpers read result counts, page size, current offset, and whether another page is available. They inject the next offset into several known URL shapes while preserving the route’s other pieces.
 
-- Keep selectors, store payload assumptions, route builders, and option enums inside the provider package.
-- Keep retry policy, fetch strategy selection, lifecycle transitions, and file persistence in shared code.
-- Keep YAML validation in the loader only when a provider option needs coercion before factory construction.
-- Keep storage naming in factories so provider parsers do not know about files.
-- Keep notification formatting outside providers so stores only report normalized product items.
+This provider demonstrates why the adapter boundary matters. Browser readiness, gate detection, DOM parsing, embedded state, and offset rules can change together inside one store. Shared lifecycle still receives the same identifier, title, price, URL, and completion signal.
 
-**A provider should explain the store, not the scraper runtime.** If a provider import starts reaching into scheduler helpers, health maps, Telegram code, or file-manager internals, the boundary has leaked. That leak makes the next provider harder to add and the current provider harder to test.
+---
 
-This boundary also affects test design. Provider parser tests should use tiny HTML or JSON fixtures and assert normalized items plus pagination. They should not start the scheduler. Motor flow tests should use fake providers to exercise shared behavior. Job tests should construct motors without hitting store pages.
+## Liverpool reads application data instead of visible cards
 
-Some changes really do belong in shared code. If every provider needs a new item field, update the shared article contract. If every provider needs a new fetch failure state, update the motor or fetcher. If only one store changed its payload, keep the fix under that store.
+Liverpool pages include a `__NEXT_DATA__` script containing application state. The provider parses that JSON and reads product records from the expected `query.data.mainContent.records` path.
 
-The practical payoff appears during incidents. A Mercado Libre gate should lead you to Mercado Libre parsing or browser policy. A Liverpool missing script should lead you to Liverpool. A duplicate job ID should lead you to the loader. A price history issue should lead you to lifecycle. Boundaries make those paths short.
+Each valid record exposes an internal ID, title, promotional price, and enough text to build a product URL. Pagination reads the reported page count and inserts the next page segment while preserving the existing query string.
+
+Missing or empty `__NEXT_DATA__` is not a valid empty catalogue. Invalid JSON and unexpected key structure also mark the cycle incomplete. Malformed individual records are skipped with a warning while valid siblings remain available.
+
+Liverpool route construction is unusually involved. Generated searches and pages can require a seller-filtered token resolved from store metadata. Provider helpers validate that the response contains the expected Liverpool seller refinement and page ancestry. Unsupported combinations require an explicit URL instead of a guessed generated route.
+
+That complexity stays under `provider/liverpool/`. The loader can resolve a documented page name, and the factory can request a route, without learning how Liverpool encrypts or organizes its navigation tokens.
+
+---
+
+## Palacio de Hierro uses annotated product tiles
+
+Palacio de Hierro exposes Constructor-backed attributes on product tile elements. The adapter reads the identifier, product name, price, link, total result count, and configured page size from those attributes and surrounding section metadata.
+
+If no valid product tiles appear, the provider marks the cycle incomplete. That choice is conservative because an empty selector result could mean a changed template. A complete zero-result catalogue would need a separately reliable signal before reconciliation should treat every saved product as missing.
+
+Pagination advances the `start` query parameter by page size until the next offset would reach the reported total. Invalid page-size metadata falls back to the current default of 52, while a missing or invalid total prevents further pagination.
+
+The route builder supports global query searches and documented page paths with page-scoped brand filters. It normalizes, sorts, deduplicates, and encodes those brands. Unsupported structured combinations fail early and leave explicit URL as the escape hatch.
+
+---
+
+## URL generation belongs beside parsing knowledge
+
+A store controls both the page route and the page shape. Keeping those assumptions together makes provider behavior easier to review. A new category field is incomplete if its generated route reaches a page the parser cannot understand.
+
+The loader should not become a universal URL builder. It validates shared shape and converts provider values. Factories choose explicit or generated routing and storage. Provider URL modules turn store concepts into actual paths and query strings.
+
+Preview uses provider helpers too. That keeps the route shown to an operator consistent with the route a factory would give the motor. It also lets provider URL tests verify exact outputs without constructing motors or touching runtime data.
+
+When route and parser work change together, tests can tell a coherent story. One test proves the builder emits a supported page. Another fixture proves the parser understands that page’s data shape. The shared motor tests remain independent of both.
+
+---
+
+## Tests follow the same boundaries
+
+Provider parser tests use small HTML or JSON fixtures and assert normalized items, pagination, and incomplete behavior. They do not start the scheduler or make live requests. A store change can therefore be reproduced with the smallest relevant input.
+
+Motor-flow tests use fake provider implementations to exercise shared fetching, page traversal, reconciliation, callbacks, and block state. Job tests construct provider motors and check URL or storage results without scraping the stores.
+
+This division makes a failing test informative. An Amazon card change should fail near Amazon parsing. A three-miss lifecycle regression should fail with a fake motor. A duplicate job ID should fail in loader tests. The test location points toward ownership before anyone opens production logs.
+
+Package imports reinforce the rule. Shared code must not import from `provider/` or `scraper/`. Providers depend on shared motor contracts, and scraper runtime code assembles concrete providers. Reversing those dependencies would make the reusable center depend on every edge.
+
+---
+
+## The normalized contract deliberately leaves details out
+
+The shared item does not preserve every badge, installment offer, seller score, image, shipping promise, or crossed-out price a store displays. Adding fields because one page exposes them would make every provider and persisted record carry concepts they cannot support consistently.
+
+A new shared field needs a cross-provider meaning. The project would need to define whether it is required, how older JSON loads without it, how updates enter history, and whether notifications consume it. That is a data-model change rather than a parser convenience.
+
+Provider-only metadata can stay inside parsing decisions when it helps choose the normalized value. An adapter may inspect several price elements to select the current numeric price without exposing all of those elements to lifecycle code.
+
+The contract also avoids returning raw HTML. Persisting source pages would increase storage, potentially retain unrelated personal or session data, and bind history to store markup. Focused test fixtures are a safer place to keep the minimum source shape needed for regression.
+
+This smaller contract makes provider comparison possible. Every adapter can answer which listing appeared, what it is called, what it costs, where it lives, and whether another results page follows. The rest of the service builds its guarantees from those facts.
+
+---
+
+## Add a provider without teaching the scheduler a new store
+
+A new store begins with a provider package, motor subclass, provider key, page parser, and route helpers. Its factory accepts the shared job fields, builds a relative storage path, and registers under a short key.
+
+The provider then needs tests for factory construction, generated and explicit routing, parser output, pagination, and known empty or gated pages. Configuration examples document the supported public fields. Runtime policy can add a provider-specific fetch strategy, delay, cooldown, or concurrency limit.
+
+The scheduler should not gain a branch that names the new store. It already groups motors by `provider_key`, runs provider loops, applies limits, refreshes health, and routes normalized events. If adding a provider requires changing that algorithm, the adapter contract may be leaking.
+
+That is the practical payoff of the design. Store-specific code remains detailed because storefronts are detailed. The rest of the service stays small enough to reason about because those details cross one narrow page contract.
+
+Continue with [when a store blocks the scraper](/thejournal/mlscraper/fetching_and_backoff/) to see how fetch policy produces usable or incomplete page bodies. Then [how a product becomes price history](/thejournal/mlscraper/persistence_and_lifecycle/) follows normalized items after they leave the provider boundary.

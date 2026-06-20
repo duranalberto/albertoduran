@@ -10,11 +10,6 @@ export interface Strength {
   description: string;
 }
 
-export interface RecruiterQuestion {
-  question: string;
-  answer: string;
-}
-
 export interface Experience {
   company: string;
   role: string;

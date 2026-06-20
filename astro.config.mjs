@@ -104,6 +104,18 @@ export default defineConfig({
     plugins: [tailwindcss()],
     build: {
       minify: "terser",
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes("/node_modules/zrender/")) {
+              return "zrender";
+            }
+            if (id.includes("/node_modules/echarts/lib/component/")) {
+              return "echarts-components";
+            }
+          },
+        },
+      },
       terserOptions: {
         compress: {
           drop_console: true,

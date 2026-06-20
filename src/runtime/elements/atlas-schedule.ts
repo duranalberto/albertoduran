@@ -23,7 +23,7 @@ export class AtlasSchedule extends HTMLElement {
           hour12: true,
         }).format(date) + ` (${simplifiedZone})`
       );
-    } catch (e) {
+    } catch {
       return isoDate;
     }
   }

@@ -1,6 +1,8 @@
 albertoduran
+asyncio
 ceneval
 centro
+cooldowns
 daisyui
 datails
 divec
@@ -17,12 +19,15 @@ frontmatter
 gantt
 Graphviz
 Gunicorn
+Hierro
 hstack
 inno
 innodb
+inspectable
 Kroki
 lightningcss
 minmax
+mlscraper
 monokai
 mysqlsh
 navlinks
@@ -34,6 +39,7 @@ OLED
 oneline
 onthispage
 onwarn
+Palacio
 pluma
 powerlevel
 preact

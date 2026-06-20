@@ -1,0 +1,59 @@
+---
+const impactItems = [
+  {
+    label: "Experience",
+    value: "6+ years",
+    detail: "Software development at Oracle and TCS.",
+  },
+  {
+    label: "Backend work",
+    value: "Java and Python",
+    detail:
+      "Enterprise Java, Python tools, FastAPI services, REST APIs, and database-backed workflows.",
+  },
+  {
+    label: "Independent projects",
+    value: "Built end to end",
+    detail:
+      "A price tracker, a valuation tool, a writing platform, and this website.",
+  },
+  {
+    label: "What I want next",
+    value: "More system ownership",
+    detail:
+      "A role where I can work on both the product and the services behind it.",
+  },
+] as const;
+---
+
+<section aria-labelledby="impact-heading" data-profile-impact>
+  <h2 id="impact-heading" class="sr-only">Professional impact snapshot</h2>
+
+  <dl
+    class="card card-border grid overflow-hidden bg-base-200 text-base-content shadow-sm md:grid-cols-2 xl:grid-cols-4"
+  >
+    {
+      impactItems.map((item, index) => (
+        <div
+          class:list={[
+            "flex min-w-0 flex-col p-6 sm:p-8",
+            index > 0 && "border-t border-base-300 md:border-t-0",
+            index % 2 === 1 && "md:border-l",
+            index >= 2 && "md:border-t xl:border-t-0",
+            index > 0 && "xl:border-l",
+          ]}
+        >
+          <dt class="text-xs font-bold uppercase tracking-[0.16em] text-primary">
+            {item.label}
+          </dt>
+          <dd class="mt-3 font-display text-xl font-bold leading-tight">
+            {item.value}
+          </dd>
+          <dd class="mt-3 text-sm leading-6 text-base-content/70">
+            {item.detail}
+          </dd>
+        </div>
+      ))
+    }
+  </dl>
+</section>

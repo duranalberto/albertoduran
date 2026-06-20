@@ -2,8 +2,8 @@ import {
   applyClientOptionPreset,
   type ChartClientPreset,
 } from "./client-presets.ts";
-import type { ChartOption, ChartTheme } from "./registry.ts";
-import { echarts, registerEChartsModules } from "./registry.ts";
+import type { ChartOption, ChartTheme } from "./types.ts";
+import { echarts, loadChartModules } from "./client-core.ts";
 
 export interface EnhancedChartHandle {
   dispose: () => void;
@@ -18,15 +18,15 @@ export interface EnhanceEChartArgs {
   optionClientPreset?: ChartClientPreset | undefined;
 }
 
-export function enhanceEChart({
+export async function enhanceEChart({
   surface,
   option,
   width,
   height,
   theme,
   optionClientPreset,
-}: EnhanceEChartArgs): EnhancedChartHandle {
-  registerEChartsModules();
+}: EnhanceEChartArgs): Promise<EnhancedChartHandle> {
+  await loadChartModules(option);
 
   const mount = document.createElement("div");
   mount.className = "echart-enhanced-surface";

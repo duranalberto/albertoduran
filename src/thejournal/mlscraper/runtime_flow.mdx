@@ -1,126 +1,182 @@
 ---
-title: "The scheduled scraper runtime"
-description: "How MLScraper starts FastAPI, runs provider loops in the background, and exposes scraper health without mixing routing with scraping."
-author: "Alberto Duran"
-tags: ["python", "fastapi", "architecture"]
+title: "What happens during one scrape cycle"
+description: "See how FastAPI starts MLScraper, provider loops share concurrency safely, and health turns background work into observable state."
+tags: ["python", "fastapi", "asyncio", "architecture"]
 pubDate: 2026-06-18
-order: 20
+updatePubDate: 2026-06-20
+order: 40
 ---
 
-A scraper that lives inside a web server can turn strange fast. One request handler starts doing background work, another handler starts reading half-built state, and shutdown forgets to stop the job it started. MLScraper keeps that surface small. FastAPI owns startup and health. The scraper runtime owns the loops, provider limits, backoff, and notification routing.
+Background work is easy to start and surprisingly hard to explain. A task can be alive while every useful job waits, one store can fail while the others are healthy, and a green HTTP response can hide a blocked browser. MLScraper keeps those states separate. This chapter follows one scheduled cycle from FastAPI startup through provider queues, motor execution, backoff, and the health response an operator can inspect.
 
 ---
 
-## Startup has one job
+## FastAPI gives the scraper a place to live
 
-The FastAPI entrypoint does very little by design. `app.py` creates a global `scrapper` slot, defines a lifespan hook, creates `Scrapper()`, starts `scrapper.run()` with `asyncio.create_task`, and cancels that task during shutdown. That is the whole bridge between the HTTP process and the scheduled scraper runtime.
+The application entrypoint has two jobs. It owns the HTTP service and the lifetime of one `Scrapper` instance. The FastAPI lifespan hook creates the orchestrator, starts `Scrapper.run()` as an asynchronous task, and cancels that task when the process shuts down.
 
-That bridge is narrow for a practical reason. Web requests should not decide which providers exist, which jobs are active, or how often a provider retries after a failure. Those decisions belong to the runtime. FastAPI only gives the runtime a process to live in and a health endpoint that orchestrators can call.
+This does not make scraping request driven. Calling `GET /health` never starts a product fetch. The background task runs independently, while the route reads the latest health dictionary. That separation prevents web traffic from deciding when stores are contacted.
 
-The startup path looks like this.
+During construction, the orchestrator loads scheduler configuration, creates the optional Telegram notifier, builds motors from `config/jobs.yaml`, groups them by provider key, establishes provider limits, and initializes cycle health. The work happens before the recurring provider tasks begin so the runtime knows its complete starting inventory.
+
+If no motors load, the web process stays alive and reports `idle_no_motors`. It logs a critical explanation and sleeps instead of crashing. A restart loop would say that the process cannot live. The idle state says the process is available but has no valid work.
+
+The health route returns `503` only while the global scraper is absent or still marked `starting`. Once `run()` begins, top-level state changes to `running`. Provider entries then carry the detailed truth about current cycles.
+
+---
+
+## One provider gets one independent loop
+
+The orchestrator groups all motors with the same provider key before starting recurring work. Amazon watches enter the `az` group, Mercado Libre watches enter `ml`, and the Liverpool and Palacio groups follow the same pattern.
+
+The runtime relationship below shows how one process creates independent provider loops and gives each group its own concurrency gate.
 
 ```mermaid
 flowchart TD
-    Start([🚀 Process start]) --> App[🌐 FastAPI app]
-    App --> Lifespan[⚙️ lifespan hook]
-    Lifespan --> Create[📦 Create Scrapper]
-    Create --> Load[📥 Load configured motors]
-    Load --> Health[📊 Set health starting]
-    Health --> Task[🔄 Start run task]
-    Task --> Running{✓ Motors loaded?}
-    Running -->|yes| Providers[⚙️ Provider loops]
-    Running -->|no| Idle[⏱️ idle no motors]
-    Providers --> Probe[🌐 GET /health]
-    Idle --> Probe
-    Lifespan --> Shutdown[⏹️ Cancel task on shutdown]
+    Start([🚀 FastAPI lifespan starts]) --> Load[⚙️ Load and build motors]
+    Load --> Group[📦 Group motors by provider]
+    Group --> AZ[🔄 Amazon loop]
+    Group --> ML[🔄 Mercado Libre loop]
+    Group --> LV[🔄 Liverpool loop]
+    Group --> PH[🔄 Palacio loop]
 
-    classDef startEnd fill:#E6E6FA,stroke:#333,stroke-width:2px,color:#1E3A8A
+    AZ --> AZLimit{🔒 Amazon semaphore}
+    ML --> MLLimit{🔒 Mercado semaphore}
+    LV --> LVLimit{🔒 Liverpool semaphore}
+    PH --> PHLimit{🔒 Palacio semaphore}
+
+    AZLimit --> Motors[⚙️ Run provider motors]
+    MLLimit --> Motors
+    LVLimit --> Motors
+    PHLimit --> Motors
+
+    Motors --> Result{✓ Cycle completed?}
+    Result -->|yes| Record[📊 Record timing and count]
+    Result -->|escaped error| Backoff[⏱️ Provider backoff]
+    Record --> Sleep[💤 Wait 400 seconds]
+    Backoff --> Retry[🔄 Retry provider loop]
+    Sleep --> Retry
+    Motors --> Health[🌐 Refresh health]
+
+    classDef start fill:#E6E6FA,stroke:#333,stroke-width:2px,color:#1E3A8A
     classDef process fill:#90EE90,stroke:#333,stroke-width:2px,color:#064E3B
     classDef decision fill:#FFD700,stroke:#333,stroke-width:2px,color:#000
-    classDef warning fill:#FFB6C1,stroke:#B91C1C,stroke-width:2px,color:#000
+    classDef wait fill:#FFB6C1,stroke:#B91C1C,stroke-width:2px,color:#000
     classDef output fill:#87CEEB,stroke:#333,stroke-width:2px,color:#0F172A
 
-    class Start,Shutdown startEnd
-    class App,Lifespan,Create,Load,Health,Task,Providers process
-    class Running decision
-    class Idle warning
-    class Probe output
+    class Start start
+    class Load,Group,AZ,ML,LV,PH,Motors,Record,Retry process
+    class AZLimit,MLLimit,LVLimit,PHLimit,Result decision
+    class Backoff,Sleep wait
+    class Health output
 ```
 
-`Scrapper.__init__()` does the first real runtime work. It loads scheduler config, creates a `TelegramNotifier`, builds motors from `config/jobs.yaml`, groups them by provider, records provider job counts, configures provider limits, creates provider health records, and initializes the public health dictionary.
+Each loop records its start time, marks the provider as running, refreshes public health, and runs the provider’s motors. A successful group records finish time, duration, cycle count, and an `ok` status. It then sleeps for the orchestrator’s current 400-second interval.
 
-When no motors load, the runtime does not crash the web process. It marks the service as `idle_no_motors` and sleeps. That choice makes misconfiguration visible through logs and health instead of turning a missing jobs file into a restart loop with less context.
+An escaped provider-loop error records the message, sleeps for scheduler backoff, doubles that delay up to the configured maximum, and tries the provider again. A successful cycle resets backoff to the initial value. Other provider tasks continue because `asyncio.gather` lives inside each group loop.
 
----
-
-## Provider loops are independent
-
-`Scrapper.run()` changes top-level health from `starting` to `running`, then starts one async task per provider. The grouping happens before the loop starts, so all jobs for `az`, `ml`, `lv`, and `ph` run under their own provider loop. One provider can back off after an error without forcing every other provider into the same wait.
-
-Each provider loop records its start timestamp, marks itself running, refreshes public health, and runs all of that provider's motors through `_scrape_with_limit()`. If a provider loop raises, it records the error, sleeps for the current scheduler backoff, doubles that backoff up to the configured maximum, and tries again.
-
-Successful cycles reset the provider backoff. The loop records finish time, duration, cycle count, and clears the last error. Then it sleeps for `Scrapper.sleep_time` before the next cycle. The code currently sets that interval to 400 seconds, which makes the scheduler periodic without needing an external cron process.
-
-This structure gives the health endpoint real operational meaning. A provider can show `running`, `ok`, or `error`. It can also report how long the last cycle took, how many cycles completed, and what the last error was. Those details are more useful than a single process-level green light.
+This design prevents a Mercado Libre gate from delaying Amazon by default. Store policies and failure modes differ, so their schedules need separate recovery state. The service remains one process, but its useful work does not share one global pause button.
 
 ---
 
-## Concurrency stays provider scoped
+## Async work is concurrency, not magic speed
 
-MLScraper does not use one global semaphore for every job. `provider_runtime.py` creates semaphores per provider, with each provider receiving its configured limit from the motors it owns. If a provider asks for an invalid limit, the helper clamps it to one. If later jobs for the same provider ask for a different limit, the first configured value wins and the runtime logs a warning.
+An asynchronous task can wait for network or sleep without blocking every other task. That makes `asyncio` a good fit for scheduled page work, where much of the cycle waits for responses, page readiness, configured delays, or cooldowns.
 
-That behavior is intentionally conservative. Store limits tend to be provider-specific, and one aggressive provider should not starve another provider. Separating provider semaphores lets Amazon run at one job while Liverpool or Palacio de Hierro can use their configured limit.
+Concurrency still needs limits. Starting every configured watch at once could increase source pressure and make block behavior harder to diagnose. MLScraper creates one semaphore per provider and reads its limit from the motors in that group.
 
-`scrape_with_limit()` also updates active and waiting counters around semaphore acquisition. A job increments the queued count before it waits. Once it acquires the semaphore, it moves from queued to active. When `motor.scrape()` returns or fails, the active count drops. The health endpoint can then show pressure in the queue rather than hiding it inside the event loop.
+The current configuration gives Amazon and Mercado Libre a limit of one, while Liverpool and Palacio use two. These are project settings rather than universal recommendations. They reflect the service’s conservative default posture and can be changed in `config/motors.yaml`.
 
-The function catches motor exceptions and logs them. A single failing motor should not cancel the provider cycle. The provider loop still has its own outer error path for failures that escape the motor task group, but ordinary motor failures stay local and leave the rest of the provider's jobs available.
+The first motor seen for a provider establishes that provider’s limit. If another motor asks for a different value, the runtime keeps the original and logs a warning. Invalid or nonpositive values fall back to one. A provider should have one coherent concurrency policy for the cycle.
 
----
-
-## Health is built for operators
-
-The `/health` endpoint reads the runtime health dictionary. It returns `503` while `scrapper` is missing or the runtime still reports `starting`. After that, it returns the scraper status, last cycle finish time, last cycle duration, motor count, and a sorted provider map.
-
-Each provider entry combines cycle state with live queue state. It includes configured limit, job count, active jobs, queued jobs, blocked jobs, and block reasons. Blocked jobs are counted from motor state, which means browser gate signals and rate-limit cooldowns show up beside scheduler health.
-
-That detail is the difference between "the app is alive" and "the scraper is usable." A process can answer HTTP while every Mercado Libre job is blocked. MLScraper makes that distinction visible so an operator can decide whether to adjust browser selectors, increase a timeout, lower concurrency, or simply wait out a cooldown.
-
-Health data also acts as a debugging map. If the top-level status is `ok` but one provider shows blocked jobs, start with fetch policy and provider parser tests. If queued jobs stay high, look at `CONCURRENCY_LIMIT`. If cycle duration jumps, inspect provider logs and page delays. The endpoint points you toward the next file to read.
+Before waiting for the semaphore, a motor increments the provider’s queued counter. After it acquires capacity, the counter moves from queued to active. A `finally` block removes the active count whether the scrape returns normally or raises. Health therefore describes pressure around the semaphore instead of hiding it inside the event loop.
 
 ---
 
-## Notifications stay behind the runtime
+## One motor failure stays local
 
-The runtime receives item events from motors through the `caller` callback passed into `motor.scrape()`. The motor does not import Telegram. It builds an article payload, attaches `job_id` and provider context, and calls the broadcast function with either `new_element` or `is_updated`.
+The provider runtime wrapper catches exceptions from `motor.scrape()` and logs the failing job. That catch matters because `asyncio.gather` would otherwise let one motor cancel the provider cycle’s ordinary success path.
 
-`TelegramNotifier` then routes the event through notification helpers. New items are skipped on the first scrape baseline. Price updates only become Telegram messages when the latest history entry contains a previous price and the reduction crosses the configured notification threshold in the routing helper.
+The motor itself also contains failure boundaries. Fetch failure marks the scrape incomplete. A provider parser exception records `parse_error`. These expected scraping failures return from the motor without escaping into scheduler backoff. They remain visible through motor block state and logs.
 
-This arrangement keeps the provider parser from knowing about chat messages. A parser returns product fields. The motor decides whether the item is new or changed. The notifier decides whether that change deserves a Telegram call. Each step has enough context to do its job without owning the whole chain.
+Provider-level backoff handles broader failures that escape the motor task group or provider loop. The distinction keeps a broken watch from making the whole store look unavailable, while still giving the provider loop a recovery path for unexpected orchestration errors.
 
-The runtime article in this vault focuses on that ownership because it is the part future changes are most likely to stress. Adding a dashboard, a webhook, or another notification channel should start at the broadcast boundary, not inside provider packages.
+There is a tradeoff here. Catching motor errors keeps other jobs running, but it also means top-level provider status can finish `ok` while one motor reported a local block or parser failure. The provider health entry includes blocked job counts and reasons so the operator can see that mixed result.
+
+This is why a single status word is not enough. Healthy scheduling and healthy store access are related but separate facts. The runtime reports both instead of compressing them into one green or red answer.
 
 ---
 
-## Reading failures from the loop
+## The motor owns the page-to-state algorithm
 
-The provider loop gives failures a timeline. A cycle starts, a provider status changes to running, motors attempt work under the semaphore, and the provider either records success or records an error plus backoff. That means runtime debugging should begin with time, not with selectors.
+Once a motor acquires its provider semaphore, the shared scrape algorithm takes over. It starts at the motor’s configured URL, selects the configured fetch strategy, asks the provider to parse one page, saves normalized items, and follows the returned next URL.
 
-### Runtime checks before parser edits
+The motor can reuse one HTTP session across pages or create a fresh session for each page. Amazon currently requests a fresh session per page, while the shared default reuses one. Every next page waits for a randomized delay inside the configured range.
 
-Use this order before changing provider code.
+Results accumulate for the complete cycle. After pagination ends, the motor reconciles saved active and on-hold products against identifiers observed in those results. It skips that step whenever fetching or parsing marked the cycle incomplete.
 
-- Check whether the provider loop is running, ok, idle, or in error.
-- Check whether jobs are active or waiting behind the provider semaphore.
-- Check whether block reasons came from motors rather than the scheduler.
-- Check the last cycle duration before changing page delays or timeouts.
-- Check whether the provider loop backoff is growing after repeated errors.
+The motor then saves article streams and clears first-run state. New and updated articles can call the runtime broadcast callback along the way. The payload includes job and provider context so notification routing never needs to inspect the motor object later.
 
-These checks separate parser failure from scheduler pressure. A provider can be healthy while one motor reports `browser_blocked`. A provider can also look slow because too many jobs are queued behind a limit of one. Those situations need different fixes.
+This algorithm explains why provider classes stay small. Their main contract parses one fetched body into items and a next URL. Scheduling, concurrency, session handling, lifecycle, persistence, and notification context belong to shared code.
 
-**The runtime should explain enough for the next file to be obvious.** If it does not, improve health context before adding more logs inside provider code. Logs are useful while you are debugging. Health is useful every time the service runs.
+---
 
-One subtle detail is the first successful startup state. The top-level health changes from `starting` to `running` before provider cycles finish. The readiness endpoint returns `503` only while the scraper is missing or still starting. After that, provider-level state carries the details. That gives orchestrators a simple gate and gives maintainers richer provider data.
+## Health is a compressed execution trace
 
-Another detail is the no-motors branch. The process keeps running because an empty config is an operational problem, not a Python import problem. Returning health in that state is more useful than crashing because it can be inspected by the same deployment and monitoring tools as a normal run.
+The public response begins with top-level status, motor count, last completed cycle time, and duration. The provider map adds the information needed to separate scheduling state from source behavior.
 
-When this runtime grows, keep those choices intact. Add new outputs through the runtime boundary. Keep provider loops independent. Make new scheduler state visible through health. That habit keeps the service understandable even when the number of stores and jobs increases.
+| Health field       | What it tells an operator                                                              |
+| ------------------ | -------------------------------------------------------------------------------------- |
+| `status`           | Whether the provider is running, completed successfully, or hit an escaped loop error. |
+| `job_count`        | How many configured motors belong to the provider.                                     |
+| `configured_limit` | How many provider jobs can hold the semaphore together.                                |
+| `active_jobs`      | How many motors currently own provider capacity.                                       |
+| `queued_jobs`      | How many motors are waiting for that capacity.                                         |
+| `blocked_jobs`     | How many motors currently carry a block reason or cooldown.                            |
+| `block_reasons`    | Which fetch or parse conditions explain blocked motors.                                |
+| `cycle_count`      | How many provider cycles completed successfully.                                       |
+| `last_error`       | The most recent escaped provider-loop error.                                           |
+
+Queue values need context. Two queued Liverpool jobs may be normal when the configured limit is two and four jobs began together. A queue that remains high across long cycle durations deserves investigation. Compare it with active counts, page delays, network behavior, and logs before increasing concurrency.
+
+Block reasons also need scope. `browser_timeout` suggests the expected readiness selector never appeared. `browser_blocked` means a configured block selector or URL fragment matched. `fetch_failed` points toward exhausted request attempts. `parse_error` means fetched content reached provider code and failed there.
+
+The endpoint is most useful as a routing table for attention. It does not replace logs or saved records. It tells you which evidence to read next and which layer is least likely to be responsible.
+
+---
+
+## Read a slow or failed cycle in order
+
+Start with provider status and timestamps. Confirm that the loop began and whether it completed. A provider still marked running may simply be inside page work, a configured delay, or a slow browser wait.
+
+Then compare active and queued jobs with the configured limit. If all capacity is active, queueing is expected. If no jobs are active and block reasons exist, inspect cooldown state and fetch policy. If neither counter moves, look for a provider-loop error or process-level cancellation.
+
+Next read block reasons before editing selectors. A timeout can come from an incorrect readiness selector, slow navigation, or missing browser dependencies. A rate-limit cooldown calls for patience and configuration review, not a new product parser.
+
+Finally, inspect provider fixtures and stored articles. A complete but wrong product set belongs near parser assumptions. A product moving to hold after a genuinely complete miss belongs to lifecycle. A new file with no history often points back to job identity or storage naming.
+
+Following this order avoids the most common diagnostic mistake in scraper work, changing the parser because the visible symptom was missing products. The runtime may already know that no usable page reached the parser.
+
+---
+
+## An in-process scheduler has clear tradeoffs
+
+Running the scheduler inside FastAPI keeps deployment small. One process starts the HTTP probe and provider loops together, so local operation needs no separate worker command, queue, or cron definition. Shutdown can cancel the task through the same lifespan boundary.
+
+The arrangement also couples their fate. A process crash removes both health access and scheduled work. Restarting reconstructs motors from configuration and JSON, but in-memory cycle counters and recent errors begin again. Health is current state rather than a durable operational history.
+
+There is no distributed lock preventing two service instances from running the same jobs against the same data directory. Operators should treat the current deployment as one scheduler process per storage root. Scaling HTTP replicas independently would require separating or coordinating background ownership.
+
+The fixed successful-cycle sleep is easy to understand and limited in expression. It does not offer per-job calendars, missed-run recovery, or persisted schedules. Those features would justify a dedicated scheduler only when the use case needs them.
+
+These limits are acceptable for the current project because they remain visible. The architecture demonstrates provider isolation and observable state without claiming distributed execution. A future queue or scheduler should preserve those properties instead of merely moving the loop elsewhere.
+
+---
+
+## The runtime makes background work reviewable
+
+FastAPI starts and stops the service. The orchestrator groups work by provider. Semaphores limit concurrent jobs. Motors own page-to-state execution. Provider loops own recurring timing and broad backoff. Health turns those moving parts into inspectable state.
+
+None of this guarantees that a store responds. It gives failure a scope. One job can be incomplete, one provider can back off, and another provider can finish normally. That is a better operating model than one scheduler status that hides every distinction.
+
+Continue with [why every store needs its own adapter](/thejournal/mlscraper/provider_boundaries/) to see what happens after a usable page reaches provider code. For the lower-level request and block behavior, read [when a store blocks the scraper](/thejournal/mlscraper/fetching_and_backoff/).

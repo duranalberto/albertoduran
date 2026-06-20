@@ -1,140 +1,154 @@
 ---
-title: "Equity valuation engine"
-description: "How a Python valuation engine turns market data into diagnostics, suitability checks, scenario valuations, and a consolidated summary."
-author: "Alberto Duran"
+title: "Equity valuation without the black box"
+description: "Years of conservative investing led me to build a Python engine for studying company valuations with visible assumptions, model checks, and limits."
 image: "../../assets/thejournal/stock/06.avif"
 tags: ["project", "python", "valuation"]
-pubDate: 2026-06-18
+pubDate: 2026-06-20
 github: "equity-valuation-engine"
 order: 10
 ---
 
-Valuation tools get weird fast when they pretend every input is clean. A ticker lookup might return missing cash flow, a sector multiple might not fit the company, and one unusual capex year can make a perfectly good business look broken. This vault explains how the equity valuation engine keeps those problems visible while it turns raw market data into model checks, scenario reports, and a consolidated intrinsic-value summary.
+import Callout from "@components/ui/display/Callout.astro";
+import MockupWindow from "@components/ui/display/MockupWindow.astro";
+
+I had invested conservatively for several years and earned good returns, but expanding my portfolio raised a harder question. If I was going to invest more, I wanted a better way to identify companies that might be fairly valued or undervalued instead of leaning on a familiar ratio or a persuasive story.
+
+That need became the equity valuation engine. It compares several ways of valuing a company, keeps their assumptions visible, and explains when the available data does not support a model. The software does not make investing safe. It gives me a structured argument to inspect before taking a risk that would otherwise rest on less evidence.
 
 ---
 
-## The shape of the system
+## One ticker, several arguments
 
-The engine is a Python command-line application organized around one main flow. A user provides a ticker. The CLI builds a `StockMetrics` aggregate from yfinance-backed data, records missing or weak inputs, runs model-specific suitability checks, executes the eligible valuation models, and emits either human-readable tables or compact JSON.
+Intrinsic value is not a fact waiting inside a financial statement. It is an estimate built from cash flows, earnings, assets, dividends, growth, and risk. Change the evidence or the assumptions and the estimate changes. A useful valuation tool therefore needs to show its reasoning, not merely print a number with two decimal places.
 
-That sounds like a finance calculator, but the interesting part lives in the boundaries. The engine separates source loading from domain modeling, modeling from validation, validation from formula execution, and execution from presentation. Each boundary gives the code one place to say what it knows and what it does not know.
+The equity valuation engine is a Python command-line project built around that idea. It loads public market data, maps it into a common set of business metrics, checks whether each model has suitable inputs, calculates Bear, Base, and Bull cases, and returns terminal tables or structured JSON.
 
-The first pass through the system looks like this.
+The standard run includes seven forward-looking lenses. DCF begins with free cash flow. P/E begins with earnings per share. EV/EBITDA begins with operating profit before financing and selected accounting charges. P/S begins with revenue. The ROE model begins with book equity and shareholder distributions. DDM begins with dividends. NAV begins with assets and liabilities.
+
+Reverse DCF is available as an additional diagnostic. It does not produce another forward scenario to average. It solves for the growth rate that would make a DCF match the current market price. That turns the usual valuation question around and lets you inspect what the price appears to require.
+
+These methods are not seven independent witnesses observing the same event. They reuse company data and sometimes share assumptions. Their disagreement is still useful because each method exposes a different dependency. A revenue multiple can look generous while cash-flow valuation looks restrained. That gap tells you where to investigate.
+
+---
+
+## What the engine gives you
+
+The project gives you more than a composite price. A run includes the normalized company metrics, missing-data records, suitability factors, scenario reports, skipped-model reasons, and a summary of successful Base estimates. The JSON representation keeps those pieces together for later inspection or automation.
+
+The following output is a frozen, anonymous example created to explain the report shape. The sample uses matching reporting and trading currencies, round financial inputs, five successful models, one skipped model, and one model excluded because of a known data-alignment problem.
+
+<MockupWindow aria-label="Fictional valuation summary" bodyClass="p-5 font-mono text-sm">
+  <strong slot="header">Anonymous sample summary</strong>
+  <pre className="overflow-x-auto whitespace-pre-wrap">{`Current price                 $50.00
+Models run                         5
+Models skipped                    2
+
+Base estimates
+DCF                            $58.00
+ROE                            $53.00
+EV/EBITDA                      $48.00
+P/S                            $62.00
+NAV                            $35.00
+
+Equal-weight Base composite    $51.20
+Model dispersion               $ 9.37
+Dispersion band          $41.83 to $60.57`}</pre>
+  <span slot="caption">A fictional teaching fixture shaped like the engine output, not a live market result.</span>
+</MockupWindow>
+
+The composite is close to the market price, but the underlying range is wide. That is the point of the sample. If you saw only $51.20, you might conclude that the market had already found fair value. Once you see $35 and $62 beside it, the useful question becomes why the models disagree by so much.
+
+The engine calls the serialized interval `confidence_band`. This vault calls it a model dispersion band because the calculation is the Base average plus or minus one population standard deviation. It is not a statistical confidence interval, and it does not describe the probability that an unknown true value lies inside the range.
+
+---
+
+## The path from source data to a result
+
+The runtime follows a traceable sequence. A ticker starts the process. The data adapter reads several yfinance surfaces, including company labels, statements, market data, and price history. A mapper converts source labels into a `StockMetrics` aggregate. The engine then builds derived ratios and records selected raw or derived failures.
 
 ```mermaid
-graph TD
-    CLI[👤 CLI user] --> Runner[⚙️ run_for_ticker]
-    Runner --> Loader[📥 MetricsLoader]
-    Loader --> Repo[🌐 FinancialRepository]
-    Repo --> YF[📊 yfinance data loader]
-    YF --> Mapper[🧭 field mappers]
-    Mapper --> Stock[📦 StockMetrics aggregate]
-    Stock --> Registry[📝 MissingValueRegistry]
-    Stock --> Managers[⚙️ valuation managers]
-    Registry --> Managers
-    Managers --> Checks{✓ suitability score}
-    Checks -->|pass| Reports[📈 scenario reports]
-    Checks -->|skip| Skipped[⚠️ skipped model payload]
-    Reports --> Summary[📊 ValuationSummaryReport]
-    Skipped --> Summary
-    Summary --> Output[📤 CLI tables or JSON]
-
-    classDef input fill:#FFE4B5,stroke:#333,stroke-width:2px,color:#000
-    classDef process fill:#90EE90,stroke:#333,stroke-width:2px,color:#064E3B
-    classDef data fill:#E6E6FA,stroke:#333,stroke-width:2px,color:#1E3A8A
-    classDef decision fill:#FFD700,stroke:#333,stroke-width:2px,color:#000
-    classDef warning fill:#FFB6C1,stroke:#B91C1C,stroke-width:2px,color:#000
-    classDef output fill:#87CEEB,stroke:#333,stroke-width:2px,color:#0F172A
-
-    class CLI input
-    class Runner,Loader,Repo,YF,Mapper,Managers process
-    class Stock,Registry data
-    class Checks decision
-    class Skipped warning
-    class Reports,Summary,Output output
+flowchart LR
+    A[Ticker] --> B[Provider data]
+    B --> C[StockMetrics]
+    C --> D[Missing data]
+    C --> E[Suitability checks]
+    D --> E
+    E -->|pass| F[Scenario reports]
+    E -->|skip| G[Skipped models]
+    F --> H[Summary and JSON]
+    G --> H
 ```
 
-The diagram is intentionally pipeline-shaped. Most bugs in this kind of project come from smearing responsibility across layers. If source loading knows too much about valuation policy, changing a formula becomes risky. If presentation code recalculates summary rules, CLI output and JSON output drift apart.
+Suitability sits before formula execution. A DDM without dividends should not invent a dividend valuation. A DCF with unusable free cash flow should not quietly convert a missing input into a persuasive-looking price. Each model evaluates its own requirements and either runs or produces a visible skip reason.
 
-The engine avoids that by making `run_for_ticker()` an orchestrator rather than a formula dump. It asks each layer to do its own work and pass forward a structured result. That is why a skipped model still shows up in output with a reason. It is also why the JSON payload can include metrics, suitability checks, valuation reports, skipped model details, and the final summary in one object.
+The source adapter creates one ticker container for a run, but that does not mean one network request. It reads several provider surfaces and reuses their results from memory. This distinction matters when diagnosing provider failures or considering a second data adapter.
 
----
-
-## The core idea
-
-The core idea is simple enough to say plainly. **A valuation result should carry its assumptions and weaknesses with it.** A discounted cash flow output without the growth source, WACC inputs, missing-data context, and suitability factors is too easy to overread. It looks precise because the number has decimals. The engine pushes back against that false precision.
-
-That starts in the data loader. Numeric source misses become defaults so the program can keep running, but they also become `MissingValueRegistry` records. Derived formula misses become `BuildDiagnostic` records and then enter the same registry. The result is a domain object that has usable values and an audit trail beside it.
-
-Suitability checks then turn that audit trail into model decisions. A DCF model cares about free cash flow, WACC, tax rate, and forecast stability. A dividend discount model cares about dividends. A P/E model cares about earnings and a usable historical multiple. The engine does not ask one generic validator to judge every model.
-
-After a model passes, it runs scenarios. The growth helper chooses a base growth signal through a waterfall or an optional weighted blend, clamps unreliable extremes, and can taper growth toward sector long-run assumptions. That gives DCF, P/E, and ROE a common scenario engine without forcing every model to share the same formula.
+The architecture also keeps output separate from calculation. A report object can be rendered as tables for a person or serialized as JSON for another program. The valuation formulas do not need to know which presentation was requested.
 
 ---
 
-## What the vault covers
+## Why models disagree
 
-This vault follows the runtime path rather than the package tree. That order matters. If you start with formulas, the reader sees valuation as math first and data quality second. The engine is better understood the other way around.
+DCF values future cash that can be distributed after operating and investment needs. P/E values a claim on accounting earnings. EV/EBITDA compares operating value before debt and cash are assigned to shareholders. P/S uses revenue when earnings or cash flow are not yet representative. NAV asks what remains after applying scenario haircuts to assets and subtracting liabilities.
 
-| Entry | Main question |
-| --- | --- |
-| `data_to_metrics` | How does source data become the `StockMetrics` aggregate? |
-| `missing_data_diagnostics` | How does the system keep missing values visible? |
-| `suitability_gates` | How does a model decide whether it should run? |
-| `growth_scenarios` | How are Bear, Base, and Bull growth paths selected? |
-| `model_execution` | How do managers isolate formulas behind one contract? |
-| `summary_outputs` | How do scenario reports become CLI and JSON output? |
+Each starting point creates a different vulnerability. DCF is highly sensitive to growth, discount rates, and terminal value. P/E depends on the quality of earnings and the chosen multiple. P/S can reward revenue that never becomes profitable. NAV may miss valuable earning power that does not sit neatly on a balance sheet.
 
-Read them in that order if you are changing the engine. The first two entries explain the data contract. The next two explain why a model is allowed to run and which assumptions it receives. The final two explain how the engine produces results and makes them comparable.
+In the sample, the $62 P/S estimate says revenue could support a higher equity value under the configured multiple. The $35 NAV estimate says the recorded asset base offers a weaker anchor. The gap reflects a business whose expected earning power matters more than its net recorded assets.
+
+The engine's Base composite gives each successful model equal weight. It does not weight models by suitability score, model family, sector fit, or demonstrated forecast error. Equal weighting is easy to inspect, but it is only a policy choice. Negative estimates can also enter the average if a successful model produces them.
 
 ---
 
-## The models in play
+## What the project makes visible
 
-The engine supports DCF, P/E, ROE, EV/EBITDA, P/S, DDM, NAV, and Reverse DCF diagnostics. Those names can make the project sound broader than it is. The point is not to claim every valuation method answers every business. The point is to give each method a clear lane.
+Missing values remain attached to reasons such as absent source data, an unusable denominator, insufficient history, a failed derived calculation, or a value that is not applicable. This prevents a zero default from carrying its meaning alone. A zero dividend for a non-payer and a zero caused by an unavailable field are different facts.
 
-DCF projects free cash flow and discounts it by WACC. P/E projects earnings and applies a historical or target multiple. ROE projects earnings through return on equity and shareholder distributions. EV/EBITDA and P/S use configured multiples. DDM discounts dividends. NAV works from assets and liabilities. Reverse DCF back-solves what growth the current price implies.
+The registry does not capture every possible absence. Numeric financial-field misses and selected derived failures are its main coverage. Missing labels, enum values, and optional history may not appear in it. Some top-level failures, such as invalid shares outstanding, can still stop metric construction rather than produce a partial valuation.
 
-Reverse DCF deserves a separate mention because it is diagnostic by design. The runner can include it when the user passes `--reverse-dcf`, but it does not contribute to the composite intrinsic value. That restraint matters. Reverse DCF answers a different question from the forward models. It asks what the market is pricing in, not what the engine thinks the company is worth.
+Suitability factors preserve the next part of the chain. A model can explain which condition raised a warning or caused a skip. The CLI and JSON keep skipped models visible, which is more informative than silently omitting a report. In many runs, the skip reason is a better finding than one more estimate.
 
----
-
-## Where the code lives
-
-Most of the project lives under `.agents/context/equity-valuation-engine/src/`. The application layer holds metrics loading and valuation managers. The domain layer holds `StockMetrics`, valuation reports, policies, and diagnostics. The infrastructure layer owns yfinance adapters and field mapping. The CLI layer decides how to run the system and how to print the result.
-
-The most useful files to keep open while reading this vault are these.
-
-- `src/cli/main.py` shows the orchestration loop, model skip threshold, summary extraction, and output payload.
-- `src/application/metrics_loader/metrics_loader.py` shows the source-to-domain build path.
-- `src/domain/metrics/stock.py` shows derived valuation and ratio construction.
-- `src/domain/core/missing_registry.py` shows how raw and derived misses stay available.
-- `src/domain/valuation/valuation_manager.py` shows the manager contract.
-- `src/application/valuations/utils.py` shows growth signal selection and scenario generation.
-- `src/domain/valuation/models/summary.py` shows how model outputs become a composite view.
-
-The rest of the vault expands those files into a readable map. It is not a replacement for the source. It is the guide I wanted before changing the formulas, because the dangerous parts are rarely the formulas alone.
+Scenario reports then reveal how assumption changes move the result. Bear, Base, and Bull are named policy cases, not probability forecasts. Their job is to make sensitivity legible. The assumptions article later in this vault shows how historical signals, configured limits, and mean reversion shape those paths.
 
 ---
 
-## Responsible reading
+## Where the engine stops
 
-The engine produces analytical estimates based on available data and configuration assumptions. It is not investment advice. That sentence belongs in the root because valuation software has a habit of sounding more certain than it is.
+<Callout variant="warning" title="Educational software, not investment advice">
+  <p>This project organizes valuation calculations and diagnostics. It does not know your objectives, constraints, tax position, portfolio, or tolerance for loss. Verify source filings and assumptions before relying on any output.</p>
+</Callout>
 
-The better reading is to treat each run as a structured argument. The metrics tell you what the source provided. The registry tells you what was missing or derived from weak inputs. The suitability checks tell you which models were allowed to speak. The scenario reports tell you what each model concluded under its assumptions. The summary tells you how those conclusions compare.
+yfinance is convenient, but provider data can be incomplete, mislabeled, delayed, or revised. The engine's configuration can also age. Sector multiples, risk-free rates, market risk premiums, growth limits, and asset haircuts are stored as project defaults without a complete publication-grade provenance trail or formal refresh policy.
 
-That structure is the engine's real product. The final intrinsic value is useful, but the path to it is what makes the number worth inspecting.
+Currency conversion is not connected to the valuation path. The domain records financial and trading currencies, and a currency service exists, but the current run does not normalize statement values and share prices into one currency. Use same-currency examples until that path is implemented and tested.
+
+The current historical P/E construction also has a date-alignment problem. Daily closing prices are paired positionally with a much shorter annual EPS series. The sample excludes P/E from its composite and treats the model as a code path that needs correction before its historical multiple should be trusted.
+
+The package is version `0.1.0`. The repository does not currently present a license, contribution guide, changelog, or security policy. The code is worth studying and extending in a controlled environment, but the publication does not claim a mature supported release.
+
+For background on reading company accounts, the [SEC guide to financial statements](https://www.investor.gov/introduction-investing/investing-basics/glossary/financial-statements) is a useful primary starting point. For valuation theory and datasets, Aswath Damodaran's [valuation resources at NYU Stern](https://pages.stern.nyu.edu/~adamodar/) show how assumptions and model choice shape the result.
 
 ---
 
-## How to read the code
+## Choose your path through the vault
 
-If you are opening the project for the first time, start with `src/cli/main.py`. It is the shortest route to the system's intent. The file shows argument parsing, ticker normalization, model registration, result collection, summary construction, and output selection. Once that flow makes sense, the package tree stops feeling like a maze.
+Read [Your first valuation run](./first_valuation_run/) if you want to see the CLI before learning the formulas. It walks through installation, the output modes, a skipped model, the scenario table, and a short review checklist.
 
-After the CLI, read `MetricsLoader.build_stock_metrics()`. That method explains why the engine builds scalar models first, attaches history second, and rebuilds derived values after history exists. It is one of those functions where order is the design. Moving a line too early can change growth, ratios, diagnostics, and every valuation after that.
+Read [How to choose a valuation model](./choosing_a_valuation_model/) when DCF, P/E, EV/EBITDA, P/S, ROE, DDM, and NAV are still unfamiliar. It maps each model to the business question it can answer and the conditions that should keep it silent.
 
-Then read one manager end to end. DCF is the best candidate because it exercises the whole system. The handler is thin, the validator is opinionated, the defaults read config, and the valuation module uses shared growth scenarios. Once DCF clicks, the other managers are easier to scan because they follow the same shape with narrower formulas.
+The middle of the vault follows the evidence chain. [From market data to usable metrics](./trusting_the_inputs/) explains provider boundaries and missing data. [Assumptions, scenarios, and honest uncertainty](./assumptions_and_scenarios/) explains forward policy. [DCF and reverse DCF](./dcf_and_reverse_dcf/) performs the main worked calculation. [Six other ways to value a company](./other_valuation_models/) compares the remaining lenses.
 
-Finally, read the summary model. `ValuationSummaryReport.build()` is where the run turns back into a reader-facing answer. It chooses Base scenario values, computes the composite, calculates agreement, and writes the note. That is the moment the engine stops being a set of independent reports and becomes one coherent valuation run.
+Finish with [How to read a valuation result](./reading_the_results/) for the composite, dispersion, and JSON audit trail. Developers can then move to [Extending the engine](./extending_the_engine/) for repository contracts, metrics, validators, models, presenters, and tests.
 
-This reading path also gives you a useful debugging habit. If output looks odd, walk backward from the summary to the model report, then to suitability, then to the missing-data registry, then to `StockMetrics`, and only then to yfinance. That order usually finds the real cause faster than staring at the final number.
+The route through the material is deliberate. First experience the output. Then learn the financial questions. Only after that should you inspect how the implementation keeps those questions separate. A valuation project earns trust when the answer is easy to challenge.
+
+---
+
+## A question to carry through the series
+
+Imagine that a share price rises from $50 to $60 while the company's statements and configuration remain unchanged. The forward estimates do not automatically rise with it. Implied upside falls, price labels can change, and Reverse DCF solves for a more demanding growth rate. That separation between market observation and valuation assumption is worth preserving.
+
+Now imagine that revenue is corrected downward by 10 percent. P/S changes directly, margins may change, and any derived growth history can move. NAV might barely react. The composite will move, but the more useful result is the map of which models responded and why.
+
+Finally imagine that the missing dividend was a provider error. Correcting it might allow DDM to run, which adds another Base estimate to the equal-weight average. The composite changes because the model set changed, not necessarily because the business changed.
+
+These three cases give you a practical test for every page. Ask whether a change belongs to market price, company evidence, project policy, or model availability. If the output cannot tell you which category moved, the apparent precision is doing more harm than good.

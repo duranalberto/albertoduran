@@ -1,0 +1,278 @@
+---
+title: "Six other ways to value a company"
+description: "Compare P/E, EV/EBITDA, P/S, ROE, DDM, and NAV through independent examples, and learn why every model needs its own guardrails."
+tags: ["valuation", "multiples", "finance"]
+pubDate: 2026-06-20
+order: 70
+---
+
+import Callout from "@components/ui/display/Callout.astro";
+import EChart from "@components/ui/mdx/EChart.astro";
+import { barChartOption } from "@integrations/echarts/options";
+
+Revenue, operating profit, earnings, dividends, and assets can support different valuations for the same company. The gap comes from the economic claim each method measures. Reading those claims separately makes the comparison useful, while independent examples keep the arithmetic concrete without forcing unrelated methods into one continuous scenario.
+
+---
+
+## Different anchors produce different answers
+
+A valuation method begins by choosing an economic anchor. P/E starts with earnings per share. EV/EBITDA starts with operating profit before financing and selected accounting charges. P/S starts with revenue. ROE starts with book equity and shareholder returns. DDM starts with dividends, while NAV starts with adjusted assets and liabilities.
+
+These anchors should disagree when a business has valuable earning power that its balance sheet does not capture, or substantial revenue that has not yet become cash flow. The job is to understand the cause of the gap before comparing the resulting numbers.
+
+The examples below are intentionally independent. Their round inputs explain each calculation without asking you to remember a company, capital structure, or scenario from another section.
+
+---
+
+## Earnings with P/E
+
+The P/E path projects earnings per share, applies a multiple, and discounts the future share value. A simplified illustration with $2.50 EPS, three years of 8 percent growth, a 20 times multiple, and a 9 percent discount rate looks like this.
+
+```text
+future EPS = 2.50 × 1.08³ = 3.15
+future price = 3.15 × 20 = 63.00
+present value = 63.00 / 1.09³ = 48.64
+```
+
+The arithmetic is easy. Choosing representative EPS and a defensible multiple is not. Losses, one-off items, dilution, and accounting choices can make the denominator weak.
+
+<Callout variant="warning" title="Historical P/E limitation">
+  <p>The current source pairs daily prices with annual EPS values by list position. The central comparison excludes P/E until observations are aligned by date and covered by direct valuation tests.</p>
+</Callout>
+
+---
+
+## Operating value with EV/EBITDA
+
+EV/EBITDA applies an enterprise multiple to EBITDA. It then subtracts debt and adds cash before dividing by shares.
+
+```text
+EBITDA                    $400m
+illustrative multiple      13x
+enterprise value         $5,200m
+- debt                    $600m
++ cash                    $200m
+equity value             $4,800m
+/ 100m shares             $48.00
+```
+
+The bridge is valuable because it makes capital structure visible. EBITDA remains an incomplete cash measure. It excludes working capital and capital expenditure, and depreciation can represent assets that eventually require replacement.
+
+The 13 times multiple is fixture policy. The repository's sector configurations do not carry a complete inspectable dataset and effective date, so do not label them verified current medians.
+
+---
+
+## Revenue with P/S
+
+P/S applies an equity-value multiple to revenue. In this independent example, $2 billion revenue and a fictional 3.1 times multiple produce $6.2 billion of equity value, or $62 per share.
+
+```text
+$2,000m revenue × 3.1 = $6,200m equity value
+$6,200m / 100m shares = $62.00 per share
+```
+
+Revenue is upstream of profit. The model can help when current earnings are suppressed by deliberate investment, but it cannot tell whether margins will ever justify the multiple. Compare gross margin, retention, sales efficiency, capital needs, and dilution before accepting similar P/S ratios across companies.
+
+A high P/S estimate should trigger a bridge to cash flow. Ask which operating margin and reinvestment path would make $62 compatible with a DCF. That comparison converts a multiple into an economic hypothesis.
+
+---
+
+## Equity returns with the ROE model
+
+The repository's ROE model uses book equity, a capped return assumption, growth, and shareholder distributions. It may substitute buybacks under its policy. This is a project-specific model rather than one universal industry convention.
+
+In a separate example, $2 billion of book equity and an illustrative return and distribution path produce a $53 Base result. The important dependencies are the equity base, sustainable return, reinvestment, and distributions.
+
+High ROE can come from excellent economics or a small equity denominator created by debt financing and buybacks. Negative equity can make the ratio meaningless. Read the balance sheet and the history of repurchases before interpreting a high return as business quality.
+
+---
+
+## Dividends with DDM
+
+DDM discounts expected dividends and a terminal dividend value. Consider a mature company paying $2 per share, growing dividends at 3 percent, with a 9 percent required return.
+
+```text
+next dividend = 2.00 × 1.03 = 2.06
+Gordon value = 2.06 / (0.09 - 0.03)
+Gordon value = 34.33
+```
+
+That compact formula depends on a sustainable payout, growth below the required return, and an appropriate mature-state assumption. Special dividends and changing payout policy need richer treatment.
+
+When a company pays no recurring dividend, DDM is skipped. A zero dividend does not mean the company has zero value. It means this distribution lens lacks its required anchor. DDM also follows a dividend-specific growth path in the code.
+
+---
+
+## Assets with NAV
+
+NAV adjusts assets under scenario haircuts, subtracts liabilities, and converts the remainder to a per-share value. A simplified independent example looks like this.
+
+```text
+adjusted assets       $5,500m
+liabilities          -$2,000m
+net asset value       $3,500m
+shares                  100m
+NAV per share          $35.00
+```
+
+The fixture uses round adjusted totals rather than pretending every balance-sheet category deserves one haircut. In real work, cash, receivables, inventory, property, investments, goodwill, and intangibles require different treatment.
+
+NAV can anchor an asset-backed company or liquidation question. It can understate an operating business whose people, software, brand, and network generate value not represented by separable recorded assets.
+
+---
+
+## Compare the six outputs
+
+The chart includes the five usable Base estimates from the fixture and the current price. P/E is excluded and DDM is skipped, so neither appears as a valuation bar.
+
+<EChart
+  title="Illustrative Base estimates"
+  caption="Fictional US dollars per share"
+  description="Bar chart comparing DCF, ROE, EV to EBITDA, price to sales, NAV, and the current price."
+  option={barChartOption({
+    x: ["DCF", "ROE", "EV/EBITDA", "P/S", "NAV", "Price"],
+    y: [58, 53, 48, 62, 35, 50],
+    name: "Value per share",
+  })}
+  width={760}
+  height={420}
+/>
+
+P/S is highest because the configured revenue anchor is generous relative to current price. NAV is lowest because adjusted recorded assets capture less expected earning power. DCF and ROE sit between them because they depend on future operating economics and shareholder returns.
+
+Do not rank models by which produces the price you prefer. Ask which evidence is strongest, which assumptions are sourced, and which failure mode matters most for this company.
+
+---
+
+## Know when a model should stay silent
+
+A skipped model preserves information. DDM should stay silent without recurring dividends. EV/EBITDA should stay silent without meaningful EBITDA. P/S should not proceed without revenue and a defensible policy multiple. NAV needs a balance sheet that supports its question.
+
+The engine's threshold converts weighted factors into a run or skip decision. That is policy, not probability. A model below the threshold can still be economically weak. A model above it may become useful after a data correction.
+
+The right number of models is not seven. It is the number that can make a traceable argument from suitable evidence. The results article next shows how to preserve those differences when a summary tries to compress them.
+
+---
+
+## Reconcile multiples with operating economics
+
+A multiple is shorthand for expectations about growth, margins, reinvestment, risk, and duration. Two companies deserve different P/S ratios when their revenue converts into cash differently. Two companies deserve different EV/EBITDA ratios when their capital needs and risk differ.
+
+Use a reconciliation worksheet instead of accepting the configured number at face value.
+
+```text
+P/S review
+  revenue growth
+  gross margin
+  operating margin potential
+  cash conversion
+  retention and concentration
+  dilution
+  required return
+
+EV/EBITDA review
+  recurring EBITDA
+  maintenance capital expenditure
+  working-capital needs
+  leases and acquisitions
+  debt and cash definition
+  cyclicality
+```
+
+Suppose a 3.1 times P/S implies $62 per share. At $2 billion revenue, a 20 percent mature free-cash-flow margin would produce $400 million of cash flow before considering growth and reinvestment timing. A 10 percent margin would produce only $200 million. The same revenue multiple hides a twofold cash outcome.
+
+EV/EBITDA has a similar bridge. An example with $400 million EBITDA and $250 million free cash flow leaves a $150 million gap for taxes, interest, working capital, capital expenditure, and other items. Compare that conversion over several periods before treating EBITDA as a cash proxy.
+
+---
+
+## Normalize earnings before P/E
+
+Even after date alignment is repaired, EPS needs review. Remove clearly nonrecurring items only when you can explain why they will not recur. Do not normalize every unpleasant expense away.
+
+```text
+reported net income
++ documented one-time expense after tax
+- documented one-time gain after tax
+= normalized net income
+
+normalized net income / diluted shares
+= normalized EPS
+```
+
+Check the diluted share denominator against options, restricted stock, convertibles, and repurchases. A future P/E estimate also needs a view of future dilution. Applying a multiple to current basic EPS can overstate the claim of each future share.
+
+Compare the selected multiple with its own history and truly comparable businesses, but preserve dates and calculation methods. Median does not repair incomparable observations.
+
+---
+
+## Inspect distribution policy in ROE and DDM
+
+ROE and DDM both touch shareholder returns, but they describe different channels. ROE connects earnings to book equity and a distribution policy. DDM values cash dividends directly. Buybacks reduce shares and can increase per-share value without appearing as dividends.
+
+For a company returning $100 million through dividends and $100 million through buybacks, DDM sees only the dividend stream unless buybacks change future dividend capacity. The ROE model's optional buyback substitution can represent a broader distribution view, but that behavior is project policy.
+
+Ask whether repurchases occurred below or above reasonable value, whether they offset employee dilution, and whether debt funded them. A dollar labeled buyback is not automatically a dollar of value creation.
+
+For dividends, compare payout with free cash flow rather than earnings alone. A stable dividend funded by rising debt is not the same as a stable dividend funded by recurring cash generation.
+
+---
+
+## Build NAV asset by asset
+
+A single haircut across all assets is difficult to defend. Separate assets by liquidity, valuation evidence, and obligations attached to them.
+
+| Asset class | Review | Typical concern |
+| --- | --- | --- |
+| Cash | Availability | Restricted or required operating cash |
+| Receivables | Collectability | Concentration and aging |
+| Inventory | Saleability | Obsolescence and liquidation discount |
+| Property | Market evidence | Taxes and transaction costs |
+| Investments | Quoted or appraised value | Liquidity and control discount |
+| Goodwill | Earning support | Limited standalone sale value |
+| Intangibles | Transferability | Legal and economic life |
+
+Then review liabilities for completeness and seniority. Off-balance-sheet commitments, leases, guarantees, legal claims, and pension obligations can change the residual available to common shareholders.
+
+The $35 NAV example is intentionally broad. A real asset-based valuation should expose category values and haircuts instead of presenting one adjusted total as self-evident.
+
+---
+
+## Keep model families from double counting confidence
+
+P/E, P/S, and EV/EBITDA can all reflect the same optimistic sector sentiment. DCF and Reverse DCF can share the same cash-flow seed and discount assumptions. Agreement within a family is therefore not three independent confirmations.
+
+Group results by economic anchor when interpreting the set.
+
+```text
+cash-flow anchor
+  DCF
+
+earnings and operating anchors
+  P/E
+  EV/EBITDA
+  ROE
+
+revenue anchor
+  P/S
+
+distribution anchor
+  DDM
+
+asset anchor
+  NAV
+
+market-expectation diagnostic
+  Reverse DCF
+```
+
+The current composite does not make this adjustment. A reviewer can still use the grouping to explain why a tight average may overstate agreement.
+
+---
+
+## Choose the next question, not the favorite answer
+
+After comparing models, select the disagreement that matters most. A P/S and NAV gap asks whether future earning power justifies value far above adjusted assets. A DCF and EV/EBITDA gap asks whether the forecast path deserves a richer value than the operating multiple.
+
+Write the evidence needed to resolve that question. It may be margin history, customer retention, maintenance spending, asset appraisals, or distribution policy. This turns model disagreement into a research plan and prevents the highest estimate from becoming the default conclusion.
+
+If no available evidence can resolve the gap, preserve the range. Unresolved uncertainty is a valid output.

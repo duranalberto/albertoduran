@@ -1,19 +1,32 @@
 ---
 import Article from "@components/thejournal/article/Article.astro";
+import Callout from "@components/ui/display/Callout.astro";
+import List, { type ListItem } from "@components/ui/display/List.astro";
+import MockupBrowser from "@components/ui/display/MockupBrowser.astro";
+import MockupPhone from "@components/ui/display/MockupPhone.astro";
+import MockupWindow from "@components/ui/display/MockupWindow.astro";
 import EChart from "@components/ui/mdx/EChart.astro";
 import BaseLayout from "@layouts/BaseLayout.astro";
+import browserPreview from "@assets/thejournal/pub/sinpluma_03.png";
+import mobilePreview from "@assets/thejournal/pub/sinpluma_08.png";
+import windowPreview from "@assets/thejournal/pub/sinpluma_01.png";
 import {
   barChartOption,
   heatmapChartOption,
   lineChartOption,
   pieChartOption,
 } from "@integrations/echarts/options";
+import { Image } from "astro:assets";
 
 export function getStaticPaths() {
   if (process.env.ALBERTODURAN_TEST_MODE !== "true") return [];
 
-  return [{ params: { fixture: "charts" } }];
+  return ["charts", "components"].map((fixture) => ({
+    params: { fixture },
+  }));
 }
+
+const fixture = Astro.params.fixture;
 
 const siteManifest = {
   description: "Test-only ECharts fixture page.",
@@ -65,14 +78,41 @@ const mediaOption = heatmapChartOption({
     [1, 1, 4],
   ],
 });
+
+const componentItems: ListItem[] = [
+  {
+    title: "Callouts",
+    description: "Semantic editorial notices.",
+    media: { kind: "marker", label: "01" },
+  },
+  {
+    title: "Lists",
+    description: "Structured publication inventories.",
+    media: { kind: "marker", label: "02" },
+    action: {
+      label: "Docs",
+      href: "https://daisyui.com/components/list/",
+      ariaLabel: "Open the DaisyUI list documentation in a new tab",
+      external: true,
+    },
+  },
+  {
+    title: "Mockups",
+    description: "Static browser, phone, and window frames.",
+    media: { kind: "marker", label: "03" },
+  },
+];
 ---
 
 <BaseLayout siteManifest={siteManifest}>
   <div class="py-8 px-4">
     <Article>
-      <h1>ECharts Fixture</h1>
+      {
+        fixture === "charts" ? (
+          <Fragment>
+            <h1>ECharts Fixture</h1>
 
-      <EChart
+            <EChart
         id="static-chart"
         title="Quarterly revenue"
         caption="Static SVG baseline"
@@ -80,9 +120,9 @@ const mediaOption = heatmapChartOption({
         option={revenueOption}
         width={760}
         height={420}
-      />
+            />
 
-      <EChart
+            <EChart
         id="enhanced-chart"
         title="Build output"
         caption="Enhanced on page load"
@@ -92,9 +132,9 @@ const mediaOption = heatmapChartOption({
         width={760}
         height={420}
         enhance="load"
-      />
+            />
 
-      <EChart
+            <EChart
         id="donut-chart"
         title="Coverage"
         caption="Second static chart"
@@ -102,9 +142,9 @@ const mediaOption = heatmapChartOption({
         option={donutOption}
         width={640}
         height={420}
-      />
+            />
 
-      <EChart
+            <EChart
         id="external-chart"
         title="External artifact"
         caption="Static chart emitted as a hashed SVG asset"
@@ -114,9 +154,9 @@ const mediaOption = heatmapChartOption({
         height={360}
         render="svg-file"
         cacheKey="fixture-external-chart"
-      />
+            />
 
-      <EChart
+            <EChart
         id="media-chart"
         title="Media enhancement"
         caption="Enhanced only when the media query matches"
@@ -127,7 +167,56 @@ const mediaOption = heatmapChartOption({
         height={360}
         hydrate="media"
         media="(min-width: 900px)"
-      />
+            />
+          </Fragment>
+        ) : (
+          <Fragment>
+            <h1>Publication Components Fixture</h1>
+
+            <List
+              items={componentItems}
+              aria-label="Publication component inventory"
+            />
+
+            <Callout variant="note"><p>Remember the editorial context.</p></Callout>
+            <Callout variant="information" title="Build context"><p>Generated during the deterministic test build.</p></Callout>
+            <Callout variant="warning"><ul><li>Check content</li><li>Check layout</li><li>Check links</li></ul></Callout>
+            <Callout
+              variant="caution"
+              title="Custom editorial checkpoint"
+              data-gallery-callout="custom-palette"
+              palette={{ iconSurface: "color-mix(in oklab, var(--color-warning) 25%, transparent)" }}
+            ><p>Review the palette in both themes.</p></Callout>
+            <Callout variant="error"><pre>schema_identifier_too_long</pre></Callout>
+
+            <MockupBrowser
+              url="https://albertoduran.com/thejournal/sin_pluma/"
+              aria-label="Production publication browser screenshot"
+            >
+              <Image src={browserPreview} alt="Publication browser preview" draggable={false} />
+              <span slot="caption">A production-style route rendered as static media.</span>
+            </MockupBrowser>
+
+            <MockupBrowser aria-label="Local publication preview browser state">
+              <div slot="toolbar" class="flex w-full items-center gap-3 px-3">
+                <strong>Preview</strong>
+                <span>localhost:4321/thejournal/component-gallery</span>
+                <button type="button" data-browser-demo-control>Refresh</button>
+              </div>
+              <div class="p-6">Local preview content</div>
+            </MockupBrowser>
+
+            <MockupPhone aria-label="Mobile publication screenshot">
+              <Image src={mobilePreview} alt="Mobile publication preview" draggable={false} />
+            </MockupPhone>
+
+            <h2 id="gallery-window-preview-title">Window publication screenshot</h2>
+            <MockupWindow aria-labelledby="gallery-window-preview-title">
+              <Image src={windowPreview} alt="Window publication preview" draggable={false} />
+            </MockupWindow>
+          </Fragment>
+        )
+      }
     </Article>
   </div>
 </BaseLayout>

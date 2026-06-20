@@ -230,7 +230,8 @@ export function hoistInlineColorsToCss(
       if (nonColorParts) {
         child.properties = { ...child.properties, style: nonColorParts };
       } else {
-        const { style: _dropped, ...rest } = child.properties ?? {};
+        const rest = { ...(child.properties ?? {}) };
+        delete rest.style;
         child.properties = rest;
       }
     }

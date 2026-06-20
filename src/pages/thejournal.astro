@@ -5,6 +5,7 @@ import { entryManifest } from "@content/processors/thejournal";
 import { sitesManifest } from "@data/site_manifest";
 import BaseLayout from "@layouts/BaseLayout.astro";
 import FlexShell from "@layouts/FlexShell.astro";
+import image from "@assets/thejournal/stock/10.jpg";
 
 const byNewestPubDate = (a: { pubDate: Date }, b: { pubDate: Date }) =>
   b.pubDate.getTime() - a.pubDate.getTime();
@@ -20,10 +21,23 @@ const secondHalf = allEntries
   .sort(byNewestPubDate);
 
 const catalog = [...firstHalf, ...secondHalf];
+
+const publicationCount = catalog.length;
+const totalReadMinutes = catalog.reduce(
+  (total, entry) => total + entry.readTime,
+  0,
+);
+const totalReadHours = Math.floor(totalReadMinutes / 60);
+const remainingReadMinutes = totalReadMinutes % 60;
+const totalReadTime = `${totalReadHours}h${remainingReadMinutes > 0 ? ` ${remainingReadMinutes}m` : ""}`;
 ---
 
-<BaseLayout siteManifest={sitesManifest["/thejournal/"]}>
-  <JournalHero slot="hero" />
+<BaseLayout siteManifest={sitesManifest["/thejournal/"]} image={image}>
+  <JournalHero
+    slot="hero"
+    publicationCount={publicationCount}
+    totalReadTime={totalReadTime}
+  />
 
   <FlexShell>
     {

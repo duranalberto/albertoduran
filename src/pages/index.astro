@@ -13,6 +13,7 @@ import { entryManifest } from "@content/processors/thejournal";
 import { sitesManifest } from "@data/site_manifest";
 import BaseLayout from "@layouts/BaseLayout.astro";
 import FlexShell from "@layouts/FlexShell.astro";
+import image from "@assets/thejournal/stock/10.jpg";
 
 const publications: Set<string> = new Set([
   "siliconboutique",
@@ -33,7 +34,7 @@ const untitledOverlayTestToggleId = "untitled-overlay-test-modal";
 const isTestMode = process.env.ALBERTODURAN_TEST_MODE === "true";
 ---
 
-<BaseLayout siteManifest={sitesManifest["/"]}>
+<BaseLayout siteManifest={sitesManifest["/"]} image={image}>
   <IndexHero slot="hero" />
 
   <div class="flex flex-col gap-20">

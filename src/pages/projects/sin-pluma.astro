@@ -1,6 +1,9 @@
 ---
 import type { ProjectPageConfig } from "@appTypes/project";
+import workImage from "@assets/thejournal/pub/sinpluma_01.png";
+import searchImage from "@assets/thejournal/pub/sinpluma_02.png";
 import editorImage from "@assets/thejournal/pub/sinpluma_04.png";
+import signInImage from "@assets/thejournal/pub/sinpluma_05.jpg";
 import coverImage from "@assets/thejournal/stock/07.avif";
 import SinPlumaArchitecture from "@components/projects/SinPlumaArchitecture.mdx";
 import Callout from "@components/ui/display/Callout.astro";
@@ -15,7 +18,7 @@ const project: ProjectPageConfig = {
   title: "Sin Pluma",
   eyebrow: "Writing Platform · Distributed Systems",
   description:
-    "A full-stack writing platform where rich editing, discovery, secure sessions, machine-learning assistance, and resilient storage operate as one product.",
+    "An academic writing platform that taught me how satisfying software architecture can be when many separate parts finally work as one system.",
   image: coverImage,
   imageAlt:
     "A typewriter and writing desk representing the Sin Pluma publishing platform",
@@ -92,33 +95,34 @@ const mermaidComponents = { div: MermaidDiagramWrapper };
 
 <ProjectLayout project={project}>
   <section id="overview" class="w-full" aria-labelledby="overview-title">
-    <SectionHeader id="overview-title" title="A writing product with infrastructure underneath" />
+    <SectionHeader id="overview-title" title="The project that made architecture click" />
 
     <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12">
       <div class="flex flex-col gap-5 lg:col-span-7">
         <p class="text-xl leading-relaxed text-base-content md:text-2xl">
-          Sin Pluma gives writers a place to compose and organize long-form
-          work, while readers can discover authors, follow notebooks, and move
-          through ordered pages. The product surface stays approachable even as
-          the system beneath it coordinates ten containers.
+          Sin Pluma began as an academic project, but it became much more
+          personal to me. Bringing the editor, API, databases, storage, and
+          language service together gave me my first real sense of what software
+          architecture could make possible.
         </p>
         <p class="max-w-3xl text-base leading-relaxed text-base-content/70 md:text-lg">
-          The architecture is not complexity for its own sake. Each service owns
-          a distinct concern: the editor handles composition, Flask handles
-          domain rules, a linguistics service handles inference, and specialized
-          stores protect transactional, binary, and ephemeral data.
+          I built the project alone and presented it alongside 39 others, many
+          made by teams of three students. It placed second and earned the degree
+          recognition reserved for the top three. More importantly, the feeling
+          of seeing every part work together showed me the path I wanted to
+          follow.
         </p>
       </div>
 
       <Callout
         variant="information"
-        title="Product and system are one case study"
+        title="What people could do with it"
         class="my-0 self-start lg:col-span-5"
       >
         <p>
-          The reader experience explains why the services exist. The service
-          boundaries explain how that experience can evolve without turning the
-          application into one inseparable process.
+          Writers could create and organize their work, while readers could
+          discover stories and follow the ones they enjoyed. Every technical
+          part existed to support those simple actions.
         </p>
       </Callout>
     </div>
@@ -141,6 +145,92 @@ const mermaidComponents = { div: MermaidDiagramWrapper };
           </article>
         ))
       }
+    </div>
+  </section>
+
+  <section
+    id="product-tour"
+    class="w-full"
+    aria-labelledby="product-tour-title"
+  >
+    <SectionHeader
+      id="product-tour-title"
+      title="From signing in to choosing a chapter"
+    />
+
+    <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
+      The finished interface gave readers a direct path into the library. They
+      could sign in, search across published works, open a title, and choose a
+      chapter from its table of contents.
+    </p>
+
+    <div class="grid grid-cols-1 gap-8 xl:grid-cols-2">
+      <MockupBrowser
+        url="sinpluma.local/sign-in"
+        aria-label="Sin Pluma sign-in page preview"
+      >
+        <Picture
+          src={signInImage}
+          alt="Sin Pluma sign-in page with username and password fields"
+          widths={[640, 960, 1280, 1600]}
+          formats={["avif", "webp"]}
+          sizes="(max-width: 1279px) 100vw, 50vw"
+          quality={80}
+          loading="lazy"
+          decoding="async"
+          class="block h-auto w-full select-none"
+          draggable={false}
+        />
+        <span slot="caption">
+          A focused sign-in page gives returning writers and readers access to
+          their account.
+        </span>
+      </MockupBrowser>
+
+      <MockupBrowser
+        url="sinpluma.local/search"
+        aria-label="Sin Pluma book search page preview"
+      >
+        <Picture
+          src={searchImage}
+          alt="Sin Pluma search results showing several published works"
+          widths={[640, 960, 1280, 1588]}
+          formats={["avif", "webp"]}
+          sizes="(max-width: 1279px) 100vw, 50vw"
+          quality={80}
+          loading="lazy"
+          decoding="async"
+          class="block h-auto w-full select-none"
+          draggable={false}
+        />
+        <span slot="caption">
+          Readers can search the catalog and compare titles, genres, and
+          synopses before opening a work.
+        </span>
+      </MockupBrowser>
+
+      <MockupBrowser
+        url="sinpluma.local/works/el-gato-negro"
+        class="xl:col-span-2"
+        aria-label="Sin Pluma published work page preview"
+      >
+        <Picture
+          src={workImage}
+          alt="Sin Pluma page for El gato negro with its synopsis and chapter list"
+          widths={[640, 960, 1280, 1600]}
+          formats={["avif", "webp"]}
+          sizes="100vw"
+          quality={80}
+          loading="lazy"
+          decoding="async"
+          class="block h-auto w-full select-none"
+          draggable={false}
+        />
+        <span slot="caption">
+          Each work brings its cover, synopsis, author, genre, follow state, and
+          ordered chapters into one reading page.
+        </span>
+      </MockupBrowser>
     </div>
   </section>
 

@@ -33,7 +33,7 @@ const { projects } = Astro.props;
                 mediaFirst ? "lg:order-2" : "lg:order-1",
               ]}
             >
-              <div class="mb-7 flex items-center gap-4" aria-hidden="true">
+              <div class="mb-5 flex items-center gap-4" aria-hidden="true">
                 <span class="font-mono text-sm font-bold text-primary">
                   {String(index + 1).padStart(2, "0")}
                 </span>
@@ -49,6 +49,13 @@ const { projects } = Astro.props;
 
               <p class="mb-8 max-w-2xl text-lg leading-relaxed text-base-content/70 md:text-xl">
                 {project.description}
+              </p>
+
+              <p
+                class="mb-8 max-w-2xl border-l-2 border-primary/40 pl-4 text-base leading-relaxed text-base-content/70"
+                data-project-signal
+              >
+                {project.signal}
               </p>
 
               <ul class="mb-10 flex flex-wrap gap-2" aria-label={`${project.title} technologies`}>

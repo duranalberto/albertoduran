@@ -398,17 +398,15 @@ export async function fetchDiagrams(
     return buildFixtureResult(diagrams, themes);
   }
 
-  let lastError: Error | null = null;
-
   for (const provider of PROVIDERS) {
     if (!provider.isEnabled()) continue;
 
     try {
       return await provider.render(diagrams, themes);
     } catch (err) {
-      lastError = err as Error;
+      const error = err as Error;
       console.warn(
-        `[mermaid:renderers] ${provider.name} failed: ${lastError.message}`,
+        `[mermaid:renderers] ${provider.name} failed: ${error.message}`,
       );
     }
   }

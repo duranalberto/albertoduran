@@ -12,7 +12,7 @@ const project: ProjectPageConfig = {
   title: "Equity Valuation Engine",
   eyebrow: "Finance · Decision Support",
   description:
-    "An auditable Python valuation engine that turns uneven market data into model-specific checks, scenario estimates, and an explainable consolidated view.",
+    "A Python engine I built to evaluate companies more deliberately as I expand my portfolio, with model fit, assumptions, and uncertainty kept beside every estimate.",
   image: coverImage,
   imageAlt:
     "A financial market chart with candlesticks and trend lines on a dark display",
@@ -31,24 +31,24 @@ const project: ProjectPageConfig = {
 const foundations = [
   {
     marker: "01",
-    title: "One domain model absorbs noisy source data",
+    title: "Run a valuation before studying the formulas",
     description:
-      "A repository boundary and field descriptors turn yfinance labels, statements, and history into one StockMetrics aggregate before valuation logic begins.",
-    href: "/thejournal/equity_valuation_engine/data_to_metrics/",
+      "Start with the CLI, learn the output order, and see why a skipped model can be more useful than another per-share estimate.",
+    href: "/thejournal/equity_valuation_engine/first_valuation_run/",
   },
   {
     marker: "02",
-    title: "Missing data stays visible",
+    title: "Choose a model that fits the business",
     description:
-      "Safe defaults keep a run moving, while source misses and failed derived formulas remain attached as diagnostics instead of disappearing behind zeroes.",
-    href: "/thejournal/equity_valuation_engine/missing_data_diagnostics/",
+      "Match cash flow, earnings, revenue, dividends, returns, and assets to the question each valuation method can answer.",
+    href: "/thejournal/equity_valuation_engine/choosing_a_valuation_model/",
   },
   {
     marker: "03",
-    title: "Every model earns the right to run",
+    title: "Check the inputs behind the result",
     description:
-      "DCF, multiples, dividend, and asset models apply their own suitability rules, then expose skipped methods and the reasons behind them.",
-    href: "/thejournal/equity_valuation_engine/suitability_gates/",
+      "Follow provider fields into StockMetrics, inspect selected missing-value reasons, and understand the currency boundary that still needs work.",
+    href: "/thejournal/equity_valuation_engine/trusting_the_inputs/",
   },
 ];
 
@@ -69,7 +69,7 @@ const modelFamilies = [
     label: "Business structure",
     title: "ROE, DDM, and NAV",
     description:
-      "Return, dividend, and asset-based models provide alternate lenses when cash-flow or market-multiple approaches are not the best fit.",
+      "Return, dividend, and asset-based models help when cash-flow or market-multiple approaches do not fit the business well.",
   },
 ];
 
@@ -88,34 +88,35 @@ const mermaidComponents = { div: MermaidDiagramWrapper };
   <section id="overview" class="w-full" aria-labelledby="overview-title">
     <SectionHeader
       id="overview-title"
-      title="A valuation result should explain itself"
+      title="A more disciplined way to invest"
     />
 
     <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12">
       <div class="flex flex-col gap-5 lg:col-span-7">
         <p class="text-xl leading-relaxed text-base-content md:text-2xl">
-          Valuation software can make uncertain inputs look authoritative simply
-          by returning a precise number. This engine takes the opposite path:
-          it keeps data quality, model fit, assumptions, and skipped methods
-          beside the estimate they produced.
+          I had invested conservatively for years and earned good returns, but I
+          wanted to expand my portfolio without relying on a promising ticker or
+          a single familiar ratio. I needed a repeatable way to ask whether a
+          company looked fairly valued or undervalued.
         </p>
         <p class="max-w-3xl text-base leading-relaxed text-base-content/70 md:text-lg">
-          A single ticker becomes a structured analytical run. Raw market data
-          is normalized once, weaknesses are recorded, each valuation method is
-          checked for suitability, and eligible models produce comparable
-          scenarios for a consolidated summary.
+          The engine grew from that need. It turns one ticker into several
+          valuation arguments, records weak or missing data, and checks whether
+          each model belongs in the analysis before it runs. It cannot remove
+          the risk of investing, but making larger decisions without that
+          discipline would leave me with even less to challenge.
         </p>
       </div>
 
       <Callout
         variant="information"
-        title="Designed against false precision"
+        title="What it helps me understand"
         class="lg:col-span-5"
       >
         <p>
-          The useful product is not only the intrinsic-value estimate. It is the
-          visible argument connecting source data, assumptions, model choice,
-          and output.
+          The engine lets me compare several estimates for one company and see
+          why they differ. It does not tell me what to buy, but it gives me more
+          information to question before I invest.
         </p>
       </Callout>
     </div>
@@ -128,12 +129,12 @@ const mermaidComponents = { div: MermaidDiagramWrapper };
   >
     <SectionHeader
       id="valuation-flow-title"
-      title="From ticker symbol to inspectable answer"
+      title="From ticker symbol to valuation report"
     />
     <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
-      The pipeline separates acquisition, domain modeling, analytical policy,
-      formula execution, and presentation. Each boundary passes forward a
-      structured result instead of quietly recalculating another layer's work.
+      The pipeline separates data loading, domain modeling, model policy,
+      calculation, and presentation. Each layer passes a structured result to
+      the next one instead of quietly repeating earlier work.
     </p>
     <EquityValuationFlow components={mermaidComponents} />
   </section>
@@ -145,7 +146,7 @@ const mermaidComponents = { div: MermaidDiagramWrapper };
   >
     <SectionHeader
       id="analytical-foundations-title"
-      title="Trust is built before a formula runs"
+      title="Start with the result, then inspect the evidence"
     />
 
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -153,7 +154,7 @@ const mermaidComponents = { div: MermaidDiagramWrapper };
         foundations.map((item) => (
           <a
             href={item.href}
-            aria-label={`Read ${item.title} technical detail`}
+            aria-label={`Read ${item.title}`}
             class="group card card-border h-full bg-base-100 text-base-content shadow-sm transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
             <article class="card-body gap-5">
@@ -167,7 +168,7 @@ const mermaidComponents = { div: MermaidDiagramWrapper };
                 {item.description}
               </p>
               <span class="text-sm font-bold text-primary">
-                Inspect this boundary &rarr;
+                Read this publication &rarr;
               </span>
             </article>
           </a>
@@ -177,16 +178,15 @@ const mermaidComponents = { div: MermaidDiagramWrapper };
   </section>
 
   <section id="models" class="w-full" aria-labelledby="models-title">
-    <SectionHeader id="models-title" title="Several lenses, one execution contract" />
+    <SectionHeader id="models-title" title="Different models answer different questions" />
 
     <div class="mb-10 grid grid-cols-1 gap-6 lg:grid-cols-12">
       <p class="text-xl leading-relaxed text-base-content lg:col-span-7">
-        The model catalog is intentionally plural. Different businesses expose
-        value through cash flow, earnings, revenue, dividends, returns, or net
-        assets, so the engine gives each method a defined lane instead of
-        forcing agreement.
+        Cash flow, earnings, revenue, dividends, returns, and net assets describe
+        different parts of a business. The engine runs each method through the
+        same manager contract without pretending their answers should agree.
       </p>
-      <Callout variant="note" title="Diagnostic by design" class="lg:col-span-5">
+      <Callout variant="note" title="Why Reverse DCF stays separate" class="lg:col-span-5">
         <p>
           Reverse DCF stays outside the composite value. It explains the growth
           implied by the market price rather than voting on intrinsic value.
@@ -208,12 +208,20 @@ const mermaidComponents = { div: MermaidDiagramWrapper };
       }
     </div>
 
-    <a
-      href="/thejournal/equity_valuation_engine/model_execution/"
-      class="mt-6 inline-flex font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
-    >
-      See how valuation managers isolate each model &rarr;
-    </a>
+    <div class="mt-6 flex flex-wrap gap-x-6 gap-y-3">
+      <a
+        href="/thejournal/equity_valuation_engine/dcf_and_reverse_dcf/"
+        class="inline-flex font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+      >
+        Work through DCF and Reverse DCF &rarr;
+      </a>
+      <a
+        href="/thejournal/equity_valuation_engine/other_valuation_models/"
+        class="inline-flex font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+      >
+        Compare the other valuation models &rarr;
+      </a>
+    </div>
   </section>
 
   <section id="scenarios" class="w-full" aria-labelledby="scenarios-title">
@@ -222,10 +230,10 @@ const mermaidComponents = { div: MermaidDiagramWrapper };
     <div class="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:items-center">
       <div>
         <p class="mb-5 text-xl leading-relaxed text-base-content">
-          Growth is not smuggled into a formula as one unexplained percentage.
-          The engine selects a signal, records its source, constrains unstable
-          values, and turns it into Bear, Base, and Bull paths shared by the
-          models that need projections.
+          Growth does not enter a formula as one unexplained percentage. The
+          engine selects a signal, records its source, constrains unstable
+          values, and builds Bear, Base, and Bull paths for models that need
+          projections.
         </p>
         <p class="leading-relaxed text-base-content/70">
           Optional weighted blending and sector mean reversion remain explicit.
@@ -234,7 +242,7 @@ const mermaidComponents = { div: MermaidDiagramWrapper };
         </p>
       </div>
       <a
-        href="/thejournal/equity_valuation_engine/growth_scenarios/"
+        href="/thejournal/equity_valuation_engine/assumptions_and_scenarios/"
         class="group rounded-box border border-base-300 bg-primary p-8 text-primary-content shadow-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
       >
         <p class="mb-3 text-xs font-bold uppercase tracking-[0.2em] opacity-70">
@@ -244,8 +252,8 @@ const mermaidComponents = { div: MermaidDiagramWrapper };
           See how signals become projections
         </h3>
         <p class="leading-relaxed opacity-80">
-          Follow selection, clamping, scenario multipliers, and mean reversion
-          into the GrowthAssumption audit record.
+          See how selection, clamping, scenario adjustments, and mean reversion
+          become a growth path you can inspect.
         </p>
         <span class="mt-5 block font-bold">Read the decision path &rarr;</span>
       </a>
@@ -282,12 +290,20 @@ const mermaidComponents = { div: MermaidDiagramWrapper };
       </div>
     </div>
 
-    <a
-      href="/thejournal/equity_valuation_engine/summary_outputs/"
-      class="mt-6 inline-flex font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
-    >
-      Follow scenario reports into the final output &rarr;
-    </a>
+    <div class="mt-6 flex flex-wrap gap-x-6 gap-y-3">
+      <a
+        href="/thejournal/equity_valuation_engine/reading_the_results/"
+        class="inline-flex font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+      >
+        Learn how to read the final output &rarr;
+      </a>
+      <a
+        href="/thejournal/equity_valuation_engine/extending_the_engine/"
+        class="inline-flex font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+      >
+        Follow the extension contracts &rarr;
+      </a>
+    </div>
   </section>
 
   <section
@@ -299,11 +315,12 @@ const mermaidComponents = { div: MermaidDiagramWrapper };
       The outcome
     </p>
     <h2 id="outcome-title" class="max-w-4xl font-display text-3xl font-bold leading-tight sm:text-4xl">
-      A valuation run that can be questioned, traced, and compared—not merely quoted.
+      A valuation run that can be questioned, traced, and compared instead of merely quoted.
     </h2>
     <p class="mt-6 max-w-3xl text-lg leading-relaxed opacity-80">
-      The estimates are analytical tools, not investment advice. Their value
-      comes from making assumptions and weaknesses easier to inspect.
+      The estimates are analytical tools, not investment advice. Use them to
+      inspect assumptions, compare models, and find weaknesses in the input
+      data.
     </p>
   </section>
 </ProjectLayout>

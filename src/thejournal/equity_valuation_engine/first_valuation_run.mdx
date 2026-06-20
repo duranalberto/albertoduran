@@ -1,0 +1,257 @@
+---
+title: "Your first valuation run"
+description: "Install the equity valuation engine, run one ticker, and learn to read suitability checks, scenarios, skipped models, and JSON."
+tags: ["python", "valuation", "tutorial"]
+pubDate: 2026-06-20
+order: 20
+---
+
+import Callout from "@components/ui/display/Callout.astro";
+import MockupWindow from "@components/ui/display/MockupWindow.astro";
+import Steps from "@components/ui/display/Steps.astro";
+
+The first completed run can tempt you to jump straight to the composite value. Resist that urge. The most useful line may be `DDM skipped` or a warning about free cash flow. This walkthrough gets the program running, then reads the result in the order that preserves its meaning.
+
+---
+
+## Before you run it
+
+The project is a Python command-line application. Work from a local clone and treat provider output as temporary evidence. A ticker can produce different data after a company files new statements, a provider corrects a label, or market prices move. Save JSON when you need a reproducible record.
+
+Use a company whose financial statements and shares trade in the same currency. Currency labels are collected, but conversion is not applied during valuation. A mixed-currency ticker can combine values that should never be placed in the same formula.
+
+The repository does not expose a packaged console script. Run the module from the project environment. Network access is needed because the default repository reads yfinance surfaces. A provider error is not necessarily a formula error, so keep those failure classes separate while debugging.
+
+---
+
+## Install the project
+
+Clone the repository, create a virtual environment, and install the package dependencies. The exact environment command can vary by operating system. The following sequence matches a typical Unix shell.
+
+```bash
+git clone <repository-url> equity-valuation-engine
+cd equity-valuation-engine
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e .
+```
+
+The editorial audit found 78 test functions in the source snapshot and verified that `src` and `tests` compile. The audit environment did not include pytest, so that observation is not a claim that the full suite passed there. In your clone, run the suite before changing financial logic.
+
+```bash
+python -m pytest
+```
+
+The basic journey has four stages. The last stage matters because structured output is how you preserve the complete chain rather than a screenshot of the final table.
+
+<Steps
+  aria-label="First valuation workflow"
+  currentStep={4}
+  items={[
+    { label: "Install", marker: "1" },
+    { label: "Run", marker: "2" },
+    { label: "Inspect", marker: "3" },
+    { label: "Export", marker: "4" },
+  ]}
+/>
+
+---
+
+## Run one ticker
+
+The CLI requires one output mode. Use `--cli` for readable tables, `--json` for a compact document, or `--all` for both. Reverse DCF is opt-in.
+
+```bash
+python -m cli.main ORCL --cli
+python -m cli.main ORCL --json
+python -m cli.main ORCL --all --reverse-dcf
+```
+
+Start with `--cli`. A terminal view helps you learn the hierarchy before inspecting field names. Once you know what each section means, repeat the run with `--json` and save the document.
+
+<Callout variant="information" title="About the examples">
+  <p>Commands use the repository's documented ORCL example. Displayed sample output is fictional and frozen, so it demonstrates interpretation without claiming current market facts.</p>
+</Callout>
+
+```bash
+python -m cli.main ORCL --json > valuation.json
+```
+
+Do not compare a saved estimate with a later market price unless you also preserve the input date and assumptions. The current output is a snapshot, not a time-series research record. It does not automatically archive provider responses or configuration versions.
+
+---
+
+## Read the company snapshot
+
+Begin by checking the identity and scale of the company. Price, shares, market capitalization, revenue, free cash flow, debt, cash, sector, and currencies are upstream of many models. A misplaced unit or currency can contaminate every later table while leaving the arithmetic internally consistent.
+
+The anonymous teaching inputs are deliberately easy to audit.
+
+| Input | Frozen value | Why it matters |
+| --- | ---: | --- |
+| Current price | $50 | Comparison point, not an intrinsic input for every model |
+| Diluted shares | 100 million | Converts total equity value into per-share value |
+| Revenue | $2 billion | Anchor for P/S and margins |
+| EBITDA | $400 million | Anchor for EV/EBITDA |
+| Free cash flow | $250 million | Starting point for DCF |
+| Debt | $600 million | Part of the enterprise-to-equity bridge |
+| Cash | $200 million | Added back in the equity bridge |
+| Book equity | $2 billion | Anchor for ROE and balance-sheet interpretation |
+
+Ask whether the figures describe the same period. The engine uses TTM, latest annual, latest quarterly, and historical inputs for different purposes. TTM means the most recent four quarters combined. It can be more current than a fiscal-year statement, but it can also mix seasonal periods in ways that deserve attention.
+
+---
+
+## Read suitability before valuation
+
+Each model returns a suitability result before it runs. Factors carry messages, severity, and weight. The runner sums policy scores and skips a model when the total reaches the configured threshold, currently six. The score is not a probability that a model is correct.
+
+<MockupWindow aria-label="Fictional suitability output" bodyClass="p-5 font-mono text-sm">
+  <strong slot="header">Suitability excerpt</strong>
+  <pre className="overflow-x-auto whitespace-pre-wrap">{`DCF          run      normalized inputs usable
+EV/EBITDA    run      positive EBITDA
+P/S          run      revenue and sector policy available
+ROE          run      equity base available
+NAV          run      balance sheet available
+DDM          skipped  no recurring dividend base
+P/E          excluded historical price and EPS dates need alignment`}</pre>
+  <span slot="caption">Skipped and editorially excluded models remain visible.</span>
+</MockupWindow>
+
+The sample DDM skip is useful. A dividend model needs distributions to estimate what shareholders receive through that channel. Returning no DDM report is more honest than applying a formula to a zero that has lost its context.
+
+P/E is different in this sample. The code path exists, but the source snapshot pairs daily price history and annual EPS history positionally. The dates are not aligned. Until that logic and its tests are repaired, the central case study excludes P/E even if the current checker allows it to run.
+
+Suitability checks reduce obvious misuse. They do not prove that the remaining model fits the business. You still need to ask whether the economics match the model's question. A revenue multiple can run successfully for an unprofitable business while still demanding careful margin assumptions.
+
+---
+
+## Compare Bear, Base, and Bull
+
+Read across scenarios before comparing models. Bear, Base, and Bull represent changes in configured growth, multiples, discount assumptions, or haircuts depending on the model. They are not forecast probabilities and should not be averaged as though each were equally likely.
+
+```text
+Model           Bear       Base       Bull
+DCF           $42.00     $58.00     $74.00
+ROE           $44.00     $53.00     $63.00
+EV/EBITDA     $39.00     $48.00     $57.00
+P/S           $48.00     $62.00     $76.00
+NAV           $28.00     $35.00     $42.00
+```
+
+The width of one row shows scenario sensitivity within a model. The difference between Base values shows model spread. Those are separate questions. DCF moving from $42 to $74 reveals strong assumption sensitivity. NAV at $35 versus P/S at $62 shows that asset value and revenue value describe the sample business differently.
+
+Compare the current price only after understanding those spreads. A label such as undervalued or overvalued is generated by a fixed comparison rule. It is not a recommendation and does not include your required return, tax position, time horizon, or portfolio risk.
+
+---
+
+## Read the composite carefully
+
+The summary takes successful Base estimates and calculates an equal-weight arithmetic mean. This sample has five included values.
+
+```text
+(58 + 53 + 48 + 62 + 35) / 5 = 51.20
+```
+
+It then calculates population standard deviation across those Base values. The sample deviation is about $9.37. The serialized `confidence_band` becomes roughly $41.83 to $60.57, but the name overstates the statistic. Read it as a model dispersion band.
+
+Equal weighting makes the result easy to reproduce. It also discards information. P/S and NAV get the same vote despite measuring different economic anchors. Suitability warnings do not reduce a model's weight. Related models are not adjusted for shared inputs. A negative successful estimate can enter the mean.
+
+The composite is a navigation aid. It tells you where the center of included Base cases lies. When the models are dispersed, investigate them individually. When they agree, inspect their shared assumptions before calling that agreement independent confirmation.
+
+---
+
+## Switch from tables to JSON
+
+The JSON output is the better artifact for review. It includes `ticker`, `stock_metrics`, `missing_data`, `suitability`, `valuations`, `skipped_models`, and `summary`. Historical data is not included in the payload, so the document is not a complete provider snapshot.
+
+```json
+{
+  "ticker": "SAMPLE",
+  "missing_data": [],
+  "suitability": {
+    "DDM": { "is_suitable": false, "score": 6 }
+  },
+  "valuations": {
+    "DCF": { "scenarios": { "Base": 58.0 } },
+    "NAV": { "scenarios": { "Base": 35.0 } }
+  },
+  "skipped_models": {
+    "DDM": { "reason": "No recurring dividend base" }
+  },
+  "summary": {
+    "composite_intrinsic_value": 51.2,
+    "confidence_band": [41.83, 60.57]
+  }
+}
+```
+
+This excerpt is illustrative rather than a byte-for-byte captured payload. Use the schema emitted by your checked-out version as the authority. Preserve the ticker, run timestamp outside the program if needed, code revision, configuration revision, and raw provider evidence for serious comparisons.
+
+---
+
+## A five-minute review checklist
+
+First verify company identity, units, currencies, shares, and the periods used for major metrics. Then read every missing-data record and suitability factor. A warning upstream can explain several downstream estimates.
+
+Next compare scenarios within each model. Identify which assumption moves the value most. Compare Base values only after that. Recalculate the equal-weight composite if it will influence your interpretation, and call the interval a dispersion band.
+
+Finally open the source filings. The [SEC company search](https://www.sec.gov/edgar/search/) is the primary place to inspect US issuer filings. Provider normalization is convenient, but it cannot replace reading the document that defines the accounting period and disclosures.
+
+If the result survives those checks, it has become a useful research prompt. It has not become a decision. The next article explains how to match each valuation model to the business question it can reasonably answer.
+
+---
+
+## Preserve a reproducible run record
+
+Redirecting JSON to a file captures the program output, but it does not capture everything needed to reproduce the run. Add a small companion note with the code revision, configuration revision, execution time, Python version, provider package version, and the filing period you checked.
+
+```text
+run record
+  ticker             ORCL
+  executed_at_utc     2026-06-20T12:00:00Z
+  code_revision       <git commit>
+  config_revision     <git commit>
+  python_version      <version>
+  provider_version    <version>
+  latest_filing       <form and period>
+  output_file         valuation.json
+```
+
+Keep this note beside the JSON. If a later run differs, compare the record before concluding that company economics changed. A provider correction, new filing, configuration edit, or dependency update may be responsible.
+
+You can also hash the saved output to detect accidental edits.
+
+```bash
+sha256sum valuation.json > valuation.json.sha256
+sha256sum --check valuation.json.sha256
+```
+
+This does not prove that the original data was correct. It proves only that the saved artifact has not changed since the hash was created. Reproducibility and correctness are related but distinct controls.
+
+When reviewing two runs, compare sections in order. Start with metrics and missing data. Then compare suitability and the set of models that ran. Only then compare scenario and summary values. Jumping directly to the composite can hide a changed model set.
+
+```text
+comparison order
+  1 identity and period
+  2 source metrics
+  3 raw and derived diagnostics
+  4 suitability factors
+  5 models run and skipped
+  6 scenario assumptions
+  7 model values
+  8 composite and dispersion
+```
+
+A saved artifact is especially important when provider history is not serialized in the current JSON. If the historical series influenced a growth signal or multiple, preserve the relevant evidence separately and record its dates.
+
+---
+
+## Know when to stop the run
+
+Stop before interpretation when the ticker resolves to the wrong security, shares are implausible, currencies differ, or a major statement period is missing. Do not compensate by widening scenarios. Fix or document the evidence first.
+
+Stop before using the composite when only a weak model survives, when a new filing makes trailing data inconsistent, or when configuration has no usable date. A successful command means the software completed its path. It does not mean the path had enough evidence for a financial conclusion.
+
+This pause is part of the workflow. The engine's visible diagnostics make it easier to explain why you stopped and what would be needed to continue.

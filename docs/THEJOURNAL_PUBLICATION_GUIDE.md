@@ -25,7 +25,7 @@ or the implementation so they match.
 
 ## Publication Length
 
-Published journal entries should display between 8 minutes and 16
+Published journal entries should display between 10 minutes and 16
 minutes of reading time. As priority, prefer between 12 and 16, decide depending of the content being redacted.
 
 The manifest estimates reading time from the MDX body using prose words and code
@@ -125,7 +125,7 @@ navigation, and pagination.
 
 Journal publications should read like finished blog posts for external readers.
 Use `.agents/skills/mdx-blog-writer` for MDX blog writing,
-formatting, humanizing, frontmatter hygiene, and pre-delivery validation. Use
+formatting, frontmatter hygiene, and pre-delivery validation. Use
 `.agents/skills/design-doc-mermaid` for Mermaid diagram design,
 styling, validation, and export guidance.
 

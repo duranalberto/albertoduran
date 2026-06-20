@@ -1,0 +1,213 @@
+---
+title: "Assumptions, scenarios, and honest uncertainty"
+description: "Learn how historical signals, configured limits, and scenario policy become Bear, Base, and Bull paths without pretending to predict."
+tags: ["valuation", "finance", "scenarios"]
+pubDate: 2026-06-20
+order: 50
+---
+
+import Callout from "@components/ui/display/Callout.astro";
+import EChart from "@components/ui/mdx/EChart.astro";
+import { lineChartOption } from "@integrations/echarts/options";
+
+Move an opening growth assumption from 5 percent to 9 percent and a DCF can rise sharply even though no historical statement changed. The calculation is doing what it was told. The difficult work is deciding what the instruction means, where it came from, and whether the resulting scenario is evidence, policy, or wishful thinking.
+
+---
+
+## A signal is evidence, not a forecast
+
+Historical revenue growth, earnings growth, free-cash-flow growth, and analyst estimates can inform a forecast. None guarantees the next period. A business can mature, enter a recession, change product mix, issue shares, acquire a competitor, or face a new regulation.
+
+The engine gathers signals and applies configured rules. Its output should be read as conditional. If growth follows this path, margins and capital needs remain represented by these inputs, and the discount policy holds, then the model produces this estimate.
+
+Revenue growth, earnings growth, free-cash-flow growth, and sector policy can all inform the same forecast. The engine should not turn the highest available value into the answer. It needs a visible policy for signal selection, blending, limits, and scenario construction.
+
+A useful policy also records which signal won, which fallback applied, and whether a configured boundary changed the raw observation. Without that trace, two identical Base rates can hide very different evidence, and two different rates can look like a business change when only configuration moved.
+
+---
+
+## The waterfall chooses one signal
+
+A waterfall uses the best available signal according to an ordered policy. If a preferred growth measure is usable, it wins. If not, the system falls back to another source and eventually to a configured default.
+
+This approach is easy to explain and stable under missing data. Its weakness is discontinuity. A barely usable preferred signal can replace several consistent secondary signals. The selected source deserves to appear beside the scenario, especially when a fallback controls the result.
+
+The exact waterfall varies by model. DDM follows a dividend-specific growth route. It does not simply consume the same shared helper as earnings and cash-flow models. Read the source path for the report you are interpreting.
+
+---
+
+## The weighted blend needs enough evidence
+
+A weighted blend combines available signals under configured weights. For a simple example, suppose revenue receives 30 percent, earnings 30 percent, free cash flow 30 percent, and sector policy 10 percent.
+
+```text
+0.30 × 8%  = 2.4%
+0.30 × 10% = 3.0%
+0.30 × 6%  = 1.8%
+0.10 × 5%  = 0.5%
+-----------------
+blended signal   = 7.7%
+```
+
+Weights create an appearance of refinement, but they are assumptions too. Correlated signals can double-count the same business change. Earnings and free cash flow may both rise because one margin improved. More inputs do not automatically create more independent evidence.
+
+When required signals are absent, the blend should either renormalize under a disclosed rule or fall back. Silent weight changes make runs difficult to compare. Inspect the chosen method, inputs, and fallback rather than only the final percentage.
+
+---
+
+## Why the engine clamps extremes
+
+Historical growth can explode when the starting value is tiny, negative, or distorted by an unusual year. The engine applies floors, ceilings, and sector policies to keep one unstable observation from dominating a multi-year forecast.
+
+Clamping is useful defensive policy. It is not proof that the bounded rate is correct. A ceiling may suppress a genuinely exceptional business, while a floor may overstate decline. The publication should show when a raw signal was altered and which configured boundary applied.
+
+The source also avoids selected tiny free-cash-flow bases when computing CAGR. That protects the arithmetic from a denominator that makes growth meaningless. The missing registry can preserve an `insufficient_data` or derived-failure explanation rather than presenting a spectacular rate.
+
+---
+
+## How Bear, Base, and Bull paths are built
+
+Scenarios create named alternatives around a central policy. For this teaching fixture, Base starts at 7.7 percent, Bear at 4.7 percent, and Bull at 10.7 percent. Each path moves toward a 3 percent mature rate over five years.
+
+<EChart
+  title="Illustrative growth paths"
+  caption="Fictional annual free-cash-flow growth, percent"
+  description="Line chart comparing Bear, Base, and Bull growth paths that converge toward a mature rate over five forecast years."
+  option={{
+    ...lineChartOption({
+      x: ["Year 1", "Year 2", "Year 3", "Year 4", "Year 5"],
+      y: [7.7, 6.5, 5.3, 4.1, 3.0],
+      name: "Base",
+    }),
+    series: [
+      { type: "line", name: "Bear", data: [4.7, 4.3, 3.9, 3.4, 3.0] },
+      { type: "line", name: "Base", data: [7.7, 6.5, 5.3, 4.1, 3.0] },
+      { type: "line", name: "Bull", data: [10.7, 8.8, 6.9, 4.9, 3.0] },
+    ],
+    legend: { show: true, bottom: 0 },
+  }}
+  width={760}
+  height={420}
+/>
+
+The lines are not probability bounds. Bear can still be too optimistic, and Bull can still be too conservative. They are controlled changes that reveal sensitivity. Their main value is comparative.
+
+---
+
+## What margin of safety changes here
+
+Margin of safety can mean several things in valuation practice. In this project, inspect the source and report fields before assuming it is a universal discount applied at the end. A policy can alter scenario assumptions or the price-versus-value interpretation.
+
+Do not hide a weak model behind a large haircut. A 30 percent discount to an estimate built from mismatched currency or unusable cash flow remains a poor estimate. Input integrity and model fit come first.
+
+When comparing runs, record whether margin-of-safety policy changed. Otherwise an apparent change in company value may come entirely from configuration.
+
+---
+
+## Mean reversion and sector policy
+
+Mean reversion says unusually high or low economics tend to move toward a mature level over time. The growth paths above gradually approach 3 percent. That prevents a high early rate from compounding forever.
+
+The destination and speed remain assumptions. A mature rate should be consistent with the currency, economy, and discount model. In a perpetual-growth DCF, terminal growth must remain below the discount rate or the Gordon Growth denominator becomes zero or negative.
+
+Sector policy can provide a fallback or anchor, but sector labels are broad. Two software firms can have different retention, margins, customer concentration, and capital needs. A configured sector number is a starting policy, not a substitute for business evidence.
+
+---
+
+## Configuration is part of the model
+
+<Callout variant="warning" title="Illustrative defaults">
+  <p>The audited YAML includes multiples, discount inputs, growth limits, and asset haircuts without a complete source artifact, retrieval date, or formal update cadence. Treat them as project policy, not verified current sector medians.</p>
+</Callout>
+
+Configuration deserves version control and review because it changes valuation output without changing Python formulas. A reproducible record should keep the code revision and configuration revision together.
+
+If you publish a multiple, risk-free rate, or market risk premium, attach a primary source and effective date. The [US Treasury daily rates](https://home.treasury.gov/resource-center/data-chart-center/interest-rates) provide official Treasury observations. Damodaran's [data resources](https://pages.stern.nyu.edu/~adamodar/New_Home_Page/data.html) document widely used valuation datasets and methods. Choose sources that match the currency and valuation date.
+
+---
+
+## Inspect the assumption before the answer
+
+For every scenario, ask which signal won, whether weights changed, which clamp applied, what mature rate was used, and which configuration revision supplied the policy. Then ask whether the business story supports that path.
+
+Repeat the run with one changed assumption at a time. If a small change causes a large movement, the sensitivity is part of the result. Do not average it away.
+
+The 7.7 percent opening Base rate is useful because its construction is visible. It is not a prediction. The next article shows how a growth path moves through free-cash-flow projection, WACC, terminal value, the debt-and-cash bridge, and Reverse DCF.
+
+---
+
+## Build an assumption ledger
+
+An assumption ledger turns configuration into reviewable evidence. Give every important value a name, role, unit, source, effective date, retrieval date, method, owner, and review status. Record whether it is historical observation, external estimate, or project policy.
+
+```yaml
+assumption: terminal_growth_rate
+value: 0.03
+unit: decimal annual rate
+role: DCF terminal value
+classification: project_policy
+currency: USD
+source_url: <primary source or method note>
+effective_date: <date>
+retrieved_at: <timestamp>
+method: <selection method>
+owner: <review owner>
+review_status: illustrative
+```
+
+The same structure works for the risk-free rate, market risk premium, sector multiple, mature growth, ROE cap, and NAV haircut. A blank source is not harmless metadata. It tells the reviewer that the value should remain illustrative.
+
+Record transformations as well. If a raw 14 percent growth signal is clamped to 10 percent, preserve both values and the ceiling that applied. If weights are renormalized after a missing signal, preserve the original and effective weights.
+
+```text
+growth trace
+  revenue signal          8.0%
+  earnings signal        10.0%
+  free-cash-flow signal   6.0%
+  sector policy           5.0%
+  raw blend               7.7%
+  floor                   0.0%
+  ceiling                10.0%
+  selected Base           7.7%
+  Bear adjustment        -3.0 points
+  Bull adjustment        +3.0 points
+```
+
+This trace makes two runs comparable. Without it, a Base rate changing from 7.7 to 6.5 percent could come from company history, missing data, weight changes, or configuration. The final number alone cannot tell you which.
+
+---
+
+## Stress one assumption at a time
+
+Start with a one-variable sensitivity. Hold every input constant except opening growth. Then repeat for WACC, terminal growth, the multiple, or the asset haircut. This identifies which policies control the output.
+
+```text
+opening growth     DCF value
+4.7%               $42
+6.2%               $50
+7.7%               $58
+9.2%               $66
+10.7%              $74
+```
+
+Next test coherent combinations. A lower-growth case may also deserve lower margins, weaker cash conversion, or a different risk assessment. Independent one-variable changes teach sensitivity, while coherent scenarios teach business states.
+
+Avoid building dozens of cases that differ by tiny increments. More cells can create a sense of rigor without adding insight. Choose ranges that you can explain from history, business capacity, and sourced external conditions.
+
+Write a falsification condition for the Base case. That might be sustained free-cash-flow growth below 4 percent, a material increase in reinvestment needs, or loss of a major customer. A scenario becomes more useful when you know which future evidence would make it obsolete.
+
+Finally distinguish uncertainty from ignorance. Uncertainty means you understand the variable but not its future value, so scenarios can help. Ignorance means the source value, unit, or model relationship is unknown. A wider scenario range does not repair an unknown currency or a misaligned earnings series.
+
+---
+
+## Review a scenario before saving it
+
+Read the scenario aloud as a business statement. This Base case says free-cash-flow growth begins at 7.7 percent and gradually approaches 3 percent. Ask what customer growth, pricing, margins, and reinvestment must be true for that sentence to hold.
+
+Then inspect the numerical controls. Confirm that the starting signal came from the intended waterfall or blend, every clamp is visible, terminal growth is below WACC, and Bear and Bull adjustments are large enough to teach something. Record why the selected range is defensible.
+
+Finally label the status of every external value. A sourced observation has a date. An estimate has an author and method. A project policy has an owner and review cadence. If none applies, keep the value visibly illustrative.
+
+This review takes less time than rebuilding a model after a hidden default is mistaken for evidence. It also gives the next reader a clear place to disagree.
+
+Keep the ledger beside the saved output rather than in a private notebook. A result is easier to audit when its assumptions travel with it, and easier to retire when a source date or business condition no longer applies.

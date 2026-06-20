@@ -10,6 +10,7 @@ const smokeRoutes = [
   "/projects/sin-pluma/",
   "/thejournal/",
   "/thejournal/my_first_publication/",
+  "/thejournal/mlscraper/first_price_watch/",
   "/thejournal/building_albertoduran/",
   "/thejournal/building_albertoduran/publications/static_generation/",
 ];
@@ -22,6 +23,7 @@ const responsiveRoutes = [
   "/projects/equity-valuation-engine/",
   "/projects/mlscraper/",
   "/projects/sin-pluma/",
+  "/thejournal/mlscraper/first_price_watch/",
   "/thejournal/building_albertoduran/echarts/chart_examples/",
   "/thejournal/sin_pluma/innodb_cluster/",
   "/thejournal/building_albertoduran/publications/codeblocks/",
@@ -119,12 +121,16 @@ async function expectMockupScreenshotNotDraggable(image: Locator) {
   await expect(image).toHaveAttribute("data-drag-started", "false");
 }
 
-async function expectSharedFooterSpacing(page: Page) {
+async function expectSharedFooterSpacing(page: Page, route: string) {
   const main = page.locator("main#main-content");
 
   await expect(main).toHaveClass(/site-main/);
 
-  const paddingBottom = await main.evaluate((element) =>
+  const spacingTarget =
+    route === "/projects/"
+      ? page.locator("[data-project-showcase] article").last()
+      : main;
+  const paddingBottom = await spacingTarget.evaluate((element) =>
     Number.parseFloat(getComputedStyle(element).paddingBottom),
   );
 
@@ -211,7 +217,7 @@ test.describe("production preview smoke coverage", () => {
       await expect(page.locator("main#main-content")).toBeVisible();
       await expect(page.getByRole("banner")).toBeVisible();
       await expect(page.getByRole("contentinfo")).toBeVisible();
-      await expectSharedFooterSpacing(page);
+      await expectSharedFooterSpacing(page, route);
       expect(problems).toEqual([]);
     });
   }
@@ -278,20 +284,24 @@ test("projects index presents four compact showcases and ordered navigation", as
   const mainNavigation = page.getByRole("navigation", {
     name: "Main Navigation",
   });
-  await expect(mainNavigation.getByRole("link")).toHaveText([
-    "Professional Profile",
-    "Projects",
-    "TheJournal.",
-  ]);
+  await expect(
+    mainNavigation.getByRole("link", { name: "Professional profile" }),
+  ).toBeVisible();
+  await expect(
+    mainNavigation.getByRole("link", { name: "Projects", exact: true }),
+  ).toBeVisible();
+  await expect(
+    mainNavigation.getByRole("link", { name: "TheJournal." }),
+  ).toBeVisible();
   await expect(
     mainNavigation.getByRole("link", { name: "Projects" }),
   ).toHaveAttribute("aria-current", "page");
 
   const expectedProjects = [
-    ["albertoduran.com", "/projects/albertoduran/"],
-    ["Equity Valuation Engine", "/projects/equity-valuation-engine/"],
     ["MLScraper", "/projects/mlscraper/"],
     ["Sin Pluma", "/projects/sin-pluma/"],
+    ["Equity Valuation Engine", "/projects/equity-valuation-engine/"],
+    ["albertoduran.com", "/projects/albertoduran/"],
   ] as const;
 
   const showcases = page.locator("[data-project-showcase]");
@@ -306,11 +316,12 @@ test("projects index presents four compact showcases and ordered navigation", as
       showcase.getByRole("heading", { level: 2, name: title }),
     ).toBeVisible();
     await expect(showcase.getByRole("img")).toBeVisible();
+    await expect(showcase.locator("[data-project-signal]")).toBeVisible();
 
     const height = await showcase.evaluate(
       (element) => element.getBoundingClientRect().height,
     );
-    expect(height).toBeLessThan(836);
+    expect(height).toBeLessThan(1000);
   }
 
   const firstShowcase = showcases.first();
@@ -361,10 +372,10 @@ for (const route of ["/", "/profile/"] as const) {
   }) => {
     const problems = collectConsoleProblems(page);
     const expectedProjects = [
-      ["albertoduran.com", "/projects/albertoduran/"],
-      ["Equity Valuation Engine", "/projects/equity-valuation-engine/"],
       ["MLScraper", "/projects/mlscraper/"],
       ["Sin Pluma", "/projects/sin-pluma/"],
+      ["Equity Valuation Engine", "/projects/equity-valuation-engine/"],
+      ["albertoduran.com", "/projects/albertoduran/"],
     ] as const;
 
     await page.setViewportSize({ width: 1280, height: 900 });
@@ -386,6 +397,7 @@ for (const route of ["/", "/profile/"] as const) {
         card.getByRole("heading", { level: 3, name: title }),
       ).toBeVisible();
       await expect(card.getByRole("img")).toHaveCount(0);
+      await expect(card.locator("[data-project-signal]")).toBeVisible();
       await expect(card.locator("[data-project-ordinal]")).toHaveText(
         String(index + 1).padStart(2, "0"),
       );
@@ -471,7 +483,7 @@ test("project showcase renders its hero actions, body, and grouped vault", async
   await expect(journalLink).not.toHaveAttribute("target", "_blank");
   await expect(journalLink).toContainText("Technical details");
   await expect(journalLink).toHaveClass(/btn-outline/);
-  await expect(journalLink).toHaveClass(/btn-sm/);
+  await expect(journalLink).toHaveClass(/btn-md/);
 
   await expect(
     page.locator(".mermaid-diagram-container").first(),
@@ -481,25 +493,25 @@ test("project showcase renders its hero actions, body, and grouped vault", async
   await expect(
     page.getByRole("heading", {
       level: 2,
-      name: "A portfolio built like a product",
+      name: "More room than an interview",
     }),
   ).toBeVisible();
   await expect(
     page.getByRole("heading", {
       level: 2,
-      name: "One platform, several ways in",
+      name: "Choose how deep to read",
     }),
   ).toBeVisible();
   await expect(
     page.getByRole("heading", {
       level: 2,
-      name: "The Journal behaves like a publishing system",
+      name: "The Journal has publication rules",
     }),
   ).toBeVisible();
   await expect(
     page.getByRole("heading", {
       level: 2,
-      name: "Static does not mean stripped down",
+      name: "The browser can take the day off",
     }),
   ).toBeVisible();
   await expect(
@@ -553,19 +565,18 @@ const projectShowcases = [
     title: "Equity Valuation Engine",
     github: "https://github.com/duranalberto/equity-valuation-engine",
     journal: "/thejournal/equity_valuation_engine/",
-    heading: "Trust is built before a formula runs",
-    detailHref: "/thejournal/equity_valuation_engine/data_to_metrics/",
-    detailName:
-      "Read One domain model absorbs noisy source data technical detail",
+    heading: "A more disciplined way to invest",
+    detailHref: "/thejournal/equity_valuation_engine/first_valuation_run/",
+    detailName: "Read Run a valuation before studying the formulas",
   },
   {
     route: "/projects/mlscraper/",
     title: "MLScraper",
     github: "https://github.com/duranalberto/MLScraper",
     journal: "/thejournal/mlscraper/",
-    heading: "Provider complexity stays maintainable",
-    detailHref: "/thejournal/mlscraper/job_configuration/",
-    detailName: /Jobs can be checked before they run/,
+    heading: "The bargain I missed",
+    detailHref: "/thejournal/mlscraper/first_price_watch/",
+    detailName: "Read Follow one watch before opening the internals",
   },
   {
     route: "/projects/sin-pluma/",
@@ -610,9 +621,9 @@ for (const showcase of projectShowcases) {
     await expect(journalLink).not.toHaveAttribute("target", "_blank");
     await expect(journalLink).toContainText("Technical details");
     await expect(sourceLink).toHaveClass(/btn-outline/);
-    await expect(sourceLink).toHaveClass(/btn-sm/);
+    await expect(sourceLink).toHaveClass(/btn-md/);
     await expect(journalLink).toHaveClass(/btn-outline/);
-    await expect(journalLink).toHaveClass(/btn-sm/);
+    await expect(journalLink).toHaveClass(/btn-md/);
     await expect(journalLink.locator("svg")).toHaveAttribute("fill", "none");
     await expect(journalLink.locator("svg")).toHaveAttribute(
       "stroke",
@@ -661,12 +672,12 @@ for (const showcase of projectShowcases) {
       });
       await expect(projectImage).toBeVisible();
 
-      const callout = page
-        .getByText("Product and system are one case study", { exact: true })
-        .locator("xpath=ancestor::aside");
-      await expect(callout).toHaveCSS("align-self", "flex-start");
-      await expect(callout).toHaveCSS("margin-top", "0px");
-      await expect(callout).toHaveCSS("margin-bottom", "0px");
+      await expect(
+        page.getByRole("heading", {
+          level: 2,
+          name: "A complete writing experience and a distributed-systems case study in the same product.",
+        }),
+      ).toBeVisible();
 
       await expect(
         page.getByRole("img", {
@@ -703,7 +714,7 @@ test("MDX list rows remain semantic, themed, safe, and responsive", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/thejournal/echarts_dummy_gallery/");
+  await page.goto("/fixtures/components/");
 
   const list = page.getByRole("list", {
     name: "Publication component inventory",
@@ -736,7 +747,7 @@ test("publication callouts render semantic variants and rich content", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/thejournal/echarts_dummy_gallery/");
+  await page.goto("/fixtures/components/");
 
   const callouts = page.locator(".callout-card");
   await expect(callouts).toHaveCount(5);
@@ -808,7 +819,7 @@ test("publication mockups render browser chrome and keep screenshots static", as
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/thejournal/echarts_dummy_gallery/");
+  await page.goto("/fixtures/components/");
 
   const browserScreenshot = page.locator(
     'figure[aria-label="Production publication browser screenshot"]',
@@ -903,6 +914,41 @@ test("profile skills grid only switches to three columns at desktop width", asyn
   await expectNoPageHorizontalOverflow(page);
 });
 
+test("profile presents systems evidence while preserving skills and experience contracts", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/profile/");
+
+  await expect(page).toHaveTitle(
+    "Alberto Duran | Full-Stack and Backend Systems Engineer",
+  );
+  await expect(
+    page.getByText("Software Engineer | Python · Java · TypeScript"),
+  ).toBeVisible();
+  await expect(page.locator("[data-profile-impact]")).toBeVisible();
+  await expect(page.locator("[data-role-fit]")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 2, name: "Technical skills" }),
+  ).toBeVisible();
+
+  const timeline = page.locator("#experience .experience-timeline");
+  await expect(timeline).toBeVisible();
+  await expect(timeline.locator(":scope > li")).toHaveCount(2);
+
+  const javaCredential = page.getByRole("link", {
+    name: "View credential",
+  }).last();
+  await expect(javaCredential).toHaveAttribute(
+    "href",
+    "https://www.credly.com/badges/414df637-5a83-4ab1-8530-59d77fef76f9",
+  );
+
+  await expect(page.getByText(/Software Engineer II/i)).toHaveCount(0);
+  await expect(page.getByText(/mid-level/i)).toHaveCount(0);
+  await expectNoPageHorizontalOverflow(page);
+});
+
 test("journal article sidebars wait until the content column can stay readable", async ({
   page,
 }) => {
@@ -932,7 +978,24 @@ test("journal article sidebars wait until the content column can stay readable",
 test("journal catalog links to generated article routes", async ({ page }) => {
   const problems = collectConsoleProblems(page);
 
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/thejournal/");
+
+  const journalStatistics = page.getByRole("group", {
+    name: "Journal statistics",
+  });
+  const publicationCount = journalStatistics.locator(
+    "[data-journal-publication-count]",
+  );
+  const catalogCards = page.locator('a[href^="/thejournal/"] > .card');
+
+  await expect(journalStatistics.getByText("Publications")).toBeVisible();
+  await expect(journalStatistics.getByText("Total read time")).toBeVisible();
+  await expect(publicationCount).toHaveText(/^\s*\d+\s*$/);
+  await expect(journalStatistics).toContainText(/\d+h(?: \d+m)?/);
+  await expect(publicationCount).toHaveText(String(await catalogCards.count()));
+  await expectNoPageHorizontalOverflow(page);
+  await expectLocatorHorizontallyInViewport(journalStatistics);
 
   await expect(
     page.locator('a[href="/thejournal/my_first_publication/"]').first(),
@@ -940,6 +1003,13 @@ test("journal catalog links to generated article routes", async ({ page }) => {
   await expect(
     page.locator('a[href="/thejournal/building_albertoduran/"]').first(),
   ).toBeVisible();
+
+  await page.setViewportSize({ width: 1536, height: 900 });
+  await page.goto("/thejournal/");
+
+  await expect(journalStatistics).toBeVisible();
+  await expectNoPageHorizontalOverflow(page);
+  await expectLocatorHorizontallyInViewport(journalStatistics);
   expect(problems).toEqual([]);
 });
 
@@ -1239,7 +1309,7 @@ test("theme toggle persists across Astro navigation", async ({ page }) => {
 
   await page
     .getByRole("navigation", { name: "Main Navigation" })
-    .getByRole("link", { name: "Professional Profile" })
+    .getByRole("link", { name: "Professional profile" })
     .click();
   await expect(page).toHaveURL(/\/profile\/$/);
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");

@@ -15,6 +15,10 @@ import {
   normalizeChartRenderMode,
 } from "@integrations/echarts/component";
 import {
+  getChartSeriesTypes,
+  loadChartModules,
+} from "@integrations/echarts/client-core";
+import {
   barChartOption,
   bollingerBandsChartOption,
   boxplotChartOption,
@@ -38,7 +42,10 @@ import {
   treemapChartOption,
   type CandleVolumeDatum,
 } from "@integrations/echarts/options";
-import { renderEChartSvg, withChartAriaDefaults } from "@integrations/echarts/server";
+import {
+  renderEChartSvg,
+  withChartAriaDefaults,
+} from "@integrations/echarts/server";
 import {
   assertSerializableChartOption,
   chartHash,
@@ -83,6 +90,27 @@ describe("ECharts component API helpers", () => {
     expect(() => normalizeChartHydration({ hydrate: "media" })).toThrow(
       /requires/,
     );
+  });
+
+  it("discovers and deduplicates client series capabilities", () => {
+    expect(
+      getChartSeriesTypes({
+        series: [
+          { type: "line", data: [1] },
+          { type: "bar", data: [2] },
+          { type: "line", data: [3] },
+        ],
+      }),
+    ).toEqual(["line", "bar"]);
+  });
+
+  it("loads supported client modules and rejects unknown series", async () => {
+    await expect(
+      loadChartModules({ series: [{ type: "heatmap", data: [] }] }),
+    ).resolves.toBeUndefined();
+    await expect(
+      loadChartModules({ series: [{ type: "unsupported-chart", data: [] }] }),
+    ).rejects.toThrow(/unsupported-chart/);
   });
 });
 

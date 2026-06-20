@@ -8,10 +8,10 @@ export const sitesManifest: Record<Sites, SiteManifest> = {
       "Hi! You've found my tiny space in the digital world. Feel free to explore: whether it's for recruiting or reading my publications",
   },
   "/profile/": {
-    label: "Professional Profile",
-    pageTitle: "Alberto Duran | Software Engineer",
+    label: "Professional profile",
+    pageTitle: "Alberto Duran | Full-Stack and Backend Systems Engineer",
     description:
-      "Results-oriented Software Engineer with experience designing, optimizing, and deploying web applications and enterprise solutions. Analytical and delivery-focused, with an emphasis on scalable, maintainable systems that support business and user needs.",
+      "Alberto Duran is a software engineer with 6+ years of experience across full-stack applications, backend systems, enterprise Java, Python tooling, and TypeScript platforms.",
   },
   "/projects/": {
     label: "Projects",

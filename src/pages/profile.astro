@@ -1,12 +1,13 @@
 ---
-import image from "@assets/thejournal/stock/05.avif";
+import image from "@assets/thejournal/stock/10.jpg";
 import AwardsGrid from "@components/profile/AwardsGrid.astro";
 import CertificationsList from "@components/profile/CertificationsList.astro";
 import EducationList from "@components/profile/EducationList.astro";
 import ExperienceTimeline from "@components/profile/ExperienceTimeline.astro";
+import ProfileImpactSnapshot from "@components/profile/ProfileImpactSnapshot.astro";
 import ProfileHero from "@components/profile/ProfileHero.astro";
-import RecruiterQuestions from "@components/profile/RecruiterQuestions.astro";
 import RecruiterStrengths from "@components/profile/RecruiterStrengths.astro";
+import RoleFitPanel from "@components/profile/RoleFitPanel.astro";
 import SkillsGrid from "@components/profile/SkillsGrid.astro";
 import ProjectsGrid from "@components/shared/ProjectsGrid.astro";
 import SectionHeader from "@components/ui/display/SectionHeader.astro";
@@ -20,24 +21,31 @@ import FlexShell from "@layouts/FlexShell.astro";
   <ProfileHero slot="hero" />
 
   <FlexShell class="flex flex-col gap-16 md:gap-24 lg:gap-32">
+    <ProfileImpactSnapshot />
+
     <section id="skills" class="w-full">
-      <SectionHeader title="Technical Skills" />
+      <SectionHeader title="Technical skills" />
       <SkillsGrid skills={about.skills} />
     </section>
 
-    <section id="strengths" class="w-full">
-      <SectionHeader title="Relevant Strengths" />
-      <RecruiterStrengths strengths={about.strengths} />
-    </section>
-
     <section id="experience" class="w-full">
-      <SectionHeader title="Professional Experience" />
+      <SectionHeader title="Experience" />
       <ExperienceTimeline experience={about.experience} />
     </section>
 
-    <section id="questions" class="w-full">
-      <SectionHeader title="Questions Hiring Teams Ask" />
-      <RecruiterQuestions questions={about.recruiterQuestions} />
+    <section id="strengths" class="w-full">
+      <SectionHeader title="How I work" />
+      <RecruiterStrengths strengths={about.strengths} />
+    </section>
+
+    <section id="role-fit" class="w-full">
+      <SectionHeader title="Role fit and direction" />
+      <RoleFitPanel />
+    </section>
+
+    <section id="projects" class="w-full">
+      <SectionHeader title="Selected projects" />
+      <ProjectsGrid />
     </section>
 
     <section
@@ -46,24 +54,19 @@ import FlexShell from "@layouts/FlexShell.astro";
     >
       <h2 class="sr-only">Credentials</h2>
       <div class="w-full">
-        <SectionHeader title="Educational Background" level={3} />
+        <SectionHeader title="Education" level={3} />
         <EducationList education={about.education} />
       </div>
 
       <div class="w-full">
-        <SectionHeader title="Professional Certifications" level={3} />
+        <SectionHeader title="Certifications" level={3} />
         <CertificationsList certifications={about.certifications} />
       </div>
     </section>
 
     <section id="awards" class="w-full">
-      <SectionHeader title="Honors and Awards" />
+      <SectionHeader title="Honors and awards" />
       <AwardsGrid awards={about.awards} />
-    </section>
-
-    <section id="projects" class="w-full">
-      <SectionHeader title="Featured Projects" />
-      <ProjectsGrid />
     </section>
   </FlexShell>
 </BaseLayout>

@@ -29,12 +29,10 @@ import {
 } from "echarts/components";
 import { LabelLayout, UniversalTransition } from "echarts/features";
 import { SVGRenderer } from "echarts/renderers";
-import type { EChartsCoreOption } from "echarts/core";
 
 let registered = false;
 
-export type ChartOption = EChartsCoreOption;
-export type ChartTheme = string | Record<string, unknown>;
+export type { ChartOption, ChartTheme } from "./types.ts";
 
 export function registerEChartsModules(): void {
   if (registered) return;

@@ -4,7 +4,6 @@ import {
   type Education,
   type Experience,
   type Projects,
-  type RecruiterQuestion,
   type Skills,
   type Strength,
 } from "@appTypes/about";
@@ -16,7 +15,7 @@ const skills: Skills[] = [
     skills_icons: [icons.js!, icons.ts!, icons.python!, icons.java!],
   },
   {
-    category: "Frameworks & Libraries",
+    category: "Frameworks and libraries",
     skills_icons: [
       icons.react!,
       icons.preact!,
@@ -26,7 +25,7 @@ const skills: Skills[] = [
     ],
   },
   {
-    category: "DevOps & Platforms",
+    category: "DevOps and platforms",
     skills_icons: [
       icons.docker!,
       icons.git!,
@@ -40,67 +39,34 @@ const skills: Skills[] = [
 
 const strengths: Strength[] = [
   {
-    title: "Architecture and Design Judgment",
+    title: "Understand the system before changing it",
     description:
-      "Improved build initialization, dependency reuse, package structure, and runtime reliability in documentation systems where small changes could affect many generated publication pages.",
+      "I first trace how the application, its data, and its users are connected. That helps me make changes in the right place instead of treating only the visible symptom.",
   },
   {
-    title: "Coding and Problem Solving",
+    title: "Work within real constraints",
     description:
-      "Built a recursive markup-merging plugin to restore advanced syntax-highlight customization after upstream highlight.js behavior changed.",
+      "I balance product needs with existing code, framework limitations, security requirements, and delivery timelines. A useful solution has to work in the environment the team actually has.",
   },
   {
-    title: "End-to-End Delivery",
+    title: "Build for reliability",
     description:
-      "Worked across implementation, testing, debugging, migration validation, and platform maintenance in both Oracle and TCS environments.",
+      "I think about bad input, race conditions, failed integrations, and recovery while I build. Reliability is part of the work, not something to add after the feature is finished.",
   },
   {
-    title: "Platform Reliability",
+    title: "Leave software easier to maintain",
     description:
-      "Resolved race conditions, runtime initialization issues, migration defects, and production-impacting behavior in complex enterprise systems.",
+      "I look for clear responsibilities, reusable dependencies, simpler migration paths, and automation that removes repetitive work. The next change should be easier than the last one.",
   },
   {
-    title: "Tooling and Automation",
+    title: "Follow the work through delivery",
     description:
-      "Built and maintained Python migration tooling and personal Python/FastAPI systems for scheduled data extraction, provider boundaries, structured output, and notifications.",
+      "I stay involved through implementation, testing, debugging, release checks, and maintenance. I want to know that the change works outside my local environment.",
   },
   {
-    title: "Cross-Functional Collaboration",
+    title: "Work directly with the people involved",
     description:
-      "Worked with engineers, technical writers, QA, business stakeholders, client stakeholders, and platform maintainers to deliver and validate software changes.",
-  },
-];
-
-const recruiterQuestions: RecruiterQuestion[] = [
-  {
-    question: "Why are you looking for a new role?",
-    answer:
-      "My Oracle role ended as part of a layoff after more than four years with the company. I did not resign. I valued the team, the collaboration, and the work I delivered there, and I am now looking for a role better aligned with my long-term direction.",
-  },
-  {
-    question: "What direction are you targeting next?",
-    answer:
-      "I am targeting backend-facing full-stack, internal tools, platform, and application modernization roles. My long-term goal is to grow toward software architecture, so I am looking for work that builds deeper ownership across systems, data flows, tooling, APIs, reliability, and product-facing delivery.",
-  },
-  {
-    question: "Why move beyond frontend-focused roles?",
-    answer:
-      "My recent work was frontend-heavy, but my strongest contributions were closer to platform engineering: runtime reliability, build initialization, dependency reuse, migration tooling, legacy modernization, and debugging production-impacting behavior. Frontend-only positions no longer fit the full profile I am building toward.",
-  },
-  {
-    question: "What kind of engineering work do you bring?",
-    answer:
-      "I bring experience across Oracle documentation platforms, generated publication systems, enterprise Java environments, Python migration tooling, security migration support, database/mainframe-connected workflows, QA validation, and cross-functional delivery.",
-  },
-  {
-    question: "What roles are the strongest fit?",
-    answer:
-      "Best-fit roles include full-stack engineer, web platform engineer, internal tools engineer, application modernization engineer, migration tools engineer, backend-facing software engineer, and developer tools/platform roles.",
-  },
-  {
-    question: "How should recruiters read your backend and cloud experience?",
-    answer:
-      "I have enterprise Java background, Python tooling experience, FastAPI/backend-facing project work, and strong platform reliability experience. I am also interested in developing with cloud providers when the opportunity allows ramp-up, but I am not positioning myself as a senior Spring Boot/AWS/cloud specialist.",
+      "I clarify requirements with technical and business stakeholders, coordinate verification with QA, and explain decisions in terms each group can use.",
   },
 ];
 
@@ -108,28 +74,28 @@ const experience: Experience[] = [
   {
     company: "ORACLE",
     role: "Software Developer at docs.oracle.com",
-    period: "May 2021 – August 2025",
+    period: "May 2021 to August 2025",
     location: "Guadalajara, Jalisco",
     achievements: [
-      "Platform Reliability: Improved runtime-generated documentation page templates by strengthening build initialization flows and resolving race conditions that affected stable page rendering.",
-      "Architecture and Optimization: Reduced internal pipeline inefficiencies by improving dependency reuse, package structure, and publication output behavior, cutting package sizes by up to 90%.",
-      "Coding and Problem Solving: Built a recursive markup-merging plugin to restore advanced syntax-highlight customization after highlight.js deprecated HTML auto-merging behavior.",
-      "Python Migration Tooling: Updated and maintained Python-based migration tooling to support evolving publication requirements and help move legacy documentation into modern platform workflows.",
-      "Modernization: Modernized and stabilized legacy publication interfaces, extending their useful life while reducing maintenance friction.",
-      "Web Platform Delivery: Developed and maintained production-facing documentation web interfaces using Preact, Oracle JET, JavaScript/TypeScript, HTML, and CSS while balancing stakeholder and platform constraints.",
+      "Made runtime-generated documentation pages more reliable by improving build startup and fixing race conditions that caused unstable rendering.",
+      "Improved dependency reuse, package structure, and publication output in the internal pipeline. These changes reduced some package sizes by as much as 90%.",
+      "Built a recursive markup-merging plugin that restored advanced syntax customization after highlight.js deprecated its automatic HTML merging behavior.",
+      "Updated and maintained Python migration tools as publication requirements changed, helping move legacy documentation into the current platform.",
+      "Modernized and stabilized legacy publishing interfaces so they remained useful and easier to maintain.",
+      "Built and maintained production documentation interfaces with Preact, Oracle JET, JavaScript, TypeScript, HTML, and CSS within stakeholder and platform constraints.",
     ],
   },
   {
     company: "TATA CONSULTANCY SERVICES",
     role: "Java Software Developer at USAA.com",
-    period: "July 2019 – April 2021",
+    period: "July 2019 to April 2021",
     location: "Guadalajara, Jalisco",
     achievements: [
-      "Enterprise Security Migration: Supported a large-scale CyberArk migration for a major financial institution, helping transition multiple application entry points toward more secure data access workflows.",
-      "Enterprise Systems Support: Worked across Java applications, Perl scripts, database-connected workflows, and mainframe-connected systems to support migration, validation, and compliance requirements.",
-      "Java and Integration Work: Contributed to Java EE and limited Spring-based enterprise components while coordinating implementation details with QA, business, and technical stakeholders.",
-      "Migration Validation: Designed and executed targeted QA test cases to validate migration behavior, security requirements, and system reliability.",
-      "Cross-Functional Delivery: Communicated security behavior, implementation details, and migration progress with business and technical stakeholders.",
+      "Supported a large CyberArk migration for a major financial institution, moving several application entry points to more secure data access workflows.",
+      "Worked with Java applications, Perl scripts, databases, and mainframe-connected systems to meet migration, validation, and compliance requirements.",
+      "Contributed to Java EE components and a smaller amount of Spring-based code, coordinating the details with QA and business and technical teams.",
+      "Designed and ran focused QA tests to verify migration behavior, security requirements, and system reliability.",
+      "Kept business and technical teams informed about security behavior, implementation details, and migration progress.",
     ],
   },
 ];
@@ -138,12 +104,12 @@ const education: Education[] = [
   {
     school: "UNIVERSIDAD DE GUADALAJARA",
     degree: "Bachelor of Science in Computer Engineering",
-    period: "2015 – 2019",
+    period: "2015 to 2019",
   },
   {
     school: "CENTRO DE ENSEÑANZA TECNICA INDUSTRIAL",
     degree: "Associate of Science in Computer Science",
-    period: "2010 – 2014",
+    period: "2010 to 2014",
   },
 ];
 
@@ -158,21 +124,21 @@ const certifications: Certifications[] = [
   },
   {
     name: "Oracle Certified Associate, Java SE 7 Programmer",
-    link: "https://catalog-education.oracle.com/pls/certview/sharebadge?id=296C6DA46AEB6498F3CE3D3244AAA6A7100534E388BBB79F3828EB54B38481AA",
+    link: "https://www.credly.com/badges/414df637-5a83-4ab1-8530-59d77fef76f9",
   },
 ];
 
 const awards: Awards[] = [
   {
-    title: "Academic Excellence in Egel Ceneval",
+    title: "CENEVAL EGEL academic excellence award",
     org: "CENEVAL",
-    desc: "Outstanding score in 3 evaluated areas.",
+    desc: "Earned an outstanding score in three evaluated areas.",
     link: "https://reconocimiento.ceneval.edu.mx/busqueda-de-reconocimientos-2/?resultId=4574",
   },
   {
-    title: "2nd Best Project in DIVEC 2019 Showcase",
+    title: "Second place at the DIVEC 2019 showcase",
     org: "Universidad De Guadalajara",
-    desc: "Recognized for building a scalable microservices architecture against 40 competitors.",
+    desc: "Placed second among 40 projects with a scalable microservices architecture.",
   },
 ];
 
@@ -206,7 +172,6 @@ const projects: Projects[] = [
 export default {
   skills,
   strengths,
-  recruiterQuestions,
   experience,
   education,
   certifications,

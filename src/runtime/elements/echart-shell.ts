@@ -156,7 +156,7 @@ class EChartShell extends HTMLElement {
 
       if (!this.isConnected) return;
 
-      this.chartHandle = enhanceEChart({
+      this.chartHandle = await enhanceEChart({
         surface,
         option,
         width,

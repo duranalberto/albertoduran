@@ -1,0 +1,261 @@
+---
+title: "DCF and reverse DCF, step by step"
+description: "Build a discounted cash-flow valuation, inspect its sensitivity, and reverse the calculation to understand market-implied expectations."
+tags: ["valuation", "dcf", "finance"]
+pubDate: 2026-06-20
+order: 60
+---
+
+import Callout from "@components/ui/display/Callout.astro";
+import EChart from "@components/ui/mdx/EChart.astro";
+import { heatmapChartOption } from "@integrations/echarts/options";
+
+A terminal value can represent most of a DCF even when every formula is correct. The result then depends heavily on cash flows beyond the explicit forecast. Following the calculation from its cash-flow seed to the equity bridge shows where that dependence enters, while reversing it reveals what a market price appears to assume.
+
+---
+
+## The question DCF answers
+
+DCF estimates the present value of future free cash flow available to capital providers. It forecasts a finite period, adds a terminal value for later years, discounts both at a rate reflecting risk, and converts enterprise value into equity value.
+
+The model is conditional. It does not discover future cash flow. It calculates what a stated path would be worth under a stated discount policy. The [Damodaran valuation materials](https://pages.stern.nyu.edu/~adamodar/) provide a deeper academic treatment of cash flow, risk, and terminal value.
+
+Separating the model's financial logic from any chosen inputs makes its limits easier to see. The projection, discount rate, terminal convention, and equity bridge belong to the method, while every number supplied to them remains an assumption that needs support.
+
+---
+
+## Choose the free-cash-flow seed
+
+The ordinary seed is trailing free cash flow. The repository can substitute normalized free cash flow when it detects a capital-expenditure spike and the normalized value is positive. The report records whether raw or normalized cash flow was used.
+
+Normalization can prevent one unusual investment year from defining the entire forecast. It can also erase a real new spending level. Read the diagnostic and the company's capital plan before accepting the adjustment.
+
+For the fixture, operating cash flow is $350 million and capital expenditure is $100 million. Free cash flow is therefore $250 million. No normalization is applied.
+
+```text
+operating cash flow    $350m
+capital expenditure  -$100m
+free cash flow         $250m
+```
+
+---
+
+## Project cash flow year by year
+
+Apply each annual growth rate to the previous year's free cash flow. Round numbers below keep the path inspectable.
+
+```text
+Year 0 FCF   $250.0m
+Year 1       $269.3m   growth 7.7%
+Year 2       $286.8m   growth 6.5%
+Year 3       $302.0m   growth 5.3%
+Year 4       $314.4m   growth 4.1%
+Year 5       $323.8m   growth 3.0%
+```
+
+Growth is only one driver. A complete forecast would also ask how margins, working capital, taxes, capital expenditure, and acquisitions create the cash path. This project grows an aggregate seed, which is transparent but less expressive than a full operating model.
+
+---
+
+## Turn risk into WACC
+
+WACC combines the required returns of equity and debt according to their market-value weights. Cost of equity is built with CAPM inputs. Cost of debt is adjusted for tax. Market capitalization, debt, beta, a risk-free rate, and market risk premium all affect the result.
+
+For the teaching calculation, assume a 9 percent WACC. That number is illustrative. The project stores discount inputs in configuration without complete publication provenance or effective dates, so a real run needs a dated source review.
+
+```text
+WACC = equity weight × cost of equity
+     + debt weight × after-tax cost of debt
+```
+
+A decimal-heavy WACC is not automatically precise. Beta can be unstable, capital structure can change, and the risk-free rate depends on currency and valuation date. Sensitivity analysis is more honest than treating 9.00 percent as known.
+
+---
+
+## Discount the forecast
+
+Future money is worth less today under a positive required return. Each year's cash flow is divided by one plus WACC raised to the year number.
+
+```text
+PV1 = 269.3 / 1.09      = 247.0
+PV2 = 286.8 / 1.09²     = 241.4
+PV3 = 302.0 / 1.09³     = 233.2
+PV4 = 314.4 / 1.09⁴     = 222.8
+PV5 = 323.8 / 1.09⁵     = 210.4
+forecast present value  = 1,154.8 million
+```
+
+The further away the cash flow, the more strongly the discount rate affects it. This is why growth and WACC interact rather than acting as isolated controls.
+
+---
+
+## Estimate terminal value
+
+The Gordon Growth form divides next-period mature cash flow by WACC minus perpetual growth. This repository uses the average of the final three projected cash flows as its terminal seed, then applies the terminal-growth convention. That is a project-specific choice, not the only accepted DCF method.
+
+```text
+terminal seed = average of Years 3, 4, and 5
+terminal seed = (302.0 + 314.4 + 323.8) / 3
+terminal seed = 313.4 million
+
+terminal value = terminal seed × (1 + g) / (WACC - g)
+```
+
+At 9 percent WACC and 3 percent growth, the undiscounted terminal value is large. Discounting it back five years reduces it, but it can still dominate enterprise value.
+
+<Callout variant="caution" title="WACC must exceed terminal growth">
+  <p>When WACC is equal to or below perpetual growth, the Gordon Growth denominator is zero or negative. The output is not an economically useful terminal value.</p>
+</Callout>
+
+---
+
+## Move from enterprise value to equity value
+
+Forecast and terminal present values produce enterprise value. Subtract debt and add cash to reach equity value. Divide by diluted shares to obtain value per share.
+
+```text
+enterprise value
+- debt
++ cash
+= equity value
+
+equity value / diluted shares = intrinsic value per share
+```
+
+The worked calculation fixes the Base result at $58 rather than claiming that rounded intermediate numbers reproduce the source implementation to the cent. Its purpose is to teach the enterprise-to-equity bridge within this article.
+
+Shares matter as much as the total equity estimate. Options, convertibles, and future dilution can change the per-share claim. The engine uses its mapped share count, so verify the definition and reporting date.
+
+---
+
+## Read the sensitivity matrix
+
+The matrix changes WACC and terminal growth while holding other fixture assumptions constant. Values are illustrative per-share estimates centered on the $58 Base case.
+
+<EChart
+  title="Illustrative DCF sensitivity"
+  caption="Fictional intrinsic value per share in US dollars"
+  description="Heatmap showing higher values at lower discount rates and higher terminal growth rates."
+  option={heatmapChartOption({
+    x: ["2.0% g", "2.5% g", "3.0% g", "3.5% g"],
+    y: ["10.0% WACC", "9.5% WACC", "9.0% WACC", "8.5% WACC"],
+    data: [
+      [0, 0, 43], [1, 0, 46], [2, 0, 49], [3, 0, 53],
+      [0, 1, 47], [1, 1, 50], [2, 1, 54], [3, 1, 59],
+      [0, 2, 51], [1, 2, 54], [2, 2, 58], [3, 2, 64],
+      [0, 3, 56], [1, 3, 60], [2, 3, 65], [3, 3, 72],
+    ],
+    name: "Value",
+    min: 43,
+    max: 72,
+  })}
+  width={760}
+  height={440}
+/>
+
+The pattern matters more than a cell. Lower discount rates and higher perpetual growth increase value. If your conclusion changes across a narrow, defensible range, the DCF does not support a confident directional claim.
+
+---
+
+## Reverse the model
+
+Reverse DCF holds the current $50 price and most other assumptions fixed, then solves for the growth needed to make the DCF equal that price. Run it with the opt-in flag.
+
+```bash
+python -m cli.main ORCL --all --reverse-dcf
+```
+
+Suppose the fictional result says the market price requires 5.8 percent opening growth under the chosen WACC and mature rate. Compare that requirement with normalized history, business capacity, and your own forecast. The output is an implied expectation, not evidence that the market is correct.
+
+Reverse DCF has no Bear, Base, and Bull scenario collection in the report. The summary extractor therefore leaves it out of the forward composite. This separation is appropriate because a solved market expectation should not be averaged with independent value estimates.
+
+---
+
+## What this DCF still cannot know
+
+The engine cannot know whether a $250 million starting cash flow is durable, whether competition will compress margins, or whether management will allocate capital well. It cannot fix a provider error by applying more decimal places.
+
+It also does not construct a detailed revenue, margin, working-capital, and reinvestment forecast. Its aggregate growth path is useful for scenario exploration, but it should not be confused with a complete analyst model.
+
+Use the DCF as a structured argument. Inspect the seed, growth path, WACC, terminal share, debt-and-cash bridge, dilution, and sensitivity. Reverse the calculation when the current price is the assumption you want to challenge.
+
+---
+
+## Measure how much the terminal value controls
+
+Calculate terminal value as a share of enterprise value. A high share is common in long-lived businesses because most operating years lie beyond a five-year forecast. It still tells you that mature-state assumptions dominate the result.
+
+```text
+forecast cash-flow present value    $1,155m
+terminal-value present value        $4,845m
+enterprise value                    $6,000m
+
+terminal share = 4,845 / 6,000
+terminal share = 80.8%
+```
+
+An 80.8 percent terminal share means the explicit forecast explains only a minority of enterprise value. Review terminal growth, WACC, and the normalized terminal seed more closely than a small Year 2 rounding difference.
+
+The repository's three-year average terminal seed softens dependence on the final projected year. Compare it with a Year 5 seed to learn how much the convention matters.
+
+```text
+Year 5 seed                 $323.8m
+three-year average seed     $313.4m
+difference                   $10.4m
+```
+
+That difference is multiplied by the terminal-value factor before discounting. A modest seed choice can therefore produce a material per-share change.
+
+---
+
+## Audit the equity bridge
+
+Enterprise value belongs to debt and equity capital providers. Equity value is the residual after adjusting for debt and available cash. The simple bridge can require additional judgment for leases, minority interests, preferred stock, investments, pension deficits, and restricted cash.
+
+```text
+enterprise value
+- interest-bearing debt
+- preferred claims
+- minority interests
++ excess cash
++ non-operating investments
+= common equity value
+```
+
+The current project uses its mapped debt and cash fields rather than a complete adjustment schedule. That is acceptable for a teaching engine if the limitation remains visible. It is not a reason to treat every ticker's bridge as complete.
+
+In the worked example, moving cash by $100 million changes equity value by $1 per share because the calculation uses 100 million shares. Moving debt by the same amount has the opposite effect. This conversion is a useful reasonableness check.
+
+```text
+$100m / 100m shares = $1.00 per share
+```
+
+If the reported estimate changes by much more than expected after a small cash correction, trace whether cash also affected WACC, ratios, or suitability. One input can have both direct and indirect effects.
+
+---
+
+## Turn Reverse DCF into a research plan
+
+Suppose the market-implied opening growth is 5.8 percent. Break that requirement into operating questions. Can the addressable market support it? What retention and pricing are needed? Which margin and reinvestment path converts growth into free cash flow? How much dilution is expected?
+
+Create a short evidence table before deciding whether the implied rate is demanding.
+
+| Evidence | Observation | Effect on 5.8 percent case |
+| --- | --- | --- |
+| Revenue retention | To verify | Supports or weakens repeatability |
+| Gross margin trend | To verify | Changes cash conversion |
+| Capital expenditure | To verify | Changes the FCF seed |
+| Customer concentration | To verify | Changes downside risk |
+| Share dilution | To verify | Changes per-share value |
+
+Reverse DCF is strongest when it converts a price into questions that can be researched. It is weakest when its solved growth rate is presented as a forecast or recommendation.
+
+---
+
+## A final DCF reasonableness check
+
+Before saving the report, compare implied enterprise value with revenue, EBITDA, and free cash flow. These are not alternative answers, but they can reveal a unit error or implausible bridge. Confirm that debt, cash, and shares move per-share value in the expected direction.
+
+Inspect terminal value as a percentage of enterprise value and rerun the sensitivity range. If a small WACC change reverses the conclusion, write that fact beside the estimate. Confirm that the Base case describes a business path you can state plainly.
+
+Then compare forward growth with the Reverse DCF requirement. A gap between them is a research question. It is not automatic evidence that price or your forecast is wrong. The quality of that comparison depends on the shared seed, discount policy, and terminal convention.

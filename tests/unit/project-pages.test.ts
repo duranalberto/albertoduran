@@ -12,10 +12,10 @@ describe("project page routing", () => {
     const routes = projectCatalog.map(({ href }) => href);
     expect(new Set(routes).size).toBe(4);
     expect(routes).toEqual([
-      "/projects/albertoduran/",
-      "/projects/equity-valuation-engine/",
       "/projects/mlscraper/",
       "/projects/sin-pluma/",
+      "/projects/equity-valuation-engine/",
+      "/projects/albertoduran/",
     ]);
   });
 

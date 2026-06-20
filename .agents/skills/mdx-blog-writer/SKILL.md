@@ -11,18 +11,19 @@ metadata:
 
 > Master grid for writing, humanizing, and delivering personal blog posts in `.mdx` format.
 > Three systems unified: **Content Philosophy**, **Voice and Style**, and **Hard Rules**.
-> Helper files in `references/` handle humanizing and MDX formatting details.
+> The companion `humanizer` skill handles humanizing, while the helper file in `references/` covers MDX formatting details.
 
 ---
 
 ## REFERENCE FILES
 
-Load these when you need full detail on a subsystem. Both are in `references/`:
+Load this reference when you need full MDX formatting detail:
 
 | File | When to load |
 |------|-------------|
-| `references/humanizer.md` | Full humanizer guidelines, banned phrases, and the complete checklist — load when reviewing a draft or when the user asks to humanize text |
 | `references/mdx-rules.md` | Frontmatter template, document structure, all Markdown rules, and the visual variety checklist — load when formatting or delivering the final `.mdx` file |
+
+For the humanizing pass, install the separate [`blader/humanizer`](https://github.com/blader/humanizer) skill globally and invoke the `humanizer` skill when reviewing a draft or when the user asks to humanize text. If it is unavailable, recommend installing it before continuing with the humanizing pass.
 
 For Mermaid diagrams, refer to the **`design-doc-mermaid`** skill for diagram design rules, node shapes, edge types, and styling. See Part 1C below for when to use each diagram type.
 
@@ -53,7 +54,7 @@ When the user provides a topic or draft, follow this sequence without skipping s
 5. **Write** the intro paragraph using the Hook Rules (Part 1B).
 6. **Write** the body following Voice and Style rules (Part 2).
 7. **Identify diagram opportunities** using the Diagram Decision Guide (Part 1C).
-8. **Humanize** the draft using `references/humanizer.md`.
+8. **Humanize** the draft using the separately installed `humanizer` skill.
 9. **Format and deliver** according to the requested output mode. For complete `.mdx`, load `references/mdx-rules.md`.
 
 ### Context Intake
@@ -249,7 +250,7 @@ Never use any of the following:
 
 ## PART 4 — WRITING HUMANIZER
 
-Before finalizing any draft, load **`references/humanizer.md`** and run the full checklist there.
+Before finalizing any draft, invoke the separately installed **`humanizer`** skill and run its full workflow. Recommend installing it from [`blader/humanizer`](https://github.com/blader/humanizer) if it is unavailable.
 
 **Summary of what the humanizer pass fixes:**
 
@@ -259,7 +260,7 @@ Before finalizing any draft, load **`references/humanizer.md`** and run the full
 - Confirms the tone is conversational, not scripted.
 - Verifies sentence length is varied and rhythm is natural.
 
-If the user provides an **audience profile**, **tone/style preference**, **key terms**, or **target length**, apply those constraints during the humanizer pass. Full guidance is in `references/humanizer.md`.
+If the user provides an **audience profile**, **tone/style preference**, **key terms**, or **target length**, pass those constraints into the `humanizer` workflow.
 
 ---
 

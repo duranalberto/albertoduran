@@ -215,7 +215,7 @@ Before delivering a complete `.mdx` file, verify:
 - [ ] Images have meaningful alt text.
 - [ ] Mermaid diagrams have no `%%{init: ...}%%` theme blocks or custom `themeVariables`.
 - [ ] No unsupported facts, invented citations, or uncited direct quotes remain.
-- [ ] Banned words and phrases from the main skill and humanizer reference have been removed.
+- [ ] Banned words and phrases from the main skill and the separately installed `humanizer` skill have been removed.
 - [ ] No em dashes appear in the delivered post body.
 - [ ] Colons appear only in code blocks, frontmatter, URLs, or technical syntax.
 

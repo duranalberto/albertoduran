@@ -1,0 +1,393 @@
+---
+title: "Run LangChain with Ollama locally"
+description: "Build a local LangChain chat project with Ollama, from environment setup to a working terminal conversation loop."
+image: "../assets/thejournal/stock/11.jpg"
+tags: ["langchain", "ollama", "python", "local-ai"]
+pubDate: 2026-06-23
+author: "Alberto Duran"
+---
+
+Local LLM demos are a lot more fun when the setup gets out of the way. You want to ask a model a question, not spend half an hour wondering whether Ollama is running, Python is using the right environment, or the model name has one tiny typo. This guide starts with the friendly path. By the end, you'll have a LangChain project that sends one prompt to Ollama, then grows into a terminal chat that remembers the conversation.
+
+---
+
+## What we are building
+
+We are building a local Python project that talks to an Ollama model through LangChain's `ChatOllama` integration. Ollama runs the model on your machine. LangChain gives your application a chat model interface, message objects, and room to add prompts, retrieval, tools, streaming, or a web API later.
+
+Local models are useful when you want a private sandbox, predictable development habits, or a cheap place to test prompts before wiring in a larger system. They are also uneven. A tiny model may be fast and charming, then completely miss a code nuance five seconds later. Treat this as a development loop, not a magic box.
+
+The examples use `llama3.2:3b` because it is small enough to be a practical starting point on many machines. You can use any model you have pulled into Ollama. The only hard rule is that the string in Python must match a model name from `ollama list`.
+
+---
+
+## Prerequisites
+
+You need Python, Ollama, and one local model. I recommend Python 3.10 or newer for a smoother package experience. A virtual environment keeps this project isolated from system Python packages and makes the dependency list easier to reproduce.
+
+Install Ollama from the [official Ollama download page](https://ollama.com/download), then follow the instructions for your operating system.
+
+If you installed the desktop app, it often starts the background service for you. Check whether your terminal can reach Ollama.
+
+```bash
+ollama list
+```
+
+If that command fails because the service is not running, start the server manually in another terminal tab.
+
+```bash
+ollama serve
+```
+
+Now pull a small chat model. The `llama3.2:3b` tag is a 3B-class model in the Ollama library, and Ollama lists the published artifact at about 2 GB.
+
+```bash
+ollama pull llama3.2:3b
+```
+
+After the pull finishes, verify the exact model name.
+
+```bash
+ollama list
+```
+
+Keep that output nearby. If your local model is named `llama3.2:latest`, `mistral:latest`, or something else, use that exact value in the Python code below.
+
+---
+
+## Create the project
+
+Start with a clean folder so the scripts, environment, and dependency list are easy to inspect.
+
+```bash
+mkdir langchain-ollama-local
+cd langchain-ollama-local
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+Install the LangChain Ollama integration and `python-dotenv`. The integration package provides `ChatOllama`, while `python-dotenv` lets the scripts read local configuration without hard-coding every setting.
+
+```bash
+pip install -U langchain-ollama python-dotenv
+```
+
+Create a small dependency snapshot. This is not a full packaging strategy, but it gives you a file you can reuse later.
+
+```bash
+pip freeze > requirements.txt
+```
+
+Add a `.gitignore` before the virtual environment or local configuration gets committed by accident.
+
+```bash
+cat > .gitignore <<'EOF'
+.venv/
+.env
+__pycache__/
+EOF
+```
+
+Create a `.env` file in the project root. The default Ollama API is served under `http://localhost:11434/api`, but `ChatOllama` expects the server base as `http://localhost:11434`.
+
+```bash
+cat > .env <<'EOF'
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.2:3b
+EOF
+```
+
+If you run Ollama in a container, on another machine, or behind a different host binding, change `OLLAMA_BASE_URL` to match that setup.
+
+---
+
+## Run one message
+
+The smallest useful test is one system message, one human message, and one model response. Create a file named `hello.py`.
+
+```python
+import os
+
+from dotenv import load_dotenv
+from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_ollama import ChatOllama
+
+
+def build_model() -> ChatOllama:
+    load_dotenv()
+
+    model = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
+    base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+
+    return ChatOllama(
+        model=model,
+        base_url=base_url,
+        temperature=0.2,
+        validate_model_on_init=True,
+    )
+
+
+def main() -> None:
+    llm = build_model()
+    messages = [
+        SystemMessage(
+            content=(
+                "You are a concise Python tutor. Explain ideas with small, "
+                "practical examples."
+            )
+        ),
+        HumanMessage(content="Explain what a virtual environment is in two paragraphs."),
+    ]
+
+    response = llm.invoke(messages)
+    print(response.content)
+
+
+if __name__ == "__main__":
+    main()
+```
+
+Run it from the activated virtual environment.
+
+```bash
+python hello.py
+```
+
+The first run may be slower because Ollama has to load the model into memory. Repeated calls usually start faster until the model unloads. Ollama exposes a `keep_alive` option at the API layer, but this first script keeps configuration to the few settings that matter right away.
+
+If this script works, you have proven the important pieces. Python can import the LangChain packages, LangChain can reach the Ollama server, and the model name in `.env` matches a local model. That is not glamorous. It is also the part you want to trust before adding anything clever.
+
+---
+
+## Turn it into a chat
+
+A one-shot prompt is enough for a smoke test, but chat needs previous turns. LangChain chat models accept a list of messages, so the simplest memory is just a Python list that grows as the conversation continues.
+
+Create `chat.py`.
+
+```python
+import os
+
+from dotenv import load_dotenv
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+from langchain_ollama import ChatOllama
+
+
+def build_model() -> ChatOllama:
+    load_dotenv()
+
+    model = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
+    base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+
+    return ChatOllama(
+        model=model,
+        base_url=base_url,
+        temperature=0.4,
+        validate_model_on_init=True,
+    )
+
+
+def print_assistant_message(content: str) -> None:
+    print()
+    print("Assistant:")
+    print(content)
+    print()
+
+
+def main() -> None:
+    llm = build_model()
+    history: list[BaseMessage] = [
+        SystemMessage(
+            content=(
+                "You are a local development assistant. Give direct answers, "
+                "ask for missing details when needed, and keep examples runnable."
+            )
+        )
+    ]
+
+    print("Chat with your Ollama model. Type 'quit' or 'exit' to stop.")
+    print()
+
+    while True:
+        user_input = input("You: ").strip()
+
+        if user_input.lower() in {"quit", "exit"}:
+            print("Goodbye.")
+            break
+
+        if not user_input:
+            continue
+
+        history.append(HumanMessage(content=user_input))
+
+        try:
+            response = llm.invoke(history)
+        except Exception as exc:
+            history.pop()
+            print(f"Error: {exc}")
+            print("Check that Ollama is running and the model exists locally.")
+            continue
+
+        history.append(AIMessage(content=response.content))
+        print_assistant_message(response.content)
+
+
+if __name__ == "__main__":
+    main()
+```
+
+Run the chat loop.
+
+```bash
+python chat.py
+```
+
+Try two related prompts so you can see the history working.
+
+```text
+You: Give me a tiny Flask route that returns JSON.
+You: Now add one query parameter to that same route.
+```
+
+The second response should understand what "that same route" refers to because the earlier user and assistant messages are still in the `history` list. That memory is process-local. When you stop the script, the conversation disappears.
+
+---
+
+## Move the prompt into a template
+
+The manual message list is fine while the script is tiny. Once you start passing user names, task types, tone settings, or retrieved context, the prompt can get messy fast. `ChatPromptTemplate` gives that structure a home without changing the model call.
+
+Create `templated_chat.py` if you want to see the same conversation loop with the prompt separated from the input handling.
+
+```python
+import os
+
+from dotenv import load_dotenv
+from langchain_core.chat_history import InMemoryChatMessageHistory
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_ollama import ChatOllama
+
+
+def build_model() -> ChatOllama:
+    load_dotenv()
+
+    model = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
+    base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+
+    return ChatOllama(
+        model=model,
+        base_url=base_url,
+        temperature=0.4,
+        validate_model_on_init=True,
+    )
+
+
+def main() -> None:
+    llm = build_model()
+    history = InMemoryChatMessageHistory()
+
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                "You are a local development assistant. Keep answers runnable.",
+            ),
+            MessagesPlaceholder(variable_name="history"),
+            ("human", "{question}"),
+        ]
+    )
+
+    chain = prompt | llm
+
+    print("Chat with your templated Ollama chain. Type 'quit' or 'exit' to stop.")
+    print()
+
+    while True:
+        question = input("You: ").strip()
+
+        if question.lower() in {"quit", "exit"}:
+            print("Goodbye.")
+            break
+
+        if not question:
+            continue
+
+        response = chain.invoke(
+            {
+                "history": history.messages,
+                "question": question,
+            }
+        )
+
+        print()
+        print("Assistant:")
+        print(response.content)
+        print()
+
+        history.add_user_message(question)
+        history.add_ai_message(response.content)
+
+
+if __name__ == "__main__":
+    main()
+```
+
+This version does not make the assistant smarter by itself. It gives the prompt a stable shape. That matters when you add retrieved notes, tool results, or task-specific instructions later, because those inputs can become named variables instead of string concatenation scattered through the script.
+
+---
+
+## How the pieces fit together
+
+`ChatOllama` is the LangChain wrapper around an Ollama chat model. You give it the local model name, the Ollama server URL, and generation settings such as `temperature`. Then you call `.invoke()` with either a string or a list of chat messages.
+
+The message classes preserve role. A `SystemMessage` sets standing behavior for the assistant. A `HumanMessage` represents the user's turn. An `AIMessage` stores the model's previous response. Passing the full list back into the model gives the next turn context.
+
+The `.env` file is small, but it saves annoyance. You can switch models without editing both scripts.
+
+```bash
+OLLAMA_MODEL=mistral:latest
+```
+
+Then pull that model and run the same Python files again.
+
+```bash
+ollama pull mistral
+python chat.py
+```
+
+Temperature controls how much variation the model uses when choosing tokens. Lower values like `0` or `0.2` are better for repeatable explanations and code. Higher values can help brainstorming, but they can also make answers wander. For local coding helpers, I usually start low and raise it only when the task benefits from looser phrasing.
+
+---
+
+## Common failures
+
+Most failures in this setup come from one of four places. The exact error text can vary by package version, but the checks stay the same.
+
+| Symptom | Likely cause | Fix |
+| --- | --- | --- |
+| `externally-managed-environment` | `pip` is trying to write into system Python. | Create and activate `.venv`, then install packages again. |
+| Connection refused | Ollama is not running or the URL is wrong. | Run `ollama list`, start `ollama serve`, and check `OLLAMA_BASE_URL`. |
+| Model not found | The model string in `.env` does not match a local model. | Run `ollama list` and copy the exact model name. |
+| Slow first response | Ollama is loading the model into memory. | Wait for the first call, or use a smaller model while developing. |
+
+These commands are enough for quick server checks.
+
+```bash
+ollama list
+ollama ps
+curl http://localhost:11434/api/version
+```
+
+`ollama list` shows models downloaded on your machine. `ollama ps` shows models currently loaded into memory. The `curl` command checks the local HTTP API directly, which helps separate Python problems from Ollama server problems.
+
+One easy mistake is adding `/api` to `OLLAMA_BASE_URL`. Use `/api` when you call Ollama directly with `curl`. Leave it off when you configure `ChatOllama`.
+
+---
+
+## Where to go next
+
+This local chat is intentionally plain, which is part of the point. Once it works, the next useful step is to move the prompt into a `ChatPromptTemplate`, then pass variables into it instead of building every message by hand.
+
+After that, you can add retrieval over local files, tool calling for small functions, streaming output for a better terminal feel, or a FastAPI endpoint. Keep the boundary clear as you grow it. Ollama runs the model. LangChain organizes the application layer. Your code owns the product behavior, including the system prompt, memory policy, error handling, and any files or tools the assistant can reach.
+
+For current API details, use the [LangChain ChatOllama integration guide](https://docs.langchain.com/oss/python/integrations/chat/ollama) and the [Ollama API documentation](https://docs.ollama.com/api/introduction). The exact model list changes over time, so use the [Ollama model library](https://ollama.com/library) when choosing what to pull for your machine.

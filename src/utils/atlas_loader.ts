@@ -28,6 +28,7 @@ type ESPNStandingsPage = {
 };
 
 const ATLAS_TEAM_ID = "216";
+const ESPN_FETCH_TIMEOUT_MS = 10_000;
 
 export const ATLAS_TEST_DATA: AtlasData = {
   standing: "4th in Liga MX",
@@ -134,7 +135,9 @@ async function fetchLatestSeasonStats(
     standingsUrl.searchParams.set("season", String(seasonYear));
   }
 
-  const response = await fetch(standingsUrl.toString());
+  const response = await fetch(standingsUrl.toString(), {
+    signal: AbortSignal.timeout(ESPN_FETCH_TIMEOUT_MS),
+  });
 
   if (!response.ok) return null;
 
@@ -180,6 +183,7 @@ export default {
     try {
       const response = await fetch(
         "https://site.api.espn.com/apis/site/v2/sports/soccer/all/teams/216/schedule?fixture=true",
+        { signal: AbortSignal.timeout(ESPN_FETCH_TIMEOUT_MS) },
       );
 
       if (!response.ok) return;

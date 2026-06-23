@@ -1,5 +1,6 @@
 ---
 import { type EntryContext } from "@appTypes/content_context";
+import image from "@assets/thejournal/stock/10.jpg";
 import AtlasNote from "@components/index/AtlasNote.astro";
 import AtlasStats from "@components/index/AtlasStats.astro";
 import IndexHero from "@components/index/IndexHero.astro";
@@ -13,7 +14,6 @@ import { entryManifest } from "@content/processors/thejournal";
 import { sitesManifest } from "@data/site_manifest";
 import BaseLayout from "@layouts/BaseLayout.astro";
 import FlexShell from "@layouts/FlexShell.astro";
-import image from "@assets/thejournal/stock/10.jpg";
 
 const publications: Set<string> = new Set([
   "siliconboutique",

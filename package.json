@@ -34,7 +34,7 @@
     "@types/node": "^25.9.1",
     "@types/unist": "^3.0.3",
     "@vitest/coverage-v8": "^4.1.8",
-    "astro": "^6.4.4",
+    "astro": "6.4.4",
     "csso": "^5.0.5",
     "daisyui": "^5.5.20",
     "echarts": "6.1.0",

@@ -37,6 +37,7 @@ import {
 } from "./types.ts";
 
 const deflateAsync = promisify(zlibDeflate);
+const WORKER_RENDER_TIMEOUT_MS = 60_000;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Theme generation — memoized per palette reference.
@@ -127,6 +128,7 @@ class CloudflareWorkerRenderer implements MermaidRenderer {
         "X-API-Key": apiKey || "",
       },
       body: requestBody,
+      signal: AbortSignal.timeout(WORKER_RENDER_TIMEOUT_MS),
     });
 
     if (!response.ok) throw new Error(`Worker status ${response.status}`);

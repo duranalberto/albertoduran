@@ -141,7 +141,7 @@ This section only defines project-specific authoring rules for `src/thejournal/`
 - Prefer ordinary Markdown and confirmed local MDX components over custom page
   code.
 - Use the visual selection guide below to choose between Mermaid and ECharts.
-  Use `docs/ECHARTS_MDX_CHARTS.md` for the ECharts component API, build-time
+  Use `docs/components/ECHARTS_MDX_CHARTS.md` for the ECharts component API, build-time
   SVG artifacts, and opt-in chart enhancement rules.
 - Use the `thejournal` frontmatter schema and publishing policy from this guide,
   not the generic frontmatter template from `mdx-blog-writer`.
@@ -186,13 +186,13 @@ add client-side state, navigation, message streaming, or application behavior.
 Use the dedicated component guides for complete props, slots, styling hooks,
 and accessibility contracts:
 
-- `docs/CALLOUT.md`
-- `docs/CHAT.md`
-- `docs/LIST.md`
-- `docs/MOCKUP_BROWSER.md`
-- `docs/MOCKUP_PHONE.md`
-- `docs/MOCKUP_WINDOW.md`
-- `docs/STEPS.md`
+- `docs/components/CALLOUT.md`
+- `docs/components/CHAT.md`
+- `docs/components/LIST.md`
+- `docs/components/MOCKUP_BROWSER.md`
+- `docs/components/MOCKUP_PHONE.md`
+- `docs/components/MOCKUP_WINDOW.md`
+- `docs/components/STEPS.md`
 
 ### Callout Use Cases
 
@@ -630,6 +630,6 @@ Mermaid. Measurements belong in ECharts.
 
 ## Publishing Checks
 
-Before publishing, run the relevant checks from `docs/TESTING_STRATEGY.md`.
+Before publishing, run the relevant checks from `docs/engineering/TESTING_STRATEGY.md`.
 For content model or vault changes, include the manifest unit tests. For visible
 article behavior, include the relevant build or browser checks.

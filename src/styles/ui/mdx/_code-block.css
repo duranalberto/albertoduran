@@ -51,6 +51,16 @@ samp {
   background: transparent !important;
   padding: 0 !important;
   border: none !important;
+  line-height: inherit !important;
+}
+
+.mockup-code pre {
+  margin: 0 !important;
+  white-space: normal !important;
+}
+
+.mockup-code code {
+  display: block;
 }
 
 .mockup-code code::before,

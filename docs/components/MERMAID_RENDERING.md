@@ -4,7 +4,7 @@ The site uses a custom build-time Mermaid pipeline. Diagrams are rendered to
 inline SVG for article pages and to standalone light/dark SVG assets under
 `/_app/mermaid/` for the "Open diagram" links.
 
-Project-local Mermaid AI skills are documented in `docs/AI_SKILLS.md`. Review
+Project-local Mermaid AI skills are documented in `docs/ai/AI_SKILLS.md`. Review
 that file when using or updating assistant skills for diagram creation,
 rendering, or design-document generation.
 

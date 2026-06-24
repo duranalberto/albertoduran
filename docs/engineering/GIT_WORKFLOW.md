@@ -91,7 +91,7 @@ The PR must reflect behavior verified via `build + preview`.
 
 ## 4. Testing
 
-The formal test matrix lives in `docs/TESTING_STRATEGY.md`.
+The formal test matrix lives in `docs/engineering/TESTING_STRATEGY.md`.
 
 ### Current Available Commands
 

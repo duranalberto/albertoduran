@@ -2,6 +2,22 @@
 
 `MockupPhone.astro` presents arbitrary content inside DaisyUI's phone mockup. It is a static component with no client-side JavaScript and can be imported by Astro pages, layouts, components, and MDX publications.
 
+**Import path:** `@components/ui/display/MockupPhone.astro`
+
+## Component signature
+
+```ts
+// Props interface (extends HTMLAttributes<"figure">)
+interface Props {
+  class?: string;         // outer <figure> classes
+  phoneClass?: string;    // .mockup-phone frame classes
+  cameraClass?: string;   // decorative .mockup-phone-camera notch classes
+  displayClass?: string;  // .mockup-phone-display screen classes
+  captionClass?: string;  // <figcaption> classes (only rendered when caption slot is filled)
+  // All other HTMLAttributes<"figure"> are forwarded to the outer <figure>.
+}
+```
+
 ## Astro usage
 
 ```astro
@@ -79,32 +95,39 @@ The component applies `not-prose` to its figure so publication typography does n
 
 ## Props
 
-| Prop                       | Purpose                                                                                              |
-| -------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `class`                    | Adds classes to the outer `<figure>`.                                                                |
-| `phoneClass`               | Adds classes to the DaisyUI `.mockup-phone` frame.                                                   |
-| `cameraClass`              | Adds classes to the decorative `.mockup-phone-camera` notch.                                         |
-| `displayClass`             | Adds classes to the `.mockup-phone-display` screen.                                                  |
-| `captionClass`             | Adds classes to the optional `<figcaption>`.                                                         |
-| Standard figure attributes | Forwards attributes such as `id`, `aria-label`, `aria-labelledby`, and `data-*` to the outer figure. |
+| Prop                       | Type                        | Default | Purpose                                                                                              |
+| -------------------------- | --------------------------- | ------- | ---------------------------------------------------------------------------------------------------- |
+| `class`                    | `string`                    | —       | Adds classes to the outer `<figure>`.                                                                |
+| `phoneClass`               | `string`                    | —       | Adds classes to the DaisyUI `.mockup-phone` frame.                                                   |
+| `cameraClass`              | `string`                    | —       | Adds classes to the decorative `.mockup-phone-camera` notch (always `aria-hidden`).                  |
+| `displayClass`             | `string`                    | —       | Adds classes to the `.mockup-phone-display` screen.                                                  |
+| `captionClass`             | `string`                    | —       | Adds classes to the optional `<figcaption>`.                                                         |
+| Standard figure attributes | `HTMLAttributes<"figure">`  | —       | Forwards attributes such as `id`, `aria-label`, `aria-labelledby`, and `data-*` to the outer figure. |
 
 All class hooks are optional and are merged with the component defaults.
 
 ## Slots
 
-| Slot      | Purpose                                                  |
-| --------- | -------------------------------------------------------- |
-| Default   | Required phone-screen content supplied by the consumer.  |
-| `caption` | Optional descriptive content rendered as `<figcaption>`. |
+| Slot      | Purpose                                                   | Rendered when  |
+| --------- | --------------------------------------------------------- | -------------- |
+| Default   | Required phone-screen content supplied by the consumer.   | Always         |
+| `caption` | Optional descriptive content rendered as `<figcaption>`.  | Slot is filled |
 
-The camera notch is always rendered as decorative phone chrome and is hidden from assistive technology.
+The camera notch is always rendered as decorative phone chrome and is hidden from assistive technology with `aria-hidden="true"`.
+
+## Dimensions and sizing
+
+The frame retains DaisyUI's native **462×978px** aspect ratio (approximately 9:19) and a 462px maximum width. Key sizing facts:
+
+- The phone shrinks proportionally in narrower containers and is horizontally centered.
+- The display clips content at the device boundary. Design screen content for the available aspect ratio instead of relying on page-level overflow.
+- Direct `<img>` and `<picture>` screenshot children fill the display with `object-fit: cover`. Size source images at 462×978px or better for crisp results.
+- Suggested `widths` for responsive screenshots: `[320, 462]`.
 
 ## Styling and responsive behavior
 
-- The frame retains DaisyUI's native 462:978 aspect ratio and 462px maximum width.
-- The phone shrinks to its container on narrow screens and remains horizontally centered.
-- The display clips content at the device boundary. Consumers should design screen content for the available aspect ratio instead of relying on page-level overflow.
-- The device frame keeps DaisyUI's physical-device colors. The display uses the site's `base-100` and `base-content` theme tokens by default and follows the active light or dark theme.
+- The device frame keeps DaisyUI's physical-device colors and does not adapt to light/dark themes.
+- The display uses the site's `base-100` and `base-content` theme tokens by default and follows the active light or dark theme.
 - Direct `<img>` and `<picture>` screenshot children cannot be selected or dragged. Nested images remain interactive so composed controls and links keep working.
 - Use `class` for outer spacing or alignment and the region-specific class hooks for frame, camera, display, and caption customization.
 

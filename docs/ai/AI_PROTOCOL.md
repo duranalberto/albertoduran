@@ -6,15 +6,15 @@ This document defines how AI assistants should work in the albertoduran reposito
 
 Before proposing implementation changes, an AI assistant should inspect the current repository and review these source-of-truth documents:
 
-1. `docs/PROJECT_CONTEXT.md` for architecture, routes, content model, and deployment context.
-2. `docs/TESTING_STRATEGY.md` for required quality gates.
-3. `docs/GIT_WORKFLOW.md` for branching, verification, and merge rules.
-4. `docs/UI_STYLE_GUIDE.md` for UI implementation constraints.
-5. `docs/AI_SKILLS.md` for project-local AI skills and their source repositories.
-6. `docs/ROADMAP.md` for planned work and known future integrations.
+1. `docs/engineering/PROJECT_CONTEXT.md` for architecture, routes, content model, and deployment context.
+2. `docs/engineering/TESTING_STRATEGY.md` for required quality gates.
+3. `docs/engineering/GIT_WORKFLOW.md` for branching, verification, and merge rules.
+4. `docs/components/UI_STYLE_GUIDE.md` for UI implementation constraints.
+5. `docs/ai/AI_SKILLS.md` for project-local AI skills and their source repositories.
+6. `docs/engineering/ROADMAP.md` for planned work and known future integrations.
 
 When creating, revising, moving, or publishing an entry under
-`src/thejournal/`, also review `docs/THEJOURNAL_PUBLICATION_GUIDE.md`. That
+`src/thejournal/`, also review `docs/content/THEJOURNAL_PUBLICATION_GUIDE.md`. That
 guide is the source of truth for reader-facing journal intent, publication
 length, standalone article shape, vault structure, draft behavior, and the
 processor rules in `src/content/processors/`.
@@ -35,7 +35,7 @@ Repository files are always the final source of truth when docs and implementati
 
 ### Verification First
 
-Do not call a task complete without naming the verification performed or explaining why verification could not be run. Use `docs/TESTING_STRATEGY.md` to choose the minimum relevant checks.
+Do not call a task complete without naming the verification performed or explaining why verification could not be run. Use `docs/engineering/TESTING_STRATEGY.md` to choose the minimum relevant checks.
 
 ### Scoped Testing
 

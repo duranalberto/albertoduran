@@ -1,11 +1,11 @@
 # albertoduran - Portfolio and Journal
 
-A high-performance personal portfolio and publishing site built with Astro 6, Tailwind CSS 4, and DaisyUI 5. The site is static-first, uses Astro view transitions for a smooth internal navigation experience, and keeps browser JavaScript focused on progressive enhancement.
+A high-performance personal portfolio and publishing site built with Astro 7, Tailwind CSS 4, and DaisyUI 5. The site is static-first, uses Astro view transitions for a smooth internal navigation experience, and keeps browser JavaScript focused on progressive enhancement.
 
 ## Tech Stack
 
-- **Framework:** Astro `^6.4.4` with MDX support
-- **Styling:** Tailwind CSS `^4.3.0` and DaisyUI `^5.5.20`
+- **Framework:** Astro `^7.0.2` with MDX support (Rust compiler, Sätteri markdown, Vite 8/Rolldown)
+- **Styling:** Tailwind CSS `^4.3.1` and DaisyUI `^5.5.23`
 - **Runtime:** Node 22 in the devcontainer and GitHub Actions
 - **Deployment:** Cloudflare Workers Assets configuration in `wrangler.json`
 - **Testing:** Astro Check, Vitest, and Playwright
@@ -58,24 +58,54 @@ Run commands from the repository root:
 | `npm run test:e2e`        | Build deterministic output and run Playwright tests |
 | `npm run astro -- --help` | Show Astro CLI help                                 |
 
+### Background dev server (Astro 7)
+
+Astro 7 supports a detached dev server process. Use these scripts when you need the server to survive terminal sessions, or when working from a script or CI-like environment:
+
+| Command                 | Action                                                        |
+| :---------------------- | :------------------------------------------------------------ |
+| `npm run dev:bg`        | Start a background dev server (detached, writes `.astro/dev.json`) |
+| `npm run dev:stop`      | Stop the running background server                            |
+| `npm run dev:status`    | Show server URL, PID, port, and uptime                        |
+| `npm run dev:logs`      | Tail the background server log (`.astro/dev.log`)             |
+
+**AI agent auto-detection:** when `astro dev` is invoked from within an AI agent environment (Claude Code, Cursor, Copilot Workspace, etc.), Astro 7 detects this automatically via the [`am-i-vibing`](https://github.com/nickvdyck/am-i-vibing) package and silently switches to background mode with JSON-formatted output — no flags or configuration needed.
+
+**JSON logging:** pass `--json` to any `astro` command to emit newline-delimited JSON logs instead of the default human-readable output. This is set automatically in agent environments but can also be used manually to pipe logs to an aggregator:
+
+```sh
+astro dev --json 2>&1 | tee server.log
+```
+
+**Queued rendering** is the stable default in Astro 7. All pages are rendered concurrently with back-pressure control; no configuration is needed.
+
 ## Documentation
 
-- `docs/PROJECT_CONTEXT.md` explains the architecture, routes, content model, and deployment target.
-- `docs/THEJOURNAL_PUBLICATION_GUIDE.md` defines how to publish reader-facing entries under `src/thejournal/`.
-- `docs/DEV_ENVIRONMENT.md` explains the DevContainer and local tool setup.
-- `docs/TESTING_STRATEGY.md` defines the required quality gates and CI workflow.
-- `docs/MERMAID_RENDERING.md` documents Mermaid rendering cache/version rules.
-- `docs/GIT_WORKFLOW.md` documents branching, verification, and merge expectations.
-- `docs/UI_STYLE_GUIDE.md` captures UI implementation rules.
-- `docs/PROJECT_PAGE_GUIDE.md` defines how to build and register project showcase landing pages.
-- `docs/AI_PROTOCOL.md` defines how AI assistants should work in this repo.
-- `docs/AI_SKILLS.md` documents project-local Codex skills.
-- `docs/ROADMAP.md` tracks planned work.
+**`docs/engineering/`** — How the project is built and run.
+- `PROJECT_CONTEXT.md` — architecture, routes, content model, and deployment target.
+- `DEV_ENVIRONMENT.md` — DevContainer and local tool setup.
+- `GIT_WORKFLOW.md` — branching, verification, and merge expectations.
+- `TESTING_STRATEGY.md` — required quality gates and CI workflow.
+- `ROADMAP.md` — planned work.
+
+**`docs/components/`** — UI component and rendering references.
+- `UI_STYLE_GUIDE.md` — design system rules that govern all components.
+- `CALLOUT.md`, `CHAT.md`, `LIST.md`, `STEPS.md` — display component APIs.
+- `MOCKUP_BROWSER.md`, `MOCKUP_PHONE.md`, `MOCKUP_WINDOW.md` — mockup component APIs.
+- `ECHARTS_MDX_CHARTS.md`, `MERMAID_RENDERING.md` — chart and diagram rendering.
+
+**`docs/content/`** — Authoring guides.
+- `THEJOURNAL_PUBLICATION_GUIDE.md` — how to publish entries under `src/thejournal/`.
+- `PROJECT_PAGE_GUIDE.md` — how to build and register project showcase pages.
+
+**`docs/ai/`** — Instructions for AI agents working in this repo.
+- `AI_PROTOCOL.md` — agent behavior rules.
+- `AI_SKILLS.md` — project-local Codex skills.
 
 ## Development Rules
 
 - Keep the site static-first and use client JavaScript only for progressive enhancement.
-- Follow `docs/THEJOURNAL_PUBLICATION_GUIDE.md` when publishing or restructuring entries in `src/thejournal/`.
+- Follow `docs/content/THEJOURNAL_PUBLICATION_GUIDE.md` when publishing or restructuring entries in `src/thejournal/`.
 - AI agents must not modify content under `src/thejournal/` unless explicitly asked to change journal content.
 - Preserve the Astro view-transition experience for internal navigation.
 - Keep TypeScript strict and avoid `any` unless the tradeoff is documented.
@@ -91,4 +121,4 @@ The production build is static output in `dist/`. Cloudflare Workers Assets sett
 
 ## Roadmap
 
-See `docs/ROADMAP.md` for planned work. CI automation and dark mode are already in place; remaining roadmap items focus on features such as a contact form, analytics, RSS, search, and broader QA coverage.
+See `docs/engineering/ROADMAP.md` for planned work. CI automation and dark mode are already in place; remaining roadmap items focus on features such as a contact form, analytics, RSS, search, and broader QA coverage.

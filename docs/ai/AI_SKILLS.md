@@ -44,7 +44,7 @@ Astro content collection, frontmatter conventions, hook structure, writing
 voice, Markdown formatting, and when to include Mermaid diagrams.
 
 When the skill is used for a file under `src/thejournal/`, pair it with
-`docs/THEJOURNAL_PUBLICATION_GUIDE.md` so the draft follows the site's
+`docs/content/THEJOURNAL_PUBLICATION_GUIDE.md` so the draft follows the site's
 reader-facing publication intent, 8-to-15 displayed minute target, standalone
 and vault file shapes, and `src/content/processors/` publishing rules.
 

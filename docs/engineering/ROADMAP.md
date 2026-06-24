@@ -1,6 +1,6 @@
 # Project Roadmap: albertoduran
 
-This document tracks planned features, technical integrations, and quality improvements. It should describe future work only; completed items belong in `README.md`, `docs/PROJECT_CONTEXT.md`, or `docs/TESTING_STRATEGY.md`.
+This document tracks planned features, technical integrations, and quality improvements. It should describe future work only; completed items belong in `README.md`, `docs/engineering/PROJECT_CONTEXT.md`, or `docs/engineering/TESTING_STRATEGY.md`.
 
 ## Current Baseline
 
@@ -48,8 +48,8 @@ This document tracks planned features, technical integrations, and quality impro
 
 ## Implementation Rules for Future Work
 
-1. Confirm architecture and content behavior in `docs/PROJECT_CONTEXT.md`.
-2. Follow the required gates in `docs/TESTING_STRATEGY.md`.
+1. Confirm architecture and content behavior in `docs/engineering/PROJECT_CONTEXT.md`.
+2. Follow the required gates in `docs/engineering/TESTING_STRATEGY.md`.
 3. Keep the static-first model unless the feature explicitly requires a runtime service.
 4. Prefer existing components, Tailwind/DaisyUI tokens, and current integrations before adding dependencies.
 5. Update docs when a feature changes commands, deployment behavior, content schema, or developer workflow.

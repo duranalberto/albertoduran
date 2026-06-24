@@ -2,6 +2,24 @@
 
 `MockupBrowser.astro` presents arbitrary content in DaisyUI's browser mockup. It is a static, theme-aware component with a generated address display or custom toolbar, and it adds no client-side JavaScript.
 
+**Import path:** `@components/ui/display/MockupBrowser.astro`
+
+## Component signature
+
+```ts
+// Props interface (extends HTMLAttributes<"figure">)
+interface Props {
+  url?: string;           // static address text; required unless toolbar slot is filled
+  class?: string;         // outer <figure> classes
+  browserClass?: string;  // .mockup-browser frame classes
+  toolbarClass?: string;  // toolbar region classes
+  addressClass?: string;  // generated address display classes (unused when toolbar slot is filled)
+  contentClass?: string;  // default-slot viewport classes
+  captionClass?: string;  // <figcaption> classes (only rendered when caption slot is filled)
+  // All other HTMLAttributes<"figure"> are forwarded to the outer <figure>.
+}
+```
+
 ## Astro usage
 
 ```astro
@@ -48,7 +66,7 @@ Use the `toolbar` slot when the publication needs browser-specific context beyon
 </MockupBrowser>
 ```
 
-Without a custom toolbar, `url` must contain non-whitespace text. Invalid usage fails during the Astro build instead of rendering empty browser chrome.
+When the `toolbar` slot is filled, `url` and `addressClass` are ignored entirely. Without a custom toolbar, `url` must contain non-whitespace text — otherwise the build throws.
 
 ## Screenshot usage
 
@@ -103,26 +121,30 @@ The outer figure applies `not-prose`. Add spacing and typography classes needed 
 
 ## Props
 
-| Prop                       | Purpose                                                                                              |
-| -------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `url`                      | Static address text. Required unless the `toolbar` slot is present.                                  |
-| `class`                    | Adds classes to the outer `<figure>`.                                                                |
-| `browserClass`             | Adds classes to the DaisyUI `.mockup-browser` frame.                                                 |
-| `toolbarClass`             | Adds classes to the `.mockup-browser-toolbar` region.                                                |
-| `addressClass`             | Adds classes to the generated address display; unused when a custom toolbar is supplied.             |
-| `contentClass`             | Adds classes to the default-slot viewport.                                                           |
-| `captionClass`             | Adds classes to the optional `<figcaption>`.                                                         |
-| Standard figure attributes | Forwards attributes such as `id`, `aria-label`, `aria-labelledby`, and `data-*` to the outer figure. |
+| Prop                       | Type                        | Default | Purpose                                                                                              |
+| -------------------------- | --------------------------- | ------- | ---------------------------------------------------------------------------------------------------- |
+| `url`                      | `string`                    | —       | Static address text. Required unless the `toolbar` slot is present.                                  |
+| `class`                    | `string`                    | —       | Adds classes to the outer `<figure>`.                                                                |
+| `browserClass`             | `string`                    | —       | Adds classes to the DaisyUI `.mockup-browser` frame.                                                 |
+| `toolbarClass`             | `string`                    | —       | Adds classes to the `.mockup-browser-toolbar` region.                                                |
+| `addressClass`             | `string`                    | —       | Adds classes to the generated address display; unused when a custom toolbar is supplied.             |
+| `contentClass`             | `string`                    | —       | Adds classes to the default-slot viewport.                                                           |
+| `captionClass`             | `string`                    | —       | Adds classes to the optional `<figcaption>`.                                                         |
+| Standard figure attributes | `HTMLAttributes<"figure">`  | —       | Forwards attributes such as `id`, `aria-label`, `aria-labelledby`, and `data-*` to the outer figure. |
 
-All class hooks are optional and merge with component defaults. A custom `toolbar` takes precedence over `url`.
+All class hooks are optional and merge with component defaults.
 
 ## Slots
 
-| Slot      | Purpose                                                        |
-| --------- | -------------------------------------------------------------- |
-| Default   | Required browser viewport content supplied by the consumer.    |
-| `toolbar` | Optional replacement for the generated static address display. |
-| `caption` | Optional supporting text rendered as `<figcaption>`.           |
+| Slot      | Purpose                                                         | Rendered when    |
+| --------- | --------------------------------------------------------------- | ---------------- |
+| Default   | Required browser viewport content supplied by the consumer.     | Always           |
+| `toolbar` | Optional replacement for the generated static address display.  | Slot is filled   |
+| `caption` | Optional supporting text rendered as `<figcaption>`.            | Slot is filled   |
+
+## Build-time errors
+
+- `toolbar` slot is empty **and** `url` is missing or blank (whitespace-only).
 
 ## Styling and responsive behavior
 

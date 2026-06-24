@@ -4,11 +4,13 @@
    ========================================================= */
 
 @layer base {
+  :root {
+    --page-scroll-gutter: stable;
+  }
+
   html {
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
-    scrollbar-gutter: stable;
-    overscroll-behavior-y: none;
   }
 
   @media (prefers-reduced-motion: no-preference) {
@@ -24,8 +26,13 @@
     --safe-area-bottom: env(safe-area-inset-bottom, 0px);
   }
 
+  @supports (font: -apple-system-body) or (-webkit-touch-callout: none) {
+    :root {
+      --page-scroll-gutter: auto;
+    }
+  }
+
   body {
-    overscroll-behavior-y: none;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }

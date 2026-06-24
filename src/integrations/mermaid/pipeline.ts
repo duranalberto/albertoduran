@@ -18,6 +18,11 @@
  * requests internally; the debounce here still coalesces diagram registration
  * so the Ink renderer receives all diagrams in a single render() call rather
  * than one call per remark file.
+ *
+ * The production asset cache is deliberately skipped when MERMAID_RENDERER_URL
+ * is configured. Cloudflare builds should render through the Worker rather
+ * than opening many fetches back to the currently deployed site before the
+ * build output exists. Set MERMAID_ENABLE_REMOTE_CACHE=true to opt back in.
  */
 
 import type { AstroIntegrationLogger } from "astro";
@@ -262,10 +267,7 @@ export class DiagramPipeline {
     this.themes = themes;
     this.rendererVersion = rendererVersion;
     this.buildLogger = new BuildLogger();
-    this.remoteCacheBaseUrl =
-      process.env.MERMAID_DISABLE_REMOTE_CACHE === "true" || !site
-        ? null
-        : site.replace(/\/$/, "");
+    this.remoteCacheBaseUrl = resolveRemoteCacheBaseUrl(site);
   }
 
   // ── Public API ──────────────────────────────────────────────────────────
@@ -563,4 +565,15 @@ export function createPipeline(
   site?: string,
 ): DiagramPipeline {
   return new DiagramPipeline(svgBus, themes, rendererVersion, site);
+}
+
+export function resolveRemoteCacheBaseUrl(
+  site: string | undefined,
+): string | null {
+  const remoteCacheEnabled =
+    process.env.MERMAID_DISABLE_REMOTE_CACHE !== "true" &&
+    (process.env.MERMAID_ENABLE_REMOTE_CACHE === "true" ||
+      !process.env.MERMAID_RENDERER_URL);
+
+  return !remoteCacheEnabled || !site ? null : site.replace(/\/$/, "");
 }

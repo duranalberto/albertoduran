@@ -40,7 +40,7 @@ Client-side scripts are loaded only where they improve the experience:
 - `src/runtime/elements/atlas-schedule.ts` enhances Atlas schedule display.
 
 Mermaid rendering has release-specific cache and CSS cascade requirements. See
-`docs/MERMAID_RENDERING.md` before changing the Mermaid integration, Mermaid
+`docs/components/MERMAID_RENDERING.md` before changing the Mermaid integration, Mermaid
 theme output, diagram shell runtime, or diagram styles.
 
 ### View Transitions
@@ -55,7 +55,7 @@ Journal entries are public-facing publications. They should help readers
 understand a project, design decision, workflow, or lesson. They are not the
 place for internal maintainer runbooks, source-anchor checklists, or change
 instructions unless the article intentionally teaches that workflow to a public
-audience. Follow `docs/THEJOURNAL_PUBLICATION_GUIDE.md` before publishing or
+audience. Follow `docs/content/THEJOURNAL_PUBLICATION_GUIDE.md` before publishing or
 restructuring any entry under `src/thejournal/`.
 
 Published journal entries should display as at least 8 minutes and less than 16
@@ -121,7 +121,7 @@ choose the most useful landing-page sections. An optional Journal ID adds a
 publication action and, for vault roots, a grouped list of every child
 publication. Featured project cards use the explicit registry in
 `src/data/project_pages.ts`, with their existing Journal routes as the fallback
-until a landing page is registered. See `docs/PROJECT_PAGE_GUIDE.md` for the
+until a landing page is registered. See `docs/content/PROJECT_PAGE_GUIDE.md` for the
 authoring and registration contract.
 
 ## theJournal Content Model
@@ -188,10 +188,10 @@ Draft filtering is handled before manifest generation and static path generation
 
 ## Testing and CI
 
-The test strategy lives in `docs/TESTING_STRATEGY.md`.
+The test strategy lives in `docs/engineering/TESTING_STRATEGY.md`.
 
 Project-local AI skills live in `.agents/skills/` and are documented in
-`docs/AI_SKILLS.md`.
+`docs/ai/AI_SKILLS.md`.
 
 Required quality commands:
 

@@ -1,4 +1,5 @@
 import mdx from "@astrojs/mdx";
+import { satteri } from "@astrojs/markdown-satteri";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig, fontProviders } from "astro/config";
 import {
@@ -6,7 +7,8 @@ import {
   echartsIntegration,
   mermaidIntegration,
 } from "./src/integrations/index.ts";
-import { rehypeMdxHeadingAnchors } from "./src/integrations/mdx-heading-anchors.ts";
+import { createHeadingAnchorPlugin } from "./src/integrations/satteri-heading-anchors.ts";
+import { createCodeBlockPlugin } from "./src/integrations/satteri-code-blocks.ts";
 import {
   DARK_PALETTE,
   LIGHT_PALETTE,
@@ -23,7 +25,7 @@ export default defineConfig({
 
   integrations: [
     mermaidIntegration({
-      rehypePlugins: [rehypeMdxHeadingAnchors],
+      hastPlugins: [createCodeBlockPlugin(), createHeadingAnchorPlugin()],
       themes: new Map([
         ["light", LIGHT_PALETTE],
         ["dark", DARK_PALETTE],
@@ -84,6 +86,13 @@ export default defineConfig({
   },
 
   markdown: {
+    processor: satteri({
+      features: {
+        directive: true,
+        math: true,
+        headingAttributes: true,
+      },
+    }),
     shikiConfig: {
       themes: {
         light: "one-light",
@@ -102,9 +111,26 @@ export default defineConfig({
 
   vite: {
     plugins: [tailwindcss()],
+    // Scope aggressive minification to the client environment only.
+    // Top-level build.rolldownOptions is the default for ALL environments
+    // (including prerender), so mangle:true there breaks the SSR bundle.
+    environments: {
+      client: {
+        build: {
+          rolldownOptions: {
+            output: {
+              minify: {
+                compress: { dropConsole: true, dropDebugger: true },
+                mangle: true,
+              },
+            },
+          },
+        },
+      },
+    },
     build: {
-      minify: "terser",
-      rollupOptions: {
+      minify: "oxc",
+      rolldownOptions: {
         output: {
           manualChunks(id) {
             if (id.includes("/node_modules/zrender/")) {
@@ -114,12 +140,6 @@ export default defineConfig({
               return "echarts-components";
             }
           },
-        },
-      },
-      terserOptions: {
-        compress: {
-          drop_console: true,
-          drop_debugger: true,
         },
       },
       cssMinify: true,

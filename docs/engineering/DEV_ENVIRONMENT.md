@@ -70,4 +70,4 @@ npx playwright install --with-deps chromium
 npm run test:e2e
 ```
 
-See `docs/TESTING_STRATEGY.md` for the full quality gate and fixture behavior.
+See `docs/engineering/TESTING_STRATEGY.md` for the full quality gate and fixture behavior.

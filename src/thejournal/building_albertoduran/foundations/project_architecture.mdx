@@ -106,7 +106,7 @@ The layout receives a `siteManifest` and optional image. It computes preferred U
 
 That mismatch is visible engineering debt, not an intended metadata strategy. A contributor changing the layout should send the description to both description fields and add a generated-page assertion so search metadata cannot drift from the article summary again.
 
-Fonts are also handled here. Inter, Montserrat, and Fira Code are registered through Astro's font support. Inter and Montserrat get selected preloads because they shape the first read. Fira Code is available for code blocks without becoming the main loading priority.
+Fonts are also handled here. Inter, Montserrat, and the subsetted Fira Code file are registered through Astro's font support. Inter and Montserrat get selected preloads because they shape the first read. Fira Code is available for code blocks without becoming the main loading priority.
 
 ---
 
@@ -117,7 +117,7 @@ Because the site builds static output, route files and build integrations carry 
 That constraint explains several architecture choices.
 
 - Article headings are rendered into HTML and separately exposed to navigation components.
-- Mermaid diagrams are rendered to inline SVG and standalone assets during the build.
+- Mermaid diagrams are rendered to theme-specific SVG assets during the build.
 - Journal navigation comes from a manifest rather than client-side filesystem discovery.
 - HTML minification happens after Astro has generated the complete `dist/` tree.
 - Runtime modules bind to generated markup instead of owning the initial render.

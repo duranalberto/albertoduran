@@ -121,7 +121,7 @@ The public provider also produces SVG with different ID and style patterns. The 
 
 ## Fixture provider shape
 
-The fixture provider is not a fake page. It is a build-shape substitute for the renderer call. It returns themed SVG strings in the same kind of map that production providers return. That lets the pipeline exercise registration, transformation, asset emission, and CSS hoisting without a remote service.
+The fixture provider is not a fake page. It is a build-shape substitute for the renderer call. It returns themed SVG strings in the same kind of map that production providers return. That lets the pipeline exercise preparation, transformation, and asset emission without a remote service.
 
 This is why fixture mode belongs in the renderer module. It replaces the renderer boundary and nothing else. The build still behaves like a build. It simply receives controlled renderer output.
 

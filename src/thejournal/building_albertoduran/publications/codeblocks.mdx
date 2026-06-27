@@ -190,7 +190,7 @@ samp {
 }
 ```
 
-`astro.config.mjs` registers Fira Code through `fontProviders.local()`, which makes the font part of the local build instead of another external request.
+`astro.config.mjs` registers a subsetted Fira Code file through `fontProviders.local()`, which makes the code font part of the local build instead of another external request.
 
 ```ts
 {
@@ -200,7 +200,7 @@ samp {
   options: {
     variants: [
       {
-        src: ["./src/assets/fonts/FiraCodeNerdFontMono-Regular.woff2"],
+        src: ["./src/assets/fonts/FiraCodeNerdFontMono-Regular-subset.woff2"],
         weight: "400",
         style: "normal",
       },

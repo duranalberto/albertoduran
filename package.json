@@ -1,7 +1,7 @@
 {
   "name": "albertoduran",
   "type": "module",
-  "version": "0.4.0",
+  "version": "0.4.2",
   "engines": {
     "node": ">=22.13.0"
   },
@@ -11,8 +11,8 @@
     "dev:stop": "astro dev stop",
     "dev:status": "astro dev status",
     "dev:logs": "astro dev logs --follow",
-    "build": "node scripts/build-output-guard.mjs mark && astro build && node scripts/build-output-guard.mjs assert",
-    "build:test": "node scripts/build-output-guard.mjs mark && ALBERTODURAN_TEST_MODE=true MERMAID_RENDERER_FIXTURE=true astro build && node scripts/build-output-guard.mjs assert",
+    "build": "astro build",
+    "build:test": "ALBERTODURAN_TEST_MODE=true MERMAID_RENDERER_FIXTURE=true astro build",
     "check:bundle": "node scripts/check-bundle-size.mjs",
     "preview": "astro preview",
     "astro": "astro",
@@ -22,12 +22,8 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "npm run build:test && npm run check:bundle && node tests/e2e/run-preview-tests.mjs",
-    "test:watch": "vitest"
-  },
-  "overrides": {
-    "yaml-language-server": {
-      "yaml": "2.8.3"
-    }
+    "test:watch": "vitest",
+    "font:subset": "node scripts/subset-fira-code.mjs"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
@@ -36,14 +32,12 @@
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.61.1",
     "@tailwindcss/vite": "^4.3.1",
-    "@types/csso": "^5.0.4",
     "@types/html-minifier-terser": "^7.0.2",
     "@types/mdast": "^4.0.4",
     "@types/node": "^26.0.0",
     "@types/unist": "^3.0.3",
     "@vitest/coverage-v8": "^4.1.9",
-    "astro": "^7.0.2",
-    "csso": "^5.0.5",
+    "astro": "^7.0.3",
     "daisyui": "^5.5.23",
     "echarts": "6.1.0",
     "eslint": "^10.5.0",
@@ -56,7 +50,7 @@
     "html-minifier-terser": "^7.2.0",
     "postcss": "^8.5.15",
     "prettier": "^3.8.3",
-    "satteri": "^0.9.2",
+    "satteri": "^0.9.3",
     "sharp": "^0.35.2",
     "tailwindcss": "^4.3.1",
     "typescript": "^6.0.3",

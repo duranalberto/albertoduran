@@ -1330,10 +1330,21 @@ test("Mermaid diagram shell expands diagrams and switches asset links by theme",
   const shell = page.locator("mermaid-diagram-shell").first();
   await expect(shell).toBeVisible();
 
-  const inlineSvg = shell.locator(":scope > .mermaid-diagram-container svg");
-  await expect(inlineSvg).toBeVisible();
-  const inlineId = await inlineSvg.getAttribute("id");
-  expect(inlineId).toBeTruthy();
+  const lightImage = shell.locator(
+    ":scope > .mermaid-diagram-container .mermaid-diagram-image-light",
+  );
+  const darkImage = shell.locator(
+    ":scope > .mermaid-diagram-container .mermaid-diagram-image-dark",
+  );
+  await expect(lightImage).toBeVisible();
+  await expect(lightImage).toHaveAttribute(
+    "src",
+    /\/_app\/mermaid\/.*\.svg$/,
+  );
+  await expect(darkImage).toHaveAttribute(
+    "src",
+    /\/_app\/mermaid\/.*-dark\.svg$/,
+  );
 
   const openLink = shell.locator("[data-diagram-open-link]");
   await expect(openLink).toHaveAttribute("href", /\/_app\/mermaid\/.*\.svg$/);
@@ -1349,10 +1360,41 @@ test("Mermaid diagram shell expands diagrams and switches asset links by theme",
   const popover = shell.locator(".diagram-popover");
   await expect(popover).toBeVisible();
 
-  const clone = popover.locator("[data-diagram-popover-content] svg");
-  await expect(clone).toBeVisible();
-  await expect(clone).toHaveAttribute("id", `${inlineId}--expanded`);
+  const expandedDarkImage = popover.locator(
+    "[data-diagram-popover-content] .mermaid-diagram-image-dark",
+  );
+  await expect(expandedDarkImage).toBeVisible();
+  await expect(expandedDarkImage).toHaveAttribute(
+    "src",
+    /\/_app\/mermaid\/.*-dark\.svg$/,
+  );
   expect(problems).toEqual([]);
+});
+
+test("Mermaid diagrams render static SVG images without JavaScript", async ({
+  browser,
+}) => {
+  const context = await browser.newContext({
+    baseURL: "http://127.0.0.1:4325",
+    javaScriptEnabled: false,
+  });
+  const page = await context.newPage();
+
+  await page.goto("/thejournal/ai_ops_agent/");
+
+  const diagramImage = page
+    .locator(".mermaid-diagram-container .mermaid-diagram-image-light")
+    .first();
+  await expect(diagramImage).toBeVisible();
+
+  const src = await diagramImage.getAttribute("src");
+  expect(src).toMatch(/^\/_app\/mermaid\/.*\.svg$/);
+  const response = await page.request.get(src!);
+  expect(response.ok()).toBe(true);
+
+  await expect(page.locator("html")).toHaveClass(/no-js/);
+
+  await context.close();
 });
 
 test("ECharts MDX charts render static SVG without JavaScript", async ({

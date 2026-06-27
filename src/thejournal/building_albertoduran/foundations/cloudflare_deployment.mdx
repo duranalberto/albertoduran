@@ -21,7 +21,6 @@ dist/
 ├── _app/
 │   ├── charts/
 │   └── mermaid/
-├── _astro/
 ├── thejournal/
 │   └── building_albertoduran/
 ├── 404.html
@@ -89,7 +88,7 @@ A release check should visit representative HTML routes, open one hashed build a
 
 Response headers would close several current evidence gaps. Capture the status, content type, cache control, content encoding, and any Cloudflare cache status for both HTML and hashed assets. That snapshot would support production claims that source code and a local build cannot establish.
 
-The build warning belongs in the same review. The deterministic audit completed successfully but reported minified JavaScript chunks above 500 kB. Static hosting does not make a large client chunk free, so deployment verification should include which routes request those bundles and whether optional ECharts hydration contributes to them.
+The build budget belongs in the same review. The deterministic audit checks that built JavaScript files stay under the 500 KiB raw per-file limit and reports larger asset classes separately. Static hosting does not make client chunks free, so deployment verification should still include which routes request optional ECharts hydration.
 
 ---
 

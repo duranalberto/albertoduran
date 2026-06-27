@@ -11,7 +11,15 @@
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 /*.png
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/*.avif
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 /*.webp
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/*.jpg
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/*.jpeg
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/*.woff2
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 
 # Always revalidate HTML entry points

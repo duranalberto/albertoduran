@@ -6,18 +6,16 @@
  * IMPORTANT — ordering in astro.config.mjs:
  *   integrations: [mermaidIntegration(), mdx(), ...]
  *
- * mermaidIntegration() MUST come before mdx(). Astro runs
- * astro:config:setup hooks in array order. This integration augments the
- * markdown.processor set in astro.config.mjs; mdx() reads that config and
- * inherits mdastPlugins/hastPlugins automatically. Reversing the order means
- * mdx() reads the config before the plugins are injected.
+ * mermaidIntegration() should come before mdx() so its `astro:config:setup`
+ * hook can augment `markdown.processor` before MDX finalises the processor it
+ * will use for `.mdx` files.
  *
  * ## How plugin injection works
  * The integration detects the existing Sätteri processor (set via
- * `markdown.processor` in astro.config.mjs) and pushes its plugins directly
- * into processor.options.mdastPlugins / processor.options.hastPlugins.
- * This preserves the features configured in astro.config.mjs (directive, math,
- * headingAttributes, etc.) without the integration needing to know about them.
+ * `markdown.processor` in astro.config.mjs) and adds the Mermaid MDAST plugin
+ * to processor.options.mdastPlugins. This preserves features and any static
+ * Sätteri plugins configured in astro.config.mjs without the integration
+ * needing to know about them.
  *
  * If no Sätteri processor is found, a new one is created via updateConfig as
  * a fallback.
@@ -38,23 +36,25 @@
 import type { AstroIntegrationLogger } from "astro";
 import type { AstroIntegration } from "astro";
 import { parseFrontmatter } from "@astrojs/internal-helpers/frontmatter";
-import { satteri, isSatteriProcessor } from "@astrojs/markdown-satteri";
+import {
+  satteri,
+  isSatteriProcessor,
+  type SatteriResolvedOptions,
+} from "@astrojs/markdown-satteri";
 import glob from "fast-glob";
 import type { Element as HastElement } from "hast";
 import { createHash } from "node:crypto";
 import fsAsync from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { HastPluginDefinition } from "satteri";
 import {
   filterPublishedJournalEntries,
   type JournalManifestSourceEntry,
 } from "../../content/processors/thejournal-manifest.ts";
 import { AstroDiskBus } from "../../lib/astro-disk-bus.ts";
 import { RENDERER_VERSION } from "./constants.ts";
-import { optimizeBuiltMermaidPageCss } from "./page-css.ts";
 import { createPipeline, type DiagramPipeline } from "./pipeline.ts";
-import { createMermaidMdastPlugin, createMermaidHastPlugin } from "./satteri-plugin.ts";
+import { createMermaidMdastPlugin } from "./satteri-plugin.ts";
 import type { MermaidPalette } from "./types.ts";
 
 interface MermaidSourceDocument {
@@ -69,7 +69,9 @@ function normalizeSourcePath(filePath: string): string {
 }
 
 function normalizeFileURL(fileURL: URL): string {
-  return normalizeSourcePath(path.relative(process.cwd(), fileURLToPath(fileURL)));
+  return normalizeSourcePath(
+    path.relative(process.cwd(), fileURLToPath(fileURL)),
+  );
 }
 
 function getJournalEntryId(filePath: string): string | null {
@@ -186,13 +188,6 @@ export interface MermaidIntegrationOptions {
   cacheSubDir?: string;
 
   /**
-   * Additional Sätteri HAST plugins injected after the mermaid plugin.
-   * MDX inherits them automatically via processor.options.hastPlugins —
-   * do not register them separately on mdx() as well.
-   */
-  hastPlugins?: HastPluginDefinition[];
-
-  /**
    * Branded theme palettes keyed by DaisyUI theme name (e.g. "light", "dark").
    * Keys must match the values used in `[data-theme]` on the html element.
    *
@@ -203,13 +198,12 @@ export interface MermaidIntegrationOptions {
 }
 
 /**
- * Scans all MDX/MD source files for ```mermaid blocks and calls
- * registerDiagram for each unique diagram BEFORE Vite starts processing
- * MDX files. This ensures the disk cache is warm so that the Sätteri
- * MDAST plugin returns immediately during rolldown's transform phase rather
- * than making slow network requests inside it.
+ * Scans all MDX/MD source files for ```mermaid blocks and prepares each
+ * unique publishable diagram before Vite starts processing MDX files.
+ * The Sätteri MDAST plugin then performs synchronous registry lookups during
+ * Markdown rendering instead of doing render/cache work inside visitors.
  */
-async function prewarmMermaidDiagrams(
+async function prepareMermaidDiagrams(
   pipeline: DiagramPipeline,
   logger: AstroIntegrationLogger,
 ): Promise<Set<string>> {
@@ -224,7 +218,7 @@ async function prewarmMermaidDiagrams(
           content: await fsAsync.readFile(filePath, "utf-8"),
         });
       } catch {
-        // File disappeared between glob and read; ignore this prewarm-only miss.
+        // File disappeared between glob and read; ignore this preparation miss.
       }
     }),
   );
@@ -238,18 +232,12 @@ async function prewarmMermaidDiagrams(
   if (seen.size === 0) return publishableSourceFiles;
 
   logger.info(
-    `Pre-warming ${seen.size} publishable mermaid diagram(s) before Vite build...`,
+    `Preparing ${seen.size} publishable mermaid diagram(s) before Vite build...`,
   );
 
-  await Promise.all(
-    Array.from(seen.entries()).map(([stableId, code]) =>
-      pipeline.registerDiagram(stableId, code).catch(() => {
-        // Silent — Sätteri plugin falls back to placeholder on miss
-      }),
-    ),
-  );
+  await pipeline.prepareDiagrams(seen);
 
-  logger.info("Mermaid diagram pre-warming complete.");
+  logger.info("Mermaid diagram preparation complete.");
   return publishableSourceFiles;
 }
 
@@ -257,7 +245,6 @@ export function mermaidIntegration(
   options: MermaidIntegrationOptions = {},
 ): AstroIntegration {
   const cacheSubDir = options.cacheSubDir ?? "mermaid-cache";
-  const extraHastPlugins = options.hastPlugins ?? [];
 
   // An empty map means "no palettes provided" — renderers handle this branch
   // by omitting theme config from their payloads.
@@ -265,7 +252,7 @@ export function mermaidIntegration(
 
   // Holds the pipeline instance for the lifetime of a single build.
   // Created in astro:build:start and consumed by the Sätteri plugin via the
-  // registerDiagram closure injected in astro:config:setup.
+  // getDiagram closure injected in astro:config:setup.
   let pipeline: DiagramPipeline | null = null;
   let publishableMermaidSourceFiles: Set<string> | null = null;
   let site: string | undefined;
@@ -277,7 +264,7 @@ export function mermaidIntegration(
       /**
        * astro:config:setup
        *
-       * Builds a single Sätteri processor that contains the mermaid plugins
+       * Builds a single Sätteri processor that contains the Mermaid MDAST plugin
        * plus whatever features and plugins were declared in astro.config.mjs,
        * then installs it via updateConfig — the only reliable, authoritative
        * path for setting a markdown processor from an integration.
@@ -286,9 +273,9 @@ export function mermaidIntegration(
        * (directive, math, headingAttributes…) and any pre-declared plugins
        * forward into the replacement processor so nothing is lost.
        *
-       * The mermaid MDAST plugin receives a registerDiagram closure that
-       * delegates to the pipeline (captured by reference; initialised later in
-       * astro:build:start).
+       * The mermaid MDAST plugin receives a getDiagram closure that delegates
+       * to the prepared build registry (captured by reference; initialised
+       * later in astro:build:start).
        */
       "astro:config:setup": ({ config, updateConfig, logger }) => {
         logger.info(
@@ -302,41 +289,34 @@ export function mermaidIntegration(
             if (!fileURL || !publishableMermaidSourceFiles) return true;
             return publishableMermaidSourceFiles.has(normalizeFileURL(fileURL));
           },
-          registerDiagram: (stableId: string, code: string) => {
+          getDiagram: (stableId: string) => {
             if (!pipeline) {
               throw new Error(
-                "[mermaid] registerDiagram called before astro:build:start — pipeline not initialised.",
+                "[mermaid] getDiagram called before astro:build:start — pipeline not initialised.",
               );
             }
-            return pipeline.registerDiagram(stableId, code);
+            return pipeline.getDiagram(stableId);
           },
         });
 
-        // mermaidHastPlugin MUST precede extraHastPlugins: it converts raw
-        // placeholder nodes to real elements before any subsequent plugin sees them.
-        const mermaidHastPlugin = createMermaidHastPlugin();
-
-        // Carry features and any plugins already declared in astro.config.mjs
-        // forward into the new processor. isSatteriProcessor narrows to
-        // MarkdownProcessor<SatteriResolvedOptions>.
+        // Carry existing Sätteri options forward, then prepend Mermaid's
+        // build-backed MDAST transform.
         const existingProc = config.markdown?.processor;
-        const base = existingProc && isSatteriProcessor(existingProc)
-          ? existingProc
-          : null;
+        const base =
+          existingProc && isSatteriProcessor(existingProc)
+            ? existingProc
+            : null;
+        const baseOptions: SatteriResolvedOptions = base?.options ?? {
+          features: {},
+          mdastPlugins: [],
+          hastPlugins: [],
+        };
 
         updateConfig({
           markdown: {
             processor: satteri({
-              features: base?.options.features ?? {},
-              mdastPlugins: [
-                mermaidMdastPlugin,
-                ...(base?.options.mdastPlugins ?? []),
-              ],
-              hastPlugins: [
-                mermaidHastPlugin,
-                ...extraHastPlugins,
-                ...(base?.options.hastPlugins ?? []),
-              ],
+              ...baseOptions,
+              mdastPlugins: [mermaidMdastPlugin, ...baseOptions.mdastPlugins],
             }),
           },
         });
@@ -352,11 +332,8 @@ export function mermaidIntegration(
        * Creates a fresh DiagramPipeline for this build, ensuring no state
        * leaks between builds or HMR rebuilds.
        *
-       * Pre-warms the diagram cache by scanning all MDX/MD files BEFORE
-       * Vite starts. Without this, each mermaid Sätteri plugin visitor runs
-       * inside rolldown's module-transform phase and long-running network
-       * fetches (72+ diagrams × Cloudflare worker) trigger rolldown's
-       * internal task cancellation ("oneshot canceled") on Linux.
+       * Prepares the diagram registry by scanning all MDX/MD files before
+       * Vite starts transforming Markdown.
        */
       "astro:build:start": async ({ logger }) => {
         const svgBus = new AstroDiskBus<HastElement>({
@@ -370,7 +347,7 @@ export function mermaidIntegration(
 
         logger.info(`Cache dir ready: .astro/${cacheSubDir}`);
 
-        publishableMermaidSourceFiles = await prewarmMermaidDiagrams(
+        publishableMermaidSourceFiles = await prepareMermaidDiagrams(
           pipeline,
           logger,
         );
@@ -380,13 +357,7 @@ export function mermaidIntegration(
         await pipeline?.emitAssets(dir, logger);
       },
 
-      /**
-       * astro:build:done
-       * Hoists per-SVG Mermaid CSS into page-level CSS before the final HTML
-       * minifier runs, then emits the build summary.
-       */
-      "astro:build:done": async ({ dir, logger }) => {
-        await optimizeBuiltMermaidPageCss(dir, logger);
+      "astro:build:done": ({ logger }) => {
         pipeline?.logBuildSummary(logger);
         pipeline = null;
         publishableMermaidSourceFiles = null;

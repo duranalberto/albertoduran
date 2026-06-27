@@ -1,8 +1,9 @@
 # Mermaid Rendering Release Notes
 
-The site uses a custom build-time Mermaid pipeline. Diagrams are rendered to
-inline SVG for article pages and to standalone light/dark SVG assets under
-`/_app/mermaid/` for the "Open diagram" links.
+The site uses a custom build-time Mermaid pipeline. Publishable diagrams are
+prepared before Markdown rendering and emitted as light/dark SVG assets under
+`/_app/mermaid/`. Article pages reference those assets with static images and
+theme-aware Open links.
 
 Project-local Mermaid AI skills are documented in `docs/ai/AI_SKILLS.md`. Review
 that file when using or updating assistant skills for diagram creation,
@@ -18,14 +19,14 @@ broken styling. The first reported page was:
 
 Two things combined to create the failure:
 
-1. Mermaid page CSS was hoisted out of each inline SVG and minified with CSSO
-   using `restructure: true`.
+1. The old implementation hoisted Mermaid page CSS out of each inline SVG and
+   minified it with CSSO using `restructure: true`.
 2. Standalone Mermaid SVG asset URLs were immutable and keyed by
    `RENDERER_VERSION` plus the diagram source, but the renderer version had not
    been bumped for the style-output change.
 
-CSSO restructuring is unsafe for Mermaid page CSS. Mermaid emits repeated,
-ID-scoped rule pairs such as:
+CSSO restructuring was unsafe for that old page-level Mermaid CSS. Mermaid emits
+repeated, ID-scoped rule pairs such as:
 
 ```css
 #mermaid-a { fill: #111; }
@@ -43,10 +44,10 @@ such as:
 }
 ```
 
-That is valid CSS, but it makes Mermaid styling fragile because page diagrams,
-theme switching, and expanded popover clones all depend on stable per-diagram
-cascade order. The browser may still compute some colors correctly, while labels,
-edges, popover clones, or standalone links drift out of sync.
+That is valid CSS, but it made Mermaid styling fragile when page diagrams, theme
+switching, and expanded popovers depended on inline SVG cascade order. The
+browser could still compute some colors correctly, while labels, edges,
+popovers, or standalone links drifted out of sync.
 
 The stale asset key made the bug more visible in production. Cloudflare served
 the old dark SVG from an immutable cached URL, so deploying fixed SVG generation
@@ -54,15 +55,15 @@ logic without changing the URL would not reliably update existing assets.
 
 ## Current Guardrails
 
-- `src/integrations/mermaid/page-css.ts` minifies hoisted Mermaid CSS with
-  `restructure: false`.
-- `tests/unit/mermaid-page-css.test.ts` verifies that hoisted page CSS does not
-  group selectors across different diagrams and theme guards.
+- `DiagramPipeline.prepareDiagrams()` renders publishable diagrams before
+  Markdown transforms run, and the Sätteri plugin reads from that registry.
+- `tests/unit/mermaid-pipeline-registry.test.ts` verifies prepared lookup and
+  light/dark asset emission.
 - `src/integrations/mermaid/constants.ts` owns `RENDERER_VERSION`. Bump it
   whenever a code change can alter emitted Mermaid SVG or Mermaid CSS bytes for
   the same diagram source.
-- `tests/e2e/site.spec.ts` checks inline SVG rendering, expanded popover cloning,
-  clone ID rewriting, and theme-specific open-link URLs.
+- `tests/e2e/site.spec.ts` checks static SVG image rendering, expanded popovers,
+  no-JS visibility, and theme-specific open-link URLs.
 
 ## Release Checklist
 
@@ -76,11 +77,11 @@ For any change touching these files, treat it as a Mermaid rendering release:
 
 Before merging:
 
-1. If emitted SVG, inline SVG CSS, standalone SVG CSS, ID rewriting, theme
-   merging, background injection, or foreignObject handling changes, bump
+1. If emitted SVG, standalone SVG CSS, theme merging, background injection, or
+   foreignObject handling changes, bump
    `RENDERER_VERSION`.
-2. Keep CSSO restructuring disabled for Mermaid page CSS unless a regression test
-   proves selector grouping cannot cross diagram IDs or theme guards.
+2. Keep Mermaid rendering asset-first. The page should reference generated SVG
+   files instead of embedding large inline SVG payloads.
 3. Run:
 
 ```bash
@@ -93,15 +94,15 @@ npm run test:e2e
 4. Inspect the built article HTML for a known diagram:
 
 ```bash
-rg "data-mermaid-page-css|/_app/mermaid/81e521b3-" dist/thejournal/ai_ops_agent/index.html
+rg "/_app/mermaid/81e521b3-" dist/thejournal/ai_ops_agent/index.html
 ```
 
 5. Confirm the old asset hash is gone after a renderer-version bump.
 6. In browser preview or production, verify:
-   - inline diagram has nonzero dimensions;
+   - diagram image has nonzero dimensions;
    - light and dark computed SVG colors differ as expected;
    - "Open diagram" switches between `.svg` and `-dark.svg`;
-   - expanded popover renders the cloned diagram with styles intact.
+   - expanded popover renders the theme-specific SVG asset.
 
 ## Production Validation Pattern
 
@@ -109,7 +110,7 @@ After deployment, validate both the page and the standalone asset:
 
 ```bash
 curl -sSL https://albertoduran.com/thejournal/ai_ops_agent/ -o /tmp/ai_ops_agent.html
-rg "/_app/mermaid/81e521b3-|data-mermaid-page-css" /tmp/ai_ops_agent.html
+rg "/_app/mermaid/81e521b3-" /tmp/ai_ops_agent.html
 
 curl -sSL -D /tmp/mermaid.headers \
   https://albertoduran.com/_app/mermaid/<current-dark-asset>.svg \

@@ -43,11 +43,11 @@ The site uses `output: "static"` in `astro.config.mjs`. That one setting shapes 
 
 Static output changes the performance problem. The site does not need a server to assemble article pages on request. It does not need a client application to fetch MDX and render it in the browser. It can spend build time preparing documents so each request is mostly a file delivery event.
 
-That is why many features in this codebase look slightly more elaborate than their visible UI suggests. The manifest builder does more than list posts because it prepares all route context ahead of time. The Mermaid integration does more than run a renderer because it produces inline SVG, standalone assets, page CSS, and theme variants before the reader arrives. The Atlas loader does more than fetch one score because it turns outside data into a stable content entry the homepage can render like any other source.
+That is why many features in this codebase look slightly more elaborate than their visible UI suggests. The manifest builder does more than list posts because it prepares all route context ahead of time. The Mermaid integration does more than run a renderer because it prepares diagrams, emits SVG image assets, and records theme-specific metadata before the reader arrives. The Atlas loader does more than fetch one score because it turns outside data into a stable content entry the homepage can render like any other source.
 
 The repository proves this division of work, but it does not prove raw speed. It contains no recorded Lighthouse run, Web Vitals dataset, navigation timing benchmark, or bundle budget. A page should still be valid before JavaScript runs, yet that architectural property must not be presented as a measured performance result.
 
-> Current evidence boundary. The deterministic build proves that static pages and assets can be generated. It also reports at least one minified JavaScript chunk above 500 kB. Performance claims need measurements, and the chunk warning remains an open item rather than a detail to edit away.
+> Current evidence boundary. The deterministic build proves that static pages and assets can be generated, and the artifact check enforces the 500 KiB raw JavaScript file budget. Performance claims still need measurements, so passing the budget should be treated as a guardrail rather than a speed result.
 
 ---
 
@@ -65,13 +65,13 @@ The navigation article in this section goes deeper into that lifecycle. The shor
 
 ## Generated files stay intentional
 
-The second performance layer is output weight. This is where Vite, Terser, Tailwind, DaisyUI, the custom HTML minifier, SVG compression, and Mermaid CSS hoisting all meet.
+The second performance layer is output weight. This is where Vite, Oxc, Tailwind, DaisyUI, the custom HTML minifier, SVG compression, and Mermaid asset emission all meet.
 
-The project uses Vite production minification through Terser and enables CSS minification. Tailwind 4 and DaisyUI 5 are loaded from `global.css`, but DaisyUI is not allowed to emit every component it knows about. The include list names the components used by the site, such as buttons, cards, navbar, swap, badge, menu, modal, table, and a few others. That list is a performance decision and a design-system decision at the same time. A smaller component vocabulary produces less CSS and fewer accidental UI dialects.
+The project uses Vite production minification through Oxc and enables CSS minification. Tailwind 4 and DaisyUI 5 are loaded from `global.css`, but DaisyUI is not allowed to emit every component it knows about. The include list names the components used by the site, such as buttons, cards, navbar, swap, badge, menu, modal, table, and a few others. That list is a performance decision and a design-system decision at the same time. A smaller component vocabulary produces less CSS and fewer accidental UI dialects.
 
 The custom HTML minifier runs at `astro:build:done`. It walks generated HTML files under `dist/`, skips the built asset folder, and minifies document HTML after Astro and the integrations have done their work. It protects `<pre>`, `<code>`, and `<kbd>` fragments because this site publishes code-heavy articles. Preserving those fragments is more important than squeezing a few extra bytes from the wrong place.
 
-Mermaid has its own output strategy. Inline SVG is useful because diagrams remain visible inside the article without browser rendering. Standalone SVG assets are useful because the reader can open a larger version. Page CSS hoisting is useful because repeated diagram styles do not need to live inside every SVG copy in exactly the same way. The performance work follows the shape of the content instead of applying one generic optimizer to everything.
+Mermaid has its own output strategy. Static SVG images keep diagrams visible inside the article without browser rendering. Standalone SVG assets are useful because the reader can open a larger version and the browser can cache the heavy diagram payload independently. The performance work follows the shape of the content instead of applying one generic optimizer to everything.
 
 ---
 
@@ -79,7 +79,7 @@ Mermaid has its own output strategy. Inline SVG is useful because diagrams remai
 
 Images and fonts are handled as first-class assets because readers feel them immediately. The config uses Astro's Sharp image service with `limitInputPixels: true`. Article images use `Picture` where responsive variants make sense. The Atlas homepage section uses manual `<picture>` sources because the mobile and desktop crops have different design jobs.
 
-Font loading has the same intentional shape. Astro's font configuration registers Inter and Montserrat through Fontsource and Fira Code through a local WOFF2 file. The CSS theme maps those font variables into `--font-sans`, `--font-display`, `--font-reading`, and `--font-mono`. Display and reading fonts affect the first impression, so they are part of the page foundation. The code font is important, but it only matters when a reader reaches code blocks, so it does not need the same priority.
+Font loading has the same intentional shape. Astro's font configuration registers Inter and Montserrat through Fontsource and Fira Code through a local subsetted WOFF2 file. The CSS theme maps those font variables into `--font-sans`, `--font-display`, `--font-reading`, and `--font-mono`. Display and reading fonts affect the first impression, so they are part of the page foundation. The code font is important, but it only matters when a reader reaches code blocks, so it does not need the same priority.
 
 This is where the site avoids a common trap. Asset performance is not only about making files smaller. It is about choosing which files deserve early attention. A publication header image can be a Largest Contentful Paint candidate. A background image deep in the homepage can load lazily. A reading font affects nearly every article. A monospace font is important for code samples but should not hold the whole page hostage.
 
@@ -105,7 +105,7 @@ The pages in this section follow the same layered model.
 
 `navigation` explains why internal page changes feel quick while the site stays static. It covers Astro `ClientRouter`, view transitions, tap prefetching, theme continuity, and reduced motion.
 
-`file_optimization` explains the generated output. It covers Vite, Terser, DaisyUI's include list, Tailwind output, the custom HTML minifier, SVG compression, Mermaid CSS hoisting, and Cloudflare delivery.
+`file_optimization` explains the generated output. It covers Vite, Oxc, DaisyUI's include list, Tailwind output, the custom HTML minifier, SVG compression, Mermaid SVG assets, and Cloudflare delivery.
 
 `image_and_font_strategy` explains the assets that shape first paint and first read. It covers Astro's image service, `Picture`, manual responsive backgrounds, font registration, font variables, and priority choices.
 

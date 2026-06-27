@@ -5,7 +5,8 @@
  *
  * ## Public API (consumed by integration.ts and plugin.ts)
  *   createPipeline(svgBus, themes, logger) → DiagramPipeline
- *   DiagramPipeline.registerDiagram(stableId, code) → Promise<RegisteredDiagram>
+ *   DiagramPipeline.prepareDiagrams(diagrams) → Promise<void>
+ *   DiagramPipeline.getDiagram(stableId) → RegisteredDiagram | null
  *   DiagramPipeline.logBuildSummary(astroLogger?)
  *
  * ## Design
@@ -15,9 +16,8 @@
  *
  * Batch orchestration is tuned for the CloudflareWorker service (batched
  * POST). When MermaidInk is the active service it serialises its own
- * requests internally; the debounce here still coalesces diagram registration
- * so the Ink renderer receives all diagrams in a single render() call rather
- * than one call per remark file.
+ * requests internally; the debounce here still coalesces diagram preparation
+ * so the Ink renderer receives all diagrams in a single render() call.
  *
  * The production asset cache is deliberately skipped when MERMAID_RENDERER_URL
  * is configured. Cloudflare builds should render through the Worker rather
@@ -256,6 +256,7 @@ export class DiagramPipeline {
   private batchPromise: Promise<Record<string, HastElement>> | null = null;
   private readonly memoryCache = new Map<string, HastElement>();
   private readonly usedAssets = new Map<string, DiagramAsset>();
+  private readonly preparedDiagrams = new Map<string, RegisteredDiagram>();
 
   constructor(
     svgBus: AstroDiskBus<HastElement>,
@@ -272,12 +273,27 @@ export class DiagramPipeline {
 
   // ── Public API ──────────────────────────────────────────────────────────
 
+  async prepareDiagrams(diagrams: Map<string, string>): Promise<void> {
+    this.preparedDiagrams.clear();
+
+    await Promise.all(
+      Array.from(diagrams.entries()).map(async ([stableId, code]) => {
+        const diagram = await this.resolveDiagram(stableId, code);
+        this.preparedDiagrams.set(stableId, diagram);
+      }),
+    );
+  }
+
+  getDiagram(stableId: string): RegisteredDiagram | null {
+    return this.preparedDiagrams.get(stableId) ?? null;
+  }
+
   /**
-   * Register a diagram for rendering. Returns the resolved HAST node.
+   * Resolve a diagram for rendering. Returns the generated asset metadata.
    *
-   * Cache hierarchy: memory → disk → batch network render.
+   * Cache hierarchy: memory → disk → production asset → batch network render.
    */
-  async registerDiagram(
+  private async resolveDiagram(
     stableId: string,
     code: string,
   ): Promise<RegisteredDiagram> {

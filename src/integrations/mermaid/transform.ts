@@ -465,7 +465,7 @@ export async function buildMergedThemeNode(
       return buildMergedThemeNodeInk(themes, stableId);
 
     case RenderService.Cache:
-      // Cache hits are resolved in DiagramPipeline.registerDiagram before
+      // Cache hits are resolved in DiagramPipeline.prepareDiagrams before
       // buildMergedThemeNode is ever called. Reaching this branch means the
       // caller incorrectly passed a cache-sourced service value into the
       // transform — throw loudly so the bug is immediately visible.

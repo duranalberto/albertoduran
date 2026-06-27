@@ -25,7 +25,6 @@ export default defineConfig({
 
   integrations: [
     mermaidIntegration({
-      hastPlugins: [createCodeBlockPlugin(), createHeadingAnchorPlugin()],
       themes: new Map([
         ["light", LIGHT_PALETTE],
         ["dark", DARK_PALETTE],
@@ -67,7 +66,9 @@ export default defineConfig({
       options: {
         variants: [
           {
-            src: ["./src/assets/fonts/FiraCodeNerdFontMono-Regular.woff2"],
+            src: [
+              "./src/assets/fonts/FiraCodeNerdFontMono-Regular-subset.woff2",
+            ],
             weight: "400",
             style: "normal",
           },
@@ -92,6 +93,7 @@ export default defineConfig({
         math: true,
         headingAttributes: true,
       },
+      hastPlugins: [createCodeBlockPlugin(), createHeadingAnchorPlugin()],
     }),
     shikiConfig: {
       themes: {
@@ -111,37 +113,8 @@ export default defineConfig({
 
   vite: {
     plugins: [tailwindcss()],
-    // Scope aggressive minification to the client environment only.
-    // Top-level build.rolldownOptions is the default for ALL environments
-    // (including prerender), so mangle:true there breaks the SSR bundle.
-    environments: {
-      client: {
-        build: {
-          rolldownOptions: {
-            output: {
-              minify: {
-                compress: { dropConsole: true, dropDebugger: true },
-                mangle: true,
-              },
-            },
-          },
-        },
-      },
-    },
     build: {
       minify: "oxc",
-      rolldownOptions: {
-        output: {
-          manualChunks(id) {
-            if (id.includes("/node_modules/zrender/")) {
-              return "zrender";
-            }
-            if (id.includes("/node_modules/echarts/lib/component/")) {
-              return "echarts-components";
-            }
-          },
-        },
-      },
       cssMinify: true,
     },
   },

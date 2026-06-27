@@ -27,29 +27,29 @@ The integration exists to meet a few product and architecture goals.
 - Diagrams should match the site's light and dark themes.
 - Repeated builds should reuse unchanged diagram output.
 - Standalone SVG assets should exist for new-tab viewing and cache reuse.
-- Inline SVG should remain readable before runtime enhancement.
+- Static SVG images should remain readable before runtime enhancement.
 - Runtime code should only add interaction around a diagram that already exists.
 
-Those goals explain why the integration is broader than a remark plugin. It has to coordinate Markdown processing, external rendering, cache hierarchy, HAST transforms, standalone assets, CSS hoisting, and runtime shell attributes.
+Those goals explain why the integration is broader than a remark plugin. It has to coordinate Markdown processing, external rendering, cache hierarchy, HAST transforms, standalone assets, and runtime shell attributes.
 
 ---
 
 ## Current flow
 
-The integration turns a Markdown code fence into inline SVG and standalone SVG assets. The build path looks like a small rendering pipeline inside the larger Astro build.
+The integration turns a Markdown code fence into static SVG image assets. The build path looks like a small rendering pipeline inside the larger Astro build.
 
 ```mermaid
 flowchart TD
-    Fence[📝 Mermaid code fence] --> Plugin[⚙️ mermaidRemarkPlugin]
-    Plugin --> Register[📌 Register diagram]
-    Register --> Cache{⚡ Cache hit}
-    Cache -->|yes| Inline[🖼️ Inline SVG HAST]
+    Fence[📝 Mermaid code fence] --> Scan[🔎 Build scan]
+    Scan --> Prepare[📌 Prepare registry]
+    Prepare --> Cache{⚡ Cache hit}
+    Cache -->|yes| Node[🧩 SVG HAST]
     Cache -->|no| Renderer[☁️ Worker or mermaid ink]
     Renderer --> Merge[🎨 Merged theme SVG]
-    Merge --> Inline
-    Inline --> Assets[📦 Standalone SVG assets]
-    Inline --> PageCss[🎯 Page CSS hoisting]
-    PageCss --> Runtime[⚡ Diagram shell]
+    Merge --> Node
+    Node --> Assets[📦 SVG assets]
+    Assets --> Plugin[⚙️ Sätteri wrapper]
+    Plugin --> Runtime[⚡ Diagram shell]
 
     classDef source fill:#FFE4B5,stroke:#333,stroke-width:2px,color:black
     classDef process fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
@@ -57,20 +57,20 @@ flowchart TD
     classDef output fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
 
     class Fence source
-    class Plugin,Register,Renderer,Merge,PageCss,Runtime process
+    class Scan,Prepare,Plugin,Renderer,Merge,Runtime process
     class Cache decision
-    class Inline,Assets output
+    class Node,Assets output
 ```
 
-The code fence starts in MDX. The remark plugin sees it before it becomes a regular code block. The plugin computes a stable diagram ID, registers the diagram with the build pipeline, and receives a HAST node containing the rendered SVG.
+The code fence starts in MDX. The integration scans publishable Markdown before Vite transforms it, computes stable diagram IDs, and prepares the build pipeline registry. When Sätteri later sees the fence, the plugin reads prepared asset metadata synchronously and emits a wrapper.
 
-The rendered article gets inline SVG. The build also emits standalone light and dark SVG files under `/_app/mermaid/`. Runtime code wraps the inline diagram with expansion controls and theme-specific Open links, but the diagram itself is already part of the static HTML.
+The rendered article gets light and dark SVG image references. The build emits those SVG files under `/_app/mermaid/`. Runtime code keeps the Open link aligned with the active theme, but the diagram itself is already available in static output.
 
 ---
 
 ## Integration order
 
-The order in `astro.config.mjs` matters. `mermaidIntegration()` appears before `mdx()` because the integration injects a markdown processor that MDX must pick up during its own setup.
+The order in `astro.config.mjs` matters. `mermaidIntegration()` appears before `mdx()` so it can augment the Sätteri markdown processor before MDX finalizes the processor it will use for `.mdx` files.
 
 ```js
 integrations: [
@@ -93,11 +93,11 @@ The custom HTML minifier runs after MDX and after Mermaid generation because it 
 
 ## Build hooks
 
-The Mermaid integration uses Astro build hooks to place work at the right moment. `astro:build:start` creates a fresh `DiagramPipeline` and prepares `.astro/mermaid-cache/`. The remark plugin then registers diagrams as MDX files are processed.
+The Mermaid integration uses Astro build hooks to place work at the right moment. `astro:build:start` creates a fresh `DiagramPipeline`, prepares `.astro/mermaid-cache/`, scans publishable Markdown, and prepares diagrams before MDX files are processed.
 
 `astro:build:generated` emits standalone SVG assets into `dist/_app/mermaid/`. At that point, Astro has generated routes and the pipeline knows which diagram assets were used. The emitted assets mirror the inline diagrams but receive standalone background and theme CSS for direct viewing.
 
-`astro:build:done` hoists Mermaid page CSS from inline SVG into page-level CSS and logs a build summary. That final hook runs after HTML exists, which is the only time the integration can scan complete built pages.
+`astro:build:done` logs a build summary and clears build-scoped state.
 
 ### Why the renderer is external
 
@@ -109,7 +109,7 @@ The separation is important. The static site build remains a content and asset p
 
 ## What the reader receives
 
-The reader receives static HTML with inline SVG diagrams. If JavaScript never runs, the article still has readable diagrams and an Open SVG link. If JavaScript does run, `mermaid-diagram-shell` updates the Open link for the current theme and adds popover expansion.
+The reader receives static HTML with SVG image diagrams. If JavaScript never runs, the article still has readable diagrams and an Open SVG link. If JavaScript does run, `mermaid-diagram-shell` updates the Open link for the current theme and keeps popover expansion available.
 
 That is the same progressive enhancement principle used elsewhere in the site. The build owns the content. Runtime owns optional interaction. Mermaid is one of the clearest examples because the expensive part is visibly absent from the browser bundle.
 
@@ -121,7 +121,7 @@ The custom integration exists because diagrams are content here. They are not de
 
 Mermaid is not treated as a small markdown flourish in this project. A diagram affects article readability, theme consistency, asset output, runtime expansion, and page weight. That makes it a build system inside the larger static build.
 
-The author writes a Mermaid code fence. The remark plugin records the diagram. The pipeline creates stable IDs and cache keys. Renderers produce SVG output for light and dark themes. The transform layer sanitizes and merges theme variants. Asset emission writes standalone SVG files. Page CSS hoisting reduces repeated inline style blocks. The runtime shell uses the generated artifacts for theme-aware links and popovers.
+The author writes a Mermaid code fence. The integration prepares the diagram registry. The pipeline creates stable IDs and cache keys. Renderers produce SVG output for light and dark themes. The transform layer sanitizes and merges theme variants. Asset emission writes SVG files. The runtime shell uses the generated artifacts for theme-aware links and popovers.
 
 That path is longer than a normal markdown code fence, but it is exactly why the final article stays simple for readers. The browser receives diagrams as finished SVG, not as Mermaid source that still needs a renderer.
 
@@ -139,9 +139,9 @@ That is the recurring publishing pattern in this repository. Authors write struc
 
 ## Static output and runtime shell
 
-The runtime shell exists because the finished diagram can still benefit from browser interaction. It can update Open SVG links based on the active theme. It can clone an inline SVG into a larger popover. It can attach page CSS to that clone and rewrite IDs so the expanded copy stays self-contained.
+The runtime shell exists because the finished diagram can still benefit from browser interaction. It can update Open SVG links based on the active theme and expose a larger popover that uses the generated assets.
 
-None of that changes the core rendering decision. Mermaid itself is rendered before deployment. Runtime code inspects and clones finished SVG. The reader gets fast inline diagrams first and optional interaction second.
+None of that changes the core rendering decision. Mermaid itself is rendered before deployment. Runtime code only connects generated assets to the current theme and popover UI. The reader gets static diagrams first and optional interaction second.
 
 This split is why Mermaid belongs in both the integration and runtime sections of the vault. The build creates diagram output. The runtime makes that output easier to inspect.
 
@@ -149,7 +149,7 @@ This split is why Mermaid belongs in both the integration and runtime sections o
 
 ## The section map
 
-The Mermaid section follows the pipeline in pieces. `pipeline` explains registration, cache hierarchy, batch orchestration, asset emission, and fixture mode. `browser_renderer_service` explains the Cloudflare Worker that owns browser-based rendering. `renderers` explains provider selection and fallback. `transform` explains how raw SVG becomes article-ready HAST. `theming` explains how site palettes become Mermaid config. `assets_and_css` explains emitted files, page CSS hoisting, versioning, and runtime asset expectations.
+The Mermaid section follows the pipeline in pieces. `pipeline` explains registry preparation, cache hierarchy, batch orchestration, asset emission, and fixture mode. `browser_renderer_service` explains the Cloudflare Worker that owns browser-based rendering. `renderers` explains provider selection and fallback. `transform` explains how raw SVG becomes article-ready HAST. `theming` explains how site palettes become Mermaid config. `assets_and_css` explains emitted files, versioning, and runtime asset expectations.
 
 Together, those entries show why diagrams feel native in the final site. They are not screenshots pasted into articles. They are build artifacts with theme, cache, asset, and runtime contracts.
 
@@ -157,11 +157,11 @@ Together, those entries show why diagrams feel native in the final site. They ar
 
 ## Why this belongs in the vault
 
-The Mermaid system is the clearest example of how the website turns author-friendly source into deployment-friendly output. The source is a readable code fence in MDX. The output is inline SVG, standalone assets, page CSS, and runtime metadata. The authoring surface stays simple because the build pipeline carries the specialized work.
+The Mermaid system is the clearest example of how the website turns author-friendly source into deployment-friendly output. The source is a readable code fence in MDX. The output is theme-specific SVG assets and runtime metadata. The authoring surface stays simple because the build pipeline carries the specialized work.
 
 That makes Mermaid a useful mental model for the rest of the site. The journal manifest does the same kind of translation for content structure. The image pipeline does it for visual assets. The Atlas loader does it for external sports data. Each feature accepts source material, normalizes it during the build, and gives the browser finished output.
 
-When reading this section, follow that translation. Start with the fence. Watch it become registered pipeline state. Watch rendering produce SVG. Watch transforms make that SVG safe and themed. Watch assets and CSS become files. Watch the runtime shell add interaction without taking ownership of rendering.
+When reading this section, follow that translation. Start with the fence. Watch it become prepared pipeline state. Watch rendering produce SVG. Watch transforms make that SVG safe and themed. Watch assets become files. Watch the runtime shell add interaction without taking ownership of rendering.
 
 ---
 

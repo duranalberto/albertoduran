@@ -65,7 +65,7 @@ flowchart TD
     class Content,Article output
 ```
 
-By the time the route renders the MDX body, a Mermaid diagram is no longer a code fence. It is article markup with an inline SVG and metadata for the diagram shell. That is why the code block override can focus on actual code blocks instead of trying to sort Mermaid from TypeScript after the fact.
+By the time the route renders the MDX body, a Mermaid diagram is no longer a code fence. It is article markup with SVG asset metadata for the diagram shell. That is why the code block override can focus on actual code blocks instead of trying to sort Mermaid from TypeScript after the fact.
 
 ---
 
@@ -155,17 +155,17 @@ const isDiagram =
   className?.split(" ").includes("mermaid-diagram-container") ?? false;
 ```
 
-When the div is a diagram, the wrapper renders a `<mermaid-diagram-shell>` custom element. Inside that shell, the inline SVG remains visible for no-JS readers. The action grid adds an Open SVG link and a JavaScript-only Expand button.
+When the div is a diagram, the wrapper renders a `<mermaid-diagram-shell>` custom element. Inside that shell, generated SVG images remain visible for no-JS readers. The action grid adds an Open SVG link and a JavaScript-only Expand button.
 
 The Open SVG link uses `data-diagram-src` and `data-diagram-dark-src`. The runtime diagram shell can switch the target when the site theme changes, so the reader opens the light or dark standalone SVG that matches the page.
 
 ### Popover expansion
 
-The wrapper also creates a Popover API dialog with a generated ID. It does not duplicate the SVG into the popover at build time. Instead, runtime code clones the inline SVG into the popover when the reader expands the diagram.
+The wrapper also creates a Popover API dialog with a generated ID. The popover uses the same generated SVG image assets as the article view, and CSS chooses the visible light or dark image from the current theme.
 
-That keeps the generated HTML smaller while preserving no-JS behavior. The article already has the inline diagram. JavaScript only adds a larger inspection surface.
+That keeps the generated HTML smaller while preserving no-JS behavior. The article already has static diagram images. JavaScript only adds a larger inspection surface and theme-aware links.
 
-The wrapper derives a simple title from diagram metadata or the first Mermaid keyword it finds in the SVG HTML. That title becomes the popover label, which gives assistive tech a better target than a generic unnamed dialog.
+The wrapper derives a simple title from diagram metadata. That title becomes the popover label, which gives assistive tech a better target than a generic unnamed dialog.
 
 ---
 

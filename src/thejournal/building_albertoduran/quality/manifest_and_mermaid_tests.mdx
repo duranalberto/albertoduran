@@ -58,19 +58,19 @@ Because the manifest sits upstream of so many components, it deserves focused co
 
 ## Mermaid tests
 
-Mermaid tests are split across HAST utilities, transform behavior, and page CSS hoisting. `mermaid-hast.test.ts` checks that scripts are stripped, style attributes are sanitized, foreignObject breaks are collapsed, root IDs are updated, derived IDs are rewritten, and SVG reference attributes follow the new IDs.
+Mermaid tests are split across HAST utilities, transform behavior, prepared registry behavior, and Sätteri plugin output. `mermaid-hast.test.ts` checks that scripts are stripped, style attributes are sanitized, foreignObject breaks are collapsed, root IDs are updated, derived IDs are rewritten, and SVG reference attributes follow the new IDs.
 
 `mermaid-transform.test.ts` checks theme transforms. It covers Worker SVG theme merging, Ink inline-color hoisting with final rewritten IDs, and dispatcher guards for placeholder services. The details matter because the integration supports multiple rendering paths and still needs a consistent final SVG contract.
 
-`mermaid-page-css.test.ts` checks page CSS optimization. It verifies that SVG styles can be hoisted without restructuring the theme cascade across diagrams. The implementation uses CSSO with restructuring disabled because preserving cascade behavior is more important than an aggressive CSS rewrite.
+`mermaid-pipeline-registry.test.ts` checks that diagrams can be prepared before Markdown rendering, looked up synchronously, and emitted as light and dark SVG assets. `mermaid-satteri-plugin.test.ts` checks that Mermaid fences become asset-backed wrappers instead of inline SVG payloads.
 
-These tests protect the diagram feature as a publishing feature. A Mermaid fence in MDX should become a readable inline SVG, theme-aware assets, and safe page CSS. The tests keep those expectations concrete.
+These tests protect the diagram feature as a publishing feature. A Mermaid fence in MDX should become readable static SVG images and theme-aware assets. The tests keep those expectations concrete.
 
 ---
 
 ## Why Mermaid gets special attention
 
-Mermaid diagrams are not simple images in this site. A diagram begins as a code fence in MDX. The build pipeline finds it, renders SVG, sanitizes output, rewrites IDs, creates theme-specific assets, wraps the inline diagram, and may hoist page CSS. The runtime shell later uses those generated artifacts for theme-aware Open links and popover expansion.
+Mermaid diagrams are not simple images in this site. A diagram begins as a code fence in MDX. The build pipeline finds it, renders SVG, sanitizes output, rewrites IDs, creates theme-specific assets, and emits wrapper metadata. The runtime shell later uses those generated artifacts for theme-aware Open links and popover expansion.
 
 That path has more moving parts than an ordinary image import. It crosses markdown processing, renderer services, SVG processing, CSS handling, asset output, and runtime hooks. Unit tests cover the parts that can be expressed as transformations before the browser arrives.
 
@@ -92,7 +92,7 @@ The option builder tests cover line, bar, pie, heatmap, correlation heatmap, sca
 
 ## HTML minifier tests
 
-`tests/unit/html-minifier.test.ts` covers the custom HTML minifier. The minifier runs after Astro writes HTML files, collapses whitespace, removes comments, minifies inline JS and CSS, and skips built asset files. The key project-specific rule is that code-oriented fragments must be preserved.
+`tests/unit/html-minifier.test.ts` covers the custom HTML minifier. The minifier runs after Astro writes HTML files, collapses whitespace, removes comments, minifies inline JS and CSS, skips built asset files, and fails the build if any generated page cannot be minified. The key project-specific rule is that code-oriented fragments must be preserved.
 
 The options ignore `<pre>`, `<code>`, and `<kbd>` fragments. That matters because code examples and keyboard tokens are publication content. The site can reduce generated HTML without letting the minifier damage the exact kind of content technical articles rely on.
 

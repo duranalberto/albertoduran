@@ -2,11 +2,10 @@
 /**
  * MermaidDiagramWrapper.astro
  *
- * MDX component replacement for `.mermaid-diagram-container` divs.
- *
- * The inline SVG is always rendered for no-JS visitors. JavaScript only
- * enhances the shell by cloning the inline SVG into the Popover API overlay
- * at runtime, avoiding a second build-time copy in the final HTML.
+ * MDX component replacement for `.mermaid-diagram-container` nodes emitted by
+ * the Sätteri Mermaid plugin. Diagrams render as static SVG assets so the page
+ * remains readable without JavaScript; the custom element only keeps the Open
+ * link aligned with the active theme.
  */
 
 interface Props {
@@ -17,11 +16,8 @@ interface Props {
 const { class: className, ...rest } = Astro.props;
 
 const isDiagram =
-  className?.split(" ").includes("mermaid-diagram-container") ?? false;
+  className?.split(/\s+/).includes("mermaid-diagram-container") ?? false;
 
-const popoverId = `diagram-popover-${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
-
-const diagramHtml = await Astro.slots.render("default");
 const diagramSrc =
   typeof rest["data-diagram-src"] === "string" &&
   rest["data-diagram-src"].length > 0
@@ -31,130 +27,159 @@ const diagramDarkSrc =
   typeof rest["data-diagram-dark-src"] === "string" &&
   rest["data-diagram-dark-src"].length > 0
     ? (rest["data-diagram-dark-src"] as string)
-    : null;
+    : diagramSrc;
+const diagramType =
+  typeof rest["data-diagram-type"] === "string" &&
+  rest["data-diagram-type"].length > 0
+    ? (rest["data-diagram-type"] as string)
+    : "diagram";
 
-// Detect diagram type from the SVG data attribute or first mermaid keyword
-// for a more descriptive popover title.
-const diagramTypeMatch = diagramHtml.match(/data-diagram-type="([^"]+)"/);
-const firstKeyword = diagramHtml.match(
-  /class="[^"]*\b(flowchart|sequence|gantt|classDiagram|stateDiagram|erDiagram|journey|gitGraph|kanban|timeline|pie)\b/i,
-);
-const diagramType = diagramTypeMatch?.[1] ?? firstKeyword?.[1] ?? null;
-const diagramLabel = diagramType
-  ? diagramType.charAt(0).toUpperCase() + diagramType.slice(1)
-  : "Diagram";
-const popoverTitle = diagramLabel;
-
+const diagramLabel = `${diagramType.charAt(0).toUpperCase()}${diagramType.slice(1)}`;
+const popoverId = `diagram-popover-${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
 const popoverTitleId = `${popoverId}-title`;
 ---
 
 {
   isDiagram ? (
-    <mermaid-diagram-shell class="diagram-wrapper not-prose">
-      <div class={className} {...rest} set:html={diagramHtml} />
-
-      <div class="ui-panel-action-grid" data-no-js-single>
-        <a
-          class="ui-panel-action"
-          href={diagramSrc ?? "#"}
-          data-diagram-open-link
-          data-diagram-light-src={diagramSrc}
-          data-diagram-dark-src={diagramDarkSrc}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={`Open ${diagramLabel} SVG in a new tab`}
-        >
-          <svg
-            viewBox="0 0 16 16"
-            width="13"
-            height="13"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
+    diagramSrc ? (
+      <mermaid-diagram-shell class="diagram-wrapper not-prose">
+        <div class={className} {...rest}>
+          <img
+            class="mermaid-diagram-image mermaid-diagram-image-light"
+            src={diagramSrc}
+            alt={`${diagramLabel} diagram`}
+            decoding="async"
+          />
+          <img
+            class="mermaid-diagram-image mermaid-diagram-image-dark"
+            src={diagramDarkSrc}
+            alt=""
             aria-hidden="true"
-          >
-            <path d="M9 2h5v5" />
-            <path d="M7 9 14 2" />
-            <path d="M14 10v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3" />
-          </svg>
-          <span>Open {diagramLabel}</span>
-        </a>
+            decoding="async"
+          />
+        </div>
 
-        <button
-          type="button"
-          class="ui-panel-action js-only"
-          popovertarget={popoverId}
-          popovertargetaction="show"
-          aria-label="Expand diagram"
-          aria-haspopup="dialog"
-        >
-          <svg
-            viewBox="0 0 16 16"
-            width="13"
-            height="13"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            aria-hidden="true"
+        <div class="ui-panel-action-grid" data-no-js-single>
+          <a
+            class="ui-panel-action"
+            href={diagramSrc}
+            data-diagram-open-link
+            data-diagram-light-src={diagramSrc}
+            data-diagram-dark-src={diagramDarkSrc}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`Open ${diagramLabel} SVG in a new tab`}
           >
-            <polyline points="1,5 1,1 5,1" />
-            <polyline points="11,1 15,1 15,5" />
-            <polyline points="15,11 15,15 11,15" />
-            <polyline points="5,15 1,15 1,11" />
-          </svg>
-          <span>Expand</span>
-        </button>
-      </div>
-
-      <div
-        id={popoverId}
-        popover="auto"
-        role="dialog"
-        aria-labelledby={popoverTitleId}
-        class="diagram-popover"
-      >
-        <div class="ui-panel-inner">
-          <div class="ui-panel-header">
-            <span id={popoverTitleId} class="ui-panel-title">
-              {popoverTitle}
-            </span>
-            <button
-              type="button"
-              class="btn btn-ghost btn-sm btn-circle"
-              popovertarget={popoverId}
-              popovertargetaction="hide"
-              aria-label="Close diagram"
+            <svg
+              viewBox="0 0 16 16"
+              width="13"
+              height="13"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
             >
-              <svg
-                viewBox="0 0 24 24"
-                width="16"
-                height="16"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.5"
-                stroke-linecap="round"
-                aria-hidden="true"
-              >
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-          </div>
+              <path d="M9 2h5v5" />
+              <path d="M7 9 14 2" />
+              <path d="M14 10v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3" />
+            </svg>
+            <span>Open {diagramLabel}</span>
+          </a>
 
-          <div class="ui-panel-scroll diagram-popover-scroll">
-            <div
-              class={className}
-              {...rest}
-              data-diagram-popover-content
-            />
+          <button
+            type="button"
+            class="ui-panel-action js-only"
+            popovertarget={popoverId}
+            popovertargetaction="show"
+            aria-label="Expand diagram"
+            aria-haspopup="dialog"
+          >
+            <svg
+              viewBox="0 0 16 16"
+              width="13"
+              height="13"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <polyline points="1,5 1,1 5,1" />
+              <polyline points="11,1 15,1 15,5" />
+              <polyline points="15,11 15,15 11,15" />
+              <polyline points="5,15 1,15 1,11" />
+            </svg>
+            <span>Expand</span>
+          </button>
+        </div>
+
+        <div
+          id={popoverId}
+          popover="auto"
+          role="dialog"
+          aria-labelledby={popoverTitleId}
+          class="diagram-popover"
+        >
+          <div class="ui-panel-inner">
+            <div class="ui-panel-header">
+              <span id={popoverTitleId} class="ui-panel-title">
+                {diagramLabel}
+              </span>
+              <button
+                type="button"
+                class="btn btn-ghost btn-sm btn-circle"
+                popovertarget={popoverId}
+                popovertargetaction="hide"
+                aria-label="Close diagram"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  aria-hidden="true"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+
+            <div class="ui-panel-scroll diagram-popover-scroll">
+              <div
+                class={className}
+                {...rest}
+                data-diagram-popover-content
+              >
+                <img
+                  class="mermaid-diagram-image mermaid-diagram-image-light"
+                  src={diagramSrc}
+                  alt={`${diagramLabel} diagram`}
+                  decoding="async"
+                />
+                <img
+                  class="mermaid-diagram-image mermaid-diagram-image-dark"
+                  src={diagramDarkSrc}
+                  alt=""
+                  aria-hidden="true"
+                  decoding="async"
+                />
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </mermaid-diagram-shell>
+      </mermaid-diagram-shell>
+    ) : (
+      <div class="mermaid-error not-prose">Failed to render Mermaid diagram.</div>
+    )
   ) : (
-    <div class={className} {...rest} set:html={diagramHtml} />
+    <div class={className} {...rest}>
+      <slot />
+    </div>
   )
 }

@@ -6,7 +6,7 @@ pubDate: 2026-06-17
 order: 40
 ---
 
-The renderers return SVG strings, but the site cannot drop those strings into pages unchanged. IDs can collide, scripts must disappear, styles need scoping, and theme output has to merge into one inline diagram. The transform layer uses HAST, an HTML-shaped syntax tree, because SVG is a tree of elements and attributes. Treating that structure as plain text would be too fragile.
+The renderers return SVG strings, but the site cannot publish those strings unchanged. IDs can collide, scripts must disappear, styles need scoping, and theme output has to merge into predictable SVG assets. The transform layer uses HAST, an HTML-shaped syntax tree, because SVG is a tree of elements and attributes. Treating that structure as plain text would be too fragile.
 
 ---
 
@@ -14,15 +14,15 @@ The renderers return SVG strings, but the site cannot drop those strings into pa
 
 The shared utilities parse SVG to HAST, strip scripts, sanitize style attributes, collapse `foreignObject` line breaks, update IDs and URL references, and normalize intrinsic width and height from `viewBox`.
 
-That cleanup runs before the final SVG node becomes article HTML. It protects both inline diagrams and the popover clone path, where duplicated IDs would otherwise confuse marker references, clip paths, and CSS selectors.
+That cleanup runs before the final SVG node is stored and emitted as an asset. It protects both the article image asset and the direct-open asset path, where duplicated IDs would otherwise confuse marker references, clip paths, and CSS selectors.
 
 The transformation starts with a parsed tree. That gives the code direct access to elements, attributes, and child nodes. It can remove `<script>` elements, rewrite IDs, and move CSS without relying on brittle string replacement across full SVG documents.
 
 ### Why size normalization matters
 
-Mermaid often emits responsive SVGs with percentage width and `max-width` styles. That is useful in a normal document, but the diagram popover needs concrete intrinsic size so its scroll container can calculate useful dimensions.
+Mermaid often emits responsive SVGs with percentage width and `max-width` styles. That is useful in a normal document, but generated SVG assets need concrete intrinsic size so image layout and popover scrolling can calculate useful dimensions.
 
-The transform reads width and height from `viewBox`, writes them back as pixel attributes, and removes the stale `max-width` style. The article CSS can still make the inline diagram responsive, while expanded views get a stable natural size.
+The transform reads width and height from `viewBox`, writes them back as pixel attributes, and removes the stale `max-width` style. The article CSS can still make the SVG image responsive, while expanded views get a stable natural size.
 
 ---
 
@@ -37,7 +37,7 @@ flowchart TD
     Clean --> Scope[🎯 Scope CSS by stable ID]
     Scope --> Merge[🎨 Merge theme blocks]
     Merge --> Normalize[📐 Normalize size]
-    Normalize --> Node[✅ Article SVG node]
+    Normalize --> Node[✅ Prepared SVG node]
 
     classDef input fill:#FFE4B5,stroke:#333,stroke-width:2px,color:black
     classDef process fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
@@ -50,7 +50,7 @@ flowchart TD
 
 The first theme becomes the base SVG tree. The code removes existing style blocks from that tree and injects one merged style block at the front. That merged block contains base rules plus theme-guarded rules for the other themes.
 
-The result is one SVG element that responds to the page's `data-theme` value. The article does not need two inline diagrams. One diagram contains both theme skins.
+The result is one SVG element with predictable theme rules. The pipeline can use that prepared node to emit light and dark image assets without keeping raw renderer output in the article.
 
 ---
 
@@ -66,7 +66,7 @@ This extra work exists because inline color declarations would otherwise outrank
 
 `buildMergedThemeNode()` receives the `RenderService` value and delegates to the correct strategy. That keeps renderer-specific cleanup out of the pipeline and gives the transform layer a clear boundary.
 
-The pipeline knows it has a map of theme names to SVG strings. The transform knows how those strings differ by renderer. The article receives one HAST `svg` node either way.
+The pipeline knows it has a map of theme names to SVG strings. The transform knows how those strings differ by renderer. The pipeline receives one prepared HAST `svg` node either way.
 
 ---
 
@@ -76,25 +76,25 @@ String manipulation is tempting because SVG arrives as text. It becomes risky as
 
 HAST gives the integration a structured representation of the SVG. It can select the root, walk nodes, rewrite references, remove elements, and serialize the result back to HTML-compatible output. That makes the transform layer closer to a compiler pass than a text cleanup step.
 
-The payoff is consistent article markup. Regardless of renderer source, a diagram becomes one sanitized, scoped, multi-theme SVG node with predictable IDs and dimensions.
+The payoff is consistent output. Regardless of renderer source, a diagram becomes one sanitized, scoped, multi-theme SVG node with predictable IDs and dimensions.
 
 ---
 
 ## Shared cleanup as a compiler pass
 
-The shared cleanup step removes the pieces that should never reach article output. Scripts are stripped. Unsafe style attributes are sanitized. ForeignObject line breaks are normalized. The root SVG is shaped into the form the article wrapper expects.
+The shared cleanup step removes the pieces that should never reach published output. Scripts are stripped. Unsafe style attributes are sanitized. ForeignObject line breaks are normalized. The root SVG is shaped into the form asset emission expects.
 
 Thinking of this as a compiler pass is useful. The renderer emits SVG for a diagram. The transform layer turns that renderer-specific SVG into site-specific SVG. It is not merely cleaning text. It is enforcing the contract between external renderers and the publication system.
 
-The contract includes safe markup, stable IDs, scoped styles, usable dimensions, and theme behavior. Once the transform completes, the rest of the site can treat the diagram as article content.
+The contract includes safe markup, stable IDs, scoped styles, usable dimensions, and theme behavior. Once the transform completes, the rest of the site can treat the diagram as generated article assets.
 
 ---
 
 ## ID rewriting
 
-SVG IDs matter because diagrams often contain markers, gradients, clip paths, labels, and style selectors. If two inline diagrams share an ID, references can collide. If a cloned popover copy shares IDs with the inline diagram, references can point to the wrong element.
+SVG IDs matter because diagrams often contain markers, gradients, clip paths, labels, and style selectors. If two generated SVGs share an unscoped ID, references can collide or style selectors can target the wrong element.
 
-The build transform updates renderer IDs into scoped diagram IDs. The runtime shell later rewrites cloned IDs for expanded popovers. These are different stages of the same idea. Each SVG instance needs its own ID space.
+The build transform updates renderer IDs into scoped diagram IDs before the asset is stored. Each generated SVG needs its own ID space.
 
 HAST makes that work practical. The transform can find elements with IDs, update attributes that reference those IDs, and rewrite style selectors. Doing that with plain string replacement would be much more fragile.
 
@@ -102,7 +102,7 @@ HAST makes that work practical. The transform can find elements with IDs, update
 
 ## Multi-theme output
 
-The transform layer also shapes light and dark SVG output into one article-ready node. The renderer can return separate SVG strings for each theme. The site needs a structure that can live inline in the article and respond to the current theme.
+The transform layer also shapes light and dark SVG output into one prepared node. The renderer can return separate SVG strings for each theme. The site needs a structure that can be emitted as theme-specific assets and displayed by the article wrapper.
 
 The Worker path and Ink path reach that goal differently because their raw SVG differs. The final output still needs the same behavior. The article should display the appropriate themed diagram, and standalone assets should exist for direct viewing.
 
@@ -116,15 +116,15 @@ Mermaid output includes CSS, and CSS specificity can decide whether a theme actu
 
 The goal is not to make CSS more complicated. The goal is to put color rules where the site can manage them. A themed diagram needs the right color values for the active theme and the right scoping so those values do not leak into other diagrams.
 
-That is also why page CSS hoisting disables unsafe restructuring later. Diagram CSS carries theme behavior, so optimization must preserve cascade intent.
+That is also why the transform keeps SVG styling inside the emitted asset contract. Diagram CSS carries theme behavior, so optimization must preserve cascade intent.
 
 ---
 
 ## Transform output for runtime
 
-The runtime shell depends on the transform output being stable. It expects inline SVG inside a wrapper, data attributes for standalone assets, and page CSS that can be attached to a popover clone. The transform layer does not implement the popover, but it prepares the markup the popover can reuse.
+The runtime shell depends on the transform output being stable. It expects data attributes that point to light and dark SVG assets. The transform layer does not implement the popover, but it prepares the SVG files that the wrapper and popover can reuse.
 
-This is a good example of build and runtime cooperation. The build creates a diagram that is readable and structured. The runtime clones that structure when the reader wants a larger view. Each stage respects the previous one.
+This is a good example of build and runtime cooperation. The build creates readable SVG assets. The runtime only keeps the Open link aligned with the active theme while the wrapper displays the prepared images.
 
 ---
 
@@ -150,7 +150,7 @@ This is the same pattern used across the site. Durable transformation belongs be
 
 After transform, the rest of the site expects predictable SVG. IDs should be scoped. Theme CSS should be present in the expected form. Unsafe nodes should be gone. Dimensions should be usable. Provider quirks should no longer leak into article rendering.
 
-Those expectations let later stages stay simple. Asset emission can write SVG files. The article wrapper can place inline diagrams. CSS hoisting can find style blocks. The runtime shell can clone the SVG for popovers.
+Those expectations let later stages stay simple. Asset emission can write SVG files. The article wrapper can place SVG images. The runtime shell can point Open links at the right theme asset.
 
 The transform layer therefore creates trust between renderer providers and publication output.
 

@@ -1,6 +1,6 @@
 ---
 title: "Batch pipeline, disk cache, and remote cache"
-description: "Concurrent MDX files register diagrams with one build-scoped coordinator that handles cache lookup, batch rendering, and asset emission."
+description: "Publishable Markdown files prepare diagrams with one build-scoped coordinator that handles cache lookup, batch rendering, and asset emission."
 tags: ["mermaid", "caching", "build"]
 pubDate: 2026-06-17
 order: 10
@@ -12,7 +12,7 @@ The Mermaid pipeline exists because every unnecessary render has a cost. It can 
 
 ## Pipeline state
 
-`createPipeline()` returns a build-scoped `DiagramPipeline` instance. The integration creates it at `astro:build:start`, passes its `registerDiagram()` function to the remark plugin, and clears the reference after `astro:build:done`.
+`createPipeline()` returns a build-scoped `DiagramPipeline` instance. The integration creates it at `astro:build:start`, scans publishable Markdown for Mermaid fences, calls `prepareDiagrams()`, and clears the reference after `astro:build:done`. During Markdown rendering, the Sätteri plugin only performs synchronous `getDiagram()` lookups against that prepared registry.
 
 The important design choice is instance state. The pipeline does not rely on module-level singletons that need manual reset calls between builds. The integration creates one pipeline for one build, then the closures used by the plugin and build hooks share that instance.
 
@@ -34,7 +34,7 @@ The pipeline checks several caches before calling a renderer. Each layer avoids 
 
 ```mermaid
 flowchart TD
-    Register[📌 Register diagram] --> Memory{⚡ Memory cache}
+    Register[📌 Prepare diagram] --> Memory{⚡ Memory cache}
     Memory -->|hit| Return[✅ Return SVG node]
     Memory -->|miss| Disk{💾 Disk cache}
     Disk -->|hit| Return
@@ -55,15 +55,15 @@ flowchart TD
 
 The memory cache handles repeated diagrams within the same build. The disk cache lives under `.astro/mermaid-cache/` through `AstroDiskBus`. The remote asset cache reads from `config.site + assetHref` unless `MERMAID_DISABLE_REMOTE_CACHE=true`.
 
-Remote cache lookup is a static-site trick. If production already has the exact SVG asset for a diagram, the next build can fetch it, strip standalone-only CSS, sanitize it, and reuse it as the inline node. The generated site becomes part of the build cache.
+Remote cache lookup is a static-site trick. If production already has the exact SVG asset for a diagram, the next build can fetch it, strip standalone-only CSS, sanitize it, and reuse it as the prepared SVG node. The generated site becomes part of the build cache.
 
 ---
 
 ## Batch orchestration
 
-MDX files can process concurrently, so diagrams may register from many files at nearly the same time. The pipeline collects those registrations before it flushes a render batch.
+Diagram preparation can touch many source files at nearly the same time. The pipeline collects unresolved diagrams before it flushes a render batch.
 
-`FLUSH_DEBOUNCE_MS = 800` gives concurrent remark pipelines time to register diagrams. `CHUNK_SIZE = 40` keeps Worker payloads within the expected size. `INTER_CHUNK_DELAY_MS = 22000` spaces Worker chunk requests so the rendering service is not treated like an infinite local function.
+`FLUSH_DEBOUNCE_MS = 800` gives concurrent preparation calls time to collect diagrams. `CHUNK_SIZE = 40` keeps Worker payloads within the expected size. `INTER_CHUNK_DELAY_MS = 22000` spaces Worker chunk requests so the rendering service is not treated like an infinite local function.
 
 The batch flush copies the current batch, clears the queue, and renders chunks one at a time. Each chunk calls `fetchDiagrams()`, then transforms the returned theme map into a site-ready HAST node with `buildMergedThemeNode()`.
 
@@ -84,7 +84,7 @@ The pipeline also records each used asset so `emitAssets()` can write only diagr
 /_app/mermaid/{stableId}-{cacheKey}-dark.svg
 ```
 
-The inline SVG remains in article HTML. The standalone assets power Open Diagram links and production cache reuse. That split gives readers immediate diagram markup and gives the build a durable reuse target for unchanged diagrams.
+The article receives SVG image metadata. The standalone assets power visible diagrams, Open Diagram links, and production cache reuse. That split gives readers immediate static diagrams and gives the build a durable reuse target for unchanged diagrams.
 
 Standalone assets receive background CSS and a background rectangle. The dark asset also receives unguarded dark CSS so it can render correctly as its own file rather than relying on a page-level `data-theme` wrapper.
 
@@ -94,17 +94,17 @@ Standalone assets receive background CSS and a background rectangle. The dark as
 
 `MERMAID_RENDERER_FIXTURE=true` switches rendering to deterministic local fixture output. That mode exists so the static build can exercise the pipeline without external renderer calls.
 
-The fixture renderer still produces SVG maps for the requested themes. The rest of the pipeline still registers diagrams, merges theme output, emits assets, and hoists CSS. That keeps the build shape close to production while replacing the network-dependent rendering step.
+The fixture renderer still produces SVG maps for the requested themes. The rest of the pipeline still prepares diagrams, merges theme output, and emits assets. That keeps the build shape close to production while replacing the network-dependent rendering step.
 
 This is another example of the site's general pattern. External work is isolated behind a contract, and the build can still walk the same architecture with controlled inputs.
 
 ---
 
-## Registration from MDX
+## Preparation before MDX
 
-The pipeline starts when MDX is processed. Mermaid code fences are not rendered directly by the browser. The remark layer registers their source with the `DiagramPipeline`, and the article receives a placeholder that can later become rendered SVG.
+The pipeline starts before MDX is processed. Mermaid code fences are not rendered directly by the browser. The integration scans publishable Markdown, prepares each source with the `DiagramPipeline`, and stores the resulting asset metadata in a build-scoped registry.
 
-That registration step is important because the build needs to know all diagrams before it can batch renderer requests and emit assets. A diagram is both article content and a future static asset. The pipeline gives it an identity before the renderer sees it.
+That preparation step is important because the build needs to know all diagrams before Sätteri transforms their files. A diagram is both article content and a future static asset. The pipeline gives it an identity before the renderer sees it.
 
 The stable ID and cache key are separate ideas. The stable ID gives the diagram a readable anchor across output files. The cache key reflects the source, themes, renderer version, and other inputs that affect output bytes. Together they support predictable filenames and cache reuse.
 
@@ -132,17 +132,17 @@ The provider boundary stays clean. The pipeline does not need to know browser de
 
 ## From SVG map to article node
 
-After rendering, the transform layer receives theme-specific SVG strings and builds one merged article node. That node contains the inline diagram the reader sees. Asset emission writes light and dark standalone versions for Open links. Page CSS hoisting later reduces repeated style blocks in the built HTML.
+After rendering, the transform layer receives theme-specific SVG strings and builds one merged SVG node. Asset emission writes light and dark standalone versions for article images and Open links. The Sätteri plugin later emits the wrapper metadata that points at those assets.
 
-The pipeline therefore connects several outputs from one source fence. Inline article SVG, standalone light SVG, standalone dark SVG, page CSS, cache entries, and runtime data attributes all trace back to the same diagram source.
+The pipeline therefore connects several outputs from one source fence. Article image metadata, standalone light SVG, standalone dark SVG, cache entries, and runtime data attributes all trace back to the same diagram source.
 
 That is why pipeline state matters. The integration needs to remember diagrams not only as content snippets, but as build artifacts with multiple output responsibilities.
 
 ---
 
-## Keep registration build-scoped
+## Keep preparation build-scoped
 
-The Mermaid pipeline turns a code fence into a set of static artifacts. It registers diagrams during MDX processing, reuses cached SVG where possible, renders through provider contracts, transforms output into article-safe nodes, emits standalone assets, and supports deterministic fixture builds.
+The Mermaid pipeline turns a code fence into a set of static artifacts. It prepares diagrams before MDX processing, reuses cached SVG where possible, renders through provider contracts, transforms output into article-safe nodes, emits standalone assets, and supports deterministic fixture builds.
 
 That is a lot of work, but it happens before deployment. The reader receives diagrams as part of the page, which is exactly the static-first philosophy applied to visual documentation.
 
@@ -150,9 +150,9 @@ That is a lot of work, but it happens before deployment. The reader receives dia
 
 ## Pipeline state as memory
 
-The pipeline acts as build memory. As MDX files are processed, diagrams appear at different moments. The pipeline collects them, gives them identities, tracks cache keys, stores render output, and later emits assets after Astro has generated routes.
+The pipeline acts as build memory. Before MDX files are processed, diagrams are collected from publishable source files. The pipeline gives them identities, tracks cache keys, stores render output, and later emits assets after Astro has generated routes.
 
-That memory is necessary because Mermaid output is used in more than one build phase. The article needs inline SVG during rendering. The asset hook needs to write standalone files later. The build summary needs to know what happened. Page CSS hoisting needs final HTML at the end.
+That memory is necessary because Mermaid output is used in more than one build phase. The article needs asset metadata during rendering. The asset hook needs to write standalone files later. The build summary needs to know what happened.
 
 Without a pipeline object, those phases would have to communicate through scattered globals or repeated filesystem scans. A named `DiagramPipeline` gives the integration one place to hold diagram state and one vocabulary for moving diagrams through the build.
 
@@ -160,8 +160,8 @@ Without a pipeline object, those phases would have to communicate through scatte
 
 ## Why hooks matter
 
-Astro hooks place each step at the moment when enough information exists. At build start, the integration can prepare caches. During MDX processing, it can register diagrams. At build generated, it can emit assets into the output directory. At build done, it can scan completed HTML for CSS hoisting.
+Astro hooks place each step at the moment when enough information exists. At build start, the integration can prepare caches and diagram metadata. During MDX processing, Sätteri can read the prepared registry. At build generated, the integration can emit assets into the output directory. At build done, it can report the build summary and clear state.
 
-This hook order keeps the work honest. The integration does not try to emit assets before it knows what diagrams exist. It does not hoist CSS before pages exist. It does not wait until runtime to do work that the build can finish.
+This hook order keeps the work honest. The integration does not try to emit assets before it knows what diagrams exist. It does not wait until runtime to do work that the build can finish.
 
 The pipeline is therefore both a data structure and a schedule.

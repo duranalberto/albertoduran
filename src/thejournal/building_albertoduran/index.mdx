@@ -35,7 +35,7 @@ flowchart LR
     Host --> Browser[Optional interaction]
 ```
 
-Static output is an organizing constraint, not a performance result by itself. It removes request-time page assembly and gives every route a readable baseline before JavaScript runs. The repository has no recorded Lighthouse or Web Vitals baseline, and the current deterministic build warns about some JavaScript chunks above 500 kB. Those facts belong beside the design choice.
+Static output is an organizing constraint, not a performance result by itself. It removes request-time page assembly and gives every route a readable baseline before JavaScript runs. The repository has no recorded Lighthouse or Web Vitals baseline, and the deterministic build enforces a 500 KiB raw per-file JavaScript budget while reporting broader asset totals. Those facts belong beside the design choice.
 
 ---
 

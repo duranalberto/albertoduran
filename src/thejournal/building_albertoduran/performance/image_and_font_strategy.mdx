@@ -86,7 +86,7 @@ This is the pattern the site follows. Image performance is not one rule. It is a
 
 `BaseLayout.astro` registers three font families. Registering fonts at the layout level gives the whole site named font variables instead of making each component choose a raw font file.
 
-Inter comes from Fontsource as `--font-inter`. Montserrat comes from Fontsource as `--font-montserrat`. Fira Code loads from a local WOFF2 file as `--font-fira-code`. The Astro font configuration defines weights, subsets, display behavior, and local source metadata.
+Inter comes from Fontsource as `--font-inter`. Montserrat comes from Fontsource as `--font-montserrat`. Fira Code loads from a local WOFF2 subset as `--font-fira-code`. The full Nerd Font remains in `src/assets/fonts/` as the source file, and `npm run font:subset` regenerates the smaller runtime file when that source changes.
 
 The Tailwind theme maps those variables to `--font-sans`, `--font-display`, `--font-reading`, and `--font-mono`.
 

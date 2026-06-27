@@ -27,9 +27,8 @@
  * v4.5 — normalizes Worker SVG foreignObject line breaks and keeps Mermaid
  *         :root rules unscoped so production HTML labels stay inside nodes.
  *
- * v4.6 — preserves Mermaid page CSS cascade order after hoisting styles and
- *         invalidates immutable standalone SVG URLs emitted with older style
- *         processing.
+ * v4.6 — preserves Mermaid style cascade order inside emitted SVG assets and
+ *         invalidates immutable SVG URLs emitted with older style processing.
  */
 export const RENDERER_VERSION = "v4.6";
 

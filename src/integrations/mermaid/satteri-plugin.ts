@@ -1,40 +1,21 @@
-import { defineMdastPlugin, defineHastPlugin } from "satteri";
+import { defineMdastPlugin } from "satteri";
 import { createHash } from "node:crypto";
 import type { Code } from "mdast";
-import type { Element } from "hast";
-import type { HastVisitorContext } from "satteri";
 import type { MdxJsxFlowElement, MdxJsxAttributeNode } from "satteri";
-import { toHtml } from "hast-util-to-html";
 import type { RegisteredDiagram } from "./pipeline.ts";
 
-// MdastVisitorContext is not re-exported from the satteri package root.
 interface MdastCtx {
   data: Record<string, unknown>;
   fileURL?: unknown;
 }
 
-// HastRaw is not re-exported from the satteri package root.
-interface HastRaw {
-  type: "raw";
-  value: string;
-}
-
 export interface MermaidSatteriPluginConfig {
-  registerDiagram: (stableId: string, code: string) => Promise<RegisteredDiagram>;
+  getDiagram: (
+    stableId: string,
+    code: string,
+  ) => RegisteredDiagram | null | undefined;
   shouldRenderDiagram?: (fileURL: URL | undefined) => boolean;
 }
-
-// Key used in ctx.data to share diagram metadata from MDAST to HAST.
-// Both phases receive the same ctx.data object per document.
-const MERMAID_DATA_KEY = "_mermaidNodes";
-
-interface MermaidEntry {
-  svgNode: Element;
-  assetHref: string;
-  assetHrefDark: string;
-  cacheKey: string;
-}
-type MermaidDataMap = Record<string, MermaidEntry>;
 
 function getStableId(code: string): string {
   return createHash("sha256").update(code).digest("hex").slice(0, 8);
@@ -52,107 +33,100 @@ function attr(name: string, value: string): MdxJsxAttributeNode {
   return { type: "mdxJsxAttribute", name, value };
 }
 
+function getDiagramType(code: string): string {
+  const keyword = code.trim().match(/^([A-Za-z][\w-]*)/)?.[1] ?? "diagram";
+
+  if (keyword === "graph") return "flowchart";
+  if (keyword.startsWith("stateDiagram")) return "state";
+  if (keyword.startsWith("sequenceDiagram")) return "sequence";
+  if (keyword.startsWith("classDiagram")) return "class";
+  if (keyword.startsWith("erDiagram")) return "entity relationship";
+  if (keyword.startsWith("gitGraph")) return "git graph";
+  if (keyword.startsWith("xychart")) return "chart";
+
+  return keyword.replace(/-/g, " ");
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 function createMdxMermaidNode(
   stableId: string,
-  entry: MermaidEntry,
+  diagram: RegisteredDiagram,
+  diagramType: string,
 ): MdxJsxFlowElement {
   return {
     type: "mdxJsxFlowElement",
     name: "MermaidDiagramWrapper",
     attributes: [
       attr("class", "mermaid-diagram-container"),
-      attr("data-diagram-src", entry.assetHref),
-      attr("data-diagram-dark-src", entry.assetHrefDark),
+      attr("data-diagram-src", diagram.assetHref),
+      attr("data-diagram-dark-src", diagram.assetHrefDark),
       attr("data-diagram-stable-id", stableId),
-      attr("data-diagram-cache-key", entry.cacheKey),
+      attr("data-diagram-cache-key", diagram.cacheKey),
+      attr("data-diagram-type", diagramType),
     ],
-    children: [
-      {
-        type: "mdxJsxFlowElement",
-        name: "Fragment",
-        attributes: [
-          attr("set:html", toHtml(entry.svgNode, { space: "svg" })),
-        ],
-        children: [],
-      },
-    ],
+    children: [],
   };
 }
 
-/**
- * MDAST plugin: replaces mermaid code fences with a small rawHtml placeholder
- * and stashes the rendered SVG HAST node in ctx.data for the HAST phase.
- *
- * Using rawHtml produces a HAST `raw` node (opaque string), not an `element`.
- * The SVG itself (300 KB–700 KB) is injected structurally in the HAST phase
- * via node replacement, bypassing Rust's HTML re-parser entirely.
- */
+function createStaticMermaidHtml(
+  stableId: string,
+  diagram: RegisteredDiagram,
+  diagramType: string,
+): string {
+  if (!diagram.assetHref) {
+    return '<div class="mermaid-error">Failed to render Mermaid diagram.</div>';
+  }
+
+  const label = `${diagramType.charAt(0).toUpperCase()}${diagramType.slice(1)} diagram`;
+  const lightSrc = escapeHtml(diagram.assetHref);
+  const darkSrc = escapeHtml(diagram.assetHrefDark || diagram.assetHref);
+
+  return [
+    `<div class="mermaid-diagram-container" data-diagram-src="${lightSrc}" data-diagram-dark-src="${darkSrc}" data-diagram-stable-id="${escapeHtml(stableId)}" data-diagram-cache-key="${escapeHtml(diagram.cacheKey)}" data-diagram-type="${escapeHtml(diagramType)}">`,
+    `<img class="mermaid-diagram-image mermaid-diagram-image-light" src="${lightSrc}" alt="${escapeHtml(label)}" decoding="async">`,
+    `<img class="mermaid-diagram-image mermaid-diagram-image-dark" src="${darkSrc}" alt="" aria-hidden="true" decoding="async">`,
+    "</div>",
+  ].join("");
+}
+
+function createSkippedMermaidNode(): { rawHtml: string } {
+  return { rawHtml: "" };
+}
+
 export function createMermaidMdastPlugin(config: MermaidSatteriPluginConfig) {
   return defineMdastPlugin({
     name: "mermaid",
-    async code(node: Readonly<Code>, ctx: MdastCtx) {
+    code(node: Readonly<Code>, ctx: MdastCtx) {
       if (node.lang !== "mermaid") return;
       const fileURL = getFileURL(ctx);
-      if (config.shouldRenderDiagram?.(fileURL) === false) return;
+      if (config.shouldRenderDiagram?.(fileURL) === false) {
+        return createSkippedMermaidNode();
+      }
 
       const code = node.value.trim();
       const stableId = getStableId(code);
-      const diagram = await config.registerDiagram(stableId, code);
+      const diagram = config.getDiagram(stableId, code);
 
-      const data = ctx.data;
-      const map: MermaidDataMap = (data[MERMAID_DATA_KEY] as MermaidDataMap) ?? {};
-      map[stableId] = {
-        svgNode: diagram.node,
-        assetHref: diagram.assetHref,
-        assetHrefDark: diagram.assetHrefDark,
-        cacheKey: diagram.cacheKey,
-      };
-      data[MERMAID_DATA_KEY] = map;
-
-      if (isMdxFile(ctx)) {
-        return createMdxMermaidNode(stableId, map[stableId]!);
+      if (!diagram) {
+        throw new Error(
+          `[mermaid] Diagram "${stableId}" was not prepared before Markdown rendering.`,
+        );
       }
 
-      return { rawHtml: `<div data-mermaid-stable-id="${stableId}"></div>` };
-    },
-  });
-}
+      const diagramType = getDiagramType(code);
 
-/**
- * HAST plugin: companion to createMermaidMdastPlugin.
- *
- * rawHtml from the MDAST phase produces HAST `raw` nodes (opaque HTML strings).
- * This plugin uses the `raw` visitor to intercept those placeholders, looks up
- * the pre-rendered SVG from ctx.data, and returns a structured Element to replace
- * the raw node — no HTML serialisation or re-parsing of the large SVG.
- */
-export function createMermaidHastPlugin() {
-  return defineHastPlugin({
-    name: "mermaid-svg-inject",
-    raw(node: Readonly<HastRaw>, ctx: HastVisitorContext) {
-      const match = node.value.match(/data-mermaid-stable-id="([^"]+)"/);
-      if (!match) return;
-      const stableId = match[1]!;
+      if (isMdxFile(ctx)) {
+        return createMdxMermaidNode(stableId, diagram, diagramType);
+      }
 
-      const map = (ctx.data as Record<string, unknown>)[MERMAID_DATA_KEY] as
-        | MermaidDataMap
-        | undefined;
-      const entry = map?.[stableId];
-      if (!entry) return;
-
-      // Returning a HastNode from a visitor replaces the current node.
-      return {
-        type: "element",
-        tagName: "div",
-        properties: {
-          className: ["mermaid-diagram-container"],
-          "data-diagram-src": entry.assetHref,
-          "data-diagram-dark-src": entry.assetHrefDark,
-          "data-diagram-stable-id": stableId,
-          "data-diagram-cache-key": entry.cacheKey,
-        },
-        children: [entry.svgNode],
-      } satisfies Element;
+      return { rawHtml: createStaticMermaidHtml(stableId, diagram, diagramType) };
     },
   });
 }

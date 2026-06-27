@@ -49,7 +49,7 @@ not for every documentation or journal-content edit.
 | Documentation-only changes                     | No automated tests required unless the docs include generated examples or command output that should be validated.                                                                                    |
 | Journal content-only changes under `src/thejournal/` | Content validation with `npm run check` or a focused build/route check when frontmatter, images, Mermaid, vault shape, or generated paths are affected. Avoid the full unit and E2E suites by default. |
 | Content manifest, journal routing, vault logic | Vitest tests for manifest shape, required images, draft filtering, sorting, child inheritance, and previous/next links.                                                                              |
-| Mermaid rendering or SVG handling              | Vitest tests for HAST utilities, page CSS hoisting, and theme transforms; Playwright check for rendered diagram shell behavior. Follow `docs/components/MERMAID_RENDERING.md` for release cache/version checks. |
+| Mermaid rendering or SVG handling              | Vitest tests for HAST utilities, prepared registry lookup, asset emission, and theme transforms; Playwright check for rendered diagram shell behavior. Follow `docs/components/MERMAID_RENDERING.md` for release cache/version checks. |
 | Runtime browser behavior                       | Playwright tests against production preview.                                                                                                                                                         |
 | External data loaders                          | Vitest tests with mocked `fetch`; no live network dependency in tests.                                                                                                                               |
 | Layout, navigation, or route changes           | Playwright smoke coverage for affected routes and semantic navigation assertions.                                                                                                                    |
@@ -62,7 +62,7 @@ Vitest currently covers:
 - Navigation path normalization and journal publication detection.
 - Ribbon SVG dimensions, ID scoping, and reference rewriting.
 - Atlas loader normal schedule data, zero-record standings fallback, missing match behavior, failed fetch handling, and deterministic test mode.
-- Mermaid HAST sanitation, page CSS hoisting without unsafe selector restructuring, ID/reference rewriting, foreignObject line break cleanup, Worker theme merging, Ink inline-color hoisting, and dispatcher failure guards.
+- Mermaid HAST sanitation, prepared registry lookup, asset emission, ID/reference rewriting, foreignObject line break cleanup, Worker theme merging, Ink inline-color hoisting, and dispatcher failure guards.
 - Journal manifest build rules: standalone/vault image requirements, draft standalone and draft index subtree filtering, nested vault grouping, child image inheritance, sorted traversal, previous/next links, read time, and path context lookup.
 - HTML minification while preserving `<pre>`, `<code>`, and `<kbd>` fragments.
 
@@ -72,7 +72,7 @@ Playwright currently covers:
 - Journal catalog links to generated article routes.
 - Article headings, On This Page navigation, vault context, and pagination.
 - Theme toggle persistence across Astro navigation.
-- Mermaid diagram shell inline SVG rendering, expanded popover cloning, clone ID rewriting, and theme-specific asset links.
+- Mermaid diagram shell static SVG image rendering, asset-backed popovers, no-JS visibility, and theme-specific asset links.
 - Basic semantic checks for title, main/header/footer landmarks, active navigation, and browser console errors.
 
 ## CI

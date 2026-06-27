@@ -73,7 +73,7 @@ Those flags keep the build faithful to the architecture while removing outside v
 
 ## Vitest layer
 
-Vitest covers the code that can be tested without a full browser. That includes manifest building, navigation helpers, Mermaid HAST utilities, Mermaid transform behavior, Mermaid page CSS hoisting, ECharts SSR and option helpers, the custom HTML minifier, the Atlas loader, and SVG ribbon generation.
+Vitest covers the code that can be tested without a full browser. That includes manifest building, navigation helpers, Mermaid HAST utilities, Mermaid transform behavior, Mermaid registry and asset emission, ECharts SSR and option helpers, the custom HTML minifier, the Atlas loader, and SVG ribbon generation.
 
 This is the right home for deterministic transformations. A manifest function can receive fixture entries and return published entries, route context, vault structure, and pagination links. A Mermaid utility can receive SVG-like HTML and return sanitized output. A ribbon helper can receive icon definitions and return dimensions with scoped IDs.
 

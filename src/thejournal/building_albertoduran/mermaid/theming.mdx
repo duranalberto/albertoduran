@@ -86,7 +86,7 @@ This is a small optimization, but it follows the same pattern as the rest of the
 
 ## Theme output as a contract
 
-The renderer service receives Mermaid config, not site CSS. The transform layer receives SVG strings, not palette objects. Runtime receives inline SVG and standalone asset links, not Mermaid token maps.
+The renderer service receives Mermaid config, not site CSS. The transform layer receives SVG strings, not palette objects. Runtime receives SVG asset links, not Mermaid token maps.
 
 That chain makes theme generation a contract between the design system and the renderer. DaisyUI owns the site palette. `generateMermaidTheme()` translates that palette into Mermaid language. The renderer turns that language into SVG.
 
@@ -128,7 +128,7 @@ This makes color pairing part of the diagram build, but the repository does not 
 
 The light and dark diagram themes are siblings generated from the same theme function. That matters because the diagrams should feel like the same content in different palettes. The dark version should not look like a separate diagram style pasted into the article.
 
-The integration renders both versions and emits standalone assets for both. Runtime can then point Open links at the correct asset based on `html[data-theme]`. Inline diagrams and standalone diagrams share the same theme source.
+The integration renders both versions and emits assets for both. Runtime can then point Open links at the correct asset based on `html[data-theme]`. Article diagrams and standalone diagrams share the same theme source.
 
 This keeps the article experience coherent across theme changes. The reader sees a site-wide palette shift, not an unrelated diagram swap.
 

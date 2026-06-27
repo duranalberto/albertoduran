@@ -110,7 +110,7 @@ The same principle applies to view-transition-driven navigation. The site serves
 
 ## Mermaid, ECharts, and no-JS behavior
 
-Mermaid popover behavior depends on custom elements, the Popover API, cloned SVG nodes, rewritten IDs, page CSS attachment, and theme-specific Open links. Unit tests cover the transform pipeline. Playwright covers the browser shell that expands the rendered diagram.
+Mermaid popover behavior depends on custom elements, the Popover API, asset-backed SVG images, no-JS visibility, and theme-specific Open links. Unit tests cover the transform pipeline. Playwright covers the browser shell that expands the rendered diagram.
 
 ECharts browser coverage checks the other visual path. The fixture route renders static SVG with JavaScript disabled, verifies file-backed chart assets, checks that `hydrate="load"` replaces a static surface with an enhanced ECharts surface, and confirms that `hydrate="media"` waits until the media query matches.
 

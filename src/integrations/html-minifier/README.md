@@ -25,7 +25,7 @@ Those ignored fragments protect rendered code samples and keyboard snippets in j
 
 ## Error Handling
 
-Each file is minified independently. If one file fails, the integration logs the failed path and error, then continues processing the remaining HTML files. At the end, it logs how many HTML files were discovered.
+Each file is minified independently. If one file fails, the integration logs the failed path and error, finishes the current batch, and then fails the build with a summary of every failed file.
 
 ## Cache Behavior
 
@@ -33,6 +33,5 @@ The integration has no cache of its own. It rewrites generated files in `dist/` 
 
 ## Known Limitations
 
-- A minification failure is logged but does not currently fail the build.
 - The integration assumes generated HTML is valid enough for `html-minifier-terser`.
 - If new content components require whitespace preservation, add their HTML wrappers to `ignoreCustomFragments` and cover the behavior with a focused unit test.

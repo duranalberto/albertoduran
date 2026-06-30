@@ -1,0 +1,25 @@
+---
+import { resolvePreparedMermaidDiagram } from "@integrations/mermaid/build-context";
+import type { MermaidDiagramDefinition } from "@integrations/mermaid/definition";
+import MermaidDiagramWrapper from "./MermaidDiagramWrapper.astro";
+
+export interface Props {
+  code: MermaidDiagramDefinition | string;
+  class?: string;
+}
+
+const { code, class: className } = Astro.props;
+const { stableId, diagramType, diagram } = resolvePreparedMermaidDiagram(code);
+const wrapperClass = ["mermaid-diagram-container", className]
+  .filter(Boolean)
+  .join(" ");
+---
+
+<MermaidDiagramWrapper
+  class={wrapperClass}
+  data-diagram-src={diagram.assetHref}
+  data-diagram-dark-src={diagram.assetHrefDark}
+  data-diagram-stable-id={stableId}
+  data-diagram-cache-key={diagram.cacheKey}
+  data-diagram-type={diagramType}
+/>

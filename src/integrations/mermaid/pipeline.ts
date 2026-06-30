@@ -4,7 +4,7 @@
  * Build-time diagram pipeline: registry, batch orchestration, and cache.
  *
  * ## Public API (consumed by integration.ts and plugin.ts)
- *   createPipeline(svgBus, themes, logger) → DiagramPipeline
+ *   createPipeline(svgBus, manifestBus, themes, logger) → DiagramPipeline
  *   DiagramPipeline.prepareDiagrams(diagrams) → Promise<void>
  *   DiagramPipeline.getDiagram(stableId) → RegisteredDiagram | null
  *   DiagramPipeline.logBuildSummary(astroLogger?)
@@ -19,10 +19,11 @@
  * requests internally; the debounce here still coalesces diagram preparation
  * so the Ink renderer receives all diagrams in a single render() call.
  *
- * The production asset cache is deliberately skipped when MERMAID_RENDERER_URL
- * is configured. Cloudflare builds should render through the Worker rather
- * than opening many fetches back to the currently deployed site before the
- * build output exists. Set MERMAID_ENABLE_REMOTE_CACHE=true to opt back in.
+ * The production asset cache (config.site + assetHref) is checked ahead of
+ * the render service whenever `site` is configured, so an already-published,
+ * known-good SVG is reused instead of re-rendering — this is what keeps a
+ * Worker outage from taking every diagram down with it. Set
+ * MERMAID_DISABLE_REMOTE_CACHE=true to force a fresh render every build.
  */
 
 import type { AstroIntegrationLogger } from "astro";
@@ -84,16 +85,43 @@ interface DiagramAsset {
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-function buildCacheKey(code: string, version: string): string {
+export function buildCacheKey(code: string, version: string): string {
   return createHash("sha256").update(`${version}::${code}`).digest("hex");
 }
 
-function buildAssetHref(stableId: string, cacheKey: string): string {
+export function buildAssetHref(stableId: string, cacheKey: string): string {
   return `/_app/mermaid/${stableId}-${cacheKey}.svg`;
 }
 
-function buildDarkAssetHref(stableId: string, cacheKey: string): string {
+export function buildDarkAssetHref(stableId: string, cacheKey: string): string {
   return `/_app/mermaid/${stableId}-${cacheKey}-dark.svg`;
+}
+
+/**
+ * Builds a RegisteredDiagram from a raw cached HAST node. Pure and
+ * process-independent — used both by DiagramPipeline (in-memory, during the
+ * primary build) and by build-context.ts (reading straight from the disk
+ * cache, since Astro's static-output prerender step reloads component chunks
+ * in a fresh module instance that doesn't share the pipeline's in-memory
+ * state).
+ */
+export function finalizeRegisteredDiagram(
+  stableId: string,
+  cacheKey: string,
+  sourceNode: HastElement,
+): RegisteredDiagram {
+  const node = structuredClone(sourceNode);
+  sanitizeStyleAttributes(node);
+
+  const hasSvgAsset = node.tagName === "svg";
+
+  return {
+    node,
+    stableId,
+    cacheKey,
+    assetHref: hasSvgAsset ? buildAssetHref(stableId, cacheKey) : "",
+    assetHrefDark: hasSvgAsset ? buildDarkAssetHref(stableId, cacheKey) : "",
+  };
 }
 
 function makeFallbackNode(): HastElement {
@@ -247,6 +275,7 @@ function serializeSvgAsset(
 
 export class DiagramPipeline {
   private readonly svgBus: AstroDiskBus<HastElement>;
+  private readonly manifestBus: AstroDiskBus<RegisteredDiagram>;
   private readonly themes: Map<string, MermaidPalette>;
   private readonly rendererVersion: string;
   private readonly buildLogger: BuildLogger;
@@ -260,11 +289,13 @@ export class DiagramPipeline {
 
   constructor(
     svgBus: AstroDiskBus<HastElement>,
+    manifestBus: AstroDiskBus<RegisteredDiagram>,
     themes: Map<string, MermaidPalette>,
     rendererVersion: string,
     site: string | undefined,
   ) {
     this.svgBus = svgBus;
+    this.manifestBus = manifestBus;
     this.themes = themes;
     this.rendererVersion = rendererVersion;
     this.buildLogger = new BuildLogger();
@@ -280,6 +311,10 @@ export class DiagramPipeline {
       Array.from(diagrams.entries()).map(async ([stableId, code]) => {
         const diagram = await this.resolveDiagram(stableId, code);
         this.preparedDiagrams.set(stableId, diagram);
+        // Persisted even for failure placeholders — the static-output
+        // prerender step reads this manifest from a fresh module instance
+        // that never sees this.preparedDiagrams (see build-context.ts).
+        await this.manifestBus.set(stableId, diagram);
       }),
     );
   }
@@ -424,28 +459,19 @@ export class DiagramPipeline {
     assetHrefDark: string,
     sourceNode: HastElement,
   ): RegisteredDiagram {
-    const node = structuredClone(sourceNode);
-    sanitizeStyleAttributes(node);
+    const diagram = finalizeRegisteredDiagram(stableId, cacheKey, sourceNode);
 
-    const hasSvgAsset = node.tagName === "svg";
-
-    if (hasSvgAsset) {
+    if (diagram.assetHref) {
       this.usedAssets.set(cacheKey, {
         stableId,
         cacheKey,
         assetHref,
         assetHrefDark,
-        node: structuredClone(node),
+        node: structuredClone(diagram.node),
       });
     }
 
-    return {
-      node,
-      stableId,
-      cacheKey,
-      assetHref: hasSvgAsset ? assetHref : "",
-      assetHrefDark: hasSvgAsset ? assetHrefDark : "",
-    };
+    return diagram;
   }
 
   private async getRemoteCachedNode(
@@ -576,20 +602,18 @@ export class DiagramPipeline {
  */
 export function createPipeline(
   svgBus: AstroDiskBus<HastElement>,
+  manifestBus: AstroDiskBus<RegisteredDiagram>,
   themes: Map<string, MermaidPalette>,
   rendererVersion: string,
   site?: string,
 ): DiagramPipeline {
-  return new DiagramPipeline(svgBus, themes, rendererVersion, site);
+  return new DiagramPipeline(svgBus, manifestBus, themes, rendererVersion, site);
 }
 
 export function resolveRemoteCacheBaseUrl(
   site: string | undefined,
 ): string | null {
-  const remoteCacheEnabled =
-    process.env.MERMAID_DISABLE_REMOTE_CACHE !== "true" &&
-    (process.env.MERMAID_ENABLE_REMOTE_CACHE === "true" ||
-      !process.env.MERMAID_RENDERER_URL);
+  const remoteCacheEnabled = process.env.MERMAID_DISABLE_REMOTE_CACHE !== "true";
 
   return !remoteCacheEnabled || !site ? null : site.replace(/\/$/, "");
 }

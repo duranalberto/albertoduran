@@ -2,6 +2,13 @@
 
 `MockupWindow.astro` presents arbitrary content in DaisyUI's window mockup. It is a static, theme-aware component with no client-side JavaScript and can be imported by Astro pages, layouts, components, and MDX publications.
 
+> **Authoring in `.md` or `.mdx`?** Prefer the `daisyui` code fence with
+> `"component": "mockup-window"`. It needs no imports and is validated at build
+> time. See [Markdown and MDX code fences](./MARKDOWN_MDX_CODE_FENCES.md) for the
+> fence schema. The `MockupWindow.astro` API below is the advanced fallback for
+> cases a fence cannot express, such as named slots, raw HTML/MDX children, or
+> screenshots from Astro's image pipeline.
+
 **Import path:** `@components/ui/display/MockupWindow.astro`
 
 ## Component signature

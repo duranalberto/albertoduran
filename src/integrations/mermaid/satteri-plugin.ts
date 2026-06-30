@@ -1,7 +1,11 @@
 import { defineMdastPlugin } from "satteri";
-import { createHash } from "node:crypto";
 import type { Code } from "mdast";
 import type { MdxJsxFlowElement, MdxJsxAttributeNode } from "satteri";
+import {
+  getMermaidDiagramType,
+  getMermaidStableId,
+  normalizeMermaidDefinition,
+} from "./definition.ts";
 import type { RegisteredDiagram } from "./pipeline.ts";
 
 interface MdastCtx {
@@ -17,10 +21,6 @@ export interface MermaidSatteriPluginConfig {
   shouldRenderDiagram?: (fileURL: URL | undefined) => boolean;
 }
 
-function getStableId(code: string): string {
-  return createHash("sha256").update(code).digest("hex").slice(0, 8);
-}
-
 function isMdxFile(ctx: MdastCtx): boolean {
   return getFileURL(ctx)?.pathname.endsWith(".mdx") ?? false;
 }
@@ -31,20 +31,6 @@ function getFileURL(ctx: MdastCtx): URL | undefined {
 
 function attr(name: string, value: string): MdxJsxAttributeNode {
   return { type: "mdxJsxAttribute", name, value };
-}
-
-function getDiagramType(code: string): string {
-  const keyword = code.trim().match(/^([A-Za-z][\w-]*)/)?.[1] ?? "diagram";
-
-  if (keyword === "graph") return "flowchart";
-  if (keyword.startsWith("stateDiagram")) return "state";
-  if (keyword.startsWith("sequenceDiagram")) return "sequence";
-  if (keyword.startsWith("classDiagram")) return "class";
-  if (keyword.startsWith("erDiagram")) return "entity relationship";
-  if (keyword.startsWith("gitGraph")) return "git graph";
-  if (keyword.startsWith("xychart")) return "chart";
-
-  return keyword.replace(/-/g, " ");
 }
 
 function escapeHtml(value: string): string {
@@ -110,8 +96,8 @@ export function createMermaidMdastPlugin(config: MermaidSatteriPluginConfig) {
         return createSkippedMermaidNode();
       }
 
-      const code = node.value.trim();
-      const stableId = getStableId(code);
+      const code = normalizeMermaidDefinition(node.value);
+      const stableId = getMermaidStableId(code);
       const diagram = config.getDiagram(stableId, code);
 
       if (!diagram) {
@@ -120,7 +106,7 @@ export function createMermaidMdastPlugin(config: MermaidSatteriPluginConfig) {
         );
       }
 
-      const diagramType = getDiagramType(code);
+      const diagramType = getMermaidDiagramType(code);
 
       if (isMdxFile(ctx)) {
         return createMdxMermaidNode(stableId, diagram, diagramType);

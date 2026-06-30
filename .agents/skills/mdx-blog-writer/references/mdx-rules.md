@@ -72,6 +72,7 @@ Content.
 - Code blocks inside the MDX file are plain strings. Do not let opening or closing triple backticks break the file structure.
 - Always declare the language after the opening triple backticks of every code block.
 - Use MDX components only when the user, source material, or local publishing context confirms they exist. If component availability is unknown, use plain Markdown.
+- If the publishing platform renders components from code fences (as it does for Mermaid), prefer those fences over component imports. Fences need no imports and keep the document data-driven. Import a component only when the platform has no fence for it, or the content needs features a fence cannot express.
 - When using MDX components, import them at the top of the file, immediately after the frontmatter.
 - Keep the frontmatter block as plain YAML. No MDX syntax inside the frontmatter.
 - Do not invent component names, import paths, or props. Reuse only components found in source material or local context.

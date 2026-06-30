@@ -95,13 +95,13 @@ This map is the bridge between author-friendly source and site-specific HTML. Au
 
 The `div` override sounds broad, but the wrapper checks the class name before changing anything. Plain divs pass through unchanged. Only `.mermaid-diagram-container` gets the diagram shell.
 
-### Imported chart components
+### Chart fences
 
-ECharts follows a different path because a chart needs data and an option object. An author imports `EChart` from `@components/ui/mdx/EChart.astro` and usually imports a builder from `@integrations/echarts/options`. That is an opt-in MDX component, not a route-level override.
+ECharts follows a different path because a chart needs data, dimensions, figure metadata, and sometimes optional hydration. Authors write an `echart` code fence with strict JSON. The Satteri plugin parses that definition and renders the same static chart shell during the build.
 
-The difference is useful. Headings, tables, code blocks, and Mermaid fences are ordinary Markdown patterns that every article can use. Charts are data components with dimensions, captions, descriptions, render modes, and optional hydration. Keeping that import visible in the article makes the chart's data and choices reviewable beside the prose.
+The difference is useful. Headings, tables, code blocks, Mermaid fences, and ECharts fences are ordinary source patterns that every article can use. Charts still carry dimensions, captions, descriptions, render modes, and optional hydration, but those choices now stay reviewable as data beside the prose.
 
-The implementation still respects the rendering contract. `EChart` renders static SVG during the build. Runtime enhancement can be requested with `hydrate`, but the chart remains readable before that enhancement runs.
+The implementation still respects the rendering contract. The fence renders static SVG during the build. Runtime enhancement can be requested with `hydrate`, but the chart remains readable before that enhancement runs.
 
 ---
 
@@ -188,7 +188,7 @@ The rendering pipeline gives authors a small set of reliable behaviors. They can
 - Use fenced code blocks with language identifiers so Shiki can highlight them correctly.
 - Use Markdown tables when the content is tabular, because the table override will handle overflow.
 - Use Mermaid code fences for workflows or architecture diagrams, and let the build render SVG output.
-- Import `EChart` only when the article needs a data visualization with measured values.
+- Use `echart` code fences when the article needs a data visualization with measured values.
 - Avoid importing other local UI components unless the article needs a special interactive or visual element.
 
 That last point is the real gift of the pipeline. MDX can embed components, but most posts should not need to. A journal is easier to maintain when ordinary article structure gets first-class treatment.

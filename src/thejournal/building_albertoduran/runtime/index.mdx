@@ -54,7 +54,7 @@ The runtime code lives under `src/runtime/`.
 
 Each module is scoped to one concern. Theme management does not know about article headings. The article navigation tracker does not know about overlays. The Mermaid shell does not render Mermaid syntax. The ECharts shell does not create the first visible chart. The Atlas element does not fetch match data. That separation keeps the runtime layer small and makes each behavior easier to reason about.
 
-The import strategy reflects that scope. `BaseLayout.astro` imports the global pieces that should exist across pages, such as the theme manager and Mermaid diagram shell. Components import the runtime behavior they need, such as `OverlayPanel.astro` importing `overlay-panel.ts` and `EChart.astro` importing `echart-shell` only for hydrated charts. Custom elements attach themselves when their tags appear in the document.
+The import strategy reflects that scope. `BaseLayout.astro` imports the global pieces that should exist across pages, such as the theme manager, Mermaid diagram shell, and ECharts shell. Components import the runtime behavior they need, such as `OverlayPanel.astro` importing `overlay-panel.ts`. Custom elements attach themselves when their tags appear in the document.
 
 That gives the project a practical module boundary. The layout owns site-wide behavior. Components own local behavior. The build owns publication data.
 
@@ -62,7 +62,7 @@ That gives the project a practical module boundary. The layout owns site-wide be
 
 ## Where runtime meets layout
 
-`BaseLayout.astro` imports the theme manager and Mermaid shell as module scripts. Other runtime elements are loaded by the components that need them. Overlay panels render outside `<main>` through the layout slot, which keeps modal behavior away from the transition stack.
+`BaseLayout.astro` imports the theme manager, Mermaid shell, and ECharts shell as module scripts. Overlay panels render outside `<main>` through the layout slot, which keeps modal behavior away from the transition stack.
 
 The result is a static page with targeted client behavior, not a full browser app.
 

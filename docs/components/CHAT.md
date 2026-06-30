@@ -2,6 +2,12 @@
 
 `ChatBubble.astro` renders one static message using DaisyUI's chat component. It supports aligned messages, semantic bubble colors, optional image and metadata regions, and arbitrary Astro or MDX content without client-side JavaScript.
 
+> **Authoring in `.md` or `.mdx`?** Prefer the `daisyui` code fence with
+> `"component": "chat-bubble"`. It needs no imports and is validated at build
+> time. See [Markdown and MDX code fences](./MARKDOWN_MDX_CODE_FENCES.md) for the
+> fence schema. The `ChatBubble.astro` API below is the advanced fallback for
+> cases a fence cannot express, such as named slots or raw HTML/MDX children.
+
 **Import path:** `@components/ui/display/ChatBubble.astro`
 
 ## Component signature

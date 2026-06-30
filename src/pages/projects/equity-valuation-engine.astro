@@ -1,11 +1,11 @@
 ---
 import type { ProjectPageConfig } from "@appTypes/project";
 import coverImage from "@assets/thejournal/stock/06.avif";
-import EquityValuationFlow from "@components/projects/EquityValuationFlow.mdx";
 import Callout from "@components/ui/display/Callout.astro";
 import SectionHeader from "@components/ui/display/SectionHeader.astro";
 import Steps, { type StepItem } from "@components/ui/display/Steps.astro";
-import MermaidDiagramWrapper from "@components/ui/mdx/MermaidDiagramWrapper.astro";
+import MermaidDiagram from "@components/ui/mdx/MermaidDiagram.astro";
+import { defineMermaidDiagram } from "@integrations/mermaid/definition";
 import ProjectLayout from "@layouts/ProjectLayout.astro";
 
 const project: ProjectPageConfig = {
@@ -81,10 +81,32 @@ const valuationSteps: StepItem[] = [
   { label: "Explain", marker: "5", color: "success" },
 ];
 
-const mermaidComponents = {
-  div: MermaidDiagramWrapper,
-  MermaidDiagramWrapper,
-};
+const valuationFlow = defineMermaidDiagram(String.raw`
+flowchart LR
+    Ticker["👤 Ticker input"] --> Source["🌐 yfinance repository"]
+    Source --> Metrics["📦 StockMetrics aggregate"]
+    Metrics --> Diagnostics["📝 Missing-data diagnostics"]
+    Diagnostics --> Gate{"✓ Model suitable?"}
+    Gate -->|yes| Scenarios["📈 Bear, Base, and Bull models"]
+    Gate -->|no| Skipped["⚠️ Skipped with reasons"]
+    Scenarios --> Summary["⚖️ Consolidated valuation summary"]
+    Skipped --> Summary
+    Summary --> Output["📤 CLI tables or JSON"]
+
+    classDef input fill:#FFE4B5,stroke:#333,stroke-width:2px,color:#000
+    classDef process fill:#90EE90,stroke:#333,stroke-width:2px,color:#064E3B
+    classDef data fill:#E6E6FA,stroke:#333,stroke-width:2px,color:#1E3A8A
+    classDef decision fill:#FFD700,stroke:#333,stroke-width:2px,color:#000
+    classDef warning fill:#FFB6C1,stroke:#B91C1C,stroke-width:2px,color:#000
+    classDef output fill:#87CEEB,stroke:#333,stroke-width:2px,color:#0F172A
+
+    class Ticker input
+    class Source,Diagnostics,Scenarios process
+    class Metrics data
+    class Gate decision
+    class Skipped warning
+    class Summary,Output output
+`);
 ---
 
 <ProjectLayout project={project}>
@@ -139,7 +161,7 @@ const mermaidComponents = {
       calculation, and presentation. Each layer passes a structured result to
       the next one instead of quietly repeating earlier work.
     </p>
-    <EquityValuationFlow components={mermaidComponents} />
+    <MermaidDiagram code={valuationFlow} />
   </section>
 
   <section

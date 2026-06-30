@@ -16,7 +16,7 @@ The Mermaid integration proved a useful rule for this site. Authors should write
 
 That difference matters. A workflow diagram can be authored as text because the interesting part is the relationship between steps. A chart needs values, axes, visual encodings, captions, accessible summaries, and sometimes interaction for inspection. Treating those as ordinary images would lose the connection between article source and chart data.
 
-The ECharts path keeps that connection inside MDX. An article imports the `EChart` component and an option builder, passes data, and receives static SVG during the build. The source remains reviewable, and the browser receives a finished chart before any enhancement script runs.
+The ECharts path keeps that connection inside MDX. An article writes an `echart` fence with strict JSON, passes data and figure metadata, and receives static SVG during the build. The source remains reviewable, and the browser receives a finished chart before any enhancement script runs.
 
 ---
 
@@ -31,13 +31,13 @@ The publication guide now gives authors a simple choice. Use Mermaid when the vi
 | A measured flow with weighted links between stages                            | ECharts Sankey    |
 | An unmeasured handoff between systems                                         | Mermaid flowchart |
 
-This is why the vault has separate Mermaid and ECharts sections. They share the same static-first philosophy, but they do not share the same authoring model. Mermaid starts from a code fence. ECharts starts from a component and an option object.
+This is why the vault has separate Mermaid and ECharts sections. They share the same static-first philosophy, but they do not share the same input language. Mermaid starts from diagram text in a code fence. ECharts starts from chart JSON in an `echart` code fence.
 
 ---
 
 ## The build contract
 
-The ECharts component renders with the official server-side SVG path. It registers only the ECharts modules the project supports, creates an SVG renderer with explicit dimensions, calls `renderToSVGString()`, and disposes the chart instance after rendering.
+The ECharts integration renders with the official server-side SVG path. It registers only the ECharts modules the project supports, creates an SVG renderer with explicit dimensions, calls `renderToSVGString()`, and disposes the chart instance after rendering.
 
 That contract produces two static modes. `render="svg-inline"` is the default for normal article charts because the SVG sits directly in the HTML. `render="svg-file"` registers a hashed immutable SVG under `/_app/charts/`, which is better when the same chart repeats or when the article should keep the HTML lighter.
 
@@ -45,27 +45,28 @@ Browser enhancement is opt-in. `hydrate="none"` ships no ECharts client behavior
 
 ---
 
-## Option builders as the authoring surface
+## Fence presets as the authoring surface
 
-Raw ECharts options are powerful, but they can get noisy inside an article. The local builders in `src/integrations/echarts/options.ts` make the common shapes easier to write and review. They also keep colors, fonts, grid spacing, axis labels, and accessibility defaults aligned with the site.
+Raw ECharts options are powerful, but they can get noisy inside an article. The `echart` fence presets make the common shapes easier to write and review. They also keep colors, fonts, grid spacing, axis labels, and accessibility defaults aligned with the site.
 
-The current builder set covers everyday article charts and finance-specific charts.
+The current fence set covers everyday article charts and finance-specific charts.
 
-| Family                   | Builders                                                                                            |
-| ------------------------ | --------------------------------------------------------------------------------------------------- |
-| Common comparison        | `lineChartOption`, `barChartOption`, `pieChartOption`, `scatterChartOption`                         |
-| Density and distribution | `histogramChartOption`, `heatmapChartOption`, `correlationHeatmapChartOption`, `boxplotChartOption` |
-| Hierarchy and flow       | `treemapChartOption`, `sankeyChartOption`                                                           |
-| Market views             | `candlestickWithVolumeOption`, `macdChartOption`, `rsiChartOption`, `bollingerBandsChartOption`     |
-| Market structure         | `depthChartOption`, `orderBookChartOption`, `ohlcChartOption`                                       |
+| Family                   | Fence types                                                                                 |
+| ------------------------ | ------------------------------------------------------------------------------------------- |
+| Common comparison        | `line`, `area`, `bar`, `pie`, `donut`, `rose`, `scatter`                                    |
+| Density and distribution | `histogram`, `heatmap`, `correlation-heatmap`, `boxplot`                                    |
+| Hierarchy and flow       | `treemap`, `sankey`                                                                         |
+| Market views             | `candlestick-volume`, `macd`, `rsi`, `bollinger-bands`                                      |
+| Market structure         | `depth`, `order-book`, `ohlc`                                                               |
+| Escape hatch             | `option` for raw JSON-compatible ECharts options when a preset cannot express the chart yet |
 
-Authors can still pass a raw ECharts option when a publication needs something unusual. The builders exist to make the ordinary path hard to misuse.
+Authors can still pass a raw JSON-compatible ECharts option when a publication needs something unusual. The presets exist to make the ordinary path hard to misuse.
 
 ---
 
 ## What changed in the site
 
-This section exists because the site grew a data-visualization pipeline after the older version of the vault. The new core pieces are `EChart.astro`, the ECharts integration under `src/integrations/echarts/`, the `echart-shell` runtime element, the MDX chart CSS partial, fixture routes for browser tests, and unit coverage for the chart helpers.
+This section exists because the site grew a data-visualization pipeline after the older version of the vault. The new core pieces are the ECharts integration under `src/integrations/echarts/`, the `echart` Satteri fence plugin, the `echart-shell` runtime element, the MDX chart CSS partial, fixture routes for browser tests, and unit coverage for the chart helpers. `EChart.astro` remains as a compatibility component for places that still need a direct Astro component boundary.
 
 The same change also touched the publication rules. `docs/THEJOURNAL_PUBLICATION_GUIDE.md` now names the visual selection rule between Mermaid and ECharts, and it documents when to use inline SVG, file artifacts, and client hydration. The guide belongs in `docs/`, while this vault explains how the implementation fits the build.
 
@@ -77,7 +78,7 @@ Read this section in the same way as the Mermaid section. Start with the impleme
 
 | Article          | Main question                                                                           |
 | ---------------- | --------------------------------------------------------------------------------------- |
-| `implementation` | How does the `EChart` component turn MDX data into static SVG and optional enhancement. |
+| `implementation` | How does an `echart` fence turn MDX data into static SVG and optional enhancement.      |
 | `chart_examples` | Which chart shapes are available to journal authors, and what does each one fit.        |
 
 The chart examples are intentionally part of this vault rather than only a hidden test fixture. A reader who understands the build should be able to see the visual vocabulary the build supports.

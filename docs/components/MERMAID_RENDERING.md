@@ -2,7 +2,9 @@
 
 The site uses a custom build-time Mermaid pipeline. Publishable diagrams are
 prepared before Markdown rendering and emitted as light/dark SVG assets under
-`/_app/mermaid/`. Article pages reference those assets with static images and
+`/_app/mermaid/`. Journal pages can define diagrams with Mermaid code fences,
+while Astro pages can use `defineMermaidDiagram(String.raw...)` with the
+`MermaidDiagram` component. Both paths reference the same static images and
 theme-aware Open links.
 
 Project-local Mermaid AI skills are documented in `docs/ai/AI_SKILLS.md`. Review
@@ -56,7 +58,8 @@ logic without changing the URL would not reliably update existing assets.
 ## Current Guardrails
 
 - `DiagramPipeline.prepareDiagrams()` renders publishable diagrams before
-  Markdown transforms run, and the Sätteri plugin reads from that registry.
+  Markdown transforms run. The Sätteri plugin and `MermaidDiagram` component read
+  from that prepared registry.
 - `tests/unit/mermaid-pipeline-registry.test.ts` verifies prepared lookup and
   light/dark asset emission.
 - `src/integrations/mermaid/constants.ts` owns `RENDERER_VERSION`. Bump it

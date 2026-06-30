@@ -33,6 +33,26 @@
 export const RENDERER_VERSION = "v4.6";
 
 /**
+ * Default subfolder (inside .astro/) for the on-disk SVG cache.
+ * Shared between integration.ts (which writes here during
+ * astro:build:start) and build-context.ts (which reads here at Astro
+ * component render time — a separate process/module instance during
+ * static-site prerendering, so it cannot rely on in-memory state).
+ */
+export const DEFAULT_MERMAID_CACHE_SUBDIR = "mermaid-cache";
+
+/**
+ * Default subfolder (inside .astro/) for the per-build prepared-diagram
+ * manifest. Unlike the SVG cache above, this holds every prepared diagram —
+ * including render-failure placeholders, which are deliberately never
+ * written to the permanent SVG cache so a transient outage gets retried on
+ * the next build. MermaidDiagram.astro reads this manifest (not the SVG
+ * cache) during static-output prerendering, so a render-service outage
+ * degrades to visible fallback placeholders instead of crashing the build.
+ */
+export const DEFAULT_MERMAID_MANIFEST_SUBDIR = "mermaid-manifest";
+
+/**
  * Debounce window (ms) before the collected batch is flushed to the
  * render service.  Gives all concurrent remark pipelines time to register
  * their diagrams so a single network round-trip handles the whole build.

@@ -43,7 +43,6 @@ import {
 } from "@astrojs/markdown-satteri";
 import glob from "fast-glob";
 import type { Element as HastElement } from "hast";
-import { createHash } from "node:crypto";
 import fsAsync from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -52,9 +51,22 @@ import {
   type JournalManifestSourceEntry,
 } from "../../content/processors/thejournal-manifest.ts";
 import { AstroDiskBus } from "../../lib/astro-disk-bus.ts";
-import { RENDERER_VERSION } from "./constants.ts";
-import { createPipeline, type DiagramPipeline } from "./pipeline.ts";
+import {
+  DEFAULT_MERMAID_CACHE_SUBDIR,
+  DEFAULT_MERMAID_MANIFEST_SUBDIR,
+  RENDERER_VERSION,
+} from "./constants.ts";
+import {
+  getMermaidStableId,
+  normalizeMermaidDefinition,
+} from "./definition.ts";
+import {
+  createPipeline,
+  type DiagramPipeline,
+  type RegisteredDiagram,
+} from "./pipeline.ts";
 import { createMermaidMdastPlugin } from "./satteri-plugin.ts";
+import { extractMermaidDefinitionCalls } from "./source-parser.ts";
 import type { MermaidPalette } from "./types.ts";
 
 interface MermaidSourceDocument {
@@ -77,6 +89,7 @@ function normalizeFileURL(fileURL: URL): string {
 function getJournalEntryId(filePath: string): string | null {
   const normalizedPath = normalizeSourcePath(filePath);
   if (!normalizedPath.startsWith(JOURNAL_CONTENT_PREFIX)) return null;
+  if (!/\.mdx?$/.test(normalizedPath)) return null;
 
   const withoutPrefix = normalizedPath.slice(JOURNAL_CONTENT_PREFIX.length);
   const withoutExtension = withoutPrefix.replace(/\.mdx?$/, "");
@@ -110,15 +123,17 @@ function collectMermaidDiagrams(
   const seen = new Map<string, string>();
 
   for (const document of documents) {
-    for (const code of extractMermaidBlocks(document.content)) {
-      const stableId = createHash("sha256")
-        .update(code)
-        .digest("hex")
-        .slice(0, 8);
+    const sourceCodes = [
+      ...extractMermaidBlocks(document.content),
+      ...extractMermaidDefinitionCalls(document.content, document.filePath),
+    ];
 
-      if (!seen.has(stableId)) {
-        seen.set(stableId, code);
-      }
+    for (const sourceCode of sourceCodes) {
+      const code = normalizeMermaidDefinition(sourceCode);
+      if (!code) continue;
+
+      const stableId = getMermaidStableId(code);
+      if (!seen.has(stableId)) seen.set(stableId, code);
     }
   }
 
@@ -198,16 +213,20 @@ export interface MermaidIntegrationOptions {
 }
 
 /**
- * Scans all MDX/MD source files for ```mermaid blocks and prepares each
- * unique publishable diagram before Vite starts processing MDX files.
- * The Sätteri MDAST plugin then performs synchronous registry lookups during
- * Markdown rendering instead of doing render/cache work inside visitors.
+ * Scans publishable MDX/MD source files for ```mermaid blocks and static
+ * defineMermaidDiagram() calls, then prepares each unique diagram before Vite
+ * starts processing source files. Preparation renders each diagram (or hits
+ * the disk cache) and persists it to the on-disk SVG cache; both the Sätteri
+ * MDAST plugin (via pipeline.getDiagram) and MermaidDiagram.astro (via the
+ * disk cache, see build-context.ts) read from that prepared state.
  */
 async function prepareMermaidDiagrams(
   pipeline: DiagramPipeline,
   logger: AstroIntegrationLogger,
 ): Promise<Set<string>> {
-  const files = await glob(["src/**/*.mdx", "src/**/*.md"]);
+  const files = await glob(["src/**/*.{md,mdx,astro,ts,tsx}"], {
+    ignore: ["src/**/*.d.ts"],
+  });
   const documents: MermaidSourceDocument[] = [];
 
   await Promise.all(
@@ -229,7 +248,9 @@ async function prepareMermaidDiagrams(
   );
   const seen = collectMermaidDiagrams(publishableDocuments);
 
-  if (seen.size === 0) return publishableSourceFiles;
+  if (seen.size === 0) {
+    return publishableSourceFiles;
+  }
 
   logger.info(
     `Preparing ${seen.size} publishable mermaid diagram(s) before Vite build...`,
@@ -244,7 +265,7 @@ async function prepareMermaidDiagrams(
 export function mermaidIntegration(
   options: MermaidIntegrationOptions = {},
 ): AstroIntegration {
-  const cacheSubDir = options.cacheSubDir ?? "mermaid-cache";
+  const cacheSubDir = options.cacheSubDir ?? DEFAULT_MERMAID_CACHE_SUBDIR;
 
   // An empty map means "no palettes provided" — renderers handle this branch
   // by omitting theme config from their payloads.
@@ -340,10 +361,17 @@ export function mermaidIntegration(
           subDir: cacheSubDir,
           version: RENDERER_VERSION,
         });
+        const manifestBus = new AstroDiskBus<RegisteredDiagram>({
+          subDir: DEFAULT_MERMAID_MANIFEST_SUBDIR,
+          version: RENDERER_VERSION,
+        });
 
         await svgBus.ensureDir();
+        // Scratch state for this build only — wiped so stale entries from a
+        // previous build never leak into a page rendered during this one.
+        await manifestBus.clear();
 
-        pipeline = createPipeline(svgBus, themes, RENDERER_VERSION, site);
+        pipeline = createPipeline(svgBus, manifestBus, themes, RENDERER_VERSION, site);
 
         logger.info(`Cache dir ready: .astro/${cacheSubDir}`);
 

@@ -2,6 +2,13 @@
 
 `MockupBrowser.astro` presents arbitrary content in DaisyUI's browser mockup. It is a static, theme-aware component with a generated address display or custom toolbar, and it adds no client-side JavaScript.
 
+> **Authoring in `.md` or `.mdx`?** Prefer the `daisyui` code fence with
+> `"component": "mockup-browser"`. It needs no imports and is validated at build
+> time. See [Markdown and MDX code fences](./MARKDOWN_MDX_CODE_FENCES.md) for the
+> fence schema. The `MockupBrowser.astro` API below is the advanced fallback for
+> cases a fence cannot express, such as named slots, raw HTML/MDX children, or
+> screenshots from Astro's image pipeline.
+
 **Import path:** `@components/ui/display/MockupBrowser.astro`
 
 ## Component signature

@@ -38,7 +38,7 @@ describe("collectPublishableMermaidDiagrams", () => {
         content: mdx({ draft: true, body: mermaid(draftCode) }),
       },
       {
-        filePath: "src/components/projects/ProjectFlow.mdx",
+        filePath: "src/components/examples/ProjectFlow.mdx",
         content: mermaid(componentCode),
       },
     ]);
@@ -71,5 +71,51 @@ describe("collectPublishableMermaidDiagrams", () => {
     expect(diagrams.has(diagramId(draftRootCode))).toBe(false);
     expect(diagrams.has(diagramId(draftChildCode))).toBe(false);
     expect(diagrams.get(diagramId(siblingCode))).toBe(siblingCode);
+  });
+
+  it("collects static Astro component definitions and dedupes them with MDX fences", () => {
+    const sharedCode = "graph TD\n  Source --> Output";
+    const componentOnlyCode = "sequenceDiagram\n  A->>B: hello";
+
+    const diagrams = collectPublishableMermaidDiagrams([
+      {
+        filePath: "src/thejournal/published.mdx",
+        content: mdx({ body: mermaid(sharedCode) }),
+      },
+      {
+        filePath: "src/pages/projects/example.astro",
+        content: [
+          "---",
+          'import { defineMermaidDiagram } from "@integrations/mermaid/definition";',
+          "const shared = defineMermaidDiagram(String.raw`",
+          sharedCode,
+          "`);",
+          "const componentOnly = defineMermaidDiagram(`sequenceDiagram\\n  A->>B: hello`);",
+          "---",
+          "<MermaidDiagram code={shared} />",
+          "<MermaidDiagram code={componentOnly} />",
+        ].join("\n"),
+      },
+    ]);
+
+    expect(diagrams.size).toBe(2);
+    expect(diagrams.get(diagramId(sharedCode))).toBe(sharedCode);
+    expect(diagrams.get(diagramId(componentOnlyCode))).toBe(componentOnlyCode);
+  });
+
+  it("rejects dynamic component diagram definitions", () => {
+    expect(() =>
+      collectPublishableMermaidDiagrams([
+        {
+          filePath: "src/pages/projects/dynamic.astro",
+          content: [
+            "---",
+            "const node = 'Output';",
+            "const diagram = defineMermaidDiagram(`graph TD\\n  Source --> ${node}`);",
+            "---",
+          ].join("\n"),
+        },
+      ]),
+    ).toThrow(/must use a static string or String\.raw template literal/);
   });
 });

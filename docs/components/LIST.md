@@ -2,6 +2,12 @@
 
 `List.astro` renders a typed collection of information-rich rows using DaisyUI's list component. It supports local images or text markers, titles, metadata, wrapped descriptions, semantic status badges, one row-level link, and one action button per row without client-side JavaScript.
 
+> **Authoring in `.md` or `.mdx`?** Prefer the `daisyui` code fence with
+> `"component": "list"`. It needs no imports and is validated at build time.
+> See [Markdown and MDX code fences](./MARKDOWN_MDX_CODE_FENCES.md) for the fence
+> schema. The `List.astro` API below is the advanced fallback for cases a fence
+> cannot express, such as rows whose media comes from Astro's image pipeline.
+
 **Import path:** `@components/ui/display/List.astro`
 
 ## Component signature

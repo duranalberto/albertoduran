@@ -1,4 +1,5 @@
 ---
+import { resolveSectionHeader } from "@integrations/daisyui/section-header";
 import Button from "../primitive/Button.astro";
 
 interface Props {
@@ -18,7 +19,16 @@ const {
   linkLabel,
   linkExternal = false,
 } = Astro.props as Props;
-const HeadingTag = level === 3 ? "h3" : "h2";
+const resolved = resolveSectionHeader({
+  title,
+  id,
+  level,
+  link:
+    linkHref && linkLabel
+      ? { href: linkHref, label: linkLabel, external: linkExternal }
+      : undefined,
+});
+const HeadingTag = resolved.headingTag;
 ---
 
 <div
@@ -26,23 +36,23 @@ const HeadingTag = level === 3 ? "h3" : "h2";
 >
   <div class="flex items-center h-10 md:h-12 gap-4 border-l-4 border-primary">
     <HeadingTag
-      id={id}
+      id={resolved.id}
       class="pl-4 text-3xl sm:text-4xl font-display font-semibold tracking-tight text-base-content"
     >
-      {title}
+      {resolved.title}
     </HeadingTag>
   </div>
 
   {
-    linkHref && linkLabel && (
+    resolved.link && (
       <div class="self-start sm:self-auto">
         <Button
-          href={linkHref}
-          label={linkLabel}
+          href={resolved.link.href}
+          label={resolved.link.label}
           size="btn-lg"
           variant="btn-primary"
-          isExternal={linkExternal}
-          ariaLabel={linkLabel}
+          isExternal={resolved.link.external}
+          ariaLabel={resolved.link.label}
           class="shadow-lg hover:scale-105 active:scale-95 transition-transform"
         />
       </div>

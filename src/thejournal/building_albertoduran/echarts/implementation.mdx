@@ -10,29 +10,30 @@ The ECharts implementation is deliberately smaller than the Mermaid one. It does
 
 ---
 
-## The component boundary
+## The fence boundary
 
-`src/components/ui/mdx/EChart.astro` is the author-facing boundary. A publication passes an ECharts `option`, dimensions, text metadata, and optional render or hydration preferences. The component normalizes those values before anything reaches the renderer.
+The `echart` code fence is the author-facing boundary. A publication passes strict JSON with a chart type, data, dimensions, text metadata, and optional render or hydration preferences. The integration normalizes those values before anything reaches the renderer.
 
-```mdx
-import EChart from "@components/ui/mdx/EChart.astro";
-import { lineChartOption } from "@integrations/echarts/options";
-
-<EChart
-  title="Quarterly revenue"
-  caption="USD, trailing four quarters"
-  description="Line chart showing quarterly revenue rising from Q1 to Q4."
-  option={lineChartOption({
-    x: ["Q1", "Q2", "Q3", "Q4"],
-    y: [12.4, 14.2, 16.1, 18.7],
-    name: "Revenue",
-  })}
-  width={760}
-  height={420}
-/>
+````md
+```echart
+{
+  "type": "line",
+  "figure": {
+    "title": "Quarterly revenue",
+    "caption": "USD, trailing four quarters",
+    "description": "Line chart showing quarterly revenue rising from Q1 to Q4."
+  },
+  "size": { "width": 760, "height": 420 },
+  "data": {
+    "x": ["Q1", "Q2", "Q3", "Q4"],
+    "y": [12.4, 14.2, 16.1, 18.7],
+    "name": "Revenue"
+  }
+}
 ```
+````
 
-The important props are the same ones the publication guide calls out. `option` is required. `width` and `height` are explicit because server-side ECharts needs dimensions. `title`, `caption`, and `description` keep the figure readable and accessible. `render` chooses inline SVG or a file artifact. `hydrate` decides whether the browser should enhance the static output.
+The important fields are the same ones the publication guide calls out. `type` and `figure.description` are required. `size.width` and `size.height` stay explicit when an article needs non-default dimensions. `figure.title`, `figure.caption`, and `figure.description` keep the figure readable and accessible. `render` chooses inline SVG or a file artifact. `hydrate` decides whether the browser should enhance the static output.
 
 ---
 
@@ -42,7 +43,7 @@ The flow starts in MDX and ends with either inline SVG or an SVG file reference.
 
 ```mermaid
 flowchart TD
-    Source[MDX EChart component] --> Normalize[Normalize render and hydration]
+    Source[MDX echart fence] --> Normalize[Parse JSON and normalize modes]
     Normalize --> Aria[Apply ARIA defaults]
     Aria --> Mode{Render mode}
     Mode -->|svg-inline| Server[Render SVG on server]
@@ -163,7 +164,7 @@ That is a small detail with a large reader effect. A chart should not jump, coll
 
 The unit tests in `tests/unit/echarts.test.ts` cover mode normalization, SSR rendering, ARIA defaults, stable hashing, artifact emission, serialization guards, client presets, option builders, histogram bins, and finance indicator math.
 
-Playwright covers the browser contract through `/fixtures/charts/` when `ALBERTODURAN_TEST_MODE=true`. It verifies static SVG without JavaScript, external SVG artifacts, opt-in enhancement, and media-query hydration. The dummy gallery under `src/thejournal/echarts_dummy_gallery.mdx` gives humans a full article-shaped chart bench.
+Playwright covers the browser contract through `/fixtures/charts/` when `ALBERTODURAN_TEST_MODE=true`. It verifies static SVG without JavaScript, external SVG artifacts, opt-in enhancement, and media-query hydration. The dummy gallery under `src/thejournal/dummy_gallery.mdx` gives humans a full article-shaped chart bench.
 
 Those tests protect the same idea from different angles. Vitest checks the build logic. Playwright checks browser behavior. The gallery makes the visual range easy to inspect.
 

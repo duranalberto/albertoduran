@@ -145,7 +145,7 @@ That map is a small but important piece of the system. It lets a fenced code blo
 
 The writer gets simple source. The reader gets the site's UI. The build gets one place to wire those choices together.
 
-Charts are the main exception to this no-import path. A data visualization needs values and an ECharts option object, so chart articles import `EChart` and the relevant option builder directly in MDX. That still follows the publication boundary because the component renders static SVG at build time before any browser enhancement is considered.
+Charts now follow the same no-import instinct. A data visualization still needs values and chart metadata, but authors write those as strict JSON inside an `echart` fence. The integration renders static SVG at build time before any browser enhancement is considered.
 
 ---
 

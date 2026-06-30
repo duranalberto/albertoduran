@@ -6,10 +6,6 @@ pubDate: 2026-06-20
 order: 50
 ---
 
-import Callout from "@components/ui/display/Callout.astro";
-import EChart from "@components/ui/mdx/EChart.astro";
-import { lineChartOption } from "@integrations/echarts/options";
-
 Move an opening growth assumption from 5 percent to 9 percent and a DCF can rise sharply even though no historical statement changed. The calculation is doing what it was told. The difficult work is deciding what the instruction means, where it came from, and whether the resulting scenario is evidence, policy, or wishful thinking.
 
 ---
@@ -69,26 +65,26 @@ The source also avoids selected tiny free-cash-flow bases when computing CAGR. T
 
 Scenarios create named alternatives around a central policy. For this teaching fixture, Base starts at 7.7 percent, Bear at 4.7 percent, and Bull at 10.7 percent. Each path moves toward a 3 percent mature rate over five years.
 
-<EChart
-  title="Illustrative growth paths"
-  caption="Fictional annual free-cash-flow growth, percent"
-  description="Line chart comparing Bear, Base, and Bull growth paths that converge toward a mature rate over five forecast years."
-  option={{
-    ...lineChartOption({
-      x: ["Year 1", "Year 2", "Year 3", "Year 4", "Year 5"],
-      y: [7.7, 6.5, 5.3, 4.1, 3.0],
-      name: "Base",
-    }),
-    series: [
-      { type: "line", name: "Bear", data: [4.7, 4.3, 3.9, 3.4, 3.0] },
-      { type: "line", name: "Base", data: [7.7, 6.5, 5.3, 4.1, 3.0] },
-      { type: "line", name: "Bull", data: [10.7, 8.8, 6.9, 4.9, 3.0] },
-    ],
-    legend: { show: true, bottom: 0 },
-  }}
-  width={760}
-  height={420}
-/>
+```echart
+{
+  "type": "line",
+  "figure": {
+    "title": "Illustrative growth paths",
+    "caption": "Fictional annual free-cash-flow growth, percent",
+    "description": "Line chart comparing Bear, Base, and Bull growth paths that converge toward a mature rate over five forecast years."
+  },
+  "size": { "width": 760, "height": 420 },
+  "data": {
+    "x": ["Year 1", "Year 2", "Year 3", "Year 4", "Year 5"],
+    "legend": { "show": true, "bottom": 0 },
+    "series": [
+      { "name": "Bear", "y": [4.7, 4.3, 3.9, 3.4, 3.0] },
+      { "name": "Base", "y": [7.7, 6.5, 5.3, 4.1, 3.0] },
+      { "name": "Bull", "y": [10.7, 8.8, 6.9, 4.9, 3.0] }
+    ]
+  }
+}
+```
 
 The lines are not probability bounds. Bear can still be too optimistic, and Bull can still be too conservative. They are controlled changes that reveal sensitivity. Their main value is comparative.
 
@@ -116,9 +112,19 @@ Sector policy can provide a fallback or anchor, but sector labels are broad. Two
 
 ## Configuration is part of the model
 
-<Callout variant="warning" title="Illustrative defaults">
-  <p>The audited YAML includes multiples, discount inputs, growth limits, and asset haircuts without a complete source artifact, retrieval date, or formal update cadence. Treat them as project policy, not verified current sector medians.</p>
-</Callout>
+```daisyui
+{
+  "component": "callout",
+  "variant": "warning",
+  "title": "Illustrative defaults",
+  "content": [
+    {
+      "type": "paragraph",
+      "text": "The audited YAML includes multiples, discount inputs, growth limits, and asset haircuts without a complete source artifact, retrieval date, or formal update cadence. Treat them as project policy, not verified current sector medians."
+    }
+  ]
+}
+```
 
 Configuration deserves version control and review because it changes valuation output without changing Python formulas. A reproducible record should keep the code revision and configuration revision together.
 

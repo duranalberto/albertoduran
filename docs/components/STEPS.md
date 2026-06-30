@@ -2,6 +2,12 @@
 
 `Steps.astro` renders a typed progress sequence using DaisyUI's steps component. It produces a semantic ordered list, requires no client-side JavaScript, and can be imported by Astro pages, layouts, components, and MDX publications.
 
+> **Authoring in `.md` or `.mdx`?** Prefer the `daisyui` code fence with
+> `"component": "steps"`. It needs no imports and is validated at build time.
+> See [Markdown and MDX code fences](./MARKDOWN_MDX_CODE_FENCES.md) for the fence
+> schema. The `Steps.astro` API below is the advanced fallback for cases a fence
+> cannot express.
+
 **Import path:** `@components/ui/display/Steps.astro`
 
 ## Component signature

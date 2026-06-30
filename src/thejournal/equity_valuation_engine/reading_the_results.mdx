@@ -6,9 +6,6 @@ pubDate: 2026-06-20
 order: 80
 ---
 
-import Callout from "@components/ui/display/Callout.astro";
-import MockupWindow from "@components/ui/display/MockupWindow.astro";
-
 A composite can sit almost exactly on the market price while its underlying models disagree by more than $25 per share. The average looks calm because high and low estimates cancel. Reading what ran and what skipped before studying any per-share value reveals how model spread can disappear behind one tidy number.
 
 ---
@@ -27,16 +24,26 @@ A missing report without a reason is difficult to trust. The engine's explicit s
 
 Each successful forward report exposes Bear, Base, and Bull results through a `scenarios` attribute. The summary extractor accepts common value fields such as `intrinsic_value_per_share`, `present_value`, or `intrinsic_value`.
 
-<MockupWindow aria-label="Fictional scenario result" bodyClass="p-5 font-mono text-sm">
-  <strong slot="header">Anonymous scenario table</strong>
-  <pre className="overflow-x-auto whitespace-pre-wrap">{`Model           Bear       Base       Bull
-DCF           $42.00     $58.00     $74.00
-ROE           $44.00     $53.00     $63.00
-EV/EBITDA     $39.00     $48.00     $57.00
-P/S           $48.00     $62.00     $76.00
-NAV           $28.00     $35.00     $42.00`}</pre>
-  <span slot="caption">Rows show scenario sensitivity. Columns allow cross-model comparison.</span>
-</MockupWindow>
+```daisyui
+{
+  "component": "mockup-window",
+  "ariaLabel": "Fictional scenario result",
+  "bodyClass": "p-5 font-mono text-sm",
+  "header": [{ "type": "text", "text": "Anonymous scenario table" }],
+  "content": [
+    {
+      "type": "pre",
+      "text": "Model           Bear       Base       Bull\nDCF           $42.00     $58.00     $74.00\nROE           $44.00     $53.00     $63.00\nEV/EBITDA     $39.00     $48.00     $57.00\nP/S           $48.00     $62.00     $76.00\nNAV           $28.00     $35.00     $42.00"
+    }
+  ],
+  "caption": [
+    {
+      "type": "text",
+      "text": "Rows show scenario sensitivity. Columns allow cross-model comparison."
+    }
+  ]
+}
+```
 
 First move across one row. DCF spans $42 to $74, which signals strong sensitivity to its forward policy. Then move down the Base column. NAV and P/S disagree because adjusted assets and revenue multiples are different anchors.
 
@@ -79,9 +86,19 @@ population standard deviation = √87.76 = 9.37
 
 The serialized field `confidence_band` is the composite plus or minus that value, about $41.83 to $60.57. No sampling model, coverage probability, or calibrated forecast distribution supports the word confidence.
 
-<Callout variant="information" title="Use the narrower label">
-  <p>Call this interval the model dispersion band. It measures how far included Base estimates spread around their equal-weight average. It does not estimate where true value probably lies.</p>
-</Callout>
+```daisyui
+{
+  "component": "callout",
+  "variant": "information",
+  "title": "Use the narrower label",
+  "content": [
+    {
+      "type": "paragraph",
+      "text": "Call this interval the model dispersion band. It measures how far included Base estimates spread around their equal-weight average. It does not estimate where true value probably lies."
+    }
+  ]
+}
+```
 
 The separate agreement score divides standard deviation by current price. Lower values mean Base estimates are closer relative to the share price. The score still describes dispersion under this model set, not correctness.
 

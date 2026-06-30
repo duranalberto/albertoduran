@@ -1,6 +1,6 @@
 ---
 title: "MDX component dummy gallery"
-description: "A draft-only MDX gallery for testing ECharts and reusable Callout, Chat, List, Steps, MockupBrowser, MockupPhone, and MockupWindow components across themes and layouts."
+description: "A draft-only MDX gallery that renders every ECharts pattern through echart fences and every publication display component (callout, chat, list, steps, section-header, and the browser, phone, and window mockups) through daisyui fences, for checking themes, narrow layouts, static builds, and optional enhancement."
 image: "../assets/thejournal/stock/09.avif"
 tags: ["charts", "components", "daisyui", "mdx", "testing"]
 pubDate: 2026-06-18
@@ -9,1049 +9,752 @@ order: 999
 draft: true
 ---
 
-import Callout from "@components/ui/display/Callout.astro";
-import ChatBubble from "@components/ui/display/ChatBubble.astro";
-import List from "@components/ui/display/List.astro";
-import MockupBrowser from "@components/ui/display/MockupBrowser.astro";
-import MockupPhone from "@components/ui/display/MockupPhone.astro";
-import MockupWindow from "@components/ui/display/MockupWindow.astro";
-import Steps from "@components/ui/display/Steps.astro";
-import EChart from "@components/ui/mdx/EChart.astro";
-import {
-  barChartOption,
-  bollingerBandsChartOption,
-  boxplotChartOption,
-  candlestickWithVolumeOption,
-  correlationHeatmapChartOption,
-  depthChartOption,
-  heatmapChartOption,
-  histogramChartOption,
-  lineChartOption,
-  macdChartOption,
-  ohlcChartOption,
-  orderBookChartOption,
-  pieChartOption,
-  rsiChartOption,
-  sankeyChartOption,
-  scatterChartOption,
-  treemapChartOption,
-} from "@integrations/echarts/options";
-import { Image } from "astro:assets";
-import windowPreview from "../assets/thejournal/pub/sinpluma_03.png";
-import mobilePreview from "../assets/thejournal/pub/sinpluma_08.png";
-import chatAvatar from "../assets/thejournal/stock/01.avif";
-import platformAvatar from "../assets/thejournal/stock/02.avif";
-import editorialAvatar from "../assets/thejournal/stock/03.avif";
-
-export const lineOption = lineChartOption({
-  title: "Monthly visitors",
-  subtitle: "Static line chart",
-  name: "Visitors",
-  x: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
-  y: [1200, 1560, 1410, 1840, 2100, 2480],
-});
-
-export const areaOption = lineChartOption({
-  title: "Newsletter signups",
-  subtitle: "Area chart using the line builder",
-  name: "Signups",
-  x: ["Week 1", "Week 2", "Week 3", "Week 4", "Week 5", "Week 6"],
-  y: [64, 79, 96, 118, 132, 149],
-  smooth: true,
-  area: true,
-});
-
-export const barOption = barChartOption({
-  title: "Article build output",
-  subtitle: "Vertical bar chart",
-  name: "Kilobytes",
-  x: ["HTML", "CSS", "JS", "Images"],
-  y: [48, 22, 16, 128],
-});
-
-export const horizontalBarOption = barChartOption({
-  title: "Reading flow checks",
-  subtitle: "Horizontal bar chart",
-  name: "Checks",
-  x: ["Headings", "Code", "Images", "Charts"],
-  y: [18, 12, 9, 10],
-  horizontal: true,
-});
-
-export const pieOption = pieChartOption({
-  title: "Traffic sources",
-  subtitle: "Pie chart",
-  name: "Sessions",
-  data: [
-    { name: "Search", value: 46 },
-    { name: "Direct", value: 22 },
-    { name: "Social", value: 18 },
-    { name: "Referral", value: 14 },
-  ],
-});
-
-export const donutOption = pieChartOption({
-  title: "Test coverage mix",
-  subtitle: "Donut chart",
-  name: "Coverage",
-  donut: true,
-  data: [
-    { name: "Unit", value: 52 },
-    { name: "E2E", value: 28 },
-    { name: "Manual", value: 20 },
-  ],
-});
-
-export const roseOption = pieChartOption({
-  title: "Editorial attention",
-  subtitle: "Rose pie chart",
-  name: "Hours",
-  rose: "area",
-  data: [
-    { name: "Research", value: 34 },
-    { name: "Drafting", value: 28 },
-    { name: "Charts", value: 18 },
-    { name: "Review", value: 12 },
-    { name: "Release", value: 8 },
-  ],
-});
-
-export const scatterOption = scatterChartOption({
-  title: "Article length and read time",
-  subtitle: "Scatter chart",
-  name: "Publication",
-  xName: "Words",
-  yName: "Minutes",
-  data: [
-    [900, 5],
-    [1400, 8],
-    [1800, 10],
-    [2400, 13],
-    [2900, 16],
-  ],
-});
-
-export const histogramOption = histogramChartOption({
-  title: "Paragraph length distribution",
-  subtitle: "Histogram rendered as bars",
-  name: "Paragraphs",
-  bins: 6,
-  values: [
-    42, 64, 57, 71, 92, 84, 103, 118, 76, 89, 95, 132, 149, 121, 110, 68, 73,
-    88, 97, 142, 154, 161, 126, 115,
-  ],
-});
-
-export const heatmapOption = heatmapChartOption({
-  title: "Publishing activity",
-  subtitle: "Heatmap chart",
-  name: "Drafts",
-  x: ["Mon", "Tue", "Wed", "Thu", "Fri"],
-  y: ["Morning", "Afternoon", "Night"],
-  data: [
-    [0, 0, 2],
-    [1, 0, 4],
-    [2, 0, 3],
-    [3, 0, 5],
-    [4, 0, 1],
-    [0, 1, 6],
-    [1, 1, 7],
-    [2, 1, 4],
-    [3, 1, 8],
-    [4, 1, 5],
-    [0, 2, 1],
-    [1, 2, 3],
-    [2, 2, 2],
-    [3, 2, 4],
-    [4, 2, 2],
-  ],
-});
-
-export const correlationHeatmapOption = correlationHeatmapChartOption({
-  title: "Signal correlation",
-  subtitle: "Market-style heatmap",
-  name: "Correlation",
-  x: ["Traffic", "Search", "RSS", "Social"],
-  y: ["Traffic", "Search", "RSS", "Social"],
-  data: [
-    [0, 0, 1],
-    [1, 0, 0.74],
-    [2, 0, 0.42],
-    [3, 0, -0.18],
-    [0, 1, 0.74],
-    [1, 1, 1],
-    [2, 1, 0.35],
-    [3, 1, -0.08],
-    [0, 2, 0.42],
-    [1, 2, 0.35],
-    [2, 2, 1],
-    [3, 2, 0.21],
-    [0, 3, -0.18],
-    [1, 3, -0.08],
-    [2, 3, 0.21],
-    [3, 3, 1],
-  ],
-});
-
-export const treemapOption = treemapChartOption({
-  title: "Publication effort",
-  subtitle: "Treemap chart",
-  name: "Effort",
-  data: [
-    { name: "Research", value: 34 },
-    { name: "Drafting", value: 28 },
-    { name: "Charts", value: 18 },
-    { name: "Review", value: 12 },
-    { name: "Release", value: 8 },
-  ],
-});
-
-export const sankeyOption = sankeyChartOption({
-  title: "Publication workflow",
-  subtitle: "Sankey chart",
-  nodes: [
-    { name: "Research" },
-    { name: "Outline" },
-    { name: "Draft" },
-    { name: "Charts" },
-    { name: "Review" },
-    { name: "Publish" },
-  ],
-  links: [
-    { source: "Research", target: "Outline", value: 8 },
-    { source: "Outline", target: "Draft", value: 7 },
-    { source: "Draft", target: "Charts", value: 3 },
-    { source: "Draft", target: "Review", value: 6 },
-    { source: "Charts", target: "Review", value: 3 },
-    { source: "Review", target: "Publish", value: 7 },
-  ],
-});
-
-export const boxplotOption = boxplotChartOption({
-  title: "Build duration spread",
-  subtitle: "Boxplot chart",
-  name: "Seconds",
-  data: [
-    { name: "Local", min: 16, q1: 18, median: 21, q3: 24, max: 32 },
-    { name: "CI", min: 38, q1: 44, median: 51, q3: 58, max: 74 },
-    { name: "Preview", min: 22, q1: 26, median: 31, q3: 34, max: 43 },
-  ],
-});
-
-export const financeData = [
-  {
-    date: "2026-05-11",
-    open: 102,
-    close: 108,
-    low: 99,
-    high: 111,
-    volume: 1280,
-  },
-  {
-    date: "2026-05-12",
-    open: 108,
-    close: 105,
-    low: 103,
-    high: 112,
-    volume: 1180,
-  },
-  {
-    date: "2026-05-13",
-    open: 105,
-    close: 114,
-    low: 104,
-    high: 116,
-    volume: 1540,
-  },
-  {
-    date: "2026-05-14",
-    open: 114,
-    close: 119,
-    low: 110,
-    high: 122,
-    volume: 1710,
-  },
-  {
-    date: "2026-05-15",
-    open: 119,
-    close: 116,
-    low: 113,
-    high: 121,
-    volume: 1490,
-  },
-  {
-    date: "2026-05-18",
-    open: 116,
-    close: 121,
-    low: 114,
-    high: 124,
-    volume: 1660,
-  },
-  {
-    date: "2026-05-19",
-    open: 121,
-    close: 127,
-    low: 119,
-    high: 130,
-    volume: 1900,
-  },
-  {
-    date: "2026-05-20",
-    open: 127,
-    close: 125,
-    low: 123,
-    high: 131,
-    volume: 1810,
-  },
-  {
-    date: "2026-05-21",
-    open: 125,
-    close: 132,
-    low: 124,
-    high: 134,
-    volume: 2090,
-  },
-  {
-    date: "2026-05-22",
-    open: 132,
-    close: 136,
-    low: 130,
-    high: 138,
-    volume: 2200,
-  },
-  {
-    date: "2026-05-26",
-    open: 136,
-    close: 133,
-    low: 131,
-    high: 139,
-    volume: 2040,
-  },
-  {
-    date: "2026-05-27",
-    open: 133,
-    close: 139,
-    low: 132,
-    high: 141,
-    volume: 2310,
-  },
-  {
-    date: "2026-05-28",
-    open: 139,
-    close: 144,
-    low: 137,
-    high: 146,
-    volume: 2460,
-  },
-  {
-    date: "2026-05-29",
-    open: 144,
-    close: 142,
-    low: 140,
-    high: 147,
-    volume: 2180,
-  },
-  {
-    date: "2026-05-30",
-    open: 142,
-    close: 148,
-    low: 141,
-    high: 151,
-    volume: 2630,
-  },
-  {
-    date: "2026-06-02",
-    open: 148,
-    close: 151,
-    low: 145,
-    high: 153,
-    volume: 2770,
-  },
-  {
-    date: "2026-06-03",
-    open: 151,
-    close: 147,
-    low: 145,
-    high: 154,
-    volume: 2490,
-  },
-  {
-    date: "2026-06-04",
-    open: 147,
-    close: 153,
-    low: 146,
-    high: 156,
-    volume: 2820,
-  },
-  {
-    date: "2026-06-05",
-    open: 153,
-    close: 158,
-    low: 151,
-    high: 160,
-    volume: 3010,
-  },
-  {
-    date: "2026-06-08",
-    open: 158,
-    close: 156,
-    low: 154,
-    high: 161,
-    volume: 2860,
-  },
-  {
-    date: "2026-06-09",
-    open: 156,
-    close: 162,
-    low: 155,
-    high: 164,
-    volume: 3180,
-  },
-  {
-    date: "2026-06-10",
-    open: 162,
-    close: 167,
-    low: 160,
-    high: 169,
-    volume: 3370,
-  },
-  {
-    date: "2026-06-11",
-    open: 167,
-    close: 165,
-    low: 163,
-    high: 170,
-    volume: 3210,
-  },
-  {
-    date: "2026-06-12",
-    open: 165,
-    close: 171,
-    low: 164,
-    high: 174,
-    volume: 3520,
-  },
-  {
-    date: "2026-06-15",
-    open: 171,
-    close: 176,
-    low: 169,
-    high: 179,
-    volume: 3760,
-  },
-  {
-    date: "2026-06-16",
-    open: 176,
-    close: 173,
-    low: 171,
-    high: 178,
-    volume: 3440,
-  },
-  {
-    date: "2026-06-17",
-    open: 173,
-    close: 180,
-    low: 172,
-    high: 182,
-    volume: 3890,
-  },
-  {
-    date: "2026-06-18",
-    open: 180,
-    close: 184,
-    low: 177,
-    high: 187,
-    volume: 4020,
-  },
-];
-
-export const candlestickOption = candlestickWithVolumeOption({
-  title: "Example equity tape",
-  subtitle: "Candlestick with volume pane",
-  priceName: "Price",
-  volumeName: "Volume",
-  data: financeData,
-});
-
-export const macdOption = macdChartOption({
-  title: "Price, volume, and MACD",
-  subtitle: "Composed finance layout",
-  data: financeData,
-});
-
-export const rsiOption = rsiChartOption({
-  title: "Close price and RSI",
-  subtitle: "Momentum pane",
-  data: financeData,
-});
-
-export const bollingerOption = bollingerBandsChartOption({
-  title: "Bollinger Bands",
-  subtitle: "Close price with upper, middle, and lower bands",
-  data: financeData,
-});
-
-export const depthOption = depthChartOption({
-  title: "Depth chart",
-  subtitle: "Cumulative bid and ask size",
-  bids: [
-    { price: 179, size: 14 },
-    { price: 178, size: 21 },
-    { price: 177, size: 28 },
-    { price: 176, size: 35 },
-  ],
-  asks: [
-    { price: 181, size: 12 },
-    { price: 182, size: 18 },
-    { price: 183, size: 24 },
-    { price: 184, size: 31 },
-  ],
-});
-
-export const orderBookOption = orderBookChartOption({
-  title: "Order book ladder",
-  subtitle: "Bid and ask size by level",
-  bids: [
-    { price: 180, size: 20 },
-    { price: 179, size: 34 },
-    { price: 178, size: 28 },
-  ],
-  asks: [
-    { price: 181, size: 18 },
-    { price: 182, size: 26 },
-    { price: 183, size: 31 },
-  ],
-});
-
-export const ohlcOption = ohlcChartOption({
-  title: "OHLC custom series",
-  subtitle: "Static-only raw/custom option",
-  data: financeData.slice(0, 12),
-});
-
-export const galleryCalloutIcon = {
-  text: "",
-  viewBox: "0 0 24 24",
-  content: '<path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="9"/>',
-  fill: "none",
-  stroke: "currentColor",
-  strokeWidth: 2,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-};
-
-This draft is a local rendering bench for the MDX components available to journal authors. It puts callouts, chat messages, information-rich lists, browser and device mockups, progress steps, and every supported ECharts pattern inside a real publication, where theme changes, narrow layouts, static builds, asset optimization, and optional browser enhancement can all be checked together.
+This gallery is a local rendering bench for the MDX components available to journal authors. It puts callouts, chat messages, information-rich lists, browser and device mockups, progress steps, and every supported ECharts pattern inside a real publication, where theme changes, narrow layouts, static builds, asset optimization, and optional browser enhancement can all be checked together.
 
 ---
 
 ## Publication display components
 
-These examples exercise the reusable DaisyUI wrappers with different slot combinations, colors, alignments, and content densities. They stay static on purpose, since the components provide publication structure and leave application state or interaction to their consumers.
+These examples exercise the DaisyUI publication wrappers through strict `daisyui` fences. They stay static on purpose, since these components provide editorial structure while application state belongs in dedicated interactive components.
+
+### Section headers
+
+```daisyui
+{
+  "component": "section-header",
+  "id": "fence-authored-display-components",
+  "title": "Fence-authored display components",
+  "level": 2,
+  "link": {
+    "href": "#standard-article-charts",
+    "label": "View charts",
+    "external": false
+  }
+}
+```
 
 ### Callout cards
 
-The five cards cover every semantic variant, default and custom titles, a
-custom icon, a fully overridden theme-aware palette, and rich MDX content. The
-long error detail and code sample also stress narrow layouts.
+The five cards cover every semantic variant, default and custom titles, a fully overridden theme-aware palette, and mixed content blocks. The error example also stress-tests preformatted content in narrow layouts.
 
-<Callout variant="note" aria-label="General publication notes">
-  <p>
-    This gallery uses fixture data. Visit the
-    <a href="#standard-article-charts">standard chart examples</a> for the
-    ordinary static rendering patterns.
-  </p>
-</Callout>
+```daisyui
+{
+  "component": "callout",
+  "variant": "note",
+  "ariaLabel": "General publication notes",
+  "content": [
+    {
+      "type": "paragraph",
+      "text": "This gallery uses fixture data and static publication examples."
+    },
+    {
+      "type": "link",
+      "href": "#standard-article-charts",
+      "label": "Jump to the chart examples",
+      "external": false
+    }
+  ]
+}
+```
 
-<Callout
-  variant="information"
-  title="Build context"
-  icon={galleryCalloutIcon}
-  data-gallery-callout="custom-icon"
->
-  <p>
-    The command <code>npm run build:test</code> enables deterministic Mermaid
-    rendering while keeping the publication output representative.
-  </p>
-</Callout>
+```daisyui
+{
+  "component": "callout",
+  "variant": "information",
+  "title": "Build context",
+  "data": {
+    "gallery-callout": "build-context"
+  },
+  "content": [
+    {
+      "type": "paragraph",
+      "text": "The command npm run build:test keeps chart and diagram rendering deterministic while preserving the publication output shape."
+    }
+  ]
+}
+```
 
-<Callout variant="warning" title="Before publishing">
-  <ul>
-    <li>Confirm the frontmatter image and publication date.</li>
-    <li>Check the page in both themes and at a narrow viewport.</li>
-    <li>Keep every visual tied to a point in the surrounding prose.</li>
-  </ul>
-</Callout>
+```daisyui
+{
+  "component": "callout",
+  "variant": "warning",
+  "title": "Before publishing",
+  "content": [
+    {
+      "type": "list",
+      "style": "unordered",
+      "items": [
+        "Confirm the frontmatter image and publication date.",
+        "Check the page in both themes and at a narrow viewport.",
+        "Keep every visual tied to a point in the surrounding prose."
+      ]
+    }
+  ]
+}
+```
 
-<Callout
-  variant="caution"
-  title="Custom editorial checkpoint"
-  data-gallery-callout="custom-palette"
-  palette={{
-    accent: "var(--color-accent)",
-    surface:
-      "color-mix(in oklab, var(--color-accent) 12%, var(--color-base-100))",
-    border:
-      "color-mix(in oklab, var(--color-accent) 45%, var(--color-base-300))",
-    title: "var(--color-base-content)",
-    content: "var(--color-base-content)",
-    icon: "var(--color-accent)",
-    iconSurface:
-      "color-mix(in oklab, var(--color-accent) 20%, var(--color-base-100))",
-  }}
->
-  Palette overrides replace every color region while the card remains a caution
-  and keeps its default caution icon.
-</Callout>
+```daisyui
+{
+  "component": "callout",
+  "variant": "caution",
+  "title": "Custom editorial checkpoint",
+  "data": {
+    "gallery-callout": "custom-palette"
+  },
+  "palette": {
+    "accent": "var(--color-accent)",
+    "surface": "color-mix(in oklab, var(--color-accent) 12%, var(--color-base-100))",
+    "border": "color-mix(in oklab, var(--color-accent) 45%, var(--color-base-300))",
+    "title": "var(--color-base-content)",
+    "content": "var(--color-base-content)",
+    "icon": "var(--color-accent)",
+    "iconSurface": "color-mix(in oklab, var(--color-accent) 20%, var(--color-base-100))"
+  },
+  "content": [
+    {
+      "type": "paragraph",
+      "text": "Palette overrides replace every color region while the card remains a caution and keeps its default caution icon."
+    }
+  ]
+}
+```
 
-<Callout variant="error" title="Provider import failed">
-  <p>
-    The provider rejected the payload because the schema identifier exceeded the
-    supported length. Shorten the identifier, regenerate the fixture, and retry
-    the import without discarding the original response body.
-  </p>
-  <pre className="whitespace-pre-wrap rounded-box bg-neutral p-3 text-sm text-neutral-content">
-    <code>{`HTTP 422
-code: schema_identifier_too_long`}</code>
-  </pre>
-</Callout>
+```daisyui
+{
+  "component": "callout",
+  "variant": "error",
+  "title": "Provider import failed",
+  "content": [
+    {
+      "type": "paragraph",
+      "text": "The provider rejected the payload because the schema identifier exceeded the supported length. Shorten the identifier, regenerate the fixture, and retry the import without discarding the original response body."
+    },
+    {
+      "type": "pre",
+      "text": "HTTP 422\ncode: schema_identifier_too_long"
+    }
+  ]
+}
+```
 
 ### Chat bubbles
 
-The first group covers an avatar message, an aligned reply, and a standalone system state. Together they test every optional region while keeping the message content readable in both site themes.
+The group covers an ordinary reviewer note, an aligned maintainer reply, and a standalone system state. Together they test optional header and footer regions while keeping the message content readable in both site themes.
 
-<div className="my-8 space-y-4" aria-label="Chat bubble component examples">
-  <ChatBubble aria-labelledby="gallery-reviewer-name">
-    <Image
-      slot="image"
-      src={chatAvatar}
-      alt=""
-      width={80}
-      height={80}
-      loading="lazy"
-    />
-    <strong id="gallery-reviewer-name" slot="header">Reviewer</strong>
-    The retry explanation is clear now. Add the provider response code to the
-    example so the failure path is easier to recognize.
-    <time slot="footer" datetime="2026-06-19T09:14:00Z">09:14 UTC</time>
-  </ChatBubble>
+```daisyui
+{
+  "component": "chat-bubble",
+  "ariaLabel": "Reviewer message",
+  "header": [
+    {
+      "type": "text",
+      "text": "Reviewer"
+    }
+  ],
+  "content": [
+    {
+      "type": "text",
+      "text": "The retry explanation is clear now. Add the provider response code to the example so the failure path is easier to recognize."
+    }
+  ],
+  "footer": [
+    {
+      "type": "text",
+      "text": "09:14 UTC"
+    }
+  ]
+}
+```
 
-<ChatBubble
-  align="end"
-  color="primary"
-  aria-labelledby="gallery-maintainer-name"
-  bubbleClass="shadow-lg"
->
-  <strong id="gallery-maintainer-name" slot="header">
-    Maintainer
-  </strong>
-  Good catch. The example now includes the 429 response and the retry hint.
-  <span slot="footer">Delivered</span>
-</ChatBubble>
+```daisyui
+{
+  "component": "chat-bubble",
+  "align": "end",
+  "color": "primary",
+  "ariaLabel": "Maintainer reply",
+  "bubbleClass": "shadow-lg",
+  "header": [
+    {
+      "type": "text",
+      "text": "Maintainer"
+    }
+  ],
+  "content": [
+    {
+      "type": "text",
+      "text": "Good catch. The example now includes the 429 response and the retry hint."
+    }
+  ],
+  "footer": [
+    {
+      "type": "text",
+      "text": "Delivered"
+    }
+  ]
+}
+```
 
-  <ChatBubble
-    color="warning"
-    aria-label="Message from deployment monitor"
-    bubbleClass="font-mono"
-  >
-    <strong slot="header">Deployment monitor</strong>
-    Preview health check is taking longer than expected.
-    <span slot="footer">Attempt 2 of 3</span>
-  </ChatBubble>
-</div>
+```daisyui
+{
+  "component": "chat-bubble",
+  "color": "warning",
+  "ariaLabel": "Message from deployment monitor",
+  "bubbleClass": "font-mono",
+  "header": [
+    {
+      "type": "text",
+      "text": "Deployment monitor"
+    }
+  ],
+  "content": [
+    {
+      "type": "text",
+      "text": "Preview health check is taking longer than expected."
+    }
+  ],
+  "footer": [
+    {
+      "type": "text",
+      "text": "Attempt 2 of 3"
+    }
+  ]
+}
+```
 
 ### Phone mockups
 
-The phone pair compares a direct image child with a fully composed interface. The screenshot checks Astro image output and device cropping, while the offline state checks theme tokens and consumer-owned screen layout.
+The phone pair keeps the same device frames while moving the screen content into JSON-authored text blocks.
 
-<div className="my-8 grid items-start justify-items-center gap-10 xl:grid-cols-2">
-  <MockupPhone
-    aria-label="Mobile publication screenshot"
-    class="my-0 max-w-sm"
-    phoneClass="shadow-2xl"
-  >
-    <Image
-      src={mobilePreview}
-      alt="Mobile publication preview with a navigation panel and article content"
-      widths={[320, 462]}
-      sizes="(max-width: 462px) 100vw, 462px"
-      loading="lazy"
-    />
-    <span slot="caption">Direct image content with the native phone crop.</span>
-  </MockupPhone>
+```daisyui
+{
+  "component": "mockup-phone",
+  "ariaLabel": "Mobile publication screenshot placeholder",
+  "class": "my-8 max-w-sm",
+  "phoneClass": "shadow-2xl",
+  "displayClass": "bg-base-200",
+  "content": [
+    {
+      "type": "paragraph",
+      "text": "Mobile publication preview with a navigation panel and article content."
+    }
+  ],
+  "caption": [
+    {
+      "type": "text",
+      "text": "Static phone content rendered from a daisyui fence."
+    }
+  ]
+}
+```
 
-  <MockupPhone
-    aria-label="Mobile offline application state"
-    class="my-0 max-w-sm"
-    displayClass="bg-base-200"
-    captionClass="text-warning"
-  >
-    <div className="grid h-full place-items-center p-8 text-center">
-      <div>
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-warning">
-          Offline
-        </p>
-        <p className="mt-4 text-lg leading-relaxed text-base-content">
-          Your changes are stored locally and will sync when the connection
-          returns.
-        </p>
-      </div>
-    </div>
-    <span slot="caption">Composed screen content using semantic theme colors.</span>
-  </MockupPhone>
-</div>
+```daisyui
+{
+  "component": "mockup-phone",
+  "ariaLabel": "Mobile offline application state",
+  "class": "my-8 max-w-sm",
+  "displayClass": "bg-base-200",
+  "captionClass": "text-warning",
+  "content": [
+    {
+      "type": "paragraph",
+      "text": "Offline changes are stored locally and will sync when the connection returns."
+    }
+  ],
+  "caption": [
+    {
+      "type": "text",
+      "text": "Composed screen content using semantic theme colors."
+    }
+  ]
+}
+```
 
 ### Browser mockups
 
-The first browser example gives an optimized screenshot meaningful route
-context. The second replaces the generated address display with a compact
-preview toolbar and composes a theme-aware page state with an ordinary link.
+The first browser example gives a generated address meaningful route context. The second replaces the address bar with a compact preview toolbar.
 
-<MockupBrowser
-  url="https://albertoduran.com/thejournal/sin_pluma/"
-  aria-label="Production publication browser screenshot"
-  browserClass="shadow-2xl"
-  contentClass="p-0"
->
-  <Image
-    src={windowPreview}
-    alt="Desktop publication interface with navigation and article content"
-    widths={[640, 960, 1280]}
-    sizes="(max-width: 1024px) 100vw, 960px"
-    loading="lazy"
-  />
-  <span slot="caption">
-    The publication screenshot at its production-style route.
-  </span>
-</MockupBrowser>
+```daisyui
+{
+  "component": "mockup-browser",
+  "url": "https://albertoduran.com/thejournal/sin_pluma/",
+  "ariaLabel": "Production publication browser preview",
+  "browserClass": "shadow-2xl",
+  "content": [
+    {
+      "type": "paragraph",
+      "text": "Desktop publication interface with navigation and article content."
+    }
+  ],
+  "caption": [
+    {
+      "type": "text",
+      "text": "The publication preview at its production-style route."
+    }
+  ]
+}
+```
 
-<MockupBrowser
-  aria-label="Local publication preview browser state"
-  class="mx-auto max-w-4xl"
-  browserClass="shadow-xl"
->
-  <div slot="toolbar" className="flex min-w-0 items-center gap-2">
-    <span className="badge badge-warning badge-sm">Preview</span>
-    <span className="truncate font-mono text-xs text-base-content/70">
-      localhost:4321/thejournal/component-gallery
-    </span>
-  </div>
-
-  <div className="grid min-h-64 place-items-center bg-base-200 p-8 text-center">
-    <div>
-      <p className="text-xs font-bold uppercase tracking-[0.2em] text-info">
-        Local build
-      </p>
-      <strong className="mt-3 block text-2xl text-base-content">
-        Publication preview ready
-      </strong>
-      <p className="mt-3 max-w-md text-sm leading-relaxed text-base-content/70">
-        The custom toolbar adds environment context without pretending to be an
-        editable browser address bar.
-      </p>
-      <a
-        href="#publication-display-components"
-        data-browser-demo-control
-        className="btn btn-primary btn-sm mt-5"
-      >
-        Review components
-      </a>
-    </div>
-  </div>
-  <span slot="caption">
-    Composed browser content keeps its links and controls interactive.
-  </span>
-</MockupBrowser>
+```daisyui
+{
+  "component": "mockup-browser",
+  "ariaLabel": "Local publication preview browser state",
+  "class": "mx-auto max-w-4xl",
+  "browserClass": "shadow-xl",
+  "toolbar": [
+    {
+      "type": "text",
+      "text": "Preview - localhost:4321/thejournal/component-gallery"
+    }
+  ],
+  "content": [
+    {
+      "type": "paragraph",
+      "text": "Publication preview ready. The custom toolbar adds environment context without pretending to be an editable browser address bar."
+    },
+    {
+      "type": "link",
+      "href": "#publication-display-components",
+      "label": "Review components",
+      "external": false
+    }
+  ],
+  "caption": [
+    {
+      "type": "text",
+      "text": "Composed browser content keeps links available to readers."
+    }
+  ]
+}
+```
 
 ### Window mockups
 
-The window examples use the same frame for a visual application preview and a compact command result. This checks named slots, surface overrides, width constraints, captions, and long-content wrapping without pretending the frame is a full browser.
+The window examples use the same frame for a visual application preview and a compact command result. This checks named content regions, surface overrides, width constraints, captions, and long-content wrapping.
 
-<MockupWindow
-  aria-labelledby="gallery-window-preview-title"
-  windowClass="shadow-2xl"
-  bodyClass="p-0"
->
-  <strong id="gallery-window-preview-title" slot="header">
-    Publication preview
-  </strong>
-  <Image
-    src={windowPreview}
-    alt="Desktop publication interface with navigation and article content"
-    widths={[640, 960, 1280]}
-    sizes="(max-width: 1024px) 100vw, 960px"
-    loading="lazy"
-  />
-  <span slot="caption">Image content inside the default themed window.</span>
-</MockupWindow>
+```daisyui
+{
+  "component": "mockup-window",
+  "ariaLabel": "Publication preview window",
+  "windowClass": "shadow-2xl",
+  "header": [
+    {
+      "type": "text",
+      "text": "Publication preview"
+    }
+  ],
+  "content": [
+    {
+      "type": "paragraph",
+      "text": "Desktop publication interface with navigation and article content."
+    }
+  ],
+  "caption": [
+    {
+      "type": "text",
+      "text": "Text content inside the default themed window."
+    }
+  ]
+}
+```
 
-<MockupWindow
-  aria-label="Migration command result"
-  class="mx-auto max-w-3xl"
-  windowClass="shadow-xl"
-  contentClass="bg-neutral text-neutral-content"
-  headerClass="font-mono"
-  bodyClass="font-mono text-sm"
-  captionClass="font-mono"
->
-  <span slot="header">migration.log</span>
-  <div className="whitespace-pre-line">{`✓ schema checked
-✓ 18 migrations applied
-✓ database ready`}</div>
-  <span slot="caption">
-    Compact terminal-style output with region overrides.
-  </span>
-</MockupWindow>
+```daisyui
+{
+  "component": "mockup-window",
+  "ariaLabel": "Migration command result",
+  "class": "mx-auto max-w-3xl",
+  "windowClass": "shadow-xl",
+  "contentClass": "bg-neutral text-neutral-content",
+  "headerClass": "font-mono",
+  "bodyClass": "font-mono text-sm",
+  "captionClass": "font-mono",
+  "header": [
+    {
+      "type": "text",
+      "text": "migration.log"
+    }
+  ],
+  "content": [
+    {
+      "type": "pre",
+      "text": "schema checked\n18 migrations applied\ndatabase ready"
+    }
+  ],
+  "caption": [
+    {
+      "type": "text",
+      "text": "Compact terminal-style output with region overrides."
+    }
+  ]
+}
+```
 
 ### Information lists
 
-These examples frame the list as four publication patterns rather than a
-generic menu: component resources, release artifacts, service ownership, and a
-decision register. Together they cover local image media, text markers, wrapped
-descriptions, semantic statuses, actions, and deliberately sparse rows.
+These examples frame the list as publication patterns rather than a generic menu: component resources, release artifacts, service ownership, and a decision register.
 
 #### Component resources
 
-Use this shape when each reference needs a short explanation or status that
-would make an ordinary Markdown link list too thin. The long description also
-acts as a narrow-layout stress case.
-
-<List
-  aria-label="Publication component inventory"
-  class="my-8 shadow-sm"
-  items={[
+```daisyui
+{
+  "component": "list",
+  "ariaLabel": "Publication component inventory",
+  "class": "my-8 shadow-sm",
+  "items": [
     {
-      title: "Visual review fixture",
-      subtitle: "Local Astro image media",
-      description:
-        "Exercises optimized media, theme surfaces, status placement, and an internal publication link.",
-      media: { kind: "image", src: chatAvatar, alt: "Abstract review fixture" },
-      status: { label: "Ready", color: "success" },
-      action: { label: "Journal", href: "/thejournal/" },
-    },
-    {
-      title: "DaisyUI list contract",
-      subtitle: "External component reference",
-      description:
-        "Documents the row grid, growing content column, and wrapped description modifier used by this Astro component.",
-      media: { kind: "marker", label: "02" },
-      status: { label: "Reference", color: "info" },
-      action: {
-        label: "Open docs",
-        href: "https://daisyui.com/components/list/",
-        external: true,
-        ariaLabel: "Open the DaisyUI list documentation in a new tab",
+      "title": "Visual review fixture",
+      "subtitle": "Fence-authored media-free row",
+      "description": "Exercises theme surfaces, status placement, and an internal publication link.",
+      "media": {
+        "kind": "marker",
+        "label": "01"
       },
+      "status": {
+        "label": "Ready",
+        "color": "success"
+      },
+      "action": {
+        "label": "Journal",
+        "href": "/thejournal/",
+        "external": false
+      }
     },
     {
-      title: "Editorial decision record",
-      subtitle: "Text-only row with no action",
-      description:
-        "Confirms that optional media, status, and action regions collapse without leaving empty grid columns.",
+      "title": "DaisyUI list contract",
+      "subtitle": "External component reference",
+      "description": "Documents the row grid, growing content column, and wrapped description modifier used by this Astro component.",
+      "media": {
+        "kind": "marker",
+        "label": "02"
+      },
+      "status": {
+        "label": "Reference",
+        "color": "info"
+      },
+      "action": {
+        "label": "Open docs",
+        "href": "https://daisyui.com/components/list/",
+        "ariaLabel": "Open the DaisyUI list documentation in a new tab",
+        "external": true
+      }
     },
-  ]}
-/>
+    {
+      "title": "Editorial decision record",
+      "subtitle": "Text-only row with no action",
+      "description": "Confirms that optional media, status, and action regions collapse without leaving empty grid columns."
+    }
+  ]
+}
+```
 
 #### Release artifacts and status
 
-An artifact inventory gives readers a compact snapshot of what a release
-produced and which outputs still need attention. Numbered markers make the rows
-easy to reference from the surrounding prose without implying live progress.
-
-<List
-  aria-label="Release artifact inventory"
-  class="my-8"
-  itemClass="bg-base-100"
-  items={[
+```daisyui
+{
+  "component": "list",
+  "ariaLabel": "Release artifact inventory",
+  "class": "my-8",
+  "itemClass": "bg-base-100",
+  "items": [
     {
-      title: "Static HTML bundle",
-      subtitle: "dist/ · 71 generated pages",
-      description:
-        "Contains the publication routes, optimized metadata, and no-JavaScript chart fallbacks.",
-      media: { kind: "marker", label: "01" },
-      status: { label: "Verified", color: "success" },
-      action: { label: "Browse", href: "/thejournal/" },
+      "title": "Static HTML bundle",
+      "subtitle": "dist/ - 71 generated pages",
+      "description": "Contains the publication routes, optimized metadata, and no-JavaScript chart fallbacks.",
+      "media": {
+        "kind": "marker",
+        "label": "01"
+      },
+      "status": {
+        "label": "Verified",
+        "color": "success"
+      },
+      "action": {
+        "label": "Browse",
+        "href": "/thejournal/",
+        "external": false
+      }
     },
     {
-      title: "Accessibility report",
-      subtitle: "Automated checks plus manual review",
-      description:
-        "Keyboard navigation and narrow-layout checks passed; contrast findings are awaiting editorial review.",
-      media: { kind: "marker", label: "02" },
-      status: { label: "Review", color: "warning" },
+      "title": "Accessibility report",
+      "subtitle": "Automated checks plus manual review",
+      "description": "Keyboard navigation and narrow-layout checks passed; contrast findings are awaiting editorial review.",
+      "media": {
+        "kind": "marker",
+        "label": "02"
+      },
+      "status": {
+        "label": "Review",
+        "color": "warning"
+      }
     },
     {
-      title: "Deployment manifest",
-      subtitle: "Immutable asset and route inventory",
-      media: { kind: "marker", label: "03" },
-      status: { label: "Generated", color: "info" },
-    },
-  ]}
-/>
+      "title": "Deployment manifest",
+      "subtitle": "Immutable asset and route inventory",
+      "media": {
+        "kind": "marker",
+        "label": "03"
+      },
+      "status": {
+        "label": "Generated",
+        "color": "info"
+      }
+    }
+  ]
+}
+```
 
 #### Service ownership
 
-Image-led rows work well for people, teams, projects, or services whose visual
-identity helps the reader scan ownership. The image alt text names what the
-image represents, while the status remains readable without relying on color.
-
-<List
-  aria-label="Publication service ownership"
-  class="my-8 shadow-sm"
-  items={[
+```daisyui
+{
+  "component": "list",
+  "ariaLabel": "Publication service ownership",
+  "class": "my-8 shadow-sm",
+  "items": [
     {
-      title: "Rendering platform",
-      subtitle: "Static output and asset optimization",
-      description:
-        "Owns MDX compilation, image generation, Mermaid assets, and the final HTML build.",
-      media: {
-        kind: "image",
-        src: platformAvatar,
-        alt: "Rendering platform service artwork",
+      "title": "Rendering platform",
+      "subtitle": "Static output and asset optimization",
+      "description": "Owns MDX compilation, image generation, Mermaid assets, and the final HTML build.",
+      "media": {
+        "kind": "marker",
+        "label": "RP"
       },
-      status: { label: "Healthy", color: "success" },
-      action: { label: "Architecture", href: "/thejournal/ai_ops_agent/" },
+      "status": {
+        "label": "Healthy",
+        "color": "success"
+      },
+      "action": {
+        "label": "Architecture",
+        "href": "/thejournal/ai_ops_agent/",
+        "external": false
+      }
     },
     {
-      title: "Editorial review",
-      subtitle: "Content quality and publication policy",
-      description:
-        "Checks reader value, frontmatter, accessibility context, and whether each visual earns its place.",
-      media: {
-        kind: "image",
-        src: editorialAvatar,
-        alt: "Editorial review team artwork",
+      "title": "Editorial review",
+      "subtitle": "Content quality and publication policy",
+      "description": "Checks reader value, frontmatter, accessibility context, and whether each visual earns its place.",
+      "media": {
+        "kind": "marker",
+        "label": "ER"
       },
-      status: { label: "Available", color: "primary" },
-    },
-  ]}
-/>
+      "status": {
+        "label": "Available",
+        "color": "primary"
+      }
+    }
+  ]
+}
+```
 
 #### Decision register
 
-A decision summary can remain text-focused when imagery would be decorative.
-Badges expose the disposition, while descriptions preserve enough rationale for
-the list to stand on its own before the article expands each choice.
-
-<List
-  aria-label="Publication architecture decisions"
-  class="my-8"
-  items={[
+```daisyui
+{
+  "component": "list",
+  "ariaLabel": "Publication architecture decisions",
+  "class": "my-8",
+  "items": [
     {
-      title: "Render useful content without JavaScript",
-      subtitle: "ADR-001 · Rendering baseline",
-      description:
-        "Static HTML, SVG, and optimized images remain the default; browser behavior is an optional enhancement.",
-      status: { label: "Accepted", color: "accent" },
+      "title": "Render useful content without JavaScript",
+      "subtitle": "ADR-001 - Rendering baseline",
+      "description": "Static HTML, SVG, and optimized images remain the default; browser behavior is an optional enhancement.",
+      "status": {
+        "label": "Accepted",
+        "color": "accent"
+      }
     },
     {
-      title: "Keep list actions link-only",
-      subtitle: "ADR-002 · Component scope",
-      description:
-        "Interactive buttons, menus, and selection state stay in purpose-built application components.",
-      status: { label: "Accepted", color: "accent" },
+      "title": "Keep list actions link-only",
+      "subtitle": "ADR-002 - Component scope",
+      "description": "Interactive buttons, menus, and selection state stay in purpose-built application components.",
+      "status": {
+        "label": "Accepted",
+        "color": "accent"
+      }
     },
     {
-      title: "Evaluate remote image support",
-      subtitle: "ADR-003 · Media inputs",
-      description:
-        "The first version accepts local Astro image metadata while remote sizing and policy remain unresolved.",
-      status: { label: "Deferred", color: "neutral" },
-    },
-  ]}
-/>
+      "title": "Evaluate remote image support",
+      "subtitle": "ADR-003 - Media inputs",
+      "description": "The fence format accepts string image sources while imported Astro image metadata remains available to component consumers.",
+      "status": {
+        "label": "Deferred",
+        "color": "neutral"
+      }
+    }
+  ]
+}
+```
 
 ### Progress steps
 
 The progress group covers responsive progress, a vertical warning state, and a horizontal descriptive sequence. It checks current-step coloring, per-item overrides, custom markers, and the uncolored state used for neutral process descriptions.
 
-<Steps
-  aria-label="Release progress"
-  currentStep={3}
-  activeColor="success"
-  items={[
-    { label: "Build", marker: "✓" },
-    { label: "Test", marker: "✓" },
-    { label: "Deploy", marker: "3" },
-    { label: "Verify", marker: "4" },
-  ]}
-/>
+```daisyui
+{
+  "component": "steps",
+  "ariaLabel": "Release progress",
+  "currentStep": 3,
+  "activeColor": "success",
+  "items": [
+    {
+      "label": "Build",
+      "marker": "1"
+    },
+    {
+      "label": "Test",
+      "marker": "2"
+    },
+    {
+      "label": "Deploy",
+      "marker": "3"
+    },
+    {
+      "label": "Verify",
+      "marker": "4"
+    }
+  ]
+}
+```
 
-<Steps
-  aria-label="Incident response progress"
-  orientation="vertical"
-  currentStep={2}
-  itemClass="font-medium"
-  class="my-8"
-  items={[
-    { label: "Alert acknowledged" },
-    { label: "Impact under investigation", color: "warning", marker: "!" },
-    { label: "Mitigation applied" },
-    { label: "Post-incident review" },
-  ]}
-/>
+```daisyui
+{
+  "component": "steps",
+  "ariaLabel": "Incident response progress",
+  "orientation": "vertical",
+  "currentStep": 2,
+  "itemClass": "font-medium",
+  "class": "my-8",
+  "items": [
+    {
+      "label": "Alert acknowledged"
+    },
+    {
+      "label": "Impact under investigation",
+      "color": "warning",
+      "marker": "!"
+    },
+    {
+      "label": "Mitigation applied"
+    },
+    {
+      "label": "Post-incident review"
+    }
+  ]
+}
+```
 
-<Steps
-  aria-label="Publication stages without a current position"
-  orientation="horizontal"
-  class="my-8"
-  items={[
-    { label: "Research", marker: "R", color: "info" },
-    { label: "Draft", marker: "D", color: "secondary" },
-    { label: "Review", marker: "V", color: "accent" },
-    { label: "Publish", marker: "P" },
-  ]}
-/>
-
+```daisyui
+{
+  "component": "steps",
+  "ariaLabel": "Publication stages without a current position",
+  "orientation": "horizontal",
+  "class": "my-8",
+  "items": [
+    {
+      "label": "Research",
+      "marker": "R",
+      "color": "info"
+    },
+    {
+      "label": "Draft",
+      "marker": "D",
+      "color": "secondary"
+    },
+    {
+      "label": "Review",
+      "marker": "V",
+      "color": "accent"
+    },
+    {
+      "label": "Publish",
+      "marker": "P"
+    }
+  ]
+}
+```
 ---
 
 ## Standard article charts
 
 These are the everyday publication shapes: line, area, vertical bar, and horizontal bar. The first chart also tests the preferred `hydrate` prop and a client-side formatter preset.
 
-<EChart
-  id="dummy-line"
-  title="Monthly visitors"
-  caption="Line chart rendered as static SVG, then enhanced on load."
-  description="Line chart showing monthly visitors from January through June."
-  option={lineOption}
-  clientOption={lineOption}
-  width={760}
-  height={420}
-  hydrate="load"
-  optionClientPreset="currency"
-/>
+```echart
+{
+  "id": "dummy-line",
+  "type": "line",
+  "figure": {
+    "title": "Monthly visitors",
+    "caption": "Line chart rendered as static SVG, then enhanced on load.",
+    "description": "Line chart showing monthly visitors from January through June."
+  },
+  "size": { "width": 760, "height": 420 },
+  "hydrate": "load",
+  "clientOption": "same",
+  "optionClientPreset": "currency",
+  "data": {
+    "name": "Visitors",
+    "x": ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+    "y": [1200, 1560, 1410, 1840, 2100, 2480]
+  }
+}
+```
 
-<EChart
-  id="dummy-area"
-  title="Newsletter signups"
-  caption="Area chart rendered through the line chart helper."
-  description="Area chart showing weekly newsletter signups across six weeks."
-  option={areaOption}
-  width={760}
-  height={420}
-/>
+```echart
+{
+  "id": "dummy-area",
+  "type": "area",
+  "figure": {
+    "title": "Newsletter signups",
+    "caption": "Area chart rendered through the line chart helper.",
+    "description": "Area chart showing weekly newsletter signups across six weeks."
+  },
+  "size": { "width": 760, "height": 420 },
+  "data": {
+    "name": "Signups",
+    "x": ["Week 1", "Week 2", "Week 3", "Week 4", "Week 5", "Week 6"],
+    "y": [64, 79, 96, 118, 132, 149],
+    "smooth": true
+  }
+}
+```
 
-<EChart
-  id="dummy-bar"
-  title="Article build output"
-  caption="Bar chart with default static rendering."
-  description="Vertical bar chart comparing generated HTML, CSS, JavaScript, and image output."
-  option={barOption}
-  width={760}
-  height={420}
-/>
+```echart
+{
+  "id": "dummy-bar",
+  "type": "bar",
+  "figure": {
+    "title": "Article build output",
+    "caption": "Bar chart with default static rendering.",
+    "description": "Vertical bar chart comparing generated HTML, CSS, JavaScript, and image output."
+  },
+  "size": { "width": 760, "height": 420 },
+  "data": {
+    "name": "Kilobytes",
+    "x": ["HTML", "CSS", "JS", "Images"],
+    "y": [48, 22, 16, 128]
+  }
+}
+```
 
-<EChart
-  id="dummy-horizontal-bar"
-  title="Reading flow checks"
-  caption="Horizontal bar chart using the legacy enhance alias."
-  description="Horizontal bar chart comparing heading, code, image, and chart checks."
-  option={horizontalBarOption}
-  clientOption={horizontalBarOption}
-  width={760}
-  height={420}
-  enhance="visible"
-/>
+```echart
+{
+  "id": "dummy-horizontal-bar",
+  "type": "bar",
+  "figure": {
+    "title": "Reading flow checks",
+    "caption": "Horizontal bar chart using visible hydration.",
+    "description": "Horizontal bar chart comparing heading, code, image, and chart checks."
+  },
+  "size": { "width": 760, "height": 420 },
+  "hydrate": "visible",
+  "clientOption": "same",
+  "data": {
+    "name": "Checks",
+    "x": ["Headings", "Code", "Images", "Charts"],
+    "y": [18, 12, 9, 10],
+    "horizontal": true
+  }
+}
+```
 
 ---
 
@@ -1059,83 +762,194 @@ These are the everyday publication shapes: line, area, vertical bar, and horizon
 
 Pie, donut, rose, heatmap, histogram, scatter, and correlation charts cover the comparison-heavy shapes used in reports and technical notes.
 
-<EChart
-  id="dummy-pie"
-  title="Traffic sources"
-  caption="Pie chart rendered as static SVG."
-  description="Pie chart showing traffic source distribution across search, direct, social, and referral traffic."
-  option={pieOption}
-  width={720}
-  height={420}
-/>
+```echart
+{
+  "id": "dummy-pie",
+  "type": "pie",
+  "figure": {
+    "title": "Traffic sources",
+    "caption": "Pie chart rendered as static SVG.",
+    "description": "Pie chart showing traffic source distribution across search, direct, social, and referral traffic."
+  },
+  "size": { "width": 720, "height": 420 },
+  "data": {
+    "name": "Sessions",
+    "data": [
+      { "name": "Search", "value": 46 },
+      { "name": "Direct", "value": 22 },
+      { "name": "Social", "value": 18 },
+      { "name": "Referral", "value": 14 }
+    ]
+  }
+}
+```
 
-<EChart
-  id="dummy-donut"
-  title="Test coverage mix"
-  caption="Donut chart using the pie chart helper."
-  description="Donut chart showing unit, end-to-end, and manual coverage shares."
-  option={donutOption}
-  width={720}
-  height={420}
-/>
+```echart
+{
+  "id": "dummy-donut",
+  "type": "donut",
+  "figure": {
+    "title": "Test coverage mix",
+    "caption": "Donut chart using the pie chart helper.",
+    "description": "Donut chart showing unit, end-to-end, and manual coverage shares."
+  },
+  "size": { "width": 720, "height": 420 },
+  "data": {
+    "name": "Coverage",
+    "data": [
+      { "name": "Unit", "value": 52 },
+      { "name": "E2E", "value": 28 },
+      { "name": "Manual", "value": 20 }
+    ]
+  }
+}
+```
 
-<EChart
-  id="dummy-rose"
-  title="Editorial attention"
-  caption="Rose pie chart emitted as a hashed SVG artifact."
-  description="Rose pie chart showing relative editorial attention across research, drafting, charts, review, and release."
-  option={roseOption}
-  width={720}
-  height={440}
-  render="svg-file"
-  cacheKey="dummy-rose"
-/>
+```echart
+{
+  "id": "dummy-rose",
+  "type": "rose",
+  "figure": {
+    "title": "Editorial attention",
+    "caption": "Rose pie chart emitted as a hashed SVG artifact.",
+    "description": "Rose pie chart showing relative editorial attention across research, drafting, charts, review, and release."
+  },
+  "size": { "width": 720, "height": 440 },
+  "render": "svg-file",
+  "cacheKey": "dummy-rose",
+  "data": {
+    "name": "Hours",
+    "rose": "area",
+    "data": [
+      { "name": "Research", "value": 34 },
+      { "name": "Drafting", "value": 28 },
+      { "name": "Charts", "value": 18 },
+      { "name": "Review", "value": 12 },
+      { "name": "Release", "value": 8 }
+    ]
+  }
+}
+```
 
-<EChart
-  id="dummy-heatmap"
-  title="Publishing activity"
-  caption="Heatmap chart with idle enhancement."
-  description="Heatmap chart showing draft activity by weekday and time of day."
-  option={heatmapOption}
-  clientOption={heatmapOption}
-  width={760}
-  height={460}
-  hydrate="idle"
-/>
+```echart
+{
+  "id": "dummy-heatmap",
+  "type": "heatmap",
+  "figure": {
+    "title": "Publishing activity",
+    "caption": "Heatmap chart with idle enhancement.",
+    "description": "Heatmap chart showing draft activity by weekday and time of day."
+  },
+  "size": { "width": 760, "height": 460 },
+  "hydrate": "idle",
+  "clientOption": "same",
+  "data": {
+    "name": "Drafts",
+    "x": ["Mon", "Tue", "Wed", "Thu", "Fri"],
+    "y": ["Morning", "Afternoon", "Night"],
+    "data": [
+      [0, 0, 2],
+      [1, 0, 4],
+      [2, 0, 3],
+      [3, 0, 5],
+      [4, 0, 1],
+      [0, 1, 6],
+      [1, 1, 7],
+      [2, 1, 4],
+      [3, 1, 8],
+      [4, 1, 5],
+      [0, 2, 1],
+      [1, 2, 3],
+      [2, 2, 2],
+      [3, 2, 4],
+      [4, 2, 2]
+    ]
+  }
+}
+```
 
-<EChart
-  id="dummy-correlation"
-  title="Signal correlation"
-  caption="Correlation heatmap with a percentage formatter preset."
-  description="Correlation heatmap showing relationships among traffic, search, RSS, and social signals."
-  option={correlationHeatmapOption}
-  clientOption={correlationHeatmapOption}
-  width={760}
-  height={460}
-  hydrate="media"
-  media="(min-width: 900px)"
-  optionClientPreset="percent"
-/>
+```echart
+{
+  "id": "dummy-correlation",
+  "type": "correlation-heatmap",
+  "figure": {
+    "title": "Signal correlation",
+    "caption": "Correlation heatmap with a percentage formatter preset.",
+    "description": "Correlation heatmap showing relationships among traffic, search, RSS, and social signals."
+  },
+  "size": { "width": 760, "height": 460 },
+  "hydrate": "media",
+  "media": "(min-width: 900px)",
+  "clientOption": "same",
+  "optionClientPreset": "percent",
+  "data": {
+    "name": "Correlation",
+    "x": ["Traffic", "Search", "RSS", "Social"],
+    "y": ["Traffic", "Search", "RSS", "Social"],
+    "data": [
+      [0, 0, 1],
+      [1, 0, 0.74],
+      [2, 0, 0.42],
+      [3, 0, -0.18],
+      [0, 1, 0.74],
+      [1, 1, 1],
+      [2, 1, 0.35],
+      [3, 1, -0.08],
+      [0, 2, 0.42],
+      [1, 2, 0.35],
+      [2, 2, 1],
+      [3, 2, 0.21],
+      [0, 3, -0.18],
+      [1, 3, -0.08],
+      [2, 3, 0.21],
+      [3, 3, 1]
+    ]
+  }
+}
+```
 
-<EChart
-  id="dummy-histogram"
-  title="Paragraph length distribution"
-  caption="Histogram generated as a bar chart."
-  description="Histogram showing paragraph length distribution across a sample article."
-  option={histogramOption}
-  width={760}
-  height={420}
-/>
+```echart
+{
+  "id": "dummy-histogram",
+  "type": "histogram",
+  "figure": {
+    "title": "Paragraph length distribution",
+    "caption": "Histogram generated as a bar chart.",
+    "description": "Histogram showing paragraph length distribution across a sample article."
+  },
+  "size": { "width": 760, "height": 420 },
+  "data": {
+    "name": "Paragraphs",
+    "bins": 6,
+    "values": [42, 64, 57, 71, 92, 84, 103, 118, 76, 89, 95, 132, 149, 121, 110, 68, 73, 88, 97, 142, 154, 161, 126, 115]
+  }
+}
+```
 
-<EChart
-  id="dummy-scatter"
-  title="Article length and read time"
-  caption="Scatter chart using the reusable helper."
-  description="Scatter chart comparing article word count and estimated reading time."
-  option={scatterOption}
-  width={760}
-  height={420}
-/>
+```echart
+{
+  "id": "dummy-scatter",
+  "type": "scatter",
+  "figure": {
+    "title": "Article length and read time",
+    "caption": "Scatter chart using the reusable helper.",
+    "description": "Scatter chart comparing article word count and estimated reading time."
+  },
+  "size": { "width": 760, "height": 420 },
+  "data": {
+    "name": "Publication",
+    "xName": "Words",
+    "yName": "Minutes",
+    "data": [
+      [900, 5],
+      [1400, 8],
+      [1800, 10],
+      [2400, 13],
+      [2900, 16]
+    ]
+  }
+}
+```
 
 ---
 
@@ -1143,35 +957,80 @@ Pie, donut, rose, heatmap, histogram, scatter, and correlation charts cover the 
 
 Treemap, Sankey, and boxplot support denser editorial graphics without requiring author-side raw ECharts boilerplate.
 
-<EChart
-  id="dummy-treemap"
-  title="Publication effort"
-  caption="Treemap chart emitted as inline SVG."
-  description="Treemap chart showing relative effort across research, drafting, charts, review, and release."
-  option={treemapOption}
-  width={760}
-  height={440}
-/>
+```echart
+{
+  "id": "dummy-treemap",
+  "type": "treemap",
+  "figure": {
+    "title": "Publication effort",
+    "caption": "Treemap chart emitted as inline SVG.",
+    "description": "Treemap chart showing relative effort across research, drafting, charts, review, and release."
+  },
+  "size": { "width": 760, "height": 440 },
+  "data": {
+    "name": "Effort",
+    "data": [
+      { "name": "Research", "value": 34 },
+      { "name": "Drafting", "value": 28 },
+      { "name": "Charts", "value": 18 },
+      { "name": "Review", "value": 12 },
+      { "name": "Release", "value": 8 }
+    ]
+  }
+}
+```
 
-<EChart
-  id="dummy-sankey"
-  title="Publication workflow"
-  caption="Sankey chart showing flow through the publishing process."
-  description="Sankey chart showing flow from research through outline, draft, charts, review, and publish."
-  option={sankeyOption}
-  width={760}
-  height={460}
-/>
+```echart
+{
+  "id": "dummy-sankey",
+  "type": "sankey",
+  "figure": {
+    "title": "Publication workflow",
+    "caption": "Sankey chart showing flow through the publishing process.",
+    "description": "Sankey chart showing flow from research through outline, draft, charts, review, and publish."
+  },
+  "size": { "width": 760, "height": 460 },
+  "data": {
+    "nodes": [
+      { "name": "Research" },
+      { "name": "Outline" },
+      { "name": "Draft" },
+      { "name": "Charts" },
+      { "name": "Review" },
+      { "name": "Publish" }
+    ],
+    "links": [
+      { "source": "Research", "target": "Outline", "value": 8 },
+      { "source": "Outline", "target": "Draft", "value": 7 },
+      { "source": "Draft", "target": "Charts", "value": 3 },
+      { "source": "Draft", "target": "Review", "value": 6 },
+      { "source": "Charts", "target": "Review", "value": 3 },
+      { "source": "Review", "target": "Publish", "value": 7 }
+    ]
+  }
+}
+```
 
-<EChart
-  id="dummy-boxplot"
-  title="Build duration spread"
-  caption="Boxplot chart showing build duration distribution."
-  description="Boxplot chart comparing local, CI, and preview build duration spreads."
-  option={boxplotOption}
-  width={760}
-  height={420}
-/>
+```echart
+{
+  "id": "dummy-boxplot",
+  "type": "boxplot",
+  "figure": {
+    "title": "Build duration spread",
+    "caption": "Boxplot chart showing build duration distribution.",
+    "description": "Boxplot chart comparing local, CI, and preview build duration spreads."
+  },
+  "size": { "width": 760, "height": 420 },
+  "data": {
+    "name": "Seconds",
+    "data": [
+      { "name": "Local", "min": 16, "q1": 18, "median": 21, "q3": 24, "max": 32 },
+      { "name": "CI", "min": 38, "q1": 44, "median": 51, "q3": 58, "max": 74 },
+      { "name": "Preview", "min": 22, "q1": 26, "median": 31, "q3": 34, "max": 43 }
+    ]
+  }
+}
+```
 
 ---
 
@@ -1179,75 +1038,268 @@ Treemap, Sankey, and boxplot support denser editorial graphics without requiring
 
 The finance section covers native candlesticks, composed indicators, depth, order book, and a static-only custom OHLC option.
 
-<EChart
-  id="dummy-candlestick"
-  title="Example equity tape"
-  caption="Candlestick chart with a synchronized volume pane."
-  description="Candlestick chart showing trading sessions with a synchronized volume pane."
-  option={candlestickOption}
-  clientOption={candlestickOption}
-  width={900}
-  height={560}
-  hydrate="load"
-  optionClientPreset="financeOhlc"
-/>
+```echart
+{
+  "id": "dummy-candlestick",
+  "type": "candlestick-volume",
+  "figure": {
+    "title": "Example equity tape",
+    "caption": "Candlestick chart with a synchronized volume pane.",
+    "description": "Candlestick chart showing trading sessions with a synchronized volume pane."
+  },
+  "size": { "width": 900, "height": 560 },
+  "hydrate": "load",
+  "clientOption": "same",
+  "optionClientPreset": "financeOhlc",
+  "data": {
+    "priceName": "Price",
+    "volumeName": "Volume",
+    "data": [
+      { "date": "2026-05-11", "open": 102, "close": 108, "low": 99, "high": 111, "volume": 1280 },
+      { "date": "2026-05-12", "open": 108, "close": 105, "low": 103, "high": 112, "volume": 1180 },
+      { "date": "2026-05-13", "open": 105, "close": 114, "low": 104, "high": 116, "volume": 1540 },
+      { "date": "2026-05-14", "open": 114, "close": 119, "low": 110, "high": 122, "volume": 1710 },
+      { "date": "2026-05-15", "open": 119, "close": 116, "low": 113, "high": 121, "volume": 1490 },
+      { "date": "2026-05-18", "open": 116, "close": 121, "low": 114, "high": 124, "volume": 1660 },
+      { "date": "2026-05-19", "open": 121, "close": 127, "low": 119, "high": 130, "volume": 1900 },
+      { "date": "2026-05-20", "open": 127, "close": 125, "low": 123, "high": 131, "volume": 1810 },
+      { "date": "2026-05-21", "open": 125, "close": 132, "low": 124, "high": 134, "volume": 2090 },
+      { "date": "2026-05-22", "open": 132, "close": 136, "low": 130, "high": 138, "volume": 2200 },
+      { "date": "2026-05-26", "open": 136, "close": 133, "low": 131, "high": 139, "volume": 2040 },
+      { "date": "2026-05-27", "open": 133, "close": 139, "low": 132, "high": 141, "volume": 2310 },
+      { "date": "2026-05-28", "open": 139, "close": 144, "low": 137, "high": 146, "volume": 2460 },
+      { "date": "2026-05-29", "open": 144, "close": 142, "low": 140, "high": 147, "volume": 2180 },
+      { "date": "2026-05-30", "open": 142, "close": 148, "low": 141, "high": 151, "volume": 2630 },
+      { "date": "2026-06-02", "open": 148, "close": 151, "low": 145, "high": 153, "volume": 2770 },
+      { "date": "2026-06-03", "open": 151, "close": 147, "low": 145, "high": 154, "volume": 2490 },
+      { "date": "2026-06-04", "open": 147, "close": 153, "low": 146, "high": 156, "volume": 2820 },
+      { "date": "2026-06-05", "open": 153, "close": 158, "low": 151, "high": 160, "volume": 3010 },
+      { "date": "2026-06-08", "open": 158, "close": 156, "low": 154, "high": 161, "volume": 2860 },
+      { "date": "2026-06-09", "open": 156, "close": 162, "low": 155, "high": 164, "volume": 3180 },
+      { "date": "2026-06-10", "open": 162, "close": 167, "low": 160, "high": 169, "volume": 3370 },
+      { "date": "2026-06-11", "open": 167, "close": 165, "low": 163, "high": 170, "volume": 3210 },
+      { "date": "2026-06-12", "open": 165, "close": 171, "low": 164, "high": 174, "volume": 3520 },
+      { "date": "2026-06-15", "open": 171, "close": 176, "low": 169, "high": 179, "volume": 3760 },
+      { "date": "2026-06-16", "open": 176, "close": 173, "low": 171, "high": 178, "volume": 3440 },
+      { "date": "2026-06-17", "open": 173, "close": 180, "low": 172, "high": 182, "volume": 3890 },
+      { "date": "2026-06-18", "open": 180, "close": 184, "low": 177, "high": 187, "volume": 4020 }
+    ]
+  }
+}
+```
 
-<EChart
-  id="dummy-macd"
-  title="Price, volume, and MACD"
-  caption="Three-pane composed finance layout."
-  description="Candlestick chart with synchronized volume and MACD panes."
-  option={macdOption}
-  width={900}
-  height={620}
-/>
+```echart
+{
+  "id": "dummy-macd",
+  "type": "macd",
+  "figure": {
+    "title": "Price, volume, and MACD",
+    "caption": "Three-pane composed finance layout.",
+    "description": "Candlestick chart with synchronized volume and MACD panes."
+  },
+  "size": { "width": 900, "height": 620 },
+  "data": {
+    "data": [
+      { "date": "2026-05-11", "open": 102, "close": 108, "low": 99, "high": 111, "volume": 1280 },
+      { "date": "2026-05-12", "open": 108, "close": 105, "low": 103, "high": 112, "volume": 1180 },
+      { "date": "2026-05-13", "open": 105, "close": 114, "low": 104, "high": 116, "volume": 1540 },
+      { "date": "2026-05-14", "open": 114, "close": 119, "low": 110, "high": 122, "volume": 1710 },
+      { "date": "2026-05-15", "open": 119, "close": 116, "low": 113, "high": 121, "volume": 1490 },
+      { "date": "2026-05-18", "open": 116, "close": 121, "low": 114, "high": 124, "volume": 1660 },
+      { "date": "2026-05-19", "open": 121, "close": 127, "low": 119, "high": 130, "volume": 1900 },
+      { "date": "2026-05-20", "open": 127, "close": 125, "low": 123, "high": 131, "volume": 1810 },
+      { "date": "2026-05-21", "open": 125, "close": 132, "low": 124, "high": 134, "volume": 2090 },
+      { "date": "2026-05-22", "open": 132, "close": 136, "low": 130, "high": 138, "volume": 2200 },
+      { "date": "2026-05-26", "open": 136, "close": 133, "low": 131, "high": 139, "volume": 2040 },
+      { "date": "2026-05-27", "open": 133, "close": 139, "low": 132, "high": 141, "volume": 2310 },
+      { "date": "2026-05-28", "open": 139, "close": 144, "low": 137, "high": 146, "volume": 2460 },
+      { "date": "2026-05-29", "open": 144, "close": 142, "low": 140, "high": 147, "volume": 2180 },
+      { "date": "2026-05-30", "open": 142, "close": 148, "low": 141, "high": 151, "volume": 2630 },
+      { "date": "2026-06-02", "open": 148, "close": 151, "low": 145, "high": 153, "volume": 2770 },
+      { "date": "2026-06-03", "open": 151, "close": 147, "low": 145, "high": 154, "volume": 2490 },
+      { "date": "2026-06-04", "open": 147, "close": 153, "low": 146, "high": 156, "volume": 2820 },
+      { "date": "2026-06-05", "open": 153, "close": 158, "low": 151, "high": 160, "volume": 3010 },
+      { "date": "2026-06-08", "open": 158, "close": 156, "low": 154, "high": 161, "volume": 2860 },
+      { "date": "2026-06-09", "open": 156, "close": 162, "low": 155, "high": 164, "volume": 3180 },
+      { "date": "2026-06-10", "open": 162, "close": 167, "low": 160, "high": 169, "volume": 3370 },
+      { "date": "2026-06-11", "open": 167, "close": 165, "low": 163, "high": 170, "volume": 3210 },
+      { "date": "2026-06-12", "open": 165, "close": 171, "low": 164, "high": 174, "volume": 3520 },
+      { "date": "2026-06-15", "open": 171, "close": 176, "low": 169, "high": 179, "volume": 3760 },
+      { "date": "2026-06-16", "open": 176, "close": 173, "low": 171, "high": 178, "volume": 3440 },
+      { "date": "2026-06-17", "open": 173, "close": 180, "low": 172, "high": 182, "volume": 3890 },
+      { "date": "2026-06-18", "open": 180, "close": 184, "low": 177, "high": 187, "volume": 4020 }
+    ]
+  }
+}
+```
 
-<EChart
-  id="dummy-rsi"
-  title="Close price and RSI"
-  caption="Two-pane momentum layout."
-  description="Line chart showing close price with an RSI momentum pane."
-  option={rsiOption}
-  width={900}
-  height={520}
-/>
+```echart
+{
+  "id": "dummy-rsi",
+  "type": "rsi",
+  "figure": {
+    "title": "Close price and RSI",
+    "caption": "Two-pane momentum layout.",
+    "description": "Line chart showing close price with an RSI momentum pane."
+  },
+  "size": { "width": 900, "height": 520 },
+  "data": {
+    "data": [
+      { "date": "2026-05-11", "open": 102, "close": 108, "low": 99, "high": 111, "volume": 1280 },
+      { "date": "2026-05-12", "open": 108, "close": 105, "low": 103, "high": 112, "volume": 1180 },
+      { "date": "2026-05-13", "open": 105, "close": 114, "low": 104, "high": 116, "volume": 1540 },
+      { "date": "2026-05-14", "open": 114, "close": 119, "low": 110, "high": 122, "volume": 1710 },
+      { "date": "2026-05-15", "open": 119, "close": 116, "low": 113, "high": 121, "volume": 1490 },
+      { "date": "2026-05-18", "open": 116, "close": 121, "low": 114, "high": 124, "volume": 1660 },
+      { "date": "2026-05-19", "open": 121, "close": 127, "low": 119, "high": 130, "volume": 1900 },
+      { "date": "2026-05-20", "open": 127, "close": 125, "low": 123, "high": 131, "volume": 1810 },
+      { "date": "2026-05-21", "open": 125, "close": 132, "low": 124, "high": 134, "volume": 2090 },
+      { "date": "2026-05-22", "open": 132, "close": 136, "low": 130, "high": 138, "volume": 2200 },
+      { "date": "2026-05-26", "open": 136, "close": 133, "low": 131, "high": 139, "volume": 2040 },
+      { "date": "2026-05-27", "open": 133, "close": 139, "low": 132, "high": 141, "volume": 2310 },
+      { "date": "2026-05-28", "open": 139, "close": 144, "low": 137, "high": 146, "volume": 2460 },
+      { "date": "2026-05-29", "open": 144, "close": 142, "low": 140, "high": 147, "volume": 2180 },
+      { "date": "2026-05-30", "open": 142, "close": 148, "low": 141, "high": 151, "volume": 2630 },
+      { "date": "2026-06-02", "open": 148, "close": 151, "low": 145, "high": 153, "volume": 2770 },
+      { "date": "2026-06-03", "open": 151, "close": 147, "low": 145, "high": 154, "volume": 2490 },
+      { "date": "2026-06-04", "open": 147, "close": 153, "low": 146, "high": 156, "volume": 2820 },
+      { "date": "2026-06-05", "open": 153, "close": 158, "low": 151, "high": 160, "volume": 3010 },
+      { "date": "2026-06-08", "open": 158, "close": 156, "low": 154, "high": 161, "volume": 2860 },
+      { "date": "2026-06-09", "open": 156, "close": 162, "low": 155, "high": 164, "volume": 3180 },
+      { "date": "2026-06-10", "open": 162, "close": 167, "low": 160, "high": 169, "volume": 3370 },
+      { "date": "2026-06-11", "open": 167, "close": 165, "low": 163, "high": 170, "volume": 3210 },
+      { "date": "2026-06-12", "open": 165, "close": 171, "low": 164, "high": 174, "volume": 3520 },
+      { "date": "2026-06-15", "open": 171, "close": 176, "low": 169, "high": 179, "volume": 3760 },
+      { "date": "2026-06-16", "open": 176, "close": 173, "low": 171, "high": 178, "volume": 3440 },
+      { "date": "2026-06-17", "open": 173, "close": 180, "low": 172, "high": 182, "volume": 3890 },
+      { "date": "2026-06-18", "open": 180, "close": 184, "low": 177, "high": 187, "volume": 4020 }
+    ]
+  }
+}
+```
 
-<EChart
-  id="dummy-bollinger"
-  title="Bollinger Bands"
-  caption="Close price with upper, middle, and lower bands."
-  description="Line chart showing close price with Bollinger Band overlays."
-  option={bollingerOption}
-  width={900}
-  height={500}
-/>
+```echart
+{
+  "id": "dummy-bollinger",
+  "type": "bollinger-bands",
+  "figure": {
+    "title": "Bollinger Bands",
+    "caption": "Close price with upper, middle, and lower bands.",
+    "description": "Line chart showing close price with Bollinger Band overlays."
+  },
+  "size": { "width": 900, "height": 500 },
+  "data": {
+    "data": [
+      { "date": "2026-05-11", "open": 102, "close": 108, "low": 99, "high": 111, "volume": 1280 },
+      { "date": "2026-05-12", "open": 108, "close": 105, "low": 103, "high": 112, "volume": 1180 },
+      { "date": "2026-05-13", "open": 105, "close": 114, "low": 104, "high": 116, "volume": 1540 },
+      { "date": "2026-05-14", "open": 114, "close": 119, "low": 110, "high": 122, "volume": 1710 },
+      { "date": "2026-05-15", "open": 119, "close": 116, "low": 113, "high": 121, "volume": 1490 },
+      { "date": "2026-05-18", "open": 116, "close": 121, "low": 114, "high": 124, "volume": 1660 },
+      { "date": "2026-05-19", "open": 121, "close": 127, "low": 119, "high": 130, "volume": 1900 },
+      { "date": "2026-05-20", "open": 127, "close": 125, "low": 123, "high": 131, "volume": 1810 },
+      { "date": "2026-05-21", "open": 125, "close": 132, "low": 124, "high": 134, "volume": 2090 },
+      { "date": "2026-05-22", "open": 132, "close": 136, "low": 130, "high": 138, "volume": 2200 },
+      { "date": "2026-05-26", "open": 136, "close": 133, "low": 131, "high": 139, "volume": 2040 },
+      { "date": "2026-05-27", "open": 133, "close": 139, "low": 132, "high": 141, "volume": 2310 },
+      { "date": "2026-05-28", "open": 139, "close": 144, "low": 137, "high": 146, "volume": 2460 },
+      { "date": "2026-05-29", "open": 144, "close": 142, "low": 140, "high": 147, "volume": 2180 },
+      { "date": "2026-05-30", "open": 142, "close": 148, "low": 141, "high": 151, "volume": 2630 },
+      { "date": "2026-06-02", "open": 148, "close": 151, "low": 145, "high": 153, "volume": 2770 },
+      { "date": "2026-06-03", "open": 151, "close": 147, "low": 145, "high": 154, "volume": 2490 },
+      { "date": "2026-06-04", "open": 147, "close": 153, "low": 146, "high": 156, "volume": 2820 },
+      { "date": "2026-06-05", "open": 153, "close": 158, "low": 151, "high": 160, "volume": 3010 },
+      { "date": "2026-06-08", "open": 158, "close": 156, "low": 154, "high": 161, "volume": 2860 },
+      { "date": "2026-06-09", "open": 156, "close": 162, "low": 155, "high": 164, "volume": 3180 },
+      { "date": "2026-06-10", "open": 162, "close": 167, "low": 160, "high": 169, "volume": 3370 },
+      { "date": "2026-06-11", "open": 167, "close": 165, "low": 163, "high": 170, "volume": 3210 },
+      { "date": "2026-06-12", "open": 165, "close": 171, "low": 164, "high": 174, "volume": 3520 },
+      { "date": "2026-06-15", "open": 171, "close": 176, "low": 169, "high": 179, "volume": 3760 },
+      { "date": "2026-06-16", "open": 176, "close": 173, "low": 171, "high": 178, "volume": 3440 },
+      { "date": "2026-06-17", "open": 173, "close": 180, "low": 172, "high": 182, "volume": 3890 },
+      { "date": "2026-06-18", "open": 180, "close": 184, "low": 177, "high": 187, "volume": 4020 }
+    ]
+  }
+}
+```
 
-<EChart
-  id="dummy-depth"
-  title="Depth chart"
-  caption="Cumulative bid and ask liquidity."
-  description="Depth chart showing cumulative bid and ask size by price."
-  option={depthOption}
-  width={760}
-  height={420}
-/>
+```echart
+{
+  "id": "dummy-depth",
+  "type": "depth",
+  "figure": {
+    "title": "Depth chart",
+    "caption": "Cumulative bid and ask liquidity.",
+    "description": "Depth chart showing cumulative bid and ask size by price."
+  },
+  "size": { "width": 760, "height": 420 },
+  "data": {
+    "bids": [
+      { "price": 179, "size": 14 },
+      { "price": 178, "size": 21 },
+      { "price": 177, "size": 28 },
+      { "price": 176, "size": 35 }
+    ],
+    "asks": [
+      { "price": 181, "size": 12 },
+      { "price": 182, "size": 18 },
+      { "price": 183, "size": 24 },
+      { "price": 184, "size": 31 }
+    ]
+  }
+}
+```
 
-<EChart
-  id="dummy-order-book"
-  title="Order book ladder"
-  caption="Bid and ask size by level."
-  description="Horizontal bar chart showing bid and ask size by order book level."
-  option={orderBookOption}
-  width={760}
-  height={420}
-/>
+```echart
+{
+  "id": "dummy-order-book",
+  "type": "order-book",
+  "figure": {
+    "title": "Order book ladder",
+    "caption": "Bid and ask size by level.",
+    "description": "Horizontal bar chart showing bid and ask size by order book level."
+  },
+  "size": { "width": 760, "height": 420 },
+  "data": {
+    "bids": [
+      { "price": 180, "size": 20 },
+      { "price": 179, "size": 34 },
+      { "price": 178, "size": 28 }
+    ],
+    "asks": [
+      { "price": 181, "size": 18 },
+      { "price": 182, "size": 26 },
+      { "price": 183, "size": 31 }
+    ]
+  }
+}
+```
 
-<EChart
-  id="dummy-ohlc"
-  title="OHLC custom series"
-  caption="Static-only custom series example."
-  description="OHLC chart rendered with a custom ECharts series."
-  option={ohlcOption}
-  width={760}
-  height={420}
-/>
+```echart
+{
+  "id": "dummy-ohlc",
+  "type": "ohlc",
+  "figure": {
+    "title": "OHLC custom series",
+    "caption": "Static-only custom series example.",
+    "description": "OHLC chart rendered with a custom ECharts series."
+  },
+  "size": { "width": 760, "height": 420 },
+  "data": {
+    "data": [
+      { "date": "2026-05-11", "open": 102, "close": 108, "low": 99, "high": 111, "volume": 1280 },
+      { "date": "2026-05-12", "open": 108, "close": 105, "low": 103, "high": 112, "volume": 1180 },
+      { "date": "2026-05-13", "open": 105, "close": 114, "low": 104, "high": 116, "volume": 1540 },
+      { "date": "2026-05-14", "open": 114, "close": 119, "low": 110, "high": 122, "volume": 1710 },
+      { "date": "2026-05-15", "open": 119, "close": 116, "low": 113, "high": 121, "volume": 1490 },
+      { "date": "2026-05-18", "open": 116, "close": 121, "low": 114, "high": 124, "volume": 1660 },
+      { "date": "2026-05-19", "open": 121, "close": 127, "low": 119, "high": 130, "volume": 1900 },
+      { "date": "2026-05-20", "open": 127, "close": 125, "low": 123, "high": 131, "volume": 1810 },
+      { "date": "2026-05-21", "open": 125, "close": 132, "low": 124, "high": 134, "volume": 2090 },
+      { "date": "2026-05-22", "open": 132, "close": 136, "low": 130, "high": 138, "volume": 2200 },
+      { "date": "2026-05-26", "open": 136, "close": 133, "low": 131, "high": 139, "volume": 2040 },
+      { "date": "2026-05-27", "open": 133, "close": 139, "low": 132, "high": 141, "volume": 2310 }
+    ]
+  }
+}
+```

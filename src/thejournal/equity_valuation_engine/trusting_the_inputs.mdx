@@ -6,8 +6,6 @@ pubDate: 2026-06-20
 order: 40
 ---
 
-import Callout from "@components/ui/display/Callout.astro";
-
 A missing cash-flow row can become `0.0` inside a typed model. If you see only the zero, you cannot tell whether the company generated nothing, the provider omitted the row, or a calculation failed. This engine keeps selected failure reasons beside the values, which is essential because every valuation is only as interpretable as its inputs.
 
 ---
@@ -109,9 +107,19 @@ Defaults are a continuity mechanism, not imputation. They do not estimate the mi
 
 ## What the registry does not record
 
-<Callout variant="information" title="Diagnostic scope">
-  <p>The registry preserves many important numeric and derived failures, not every absence. Label and enum misses can return None without entries. Optional historical series may also remain unrecorded.</p>
-</Callout>
+```daisyui
+{
+  "component": "callout",
+  "variant": "information",
+  "title": "Diagnostic scope",
+  "content": [
+    {
+      "type": "paragraph",
+      "text": "The registry preserves many important numeric and derived failures, not every absence. Label and enum misses can return None without entries. Optional historical series may also remain unrecorded."
+    }
+  ]
+}
+```
 
 Some failures stop construction. Market data rejects missing or non-positive shares, and a failed top-level metrics build exits the CLI. That is different from a model skip because no trustworthy per-share valuation can be built without a valid share count.
 
@@ -131,9 +139,19 @@ Trace one problem from its source field into derived metrics, suitability factor
 
 ## The currency boundary that still needs work
 
-<Callout variant="caution" title="Use matching currencies">
-  <p>The engine records financial and trading currency labels, but the valuation path does not call the existing currency service. Statement values and share prices can therefore be combined without conversion.</p>
-</Callout>
+```daisyui
+{
+  "component": "callout",
+  "variant": "caution",
+  "title": "Use matching currencies",
+  "content": [
+    {
+      "type": "paragraph",
+      "text": "The engine records financial and trading currency labels, but the valuation path does not call the existing currency service. Statement values and share prices can therefore be combined without conversion."
+    }
+  ]
+}
+```
 
 The worked examples avoid the problem by using US dollars for both statements and trading. Real international listings may not. A million units of reporting currency cannot be compared with a dollar share price until the amounts share a currency and an appropriate conversion date.
 

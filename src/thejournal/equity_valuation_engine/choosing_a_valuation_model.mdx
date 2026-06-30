@@ -6,8 +6,6 @@ pubDate: 2026-06-20
 order: 30
 ---
 
-import Callout from "@components/ui/display/Callout.astro";
-
 A profitable software company, a regulated dividend payer, and an asset-heavy holding company can report the same market value. They should not automatically receive the same valuation method. Model choice begins with how the business creates and distributes value, then asks whether the required inputs are stable enough to support the calculation.
 
 ---
@@ -53,9 +51,19 @@ P/E relates equity value to earnings per share. The repository projects EPS, app
 
 P/E works best when EPS is positive, representative, and comparable with the period used for the multiple. It works poorly when losses make the ratio undefined or when capital structure and accounting policy change the apparent earnings base.
 
-<Callout variant="warning" title="P/E is excluded from the central example">
-  <p>The audited source pairs daily close prices with a shorter annual EPS list by position rather than date. The historical median can therefore combine unrelated observations. Repair and test date alignment before treating this path as reliable.</p>
-</Callout>
+```daisyui
+{
+  "component": "callout",
+  "variant": "warning",
+  "title": "P/E is excluded from the central example",
+  "content": [
+    {
+      "type": "paragraph",
+      "text": "The audited source pairs daily close prices with a shorter annual EPS list by position rather than date. The historical median can therefore combine unrelated observations. Repair and test date alignment before treating this path as reliable."
+    }
+  ]
+}
+```
 
 That defect illustrates a general lesson. A familiar ratio does not make data alignment optional. The price and earnings denominator must refer to compatible periods and share definitions.
 

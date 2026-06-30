@@ -4,6 +4,13 @@ This project supports static-first Apache ECharts charts in MDX publications.
 Charts render during `astro build`, so the article remains readable when
 JavaScript is disabled. Browser interactivity is always opt-in per chart.
 
+> **Authoring in `.md` or `.mdx`?** Prefer the `echart` code fence. It needs no
+> imports, is validated at build time, and uses this same rendering pipeline.
+> See [Markdown and MDX code fences](./MARKDOWN_MDX_CODE_FENCES.md) for the fence
+> schema and chart presets. The `EChart.astro` API below is the advanced
+> fallback for raw ECharts options that use build-time functions, or other cases
+> a fence cannot express.
+
 **Import path:** `@components/ui/mdx/EChart.astro`
 
 ## Rendering workflow
@@ -413,8 +420,9 @@ Relevant coverage:
 - `/fixtures/charts/` is generated only in `ALBERTODURAN_TEST_MODE=true` and
   is used by Playwright to verify no-JS SVG output, external SVG assets, and
   opt-in enhancement.
-- `src/thejournal/echarts_dummy_gallery.mdx` is the human-inspection gallery
-  for every supported chart pattern.
+- `src/thejournal/dummy_gallery.mdx` is the human-inspection gallery for every
+  supported chart pattern and display component, authored through `echart` and
+  `daisyui` fences.
 
 ## Guardrails
 

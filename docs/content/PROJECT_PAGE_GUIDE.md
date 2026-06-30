@@ -147,12 +147,12 @@ publications, sections, tags, reading time, documentation coverage, or similar
 content inventory as an outcome. The vault demonstrates depth through its
 linked material; it does not need a scorecard.
 
-Keep Mermaid source in a small project-owned MDX component so the existing
-build integration produces themed static SVG and standalone assets. Pass
-`MermaidDiagramWrapper` through the MDX `components` prop when the page should
-offer the established open and expand controls. When a justified ECharts figure
-is present, default to static SVG and opt into hydration only when interaction
-materially helps.
+Keep Mermaid source in the Astro page with `defineMermaidDiagram(String.raw...)`
+and render it with `MermaidDiagram`. The build integration discovers those static
+definitions, prepares the same themed SVG assets used by Journal Mermaid fences,
+and keeps the established open and expand controls. When a justified ECharts
+figure is present, default to static SVG and opt into hydration only when
+interaction materially helps.
 
 Use one `h1` only; the layout owns it. Give every body section an `h2`, stable
 `id`, and matching `aria-labelledby`. Use `SectionHeader` for ordinary section

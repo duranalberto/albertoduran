@@ -53,6 +53,12 @@ export class AstroDiskBus<T> {
     await fsAsync.mkdir(this.cacheDir, { recursive: true });
   }
 
+  /** Wipes and recreates the cache directory — for per-build scratch state. */
+  async clear(): Promise<void> {
+    await fsAsync.rm(this.cacheDir, { recursive: true, force: true });
+    await this.ensureDir();
+  }
+
   ensureDirSync(): void {
     if (!fsSync.existsSync(this.cacheDir)) {
       fsSync.mkdirSync(this.cacheDir, { recursive: true });

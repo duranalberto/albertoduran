@@ -6,10 +6,6 @@ pubDate: 2026-06-20
 order: 70
 ---
 
-import Callout from "@components/ui/display/Callout.astro";
-import EChart from "@components/ui/mdx/EChart.astro";
-import { barChartOption } from "@integrations/echarts/options";
-
 Revenue, operating profit, earnings, dividends, and assets can support different valuations for the same company. The gap comes from the economic claim each method measures. Reading those claims separately makes the comparison useful, while independent examples keep the arithmetic concrete without forcing unrelated methods into one continuous scenario.
 
 ---
@@ -36,9 +32,19 @@ present value = 63.00 / 1.09³ = 48.64
 
 The arithmetic is easy. Choosing representative EPS and a defensible multiple is not. Losses, one-off items, dilution, and accounting choices can make the denominator weak.
 
-<Callout variant="warning" title="Historical P/E limitation">
-  <p>The current source pairs daily prices with annual EPS values by list position. The central comparison excludes P/E until observations are aligned by date and covered by direct valuation tests.</p>
-</Callout>
+```daisyui
+{
+  "component": "callout",
+  "variant": "warning",
+  "title": "Historical P/E limitation",
+  "content": [
+    {
+      "type": "paragraph",
+      "text": "The current source pairs daily prices with annual EPS values by list position. The central comparison excludes P/E until observations are aligned by date and covered by direct valuation tests."
+    }
+  ]
+}
+```
 
 ---
 
@@ -125,18 +131,22 @@ NAV can anchor an asset-backed company or liquidation question. It can understat
 
 The chart includes the five usable Base estimates from the fixture and the current price. P/E is excluded and DDM is skipped, so neither appears as a valuation bar.
 
-<EChart
-  title="Illustrative Base estimates"
-  caption="Fictional US dollars per share"
-  description="Bar chart comparing DCF, ROE, EV to EBITDA, price to sales, NAV, and the current price."
-  option={barChartOption({
-    x: ["DCF", "ROE", "EV/EBITDA", "P/S", "NAV", "Price"],
-    y: [58, 53, 48, 62, 35, 50],
-    name: "Value per share",
-  })}
-  width={760}
-  height={420}
-/>
+```echart
+{
+  "type": "bar",
+  "figure": {
+    "title": "Illustrative Base estimates",
+    "caption": "Fictional US dollars per share",
+    "description": "Bar chart comparing DCF, ROE, EV to EBITDA, price to sales, NAV, and the current price."
+  },
+  "size": { "width": 760, "height": 420 },
+  "data": {
+    "x": ["DCF", "ROE", "EV/EBITDA", "P/S", "NAV", "Price"],
+    "y": [58, 53, 48, 62, 35, 50],
+    "name": "Value per share"
+  }
+}
+```
 
 P/S is highest because the configured revenue anchor is generous relative to current price. NAV is lowest because adjusted recorded assets capture less expected earning power. DCF and ROE sit between them because they depend on future operating economics and shareholder returns.
 

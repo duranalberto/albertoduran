@@ -6,8 +6,6 @@ pubDate: 2026-06-20
 order: 90
 ---
 
-import Callout from "@components/ui/display/Callout.astro";
-
 Adding one metric sounds small until it touches a provider label, mapper, dataclass, derived calculation, missing-data reason, validator, report, JSON payload, and tests. The project keeps those responsibilities separate, which makes the path longer but inspectable. This article is the maintainer map that the old vault tried to place before the product tour.
 
 ---
@@ -166,9 +164,19 @@ Currency conversion needs an integration path and tests spanning statement value
 
 ## Current extension limits
 
-<Callout variant="warning" title="Early project boundaries">
-  <p>The package is version 0.1.0 and has no visible license, contribution guide, changelog, security policy, or second repository adapter. Confirm usage rights and expectations before distributing modifications.</p>
-</Callout>
+```daisyui
+{
+  "component": "callout",
+  "variant": "warning",
+  "title": "Early project boundaries",
+  "content": [
+    {
+      "type": "paragraph",
+      "text": "The package is version 0.1.0 and has no visible license, contribution guide, changelog, security policy, or second repository adapter. Confirm usage rights and expectations before distributing modifications."
+    }
+  ]
+}
+```
 
 Static configuration lacks a complete provenance and refresh process. Treat assumption sourcing as product work rather than documentation garnish. Store source URL, retrieval date, effective date, method, and dataset artifact where a value can be audited.
 

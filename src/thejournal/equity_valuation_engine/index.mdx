@@ -8,9 +8,6 @@ github: "equity-valuation-engine"
 order: 10
 ---
 
-import Callout from "@components/ui/display/Callout.astro";
-import MockupWindow from "@components/ui/display/MockupWindow.astro";
-
 I had invested conservatively for several years and earned good returns, but expanding my portfolio raised a harder question. If I was going to invest more, I wanted a better way to identify companies that might be fairly valued or undervalued instead of leaning on a familiar ratio or a persuasive story.
 
 That need became the equity valuation engine. It compares several ways of valuing a company, keeps their assumptions visible, and explains when the available data does not support a model. The software does not make investing safe. It gives me a structured argument to inspect before taking a risk that would otherwise rest on less evidence.
@@ -37,24 +34,26 @@ The project gives you more than a composite price. A run includes the normalized
 
 The following output is a frozen, anonymous example created to explain the report shape. The sample uses matching reporting and trading currencies, round financial inputs, five successful models, one skipped model, and one model excluded because of a known data-alignment problem.
 
-<MockupWindow aria-label="Fictional valuation summary" bodyClass="p-5 font-mono text-sm">
-  <strong slot="header">Anonymous sample summary</strong>
-  <pre className="overflow-x-auto whitespace-pre-wrap">{`Current price                 $50.00
-Models run                         5
-Models skipped                    2
-
-Base estimates
-DCF                            $58.00
-ROE                            $53.00
-EV/EBITDA                      $48.00
-P/S                            $62.00
-NAV                            $35.00
-
-Equal-weight Base composite    $51.20
-Model dispersion               $ 9.37
-Dispersion band          $41.83 to $60.57`}</pre>
-  <span slot="caption">A fictional teaching fixture shaped like the engine output, not a live market result.</span>
-</MockupWindow>
+```daisyui
+{
+  "component": "mockup-window",
+  "ariaLabel": "Fictional valuation summary",
+  "bodyClass": "p-5 font-mono text-sm",
+  "header": [{ "type": "text", "text": "Anonymous sample summary" }],
+  "content": [
+    {
+      "type": "pre",
+      "text": "Current price                 $50.00\nModels run                         5\nModels skipped                    2\n\nBase estimates\nDCF                            $58.00\nROE                            $53.00\nEV/EBITDA                      $48.00\nP/S                            $62.00\nNAV                            $35.00\n\nEqual-weight Base composite    $51.20\nModel dispersion               $ 9.37\nDispersion band          $41.83 to $60.57"
+    }
+  ],
+  "caption": [
+    {
+      "type": "text",
+      "text": "A fictional teaching fixture shaped like the engine output, not a live market result."
+    }
+  ]
+}
+```
 
 The composite is close to the market price, but the underlying range is wide. That is the point of the sample. If you saw only $51.20, you might conclude that the market had already found fair value. Once you see $35 and $62 beside it, the useful question becomes why the models disagree by so much.
 
@@ -113,9 +112,19 @@ Scenario reports then reveal how assumption changes move the result. Bear, Base,
 
 ## Where the engine stops
 
-<Callout variant="warning" title="Educational software, not investment advice">
-  <p>This project organizes valuation calculations and diagnostics. It does not know your objectives, constraints, tax position, portfolio, or tolerance for loss. Verify source filings and assumptions before relying on any output.</p>
-</Callout>
+```daisyui
+{
+  "component": "callout",
+  "variant": "warning",
+  "title": "Educational software, not investment advice",
+  "content": [
+    {
+      "type": "paragraph",
+      "text": "This project organizes valuation calculations and diagnostics. It does not know your objectives, constraints, tax position, portfolio, or tolerance for loss. Verify source filings and assumptions before relying on any output."
+    }
+  ]
+}
+```
 
 yfinance is convenient, but provider data can be incomplete, mislabeled, delayed, or revised. The engine's configuration can also age. Sector multiples, risk-free rates, market risk premiums, growth limits, and asset haircuts are stored as project defaults without a complete publication-grade provenance trail or formal refresh policy.
 

@@ -6,10 +6,6 @@ pubDate: 2026-06-20
 order: 20
 ---
 
-import Callout from "@components/ui/display/Callout.astro";
-import MockupWindow from "@components/ui/display/MockupWindow.astro";
-import Steps from "@components/ui/display/Steps.astro";
-
 The first completed run can tempt you to jump straight to the composite value. Resist that urge. The most useful line may be `DDM skipped` or a warning about free cash flow. This walkthrough gets the program running, then reads the result in the order that preserves its meaning.
 
 ---
@@ -45,16 +41,19 @@ python -m pytest
 
 The basic journey has four stages. The last stage matters because structured output is how you preserve the complete chain rather than a screenshot of the final table.
 
-<Steps
-  aria-label="First valuation workflow"
-  currentStep={4}
-  items={[
-    { label: "Install", marker: "1" },
-    { label: "Run", marker: "2" },
-    { label: "Inspect", marker: "3" },
-    { label: "Export", marker: "4" },
-  ]}
-/>
+```daisyui
+{
+  "component": "steps",
+  "ariaLabel": "First valuation workflow",
+  "currentStep": 4,
+  "items": [
+    { "label": "Install", "marker": "1" },
+    { "label": "Run", "marker": "2" },
+    { "label": "Inspect", "marker": "3" },
+    { "label": "Export", "marker": "4" }
+  ]
+}
+```
 
 ---
 
@@ -70,9 +69,19 @@ python -m cli.main ORCL --all --reverse-dcf
 
 Start with `--cli`. A terminal view helps you learn the hierarchy before inspecting field names. Once you know what each section means, repeat the run with `--json` and save the document.
 
-<Callout variant="information" title="About the examples">
-  <p>Commands use the repository's documented ORCL example. Displayed sample output is fictional and frozen, so it demonstrates interpretation without claiming current market facts.</p>
-</Callout>
+```daisyui
+{
+  "component": "callout",
+  "variant": "information",
+  "title": "About the examples",
+  "content": [
+    {
+      "type": "paragraph",
+      "text": "Commands use the repository's documented ORCL example. Displayed sample output is fictional and frozen, so it demonstrates interpretation without claiming current market facts."
+    }
+  ]
+}
+```
 
 ```bash
 python -m cli.main ORCL --json > valuation.json
@@ -107,17 +116,26 @@ Ask whether the figures describe the same period. The engine uses TTM, latest an
 
 Each model returns a suitability result before it runs. Factors carry messages, severity, and weight. The runner sums policy scores and skips a model when the total reaches the configured threshold, currently six. The score is not a probability that a model is correct.
 
-<MockupWindow aria-label="Fictional suitability output" bodyClass="p-5 font-mono text-sm">
-  <strong slot="header">Suitability excerpt</strong>
-  <pre className="overflow-x-auto whitespace-pre-wrap">{`DCF          run      normalized inputs usable
-EV/EBITDA    run      positive EBITDA
-P/S          run      revenue and sector policy available
-ROE          run      equity base available
-NAV          run      balance sheet available
-DDM          skipped  no recurring dividend base
-P/E          excluded historical price and EPS dates need alignment`}</pre>
-  <span slot="caption">Skipped and editorially excluded models remain visible.</span>
-</MockupWindow>
+```daisyui
+{
+  "component": "mockup-window",
+  "ariaLabel": "Fictional suitability output",
+  "bodyClass": "p-5 font-mono text-sm",
+  "header": [{ "type": "text", "text": "Suitability excerpt" }],
+  "content": [
+    {
+      "type": "pre",
+      "text": "DCF          run      normalized inputs usable\nEV/EBITDA    run      positive EBITDA\nP/S          run      revenue and sector policy available\nROE          run      equity base available\nNAV          run      balance sheet available\nDDM          skipped  no recurring dividend base\nP/E          excluded historical price and EPS dates need alignment"
+    }
+  ],
+  "caption": [
+    {
+      "type": "text",
+      "text": "Skipped and editorially excluded models remain visible."
+    }
+  ]
+}
+```
 
 The sample DDM skip is useful. A dividend model needs distributions to estimate what shareholders receive through that channel. Returning no DDM report is more honest than applying a formula to a zero that has lost its context.
 

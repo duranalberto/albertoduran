@@ -19,6 +19,13 @@ guide is the source of truth for reader-facing journal intent, publication
 length, standalone article shape, vault structure, draft behavior, and the
 processor rules in `src/content/processors/`.
 
+For charts and reusable display components inside journal content, treat
+`docs/components/MARKDOWN_MDX_CODE_FENCES.md` as the default authoring path:
+prefer `mermaid`, `echart`, and `daisyui` code fences over importing Astro
+components, and fall back to component imports only when a publication needs
+Astro's image pipeline, named slots, custom icons, or build-time ECharts option
+functions.
+
 AI assistants must not modify files under `src/thejournal/` unless the user
 explicitly asks for journal content changes. A request to update docs, code,
 tests, styling, processors, or publication policy is not permission to rewrite

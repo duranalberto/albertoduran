@@ -4,6 +4,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { defineConfig, fontProviders } from "astro/config";
 import {
   customHtmlMinifier,
+  daisyuiIntegration,
   echartsIntegration,
   mermaidIntegration,
 } from "./src/integrations/index.ts";
@@ -31,6 +32,7 @@ export default defineConfig({
       ]),
     }),
     echartsIntegration(),
+    daisyuiIntegration(),
     mdx(),
     customHtmlMinifier(),
   ],

@@ -1,8 +1,5 @@
 ---
-import { registerEChartSvgArtifact } from "@integrations/echarts/artifacts";
 import {
-  normalizeChartHydration,
-  normalizeChartRenderMode,
   type ChartHydrationMode,
   type ChartRenderMode,
   type DeferredChartHydrationMode,
@@ -10,8 +7,7 @@ import {
 } from "@integrations/echarts/component";
 import type { ChartClientPreset } from "@integrations/echarts/client-presets";
 import type { ChartOption, ChartTheme } from "@integrations/echarts/registry";
-import { chartHash, serializeChartOption } from "@integrations/echarts/serialization";
-import { renderEChartSvg, withChartAriaDefaults } from "@integrations/echarts/server";
+import { renderEChartMarkup } from "@integrations/echarts/markup";
 
 export interface Props {
   option: ChartOption;
@@ -53,117 +49,31 @@ const {
   clientOption,
 } = Astro.props;
 
-const renderMode = normalizeChartRenderMode(render);
-const hydrationMode = normalizeChartHydration({ hydrate, enhance, media });
-const accessibleDescription = description ?? title ?? caption ?? "Chart";
-const renderOption = withChartAriaDefaults(
+const rendered = renderEChartMarkup({
   option,
-  accessibleDescription,
+  width,
+  height,
+  render,
+  hydrate,
+  title,
+  caption,
+  description,
+  className,
+  id,
+  enhance,
+  media,
+  theme,
   aria,
-);
-const chartId =
-  id ??
-  `echart-${chartHash({
-    option: renderOption,
-    width,
-    height,
-    render: renderMode,
-    hydrate: hydrationMode,
-    theme,
-    cacheKey,
-    title,
-    caption,
-    description: accessibleDescription,
-  })}`;
-const captionId = `${chartId}-caption`;
-const hasCaption = Boolean(title || caption);
-const shouldEnhance = hydrationMode !== "none";
-const enhancedOption = shouldEnhance
-  ? withChartAriaDefaults(clientOption ?? option, accessibleDescription, aria)
-  : null;
-const serializedOption = enhancedOption
-  ? serializeChartOption(enhancedOption)
-  : undefined;
-const serializedTheme =
-  shouldEnhance && theme !== undefined ? serializeChartOption(theme) : undefined;
-const artifact =
-  renderMode === "svg-file"
-    ? registerEChartSvgArtifact({
-        option: renderOption,
-        width,
-        height,
-        theme,
-        cacheKey,
-      })
-    : null;
-const assetHref = artifact && !artifact.svg ? artifact.href : undefined;
-const svg =
-  artifact?.svg ??
-  (assetHref
-    ? undefined
-    : renderEChartSvg({ option: renderOption, width, height, theme }));
-const surfaceStyle = `--echart-width:${width}px;--echart-height:${height}px;--echart-aspect-ratio:${width} / ${height};`;
+  cacheKey,
+  optionClientPreset,
+  clientOption,
+});
 ---
 
-<echart-shell
-  class:list={["echart-wrapper", "not-prose", className]}
-  data-chart-render={renderMode}
-  data-chart-hydrate={hydrationMode}
-  data-chart-enhance={hydrationMode}
-  data-chart-media={hydrationMode === "media" ? media : undefined}
-  data-chart-option={serializedOption}
-  data-chart-theme={serializedTheme}
-  data-chart-option-client-preset={optionClientPreset}
-  data-chart-width={width}
-  data-chart-height={height}
-  data-enhanced={shouldEnhance ? "false" : undefined}
->
-  <figure class="echart-figure" aria-describedby={hasCaption ? captionId : undefined}>
-    {
-      hasCaption && (
-        <figcaption id={captionId} class="echart-caption">
-          {title && <strong>{title}</strong>}
-          {title && caption && <span aria-hidden="true"> - </span>}
-          {caption && <span>{caption}</span>}
-        </figcaption>
-      )
-    }
-
-    {
-      assetHref ? (
-        <div
-          id={chartId}
-          class="echart-surface"
-          style={surfaceStyle}
-          data-echart-surface
-        >
-          <img
-            class="echart-static-image"
-            src={assetHref}
-            width={width}
-            height={height}
-            alt={accessibleDescription}
-            loading="lazy"
-            decoding="async"
-          />
-        </div>
-      ) : (
-        <div
-          id={chartId}
-          class="echart-surface"
-          style={surfaceStyle}
-          role="img"
-          aria-label={accessibleDescription}
-          data-echart-surface
-          set:html={svg}
-        />
-      )
-    }
-  </figure>
-</echart-shell>
+<Fragment set:html={rendered.html} />
 
 {
-  shouldEnhance && (
+  rendered.shouldEnhance && (
     <script>
       import "@runtime/elements/echart-shell";
     </script>

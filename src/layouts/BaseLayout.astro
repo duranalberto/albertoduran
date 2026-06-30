@@ -125,6 +125,7 @@ const socialImageURL = new URL(optimizedImage.src, Astro.site);
     <slot name="overlays" />
 
     <script>
+      import "@runtime/elements/echart-shell";
       import "@runtime/elements/mermaid-diagram-shell";
       import "@runtime/managers/theme_manager";
     </script>

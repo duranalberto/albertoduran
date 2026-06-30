@@ -1,14 +1,13 @@
 ---
 import type { ProjectPageConfig } from "@appTypes/project";
 import coverImage from "@assets/thejournal/stock/01.avif";
-import AlbertoDuranBuildFlow from "@components/projects/AlbertoDuranBuildFlow.mdx";
-import AlbertoDuranStaticVisualFlow from "@components/projects/AlbertoDuranStaticVisualFlow.mdx";
 import Callout from "@components/ui/display/Callout.astro";
 import SectionHeader from "@components/ui/display/SectionHeader.astro";
 import Steps, { type StepItem } from "@components/ui/display/Steps.astro";
 import EChart from "@components/ui/mdx/EChart.astro";
-import MermaidDiagramWrapper from "@components/ui/mdx/MermaidDiagramWrapper.astro";
+import MermaidDiagram from "@components/ui/mdx/MermaidDiagram.astro";
 import { lineChartOption } from "@integrations/echarts/options";
+import { defineMermaidDiagram } from "@integrations/mermaid/definition";
 import ProjectLayout from "@layouts/ProjectLayout.astro";
 
 const project: ProjectPageConfig = {
@@ -157,10 +156,49 @@ const samplePublicationTrend = lineChartOption({
   area: true,
 });
 
-const mermaidComponents = {
-  div: MermaidDiagramWrapper,
-  MermaidDiagramWrapper,
-};
+const buildFlow = defineMermaidDiagram(String.raw`
+flowchart LR
+    Source["📝 Astro, MDX, and typed data"] --> Resolve["🧭 Collections and manifests"]
+    Resolve --> Build["⚙️ Build integrations"]
+    Build --> Output["📦 HTML, CSS, images, charts, and SVG"]
+    Output --> Edge["☁️ Cloudflare edge delivery"]
+    Edge --> Reader["👤 Readable page"]
+    Reader -. "optional enhancement" .-> Runtime["✨ Theme, overlays, and navigation"]
+
+    classDef source fill:#FFE4B5,stroke:#333,stroke-width:2px,color:#000
+    classDef process fill:#90EE90,stroke:#333,stroke-width:2px,color:#064E3B
+    classDef output fill:#E6E6FA,stroke:#333,stroke-width:2px,color:#1E3A8A
+    classDef delivery fill:#87CEEB,stroke:#333,stroke-width:2px,color:#0F172A
+    classDef reader fill:#FFD700,stroke:#333,stroke-width:2px,color:#000
+
+    class Source source
+    class Resolve,Build process
+    class Output output
+    class Edge,Runtime delivery
+    class Reader reader
+`);
+
+const staticVisualFlow = defineMermaidDiagram(String.raw`
+flowchart LR
+    Mermaid["📝 Mermaid source"] --> MermaidBuild["⚙️ Mermaid integration"]
+    Chart["📊 ECharts option"] --> ChartBuild["⚙️ Server renderer"]
+    MermaidBuild --> Diagram["🖼️ Diagram SVG"]
+    ChartBuild --> Figure["📈 Chart SVG"]
+    Diagram --> Page["📄 Generated HTML"]
+    Figure --> Page
+    Page --> Reader["👤 Readable with JavaScript off"]
+    Reader -. "optional" .-> Enhance["✨ Browser interaction"]
+
+    classDef source fill:#FFE4B5,stroke:#333,stroke-width:2px,color:#000
+    classDef build fill:#90EE90,stroke:#333,stroke-width:2px,color:#064E3B
+    classDef output fill:#87CEEB,stroke:#333,stroke-width:2px,color:#0F172A
+    classDef reader fill:#E6E6FA,stroke:#333,stroke-width:2px,color:#1E3A8A
+
+    class Mermaid,Chart source
+    class MermaidBuild,ChartBuild build
+    class Diagram,Figure,Page output
+    class Reader,Enhance reader
+`);
 ---
 
 <ProjectLayout project={project}>
@@ -263,7 +301,7 @@ const mermaidComponents = {
       </p>
     </div>
 
-    <AlbertoDuranBuildFlow components={mermaidComponents} />
+    <MermaidDiagram code={buildFlow} />
   </section>
 
   <section
@@ -305,7 +343,7 @@ const mermaidComponents = {
           This flow is stored as readable Mermaid text in the repository. The
           build converts it into themed SVG and places the result in the page.
         </p>
-        <AlbertoDuranStaticVisualFlow components={mermaidComponents} />
+        <MermaidDiagram code={staticVisualFlow} />
       </article>
 
       <article class="min-w-0">

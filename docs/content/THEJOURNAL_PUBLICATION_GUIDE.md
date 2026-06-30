@@ -141,8 +141,10 @@ This section only defines project-specific authoring rules for `src/thejournal/`
 - Prefer ordinary Markdown and confirmed local MDX components over custom page
   code.
 - Use the visual selection guide below to choose between Mermaid and ECharts.
-  Use `docs/components/ECHARTS_MDX_CHARTS.md` for the ECharts component API, build-time
-  SVG artifacts, and opt-in chart enhancement rules.
+  Use `docs/components/MARKDOWN_MDX_CODE_FENCES.md` for `.md` / `.mdx`
+  Mermaid, ECharts, and DaisyUI fence syntax. Use
+  `docs/components/ECHARTS_MDX_CHARTS.md` for the ECharts component API,
+  build-time SVG artifacts, and opt-in chart enhancement rules.
 - Use the `thejournal` frontmatter schema and publishing policy from this guide,
   not the generic frontmatter template from `mdx-blog-writer`.
 - When generic writing, MDX, or diagram rules conflict with this guide or
@@ -151,27 +153,41 @@ This section only defines project-specific authoring rules for `src/thejournal/`
 
 ## Publication UI Components
 
-Journal authors may opt into `Callout`, `ChatBubble`, `List`, `MockupBrowser`,
-`MockupPhone`, `MockupWindow`, and `Steps` when a publication needs a
-recognizable interface pattern that ordinary Markdown cannot express clearly.
-These components are presentation tools, not decoration. Introduce each
-component in the surrounding prose and explain what the reader should notice.
+Journal authors can add `callout`, `chat-bubble`, `list`, `mockup-browser`,
+`mockup-phone`, `mockup-window`, and `steps` display components when a
+publication needs a recognizable interface pattern that ordinary Markdown
+cannot express clearly. These components are presentation tools, not decoration.
+Introduce each component in the surrounding prose and explain what the reader
+should notice.
 
-Import only the components used by the publication after its frontmatter.
+Author these components with a `daisyui` code fence. The fence needs no imports,
+is validated at build time, and keeps the publication data-driven. Use
+`docs/components/MARKDOWN_MDX_CODE_FENCES.md` for the full fence schema and every
+component's fields, and `src/thejournal/dummy_gallery.mdx` for a rendered
+example of each one.
 
-```mdx
-import Callout from "@components/ui/display/Callout.astro";
-import ChatBubble from "@components/ui/display/ChatBubble.astro";
-import List from "@components/ui/display/List.astro";
-import MockupBrowser from "@components/ui/display/MockupBrowser.astro";
-import MockupPhone from "@components/ui/display/MockupPhone.astro";
-import MockupWindow from "@components/ui/display/MockupWindow.astro";
-import Steps from "@components/ui/display/Steps.astro";
+```daisyui
+{
+  "component": "callout",
+  "variant": "information",
+  "title": "Build context",
+  "content": "The generated report uses fixture data and should not be treated as a live production result."
+}
 ```
 
-All seven components apply `not-prose`. Content placed inside them therefore
-needs its own spacing and typography classes. They render static HTML and do not
-add client-side state, navigation, message streaming, or application behavior.
+Reach for the imported Astro component (`@components/ui/display/<Name>.astro`)
+only when a fence cannot express the content: named slots with rich MDX, raw
+HTML children, custom icons, or media that must flow through Astro's image
+pipeline. The dedicated component guides document that fallback API.
+
+Every component applies `not-prose`, so content placed inside it needs its own
+spacing and typography classes. They render static HTML and do not add
+client-side state, navigation, message streaming, or application behavior.
+
+The `Use` column names the display component. In a `daisyui` fence, its
+`component` field is the lowercase, hyphenated form: `Callout` becomes
+`"component": "callout"`, `ChatBubble` becomes `"component": "chat-bubble"`, and
+so on.
 
 | Publication needs to show                             | Use             | Good fit                                                               | Prefer another format when                                |
 | :---------------------------------------------------- | :-------------- | :--------------------------------------------------------------------- | :-------------------------------------------------------- |
@@ -186,6 +202,7 @@ add client-side state, navigation, message streaming, or application behavior.
 Use the dedicated component guides for complete props, slots, styling hooks,
 and accessibility contracts:
 
+- `docs/components/MARKDOWN_MDX_CODE_FENCES.md` for Markdown / MDX fence syntax
 - `docs/components/CALLOUT.md`
 - `docs/components/CHAT.md`
 - `docs/components/LIST.md`
@@ -201,33 +218,52 @@ scanning: prerequisites, interpretation notes, risky operations, irreversible
 consequences, and visible failure explanations. The variant provides a default
 title and icon; a custom title adds specificity without changing its severity.
 
-```mdx
-<Callout variant="information" title="Build context">
-  The generated report uses fixture data and should not be treated as a live
-  production result.
-</Callout>
+```daisyui
+{
+  "component": "callout",
+  "variant": "information",
+  "title": "Build context",
+  "content": "The generated report uses fixture data and should not be treated as a live production result."
+}
+```
 
-<Callout variant="warning" title="Before deploying">
-  <ul>
-    <li>Confirm the target environment.</li>
-    <li>Keep the previous artifact available for rollback.</li>
-  </ul>
-</Callout>
+```daisyui
+{
+  "component": "callout",
+  "variant": "warning",
+  "title": "Before deploying",
+  "content": [
+    {
+      "type": "list",
+      "items": [
+        "Confirm the target environment.",
+        "Keep the previous artifact available for rollback."
+      ]
+    }
+  ]
+}
 ```
 
 Use `caution` when an action may be destructive or difficult to reverse, and
 `error` when explaining a known failure state or failed outcome. These are
 static publication notes, not live alerts.
 
-```mdx
-<Callout variant="caution" title="Irreversible migration">
-  Applying this migration removes legacy identifiers. Take a verified backup
-  before continuing.
-</Callout>
+```daisyui
+{
+  "component": "callout",
+  "variant": "caution",
+  "title": "Irreversible migration",
+  "content": "Applying this migration removes legacy identifiers. Take a verified backup before continuing."
+}
+```
 
-<Callout variant="error" title="Import failed">
-  The provider rejected the file because its schema version is unsupported.
-</Callout>
+```daisyui
+{
+  "component": "callout",
+  "variant": "error",
+  "title": "Import failed",
+  "content": "The provider rejected the file because its schema version is unsupported."
+}
 ```
 
 Use ordinary prose when the information belongs in the main reading flow and a
@@ -240,6 +276,10 @@ components with appropriate announcement behavior.
 Use `ChatBubble` when the identity, direction, or delivery state of a message is
 part of the explanation. A pair of aligned bubbles can reconstruct a concise
 conversation without presenting a full chat application.
+
+For a single message, use the `daisyui` `chat-bubble` fence shown after the
+conversation. The multi-bubble example below wraps two bubbles in a layout
+element and uses `<time>` metadata, so it stays as the Astro component fallback.
 
 ```mdx
 <div className="my-8 space-y-3" aria-label="Review conversation">
@@ -264,18 +304,16 @@ conversation without presenting a full chat application.
 A single semantic bubble works well for a service or build message. It should
 still have a visible sender and an accessible label.
 
-```mdx
-<ChatBubble
-  color="success"
-  aria-labelledby="build-service-name"
-  bubbleClass="font-mono"
->
-  <strong id="build-service-name" slot="header">
-    Build service
-  </strong>
-  70 pages generated successfully.
-  <span slot="footer">Completed in 1m 37s</span>
-</ChatBubble>
+```daisyui
+{
+  "component": "chat-bubble",
+  "color": "success",
+  "aria-label": "Build service message",
+  "bubbleClass": "font-mono",
+  "header": ["Build service"],
+  "content": "70 pages generated successfully.",
+  "footer": ["Completed in 1m 37s"]
+}
 ```
 
 Do not use chat bubbles for long interviews, ordinary quotations, or every
@@ -290,27 +328,32 @@ more context than a normal bullet: for example release artifacts, services and
 owners, architectural decisions, people, useful resources, or a status
 inventory. Introduce what the collection represents in the surrounding prose.
 
-```mdx
-<List
-  aria-label="Release artifacts"
-  class="my-8 shadow-sm"
-  items={[
+Author list rows with the `daisyui` `list` fence, shown below. Rows whose media
+must come from Astro's image pipeline use the Astro component fallback in the
+following example.
+
+```daisyui
+{
+  "component": "list",
+  "aria-label": "Release artifacts",
+  "class": "my-8 shadow-sm",
+  "items": [
     {
-      title: "Static site bundle",
-      subtitle: "dist/ · 4.8 MB",
-      description: "HTML, CSS, client enhancements, and optimized images.",
-      media: { kind: "marker", label: "01" },
-      status: { label: "Verified", color: "success" },
-      action: { label: "Build notes", href: "/thejournal/build-output/" },
+      "title": "Static site bundle",
+      "subtitle": "dist/ · 4.8 MB",
+      "description": "HTML, CSS, client enhancements, and optimized images.",
+      "media": { "kind": "marker", "label": "01" },
+      "status": { "label": "Verified", "color": "success" },
+      "action": { "label": "Build notes", "href": "/thejournal/build-output/" }
     },
     {
-      title: "Accessibility report",
-      subtitle: "Automated and manual checks",
-      media: { kind: "marker", label: "02" },
-      status: { label: "Review", color: "warning" },
-    },
-  ]}
-/>
+      "title": "Accessibility report",
+      "subtitle": "Automated and manual checks",
+      "media": { "kind": "marker", "label": "02" },
+      "status": { "label": "Review", "color": "warning" }
+    }
+  ]
+}
 ```
 
 Local images can identify people, projects, or services when the visual makes
@@ -355,6 +398,10 @@ toolbars belong in a purpose-built interface.
 Use `MockupPhone` when the device-shaped viewport helps readers understand a
 mobile layout, crop, or responsive behavior. For a real screenshot, import the
 asset through Astro and let the image remain the direct child of the display.
+
+For text-only or simple markup content, use the `daisyui` `mockup-phone` fence.
+The screenshot examples below import through Astro's image pipeline, so they use
+the Astro component fallback.
 
 ```mdx
 import { Image } from "astro:assets";
@@ -404,6 +451,10 @@ Use `MockupBrowser` when the visible route, hosted origin, or browser context is
 part of what the reader must understand. Good examples include a route-specific
 UI, hosted report, authentication redirect, browser-visible failure, or local
 preview. Use `MockupWindow` when the same content only needs a desktop boundary.
+
+For text-only content, use the `daisyui` `mockup-browser` fence with a `url` and
+`content`. The screenshot example below imports through Astro's image pipeline,
+so it uses the Astro component fallback.
 
 ```mdx
 import { Image } from "astro:assets";
@@ -457,6 +508,10 @@ output that benefits from a clear boundary but does not need browser chrome.
 The optional header should name the surface rather than imitate a browser
 toolbar; switch to `MockupBrowser` when the route or hosted origin matters.
 
+For text or preformatted content, use the `daisyui` `mockup-window` fence (a
+string, `paragraph`, or `pre` content block). The examples below use named slots
+and raw markup, so they use the Astro component fallback.
+
 ```mdx
 <MockupWindow
   aria-labelledby="valuation-preview-title"
@@ -503,37 +558,39 @@ context is the point.
 Use `Steps` for a linear, branch-free sequence or a snapshot of current
 progress. `currentStep` is 1-based and colors the path through the current item.
 
-```mdx
-<Steps
-  aria-label="Release progress"
-  currentStep={3}
-  activeColor="success"
-  items={[
-    { label: "Build", marker: "✓" },
-    { label: "Test", marker: "✓" },
-    { label: "Deploy", marker: "3" },
-    { label: "Verify", marker: "4" },
-  ]}
-/>
+```daisyui
+{
+  "component": "steps",
+  "aria-label": "Release progress",
+  "currentStep": 3,
+  "activeColor": "success",
+  "items": [
+    { "label": "Build", "marker": "✓" },
+    { "label": "Test", "marker": "✓" },
+    { "label": "Deploy", "marker": "3" },
+    { "label": "Verify", "marker": "4" }
+  ]
+}
 ```
 
 Use vertical orientation for longer labels or procedure-like content. An item
 color can override the active path when a stage needs a distinct status.
 
-```mdx
-<Steps
-  aria-label="Incident response stages"
-  orientation="vertical"
-  currentStep={2}
-  activeColor="primary"
-  itemClass="font-medium"
-  items={[
-    { label: "Alert acknowledged" },
-    { label: "Impact under investigation", color: "warning", marker: "!" },
-    { label: "Mitigation applied" },
-    { label: "Post-incident review" },
-  ]}
-/>
+```daisyui
+{
+  "component": "steps",
+  "aria-label": "Incident response stages",
+  "orientation": "vertical",
+  "currentStep": 2,
+  "activeColor": "primary",
+  "itemClass": "font-medium",
+  "items": [
+    { "label": "Alert acknowledged" },
+    { "label": "Impact under investigation", "color": "warning", "marker": "!" },
+    { "label": "Mitigation applied" },
+    { "label": "Post-incident review" }
+  ]
+}
 ```
 
 Omit `currentStep` when the publication is describing stages rather than a live
@@ -579,17 +636,27 @@ guidance.
 
 ### ECharts Chart Use Cases
 
-Use the `EChart` MDX component when the publication needs a data visualization.
-Prefer the option builders in `src/integrations/echarts/options.ts` before
-writing raw ECharts options. The local gallery at
-`src/thejournal/echarts_dummy_gallery.mdx` shows every supported chart pattern
-in a real journal article.
+Use an `echart` code fence when the publication needs a data visualization. The
+fence needs no imports, is validated at build time, and uses the same rendering
+pipeline as the `EChart` component. Prefer a preset `type` (for example
+`"type": "line"` or `"type": "bar"`) before a raw `"type": "option"` fence. The
+local gallery at `src/thejournal/dummy_gallery.mdx` shows every supported chart
+pattern in a real journal article. Reach for the imported `EChart` component
+only when a chart needs raw ECharts options with build-time functions that a
+JSON fence cannot express.
 
-Every chart needs a useful `title`, `caption` when helpful, `description` for
-accessibility, and explicit dimensions that fit the article. Keep
-`render="svg-inline"` as the default. Use `render="svg-file"` only for repeated
-charts or large static output. Use hydration only when browser interaction helps
-the reader inspect the chart.
+Every chart needs a useful `figure.title`, a `figure.caption` when helpful, a
+`figure.description` for accessibility, and explicit `size` dimensions that fit
+the article. Keep `render` omitted so inline SVG stays the default. Use
+`"render": "svg-file"` only for repeated charts or large static output. Use
+hydration only when browser interaction helps the reader inspect the chart.
+
+The `Use` column names the option builder. In an `echart` fence, use the
+matching preset `type` from `docs/components/MARKDOWN_MDX_CODE_FENCES.md`: for
+example `lineChartOption` is `"type": "line"`, `lineChartOption({ area: true })`
+is `"type": "area"`, `barChartOption({ horizontal: true })` is `"type": "bar"`
+with `"horizontal": true` in `data`, and `pieChartOption({ donut: true })` is
+`"type": "donut"`.
 
 | Reader needs to compare                    | Use                                                                 | Good fit                                                            | Prefer another visual when                              |
 | :----------------------------------------- | :------------------------------------------------------------------ | :------------------------------------------------------------------ | :------------------------------------------------------ |
@@ -615,13 +682,14 @@ the reader inspect the chart.
 Default to static charts. A reader with JavaScript disabled should still see the
 chart and understand the article.
 
-- Use `hydrate="none"` for ordinary article charts.
-- Use `hydrate="load"` only when the first viewport needs immediate chart
+- Use `"hydrate": "none"` for ordinary article charts.
+- Use `"hydrate": "load"` only when the first viewport needs immediate chart
   interaction.
-- Use `hydrate="idle"` when interaction is useful but not urgent.
-- Use `hydrate="visible"` for below-the-fold charts.
-- Use `hydrate="media"` when enhancement only helps at specific viewport sizes.
-- Keep `clientOption` JSON-compatible for enhanced charts, or use
+- Use `"hydrate": "idle"` when interaction is useful but not urgent.
+- Use `"hydrate": "visible"` for below-the-fold charts.
+- Use `"hydrate": "media"` (with `"media"`) when enhancement only helps at
+  specific viewport sizes.
+- Keep `clientOption` JSON-serializable for enhanced charts, or use
   `optionClientPreset` for supported formatter callbacks.
 
 When a visual could be either Mermaid or ECharts, ask whether the reader needs

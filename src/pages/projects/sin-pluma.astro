@@ -5,12 +5,12 @@ import searchImage from "@assets/thejournal/pub/sinpluma_02.png";
 import editorImage from "@assets/thejournal/pub/sinpluma_04.png";
 import signInImage from "@assets/thejournal/pub/sinpluma_05.jpg";
 import coverImage from "@assets/thejournal/stock/07.avif";
-import SinPlumaArchitecture from "@components/projects/SinPlumaArchitecture.mdx";
 import Callout from "@components/ui/display/Callout.astro";
 import MockupBrowser from "@components/ui/display/MockupBrowser.astro";
 import SectionHeader from "@components/ui/display/SectionHeader.astro";
 import Steps, { type StepItem } from "@components/ui/display/Steps.astro";
-import MermaidDiagramWrapper from "@components/ui/mdx/MermaidDiagramWrapper.astro";
+import MermaidDiagram from "@components/ui/mdx/MermaidDiagram.astro";
+import { defineMermaidDiagram } from "@integrations/mermaid/definition";
 import ProjectLayout from "@layouts/ProjectLayout.astro";
 import { Picture } from "astro:assets";
 
@@ -90,10 +90,54 @@ const requestSteps: StepItem[] = [
   { label: "Update the experience", marker: "5", color: "success" },
 ];
 
-const mermaidComponents = {
-  div: MermaidDiagramWrapper,
-  MermaidDiagramWrapper,
-};
+const architectureDiagram = defineMermaidDiagram(String.raw`
+flowchart TB
+    Reader["👤 Reader or writer"] --> Nginx["🌐 Nginx entry point"]
+
+    subgraph Experience["Product experience"]
+        React["✍️ React, Redux, and Slate"]
+        Linguistics["🧠 Linguistics service"]
+    end
+
+    subgraph Application["Application services"]
+        Flask["⚙️ Flask REST API"]
+        Redis["🔐 Redis token revocation"]
+        MinIO["🖼️ MinIO object storage"]
+    end
+
+    subgraph Data["Transactional data"]
+        Router["🔀 MySQL Router"]
+        DB1[("💾 MySQL node 1")]
+        DB2[("💾 MySQL node 2")]
+        DB3[("💾 MySQL node 3")]
+    end
+
+    Nginx --> React
+    Nginx --> Flask
+    React --> Linguistics
+    React --> Flask
+    Flask --> Redis
+    Flask --> MinIO
+    Flask --> Router
+    Router --> DB1
+    Router --> DB2
+    Router --> DB3
+    DB1 <--> DB2
+    DB1 <--> DB3
+    DB2 <--> DB3
+
+    classDef person fill:#FFE4B5,stroke:#333,stroke-width:2px,color:#000
+    classDef edge fill:#FFD700,stroke:#333,stroke-width:2px,color:#000
+    classDef service fill:#90EE90,stroke:#333,stroke-width:2px,color:#064E3B
+    classDef storage fill:#E6E6FA,stroke:#333,stroke-width:2px,color:#1E3A8A
+    classDef database fill:#87CEEB,stroke:#333,stroke-width:2px,color:#0F172A
+
+    class Reader person
+    class Nginx edge
+    class React,Linguistics,Flask service
+    class Redis,MinIO,Router storage
+    class DB1,DB2,DB3 database
+`);
 ---
 
 <ProjectLayout project={project}>
@@ -287,7 +331,7 @@ const mermaidComponents = {
       browser experience, Flask coordinates business behavior, and the storage
       layer separates content, objects, and revocation state.
     </p>
-    <SinPlumaArchitecture components={mermaidComponents} />
+    <MermaidDiagram code={architectureDiagram} />
   </section>
 
   <section

@@ -2,6 +2,13 @@
 
 `Callout.astro` renders a static, card-like publication note with a semantic variant, decorative icon, visible title, and arbitrary Astro or MDX content. It requires no client-side JavaScript.
 
+> **Authoring in `.md` or `.mdx`?** Prefer the `daisyui` code fence with
+> `"component": "callout"`. It needs no imports and is validated at build time.
+> See [Markdown and MDX code fences](./MARKDOWN_MDX_CODE_FENCES.md) for the fence
+> schema. The `Callout.astro` API below is the advanced fallback for cases a
+> fence cannot express, such as named slots, raw HTML/MDX children, or custom
+> icons.
+
 **Import path:** `@components/ui/display/Callout.astro`
 
 ## Component signature

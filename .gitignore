@@ -49,3 +49,6 @@ test-results/
 # Local agent/developer context
 .agents/context/*
 !.agents/context/README.md
+
+# Agents
+.claude/

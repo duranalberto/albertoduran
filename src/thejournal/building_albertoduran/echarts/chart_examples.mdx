@@ -6,308 +6,7 @@ pubDate: 2026-06-19
 order: 20
 ---
 
-import EChart from "@components/ui/mdx/EChart.astro";
-import {
-  barChartOption,
-  boxplotChartOption,
-  candlestickWithVolumeOption,
-  correlationHeatmapChartOption,
-  heatmapChartOption,
-  histogramChartOption,
-  lineChartOption,
-  pieChartOption,
-  rsiChartOption,
-  sankeyChartOption,
-  scatterChartOption,
-  treemapChartOption,
-} from "@integrations/echarts/options";
-
-export const buildTrendOption = lineChartOption({
-  title: "Build output trend",
-  subtitle: "Static line chart",
-  name: "Kilobytes",
-  x: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
-  y: [214, 207, 196, 188, 181, 176],
-  smooth: true,
-});
-
-export const articleAreaOption = lineChartOption({
-  title: "Drafting throughput",
-  subtitle: "Area chart from the line helper",
-  name: "Words",
-  x: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
-  y: [520, 760, 680, 940, 1120, 860],
-  smooth: true,
-  area: true,
-});
-
-export const horizontalBarOption = barChartOption({
-  title: "Publication work by layer",
-  subtitle: "Horizontal bar chart",
-  name: "Checks",
-  x: ["Manifest", "Rendering", "Charts", "Runtime", "E2E"],
-  y: [15, 12, 18, 10, 14],
-  horizontal: true,
-});
-
-export const donutOption = pieChartOption({
-  title: "Test coverage mix",
-  subtitle: "Donut chart",
-  name: "Coverage",
-  donut: true,
-  data: [
-    { name: "Unit", value: 54 },
-    { name: "E2E", value: 28 },
-    { name: "Manual review", value: 18 },
-  ],
-});
-
-export const scatterOption = scatterChartOption({
-  title: "Article length and read time",
-  subtitle: "Scatter chart",
-  name: "Publication",
-  xName: "Words",
-  yName: "Minutes",
-  data: [
-    [900, 5],
-    [1400, 8],
-    [1800, 10],
-    [2400, 13],
-    [2900, 16],
-  ],
-});
-
-export const histogramOption = histogramChartOption({
-  title: "Paragraph length distribution",
-  subtitle: "Histogram rendered as bars",
-  name: "Paragraphs",
-  bins: 6,
-  values: [
-    42, 64, 57, 71, 92, 84, 103, 118, 76, 89, 95, 132, 149, 121, 110, 68, 73,
-    88, 97, 142, 154, 161, 126, 115,
-  ],
-});
-
-export const heatmapOption = heatmapChartOption({
-  title: "Publishing activity",
-  subtitle: "Heatmap chart",
-  name: "Drafts",
-  x: ["Mon", "Tue", "Wed", "Thu", "Fri"],
-  y: ["Morning", "Afternoon", "Night"],
-  data: [
-    [0, 0, 2],
-    [1, 0, 4],
-    [2, 0, 3],
-    [3, 0, 5],
-    [4, 0, 1],
-    [0, 1, 6],
-    [1, 1, 7],
-    [2, 1, 4],
-    [3, 1, 8],
-    [4, 1, 5],
-    [0, 2, 1],
-    [1, 2, 3],
-    [2, 2, 2],
-    [3, 2, 4],
-    [4, 2, 2],
-  ],
-});
-
-export const correlationOption = correlationHeatmapChartOption({
-  title: "Signal correlation",
-  subtitle: "Correlation heatmap",
-  name: "Correlation",
-  x: ["Traffic", "Search", "RSS", "Social"],
-  y: ["Traffic", "Search", "RSS", "Social"],
-  data: [
-    [0, 0, 1],
-    [1, 0, 0.74],
-    [2, 0, 0.42],
-    [3, 0, -0.18],
-    [0, 1, 0.74],
-    [1, 1, 1],
-    [2, 1, 0.35],
-    [3, 1, -0.08],
-    [0, 2, 0.42],
-    [1, 2, 0.35],
-    [2, 2, 1],
-    [3, 2, 0.21],
-    [0, 3, -0.18],
-    [1, 3, -0.08],
-    [2, 3, 0.21],
-    [3, 3, 1],
-  ],
-});
-
-export const treemapOption = treemapChartOption({
-  title: "Publishing effort",
-  subtitle: "Treemap chart",
-  name: "Effort",
-  data: [
-    {
-      name: "Writing",
-      children: [
-        { name: "Research", value: 22 },
-        { name: "Drafting", value: 31 },
-        { name: "Editing", value: 18 },
-      ],
-    },
-    {
-      name: "Implementation",
-      children: [
-        { name: "Components", value: 16 },
-        { name: "Tests", value: 13 },
-      ],
-    },
-  ],
-});
-
-export const sankeyOption = sankeyChartOption({
-  title: "Publication workflow weight",
-  subtitle: "Sankey chart",
-  nodes: [
-    { name: "Research" },
-    { name: "Outline" },
-    { name: "Draft" },
-    { name: "Charts" },
-    { name: "Review" },
-    { name: "Publish" },
-  ],
-  links: [
-    { source: "Research", target: "Outline", value: 8 },
-    { source: "Outline", target: "Draft", value: 7 },
-    { source: "Draft", target: "Charts", value: 3 },
-    { source: "Draft", target: "Review", value: 6 },
-    { source: "Charts", target: "Review", value: 3 },
-    { source: "Review", target: "Publish", value: 7 },
-  ],
-});
-
-export const boxplotOption = boxplotChartOption({
-  title: "Build duration spread",
-  subtitle: "Boxplot chart",
-  name: "Seconds",
-  data: [
-    { name: "Local", min: 16, q1: 18, median: 21, q3: 24, max: 32 },
-    { name: "CI", min: 38, q1: 44, median: 51, q3: 58, max: 74 },
-    { name: "Preview", min: 22, q1: 26, median: 31, q3: 34, max: 43 },
-  ],
-});
-
-export const financeData = [
-  {
-    date: "2026-06-01",
-    open: 102,
-    close: 108,
-    low: 99,
-    high: 111,
-    volume: 1280,
-  },
-  {
-    date: "2026-06-02",
-    open: 108,
-    close: 105,
-    low: 103,
-    high: 112,
-    volume: 1180,
-  },
-  {
-    date: "2026-06-03",
-    open: 105,
-    close: 114,
-    low: 104,
-    high: 116,
-    volume: 1540,
-  },
-  {
-    date: "2026-06-04",
-    open: 114,
-    close: 119,
-    low: 110,
-    high: 122,
-    volume: 1710,
-  },
-  {
-    date: "2026-06-05",
-    open: 119,
-    close: 116,
-    low: 113,
-    high: 121,
-    volume: 1490,
-  },
-  {
-    date: "2026-06-08",
-    open: 116,
-    close: 121,
-    low: 114,
-    high: 124,
-    volume: 1660,
-  },
-  {
-    date: "2026-06-09",
-    open: 121,
-    close: 127,
-    low: 119,
-    high: 130,
-    volume: 1900,
-  },
-  {
-    date: "2026-06-10",
-    open: 127,
-    close: 125,
-    low: 123,
-    high: 131,
-    volume: 1810,
-  },
-  {
-    date: "2026-06-11",
-    open: 125,
-    close: 132,
-    low: 124,
-    high: 134,
-    volume: 2090,
-  },
-  {
-    date: "2026-06-12",
-    open: 132,
-    close: 136,
-    low: 130,
-    high: 138,
-    volume: 2200,
-  },
-  {
-    date: "2026-06-15",
-    open: 136,
-    close: 133,
-    low: 131,
-    high: 139,
-    volume: 2040,
-  },
-  {
-    date: "2026-06-16",
-    open: 133,
-    close: 139,
-    low: 132,
-    high: 141,
-    volume: 2310,
-  },
-];
-
-export const candleOption = candlestickWithVolumeOption({
-  title: "Example equity tape",
-  subtitle: "Candlestick with volume pane",
-  priceName: "Price",
-  volumeName: "Volume",
-  data: financeData,
-});
-
-export const rsiOption = rsiChartOption({
-  title: "Close price and RSI",
-  subtitle: "Momentum pane",
-  data: financeData,
-});
-
-This page is a small field guide for the chart shapes available to journal authors. The values are sample data, but the rendering path is real. Each figure below uses the same `EChart` component that any MDX publication can import, so the examples double as a practical check on the chart pipeline.
+This page is a small field guide for the chart shapes available to journal authors. The values are sample data, but the rendering path is real. Each figure below uses an `echart` fence, so the examples double as a practical check on the chart pipeline without needing MDX imports.
 
 ---
 
@@ -315,35 +14,62 @@ This page is a small field guide for the chart shapes available to journal autho
 
 Use line and area charts when the order of values matters. Use bar charts when categories are independent or when long labels need room. The first chart below stays static. The second uses the same line builder with an area fill. The third uses a horizontal bar layout for labels that would crowd a vertical axis.
 
-<EChart
-  id="vault-build-trend"
-  title="Build output trend"
-  caption="Line chart rendered as inline SVG."
-  description="Line chart showing build output shrinking from January through June."
-  option={buildTrendOption}
-  width={760}
-  height={420}
-/>
+```echart
+{
+  "id": "vault-build-trend",
+  "type": "line",
+  "figure": {
+    "title": "Build output trend",
+    "caption": "Line chart rendered as inline SVG.",
+    "description": "Line chart showing build output shrinking from January through June."
+  },
+  "size": { "width": 760, "height": 420 },
+  "data": {
+    "name": "Kilobytes",
+    "x": ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+    "y": [214, 207, 196, 188, 181, 176],
+    "smooth": true
+  }
+}
+```
 
-<EChart
-  id="vault-area-throughput"
-  title="Drafting throughput"
-  caption="Area chart using the line chart helper."
-  description="Area chart showing draft word counts across six days."
-  option={articleAreaOption}
-  width={760}
-  height={420}
-/>
+```echart
+{
+  "id": "vault-area-throughput",
+  "type": "area",
+  "figure": {
+    "title": "Drafting throughput",
+    "caption": "Area chart using the line chart helper.",
+    "description": "Area chart showing draft word counts across six days."
+  },
+  "size": { "width": 760, "height": 420 },
+  "data": {
+    "name": "Words",
+    "x": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    "y": [520, 760, 680, 940, 1120, 860],
+    "smooth": true
+  }
+}
+```
 
-<EChart
-  id="vault-horizontal-bar"
-  title="Publication work by layer"
-  caption="Horizontal bars keep long category labels readable."
-  description="Horizontal bar chart comparing checks across manifest, rendering, charts, runtime, and end-to-end layers."
-  option={horizontalBarOption}
-  width={760}
-  height={420}
-/>
+```echart
+{
+  "id": "vault-horizontal-bar",
+  "type": "bar",
+  "figure": {
+    "title": "Publication work by layer",
+    "caption": "Horizontal bars keep long category labels readable.",
+    "description": "Horizontal bar chart comparing checks across manifest, rendering, charts, runtime, and end-to-end layers."
+  },
+  "size": { "width": 760, "height": 420 },
+  "data": {
+    "name": "Checks",
+    "x": ["Manifest", "Rendering", "Charts", "Runtime", "E2E"],
+    "y": [15, 12, 18, 10, 14],
+    "horizontal": true
+  }
+}
+```
 
 ---
 
@@ -351,59 +77,144 @@ Use line and area charts when the order of values matters. Use bar charts when c
 
 Use a donut chart for a small part-to-whole comparison. Use scatter charts when both axes are numeric. Use histograms for one numeric distribution. Use heatmaps when two categorical axes create a grid of intensity, and use correlation heatmaps when the values range from negative to positive relationship.
 
-<EChart
-  id="vault-donut"
-  title="Test coverage mix"
-  caption="Donut chart rendered as a hashed SVG asset."
-  description="Donut chart showing unit, end-to-end, and manual review coverage shares."
-  option={donutOption}
-  width={720}
-  height={420}
-  render="svg-file"
-  cacheKey="vault-donut-example"
-/>
+```echart
+{
+  "id": "vault-donut",
+  "type": "donut",
+  "figure": {
+    "title": "Test coverage mix",
+    "caption": "Donut chart rendered as a hashed SVG asset.",
+    "description": "Donut chart showing unit, end-to-end, and manual review coverage shares."
+  },
+  "size": { "width": 720, "height": 420 },
+  "render": "svg-file",
+  "cacheKey": "vault-donut-example",
+  "data": {
+    "name": "Coverage",
+    "data": [
+      { "name": "Unit", "value": 54 },
+      { "name": "E2E", "value": 28 },
+      { "name": "Manual review", "value": 18 }
+    ]
+  }
+}
+```
 
-<EChart
-  id="vault-scatter"
-  title="Article length and read time"
-  caption="Scatter chart with visible hydration for inspection."
-  description="Scatter chart comparing article word count and estimated reading minutes."
-  option={scatterOption}
-  clientOption={scatterOption}
-  width={720}
-  height={420}
-  hydrate="visible"
-/>
+```echart
+{
+  "id": "vault-scatter",
+  "type": "scatter",
+  "figure": {
+    "title": "Article length and read time",
+    "caption": "Scatter chart with visible hydration for inspection.",
+    "description": "Scatter chart comparing article word count and estimated reading minutes."
+  },
+  "size": { "width": 720, "height": 420 },
+  "hydrate": "visible",
+  "clientOption": "same",
+  "data": {
+    "name": "Publication",
+    "xName": "Words",
+    "yName": "Minutes",
+    "data": [
+      [900, 5],
+      [1400, 8],
+      [1800, 10],
+      [2400, 13],
+      [2900, 16]
+    ]
+  }
+}
+```
 
-<EChart
-  id="vault-histogram"
-  title="Paragraph length distribution"
-  caption="Histogram generated from raw values."
-  description="Histogram showing paragraph length buckets from a sample publication."
-  option={histogramOption}
-  width={760}
-  height={420}
-/>
+```echart
+{
+  "id": "vault-histogram",
+  "type": "histogram",
+  "figure": {
+    "title": "Paragraph length distribution",
+    "caption": "Histogram generated from raw values.",
+    "description": "Histogram showing paragraph length buckets from a sample publication."
+  },
+  "size": { "width": 760, "height": 420 },
+  "data": {
+    "name": "Paragraphs",
+    "bins": 6,
+    "values": [42, 64, 57, 71, 92, 84, 103, 118, 76, 89, 95, 132, 149, 121, 110, 68, 73, 88, 97, 142, 154, 161, 126, 115]
+  }
+}
+```
 
-<EChart
-  id="vault-heatmap"
-  title="Publishing activity"
-  caption="Heatmap by weekday and time of day."
-  description="Heatmap showing draft activity across weekdays and day parts."
-  option={heatmapOption}
-  width={760}
-  height={460}
-/>
+```echart
+{
+  "id": "vault-heatmap",
+  "type": "heatmap",
+  "figure": {
+    "title": "Publishing activity",
+    "caption": "Heatmap by weekday and time of day.",
+    "description": "Heatmap showing draft activity across weekdays and day parts."
+  },
+  "size": { "width": 760, "height": 460 },
+  "data": {
+    "name": "Drafts",
+    "x": ["Mon", "Tue", "Wed", "Thu", "Fri"],
+    "y": ["Morning", "Afternoon", "Night"],
+    "data": [
+      [0, 0, 2],
+      [1, 0, 4],
+      [2, 0, 3],
+      [3, 0, 5],
+      [4, 0, 1],
+      [0, 1, 6],
+      [1, 1, 7],
+      [2, 1, 4],
+      [3, 1, 8],
+      [4, 1, 5],
+      [0, 2, 1],
+      [1, 2, 3],
+      [2, 2, 2],
+      [3, 2, 4],
+      [4, 2, 2]
+    ]
+  }
+}
+```
 
-<EChart
-  id="vault-correlation"
-  title="Signal correlation"
-  caption="Correlation heatmap using a fixed negative-to-positive scale."
-  description="Correlation heatmap comparing traffic, search, RSS, and social signals."
-  option={correlationOption}
-  width={760}
-  height={460}
-/>
+```echart
+{
+  "id": "vault-correlation",
+  "type": "correlation-heatmap",
+  "figure": {
+    "title": "Signal correlation",
+    "caption": "Correlation heatmap using a fixed negative-to-positive scale.",
+    "description": "Correlation heatmap comparing traffic, search, RSS, and social signals."
+  },
+  "size": { "width": 760, "height": 460 },
+  "data": {
+    "name": "Correlation",
+    "x": ["Traffic", "Search", "RSS", "Social"],
+    "y": ["Traffic", "Search", "RSS", "Social"],
+    "data": [
+      [0, 0, 1],
+      [1, 0, 0.74],
+      [2, 0, 0.42],
+      [3, 0, -0.18],
+      [0, 1, 0.74],
+      [1, 1, 1],
+      [2, 1, 0.35],
+      [3, 1, -0.08],
+      [0, 2, 0.42],
+      [1, 2, 0.35],
+      [2, 2, 1],
+      [3, 2, 0.21],
+      [0, 3, -0.18],
+      [1, 3, -0.08],
+      [2, 3, 0.21],
+      [3, 3, 1]
+    ]
+  }
+}
+```
 
 ---
 
@@ -411,25 +222,69 @@ Use a donut chart for a small part-to-whole comparison. Use scatter charts when 
 
 Treemaps and Sankey charts are useful when simple bars cannot show the structure. A treemap shows nested numeric weight. A Sankey chart shows measured movement between stages. If the links have no measured values, use Mermaid instead.
 
-<EChart
-  id="vault-treemap"
-  title="Publishing effort"
-  caption="Treemap for nested contribution weight."
-  description="Treemap showing writing and implementation effort split into child categories."
-  option={treemapOption}
-  width={760}
-  height={440}
-/>
+```echart
+{
+  "id": "vault-treemap",
+  "type": "treemap",
+  "figure": {
+    "title": "Publishing effort",
+    "caption": "Treemap for nested contribution weight.",
+    "description": "Treemap showing writing and implementation effort split into child categories."
+  },
+  "size": { "width": 760, "height": 440 },
+  "data": {
+    "name": "Effort",
+    "data": [
+      {
+        "name": "Writing",
+        "children": [
+          { "name": "Research", "value": 22 },
+          { "name": "Drafting", "value": 31 },
+          { "name": "Editing", "value": 18 }
+        ]
+      },
+      {
+        "name": "Implementation",
+        "children": [
+          { "name": "Components", "value": 16 },
+          { "name": "Tests", "value": 13 }
+        ]
+      }
+    ]
+  }
+}
+```
 
-<EChart
-  id="vault-sankey"
-  title="Publication workflow weight"
-  caption="Sankey chart for quantified flow between stages."
-  description="Sankey chart showing weighted movement from research through publication."
-  option={sankeyOption}
-  width={760}
-  height={460}
-/>
+```echart
+{
+  "id": "vault-sankey",
+  "type": "sankey",
+  "figure": {
+    "title": "Publication workflow weight",
+    "caption": "Sankey chart for quantified flow between stages.",
+    "description": "Sankey chart showing weighted movement from research through publication."
+  },
+  "size": { "width": 760, "height": 460 },
+  "data": {
+    "nodes": [
+      { "name": "Research" },
+      { "name": "Outline" },
+      { "name": "Draft" },
+      { "name": "Charts" },
+      { "name": "Review" },
+      { "name": "Publish" }
+    ],
+    "links": [
+      { "source": "Research", "target": "Outline", "value": 8 },
+      { "source": "Outline", "target": "Draft", "value": 7 },
+      { "source": "Draft", "target": "Charts", "value": 3 },
+      { "source": "Draft", "target": "Review", "value": 6 },
+      { "source": "Charts", "target": "Review", "value": 3 },
+      { "source": "Review", "target": "Publish", "value": 7 }
+    ]
+  }
+}
+```
 
 ---
 
@@ -437,35 +292,86 @@ Treemaps and Sankey charts are useful when simple bars cannot show the structure
 
 Boxplots summarize spread across groups without listing every point. Finance helpers go further and provide chart shapes that normal article builders do not need, such as candlesticks with volume panes and momentum indicators.
 
-<EChart
-  id="vault-boxplot"
-  title="Build duration spread"
-  caption="Boxplot comparing local, CI, and preview build duration."
-  description="Boxplot showing minimum, quartiles, median, and maximum build duration across three environments."
-  option={boxplotOption}
-  width={760}
-  height={420}
-/>
+```echart
+{
+  "id": "vault-boxplot",
+  "type": "boxplot",
+  "figure": {
+    "title": "Build duration spread",
+    "caption": "Boxplot comparing local, CI, and preview build duration.",
+    "description": "Boxplot showing minimum, quartiles, median, and maximum build duration across three environments."
+  },
+  "size": { "width": 760, "height": 420 },
+  "data": {
+    "name": "Seconds",
+    "data": [
+      { "name": "Local", "min": 16, "q1": 18, "median": 21, "q3": 24, "max": 32 },
+      { "name": "CI", "min": 38, "q1": 44, "median": 51, "q3": 58, "max": 74 },
+      { "name": "Preview", "min": 22, "q1": 26, "median": 31, "q3": 34, "max": 43 }
+    ]
+  }
+}
+```
 
-<EChart
-  id="vault-candlestick"
-  title="Example equity tape"
-  caption="Candlestick chart with a linked volume pane."
-  description="Candlestick chart showing open, close, low, high, and volume values for a sample equity tape."
-  option={candleOption}
-  width={820}
-  height={520}
-/>
+```echart
+{
+  "id": "vault-candlestick",
+  "type": "candlestick-volume",
+  "figure": {
+    "title": "Example equity tape",
+    "caption": "Candlestick chart with a linked volume pane.",
+    "description": "Candlestick chart showing open, close, low, high, and volume values for a sample equity tape."
+  },
+  "size": { "width": 820, "height": 520 },
+  "data": {
+    "priceName": "Price",
+    "volumeName": "Volume",
+    "data": [
+      { "date": "2026-06-01", "open": 102, "close": 108, "low": 99, "high": 111, "volume": 1280 },
+      { "date": "2026-06-02", "open": 108, "close": 105, "low": 103, "high": 112, "volume": 1180 },
+      { "date": "2026-06-03", "open": 105, "close": 114, "low": 104, "high": 116, "volume": 1540 },
+      { "date": "2026-06-04", "open": 114, "close": 119, "low": 110, "high": 122, "volume": 1710 },
+      { "date": "2026-06-05", "open": 119, "close": 116, "low": 113, "high": 121, "volume": 1490 },
+      { "date": "2026-06-08", "open": 116, "close": 121, "low": 114, "high": 124, "volume": 1660 },
+      { "date": "2026-06-09", "open": 121, "close": 127, "low": 119, "high": 130, "volume": 1900 },
+      { "date": "2026-06-10", "open": 127, "close": 125, "low": 123, "high": 131, "volume": 1810 },
+      { "date": "2026-06-11", "open": 125, "close": 132, "low": 124, "high": 134, "volume": 2090 },
+      { "date": "2026-06-12", "open": 132, "close": 136, "low": 130, "high": 138, "volume": 2200 },
+      { "date": "2026-06-15", "open": 136, "close": 133, "low": 131, "high": 139, "volume": 2040 },
+      { "date": "2026-06-16", "open": 133, "close": 139, "low": 132, "high": 141, "volume": 2310 }
+    ]
+  }
+}
+```
 
-<EChart
-  id="vault-rsi"
-  title="Close price and RSI"
-  caption="Finance helper for a momentum pane."
-  description="Line chart showing close price and relative strength index for a sample equity tape."
-  option={rsiOption}
-  width={820}
-  height={500}
-/>
+```echart
+{
+  "id": "vault-rsi",
+  "type": "rsi",
+  "figure": {
+    "title": "Close price and RSI",
+    "caption": "Finance helper for a momentum pane.",
+    "description": "Line chart showing close price and relative strength index for a sample equity tape."
+  },
+  "size": { "width": 820, "height": 500 },
+  "data": {
+    "data": [
+      { "date": "2026-06-01", "open": 102, "close": 108, "low": 99, "high": 111, "volume": 1280 },
+      { "date": "2026-06-02", "open": 108, "close": 105, "low": 103, "high": 112, "volume": 1180 },
+      { "date": "2026-06-03", "open": 105, "close": 114, "low": 104, "high": 116, "volume": 1540 },
+      { "date": "2026-06-04", "open": 114, "close": 119, "low": 110, "high": 122, "volume": 1710 },
+      { "date": "2026-06-05", "open": 119, "close": 116, "low": 113, "high": 121, "volume": 1490 },
+      { "date": "2026-06-08", "open": 116, "close": 121, "low": 114, "high": 124, "volume": 1660 },
+      { "date": "2026-06-09", "open": 121, "close": 127, "low": 119, "high": 130, "volume": 1900 },
+      { "date": "2026-06-10", "open": 127, "close": 125, "low": 123, "high": 131, "volume": 1810 },
+      { "date": "2026-06-11", "open": 125, "close": 132, "low": 124, "high": 134, "volume": 2090 },
+      { "date": "2026-06-12", "open": 132, "close": 136, "low": 130, "high": 138, "volume": 2200 },
+      { "date": "2026-06-15", "open": 136, "close": 133, "low": 131, "high": 139, "volume": 2040 },
+      { "date": "2026-06-16", "open": 133, "close": 139, "low": 132, "high": 141, "volume": 2310 }
+    ]
+  }
+}
+```
 
 ---
 

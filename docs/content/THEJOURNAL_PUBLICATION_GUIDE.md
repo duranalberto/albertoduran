@@ -142,7 +142,7 @@ This section only defines project-specific authoring rules for `src/thejournal/`
   code.
 - Use the visual selection guide below to choose between Mermaid and ECharts.
   Use `docs/components/MARKDOWN_MDX_CODE_FENCES.md` for `.md` / `.mdx`
-  Mermaid, ECharts, and DaisyUI fence syntax. Use
+  Mermaid, ECharts, DaisyUI fence syntax, and explicit LaTeX display math. Use
   `docs/components/ECHARTS_MDX_CHARTS.md` for the ECharts component API,
   build-time SVG artifacts, and opt-in chart enhancement rules.
 - Use the `thejournal` frontmatter schema and publishing policy from this guide,

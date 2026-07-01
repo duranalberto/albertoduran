@@ -92,7 +92,9 @@ export default defineConfig({
     processor: satteri({
       features: {
         directive: true,
-        math: true,
+        math: {
+          singleDollarTextMath: false,
+        },
         headingAttributes: true,
       },
       hastPlugins: [createCodeBlockPlugin(), createHeadingAnchorPlugin()],

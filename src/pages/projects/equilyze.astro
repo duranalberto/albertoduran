@@ -1,0 +1,493 @@
+---
+import type { ProjectPageConfig } from "@appTypes/project";
+import coverImage from "@assets/thejournal/stock/13.jpg";
+import Callout from "@components/ui/display/Callout.astro";
+import SectionHeader from "@components/ui/display/SectionHeader.astro";
+import Steps, { type StepItem } from "@components/ui/display/Steps.astro";
+import MermaidDiagram from "@components/ui/mdx/MermaidDiagram.astro";
+import { defineMermaidDiagram } from "@integrations/mermaid/definition";
+import ProjectLayout from "@layouts/ProjectLayout.astro";
+
+const project: ProjectPageConfig = {
+  title: "Equilyze",
+  eyebrow: "Local AI · Equity Research",
+  description:
+    "Give Equilyze a public company and it runs the valuation engine, reads the market context, checks recent news, and writes an investment report. It runs locally through Ollama.",
+  image: coverImage,
+  imageAlt:
+    "A glass jar full of coins with a small green plant growing out of it",
+  facts: [
+    { label: "Runtime", value: "LangChain" },
+    { label: "Engine", value: "6 models" },
+    { label: "Model", value: "Ollama · local" },
+    { label: "Output", value: "Report + artifacts" },
+  ],
+  links: {
+    githubUrl: "https://github.com/duranalberto/equilyze",
+  },
+};
+
+const valuationModels = [
+  {
+    id: "DCF",
+    name: "Discounted Cash Flow",
+    measures:
+      "Present value of expected free cash flows after discounting them by the cost of capital.",
+    bestWhen: "Stable, predictable cash flow.",
+  },
+  {
+    id: "PE",
+    name: "Price / Earnings",
+    measures:
+      "Fair price implied by applying a target P/E multiple to current earnings.",
+    bestWhen: "Mature, profitable companies.",
+  },
+  {
+    id: "ROE",
+    name: "Return on Equity",
+    measures:
+      "Intrinsic value based on the company's return on shareholder equity.",
+    bestWhen: "Capital-efficient businesses.",
+  },
+  {
+    id: "EV/EBITDA",
+    name: "Enterprise Value / EBITDA",
+    measures:
+      "Operating value before capital structure gets in the way.",
+    bestWhen: "Cross-sector and M&A comparisons.",
+  },
+  {
+    id: "PS",
+    name: "Price / Sales",
+    measures:
+      "Revenue-based valuation, useful when margins are low or volatile.",
+    bestWhen: "Early-stage, high-growth companies.",
+  },
+  {
+    id: "NAV",
+    name: "Net Asset Value",
+    measures: "Liquidation value after subtracting total liabilities from total assets.",
+    bestWhen: "Asset-heavy industries.",
+  },
+];
+
+const agents = [
+  {
+    label: "Agent 1",
+    title: "Contextualizer",
+    description:
+      "Fetches analyst ratings, price momentum, and earnings, then writes the market context in plain bullets.",
+  },
+  {
+    label: "Agent 2",
+    title: "News & Sentiment",
+    description:
+      "Pulls yfinance headlines plus two web searches and summarizes the news around the company.",
+  },
+  {
+    label: "Agent 3",
+    title: "Synthesizer",
+    description:
+      "Turns the valuation, context, and news into a recommendation with strengths, risks, and catalysts.",
+  },
+  {
+    label: "Agent 4",
+    title: "Curious Investor",
+    description:
+      "Reads the draft and asks the follow-up questions an investor would probably still have.",
+  },
+  {
+    label: "Agent 5",
+    title: "Section Writer (×3)",
+    description:
+      "Answers each question as its own report section, grounded in the valuation, analysis, and news data.",
+  },
+  {
+    label: "Agent 6",
+    title: "Final Reviewer",
+    description:
+      "Reads every saved file from disk and appends a verdict with the closing sections that fit the report.",
+  },
+];
+
+const configuration = [
+  {
+    label: "Environment",
+    title: "Point it at a model and the engine",
+    description:
+      "A short .env file sets OLLAMA_MODEL, OLLAMA_BASE_URL, a timeout, and EQUITY_ENGINE_PATH, which points to the valuation engine's src/ directory.",
+  },
+  {
+    label: "Engine invocation",
+    title: "In-process first, subprocess as fallback",
+    description:
+      "Valuation runs the engine in-process via sys.path injection for speed. If that fails, it falls back to running the engine's CLI as a subprocess and captures its JSON.",
+  },
+  {
+    label: "Inference",
+    title: "Sequential on purpose",
+    description:
+      "Every model call runs one at a time. Parallel inference with a 20 GB+ model on a 36 GB machine causes memory pressure, so Equilyze spends more time to avoid crashes.",
+  },
+];
+
+const pipelineSteps: StepItem[] = [
+  { label: "Ticker", marker: "1", color: "success" },
+  { label: "Valuation", marker: "2", color: "success" },
+  { label: "Contextualize", marker: "3", color: "success" },
+  { label: "News", marker: "4", color: "success" },
+  { label: "Recommend", marker: "5", color: "success" },
+  { label: "Questions", marker: "6", color: "success" },
+  { label: "Sections", marker: "7", color: "success" },
+  { label: "Review", marker: "8", color: "success" },
+];
+
+const pipelineFlow = defineMermaidDiagram(String.raw`
+flowchart TD
+    User(["🧑 Company name or ticker"]) --> Lookup["🔎 Ticker lookup<br/>yfinance"]
+    Lookup --> Engine["🧮 Valuation Engine<br/>DCF · PE · ROE · EV/EBITDA · PS · NAV"]
+    Engine --> Agents["🤖 Contextualizer → News → Synthesizer"]
+    Agents --> Snap["💾 JSON snapshots<br/>valuation · analysis · news"]
+    Snap --> Draft["📝 Draft report"]
+    Draft --> Curious["❓ Curious Investor<br/>3 follow-up questions"]
+    Curious --> Sections["✍️ Section Writer ×3"]
+    Sections --> Final["🔍 Final Reviewer<br/>reads all files from disk"]
+    Final --> Report(["📄 reports/TICK/report.md"])
+
+    classDef input fill:#FFE4B5,stroke:#333,stroke-width:2px,color:#000
+    classDef process fill:#90EE90,stroke:#333,stroke-width:2px,color:#064E3B
+    classDef decision fill:#FFD700,stroke:#333,stroke-width:2px,color:#000
+    classDef data fill:#E6E6FA,stroke:#333,stroke-width:2px,color:#1E3A8A
+    classDef output fill:#87CEEB,stroke:#333,stroke-width:2px,color:#0F172A
+
+    class User input
+    class Lookup,Engine,Agents,Draft,Sections process
+    class Curious,Final decision
+    class Snap data
+    class Report output
+`);
+
+const artifacts = [
+  {
+    file: "report.md",
+    title: "The human-readable report",
+    description:
+      "The full Markdown report with the overview, financials, valuation section, recommendation, and verdict.",
+  },
+  {
+    file: "valuation_data.json",
+    title: "Raw engine output",
+    description:
+      "Every metric, per-model intrinsic value, scenario, composite, and agreement score from the valuation engine, kept exactly as computed.",
+  },
+  {
+    file: "analysis.json",
+    title: "Structured recommendation",
+    description:
+      "The StockAnalysis object with recommendation, confidence, strengths, risks, catalysts, and narrative fields.",
+  },
+  {
+    file: "news_data.json",
+    title: "Researched news",
+    description:
+      "The raw headlines and web-search results gathered for the company, so the sentiment in the report can be traced back to its sources.",
+  },
+];
+
+const caseStudyFlow = defineMermaidDiagram(String.raw`
+flowchart LR
+    Run["🧮 Equilyze<br/>evaluates ORCL"] --> Artifacts["🗂️ report.md +<br/>valuation · analysis · news JSON"]
+    Artifacts --> Pressroom["🖨️ Pressroom<br/>9-agent pipeline"]
+    Pressroom --> Publication["📄 is-oracle-stock-undervalued.mdx"]
+    Publication --> Site["🌐 Published on thejournal"]
+
+    classDef process fill:#90EE90,stroke:#333,stroke-width:2px,color:#064E3B
+    classDef data fill:#FFE4B5,stroke:#333,stroke-width:2px,color:#000
+    classDef downstream fill:#E6E6FA,stroke:#333,stroke-width:2px,color:#1E3A8A
+    classDef output fill:#87CEEB,stroke:#333,stroke-width:2px,color:#0F172A
+
+    class Run process
+    class Artifacts data
+    class Pressroom downstream
+    class Publication,Site output
+`);
+---
+
+<ProjectLayout project={project}>
+  <section id="overview" class="w-full" aria-labelledby="overview-title">
+    <SectionHeader id="overview-title" title="Equity, analyzed" />
+
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12">
+      <div class="flex flex-col gap-5 lg:col-span-7">
+        <p class="text-xl leading-relaxed text-base-content md:text-2xl">
+          The name is <em>equity</em> plus <em>analyze</em>, which is pretty
+          much the whole idea. Give Equilyze a company and it runs the valuation
+          engine, checks market signals, reads recent news, and asks a local
+          language model to turn the pieces into an investment report.
+        </p>
+        <p
+          class="max-w-3xl text-base leading-relaxed text-base-content/70 md:text-lg"
+        >
+          The result is one structured report with a company overview,
+          financials, valuation detail, a recommendation, follow-up sections,
+          and a final verdict. Everything runs against an Ollama model on the
+          local machine, so no cloud API keys are needed.
+        </p>
+      </div>
+
+      <Callout
+        variant="information"
+        title="What it is for"
+        class="lg:col-span-5"
+      >
+        <p>
+          Study a company with multiple valuation lenses and current market
+          context without paying for data feeds or shipping financials to a
+          third-party model.
+        </p>
+      </Callout>
+    </div>
+  </section>
+
+  <section id="how" class="w-full" aria-labelledby="how-title">
+    <SectionHeader
+      id="how-title"
+      title="From a ticker to a finished report"
+    />
+    <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
+      You type a company name or symbol. Equilyze resolves the ticker, runs the
+      valuation engine, then hands the numbers to a chain of agents that add
+      context, research the news, write a recommendation, ask their own
+      follow-up questions, and review the report before saving it.
+    </p>
+    <MermaidDiagram code={pipelineFlow} />
+  </section>
+
+  <section id="models" class="w-full" aria-labelledby="models-title">
+    <SectionHeader
+      id="models-title"
+      title="Six valuation models, three scenarios each"
+      linkHref="/projects/equity-valuation-engine/"
+      linkLabel="See the valuation engine"
+    />
+    <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
+      Equilyze runs the <strong>Equity Valuation Engine</strong> across six
+      valuation models. Each model is estimated under Bear, Base, and Bull
+      scenarios. The engine then computes a composite intrinsic value and a
+      model agreement score that shows how far the models disagree.
+    </p>
+
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+      {
+        valuationModels.map((model) => (
+          <article class="rounded-box border border-base-300 bg-base-100 p-6 text-base-content shadow-sm">
+            <p class="mb-3 font-mono text-sm font-bold text-primary">
+              {model.id}
+            </p>
+            <h3 class="mb-3 font-display text-xl font-semibold">
+              {model.name}
+            </h3>
+            <p class="mb-4 leading-relaxed text-base-content/70">
+              {model.measures}
+            </p>
+            <p class="text-sm font-semibold text-base-content/60">
+              Best when: {model.bestWhen}
+            </p>
+          </article>
+        ))
+      }
+    </div>
+  </section>
+
+  <section id="agents" class="w-full" aria-labelledby="agents-title">
+    <SectionHeader
+      id="agents-title"
+      title="Six agents, running one at a time"
+    />
+    <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
+      The valuation numbers feed a sequence of agents. Some gather context and
+      news. Others turn that material into sections, ask follow-up questions,
+      and check the final report.
+    </p>
+
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+      {
+        agents.map((agent) => (
+          <article class="rounded-box border border-base-300 bg-base-200 p-6 text-base-content shadow-sm">
+            <p class="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-primary">
+              {agent.label}
+            </p>
+            <h3 class="mb-3 font-display text-xl font-semibold">
+              {agent.title}
+            </h3>
+            <p class="leading-relaxed text-base-content/70">
+              {agent.description}
+            </p>
+          </article>
+        ))
+      }
+    </div>
+  </section>
+
+  <section id="pipeline" class="w-full" aria-labelledby="pipeline-title">
+    <SectionHeader
+      id="pipeline-title"
+      title="How a report is assembled"
+    />
+    <Steps
+      items={pipelineSteps}
+      aria-label="Equilyze report pipeline"
+      class="mb-10 w-full"
+    />
+
+    <Callout variant="note" title="A report plus the data behind it">
+      <p>
+        Each run writes <code>report.md</code> alongside raw JSON artifacts
+        under <code>reports/TICK/</code>, so the recommendation can be traced
+        back to the numbers behind it.
+      </p>
+    </Callout>
+  </section>
+
+  <section id="artifacts" class="w-full" aria-labelledby="artifacts-title">
+    <SectionHeader
+      id="artifacts-title"
+      title="Every run leaves four artifacts behind"
+    />
+    <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
+      The report is only the visible output. Under <code>reports/TICK/</code>,
+      Equilyze also saves the structured data each agent worked from. Those
+      artifacts make the analysis auditable, and they let another tool pick the
+      work up and carry it further.
+    </p>
+
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+      {
+        artifacts.map((artifact) => (
+          <article class="rounded-box border border-base-300 bg-base-100 p-6 text-base-content shadow-sm">
+            <p class="mb-4 break-words font-mono text-sm font-bold text-primary">
+              {artifact.file}
+            </p>
+            <h3 class="mb-3 font-display text-lg font-semibold">
+              {artifact.title}
+            </h3>
+            <p class="leading-relaxed text-base-content/70">
+              {artifact.description}
+            </p>
+          </article>
+        ))
+      }
+    </div>
+
+    <Callout variant="information" title="Why the artifacts matter" class="mt-8">
+      <p>
+        The final reviewer reads them from disk before signing off, so its
+        verdict uses the same data the earlier agents used. Because the files
+        are plain JSON and Markdown, another pipeline can take them as input.
+        That is what happens in the case study below.
+      </p>
+    </Callout>
+  </section>
+
+  <section id="case-study" class="w-full" aria-labelledby="case-study-title">
+    <SectionHeader
+      id="case-study-title"
+      title="Case study, from Oracle analysis to article"
+      linkHref="/thejournal/is-oracle-stock-undervalued/"
+      linkLabel="Read the published article"
+    />
+    <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
+      <a
+        href="/thejournal/is-oracle-stock-undervalued/"
+        class="font-bold text-primary underline-offset-4 hover:underline"
+      >Is Oracle Stock Undervalued?</a> began here. Equilyze evaluated Oracle
+      and produced its report and artifacts. Those files then became the input
+      for <strong>Pressroom</strong>, a nine-agent pipeline that wrote the
+      finished article.
+    </p>
+
+    <MermaidDiagram code={caseStudyFlow} />
+
+    <div class="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-center">
+      <div class="lg:col-span-7">
+        <p class="mb-5 text-xl leading-relaxed text-base-content">
+          Equilyze ran first and wrote <code>report.md</code>,
+          <code>valuation_data.json</code>, <code>analysis.json</code>, and
+          <code>news_data.json</code> for Oracle.
+        </p>
+        <p class="leading-relaxed text-base-content/70 md:text-lg">
+          Those four artifacts were handed to Pressroom as source material. Its
+          agents outlined the piece, drafted it, checked it against the JSON,
+          rendered the charts, and published the final <code>.mdx</code>. The
+          valuation numbers in the article are the ones this engine computed.
+        </p>
+      </div>
+      <Callout
+        variant="note"
+        title="Two tools, one pipeline"
+        class="lg:col-span-5"
+      >
+        <p>
+          Equilyze answers <em>what is this company worth?</em> Pressroom turns
+          that answer into a publishable article. The structured artifacts are
+          the contract between them, so no section was written by hand.
+        </p>
+      </Callout>
+    </div>
+
+    <a
+      href="/thejournal/three-projects-one-pipeline/"
+      class="mt-8 inline-flex font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+    >
+      Read more about the full pipeline &rarr;
+    </a>
+  </section>
+
+  <section id="configuration" class="w-full" aria-labelledby="configuration-title">
+    <SectionHeader
+      id="configuration-title"
+      title="Configured for local, memory-aware inference"
+    />
+
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+      {
+        configuration.map((item) => (
+          <article class="rounded-box border border-base-300 bg-base-100 p-6 text-base-content shadow-sm">
+            <p class="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-primary">
+              {item.label}
+            </p>
+            <h3 class="mb-3 font-display text-xl font-semibold">
+              {item.title}
+            </h3>
+            <p class="leading-relaxed text-base-content/70">
+              {item.description}
+            </p>
+          </article>
+        ))
+      }
+    </div>
+  </section>
+
+  <section
+    id="outcome"
+    class="overflow-hidden rounded-box bg-primary p-8 text-primary-content shadow-xl md:p-12 lg:p-16"
+    aria-labelledby="outcome-title"
+  >
+    <p class="mb-4 text-xs font-bold uppercase tracking-[0.2em] opacity-70">
+      The outcome
+    </p>
+    <h2
+      id="outcome-title"
+      class="max-w-4xl font-display text-3xl font-bold leading-tight sm:text-4xl"
+    >
+      Equilyze pairs a six-model valuation engine with a chain of agents to turn
+      a single ticker into a report that shows its work.
+    </h2>
+    <p class="mt-6 max-w-3xl text-lg leading-relaxed opacity-80">
+      Quantitative models set the anchor. Agents add context, challenge the
+      draft, and sign off using the JSON snapshots saved next to every report.
+      The report closes with a disclaimer, because Equilyze studies companies.
+      It does not give advice.
+    </p>
+  </section>
+</ProjectLayout>

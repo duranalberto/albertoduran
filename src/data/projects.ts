@@ -1,4 +1,6 @@
 import albertoDuranImage from "@assets/thejournal/stock/01.avif";
+import equilyzeImage from "@assets/thejournal/stock/13.jpg";
+import pressroomImage from "@assets/thejournal/stock/12.jpg";
 import equityImage from "@assets/thejournal/stock/06.avif";
 import sinPlumaImage from "@assets/thejournal/stock/07.avif";
 import mlscraperImage from "@assets/thejournal/stock/08.avif";
@@ -17,6 +19,32 @@ export interface ProjectSummary {
 }
 
 export const projectCatalog = [
+  {
+    title: "Pressroom",
+    category: "Local multi-agent editorial pipeline",
+    description:
+      "A pressroom is where a journalist's brief becomes the printed word. Here nine AI agents do the same work, turning source material into a publication-ready article.",
+    signal:
+      "A nine-agent LangGraph pipeline that outlines, writes, reviews, humanizes, and publishes MDX with rendered charts and diagrams. Every model runs locally through Ollama.",
+    href: "/projects/pressroom/",
+    image: pressroomImage,
+    imageAlt:
+      "An open handwritten notebook with a fountain pen resting on the page",
+    technologies: ["LangGraph", "Python", "Ollama", "MDX"],
+  },
+  {
+    title: "Equilyze",
+    category: "Local multi-agent equity analysis",
+    description:
+      "Equity plus analyze. Point it at any publicly traded company and it produces a rigorous, multi-model investment report powered entirely by local AI.",
+    signal:
+      "A pipeline that runs six valuation models across three scenarios, then chains six AI agents to add context, research news, and write a structured report — fully offline.",
+    href: "/projects/equilyze/",
+    image: equilyzeImage,
+    imageAlt:
+      "A glass jar full of coins with a small green plant growing out of it",
+    technologies: ["Python", "LangChain", "Ollama", "yfinance"],
+  },
   {
     title: "MLScraper",
     category: "Resilient Python monitoring service",

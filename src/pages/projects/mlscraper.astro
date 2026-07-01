@@ -343,20 +343,22 @@ flowchart LR
     aria-labelledby="outcome-title"
   >
     <p class="mb-4 text-xs font-bold uppercase tracking-[0.2em] opacity-70">
-      The result
+      The outcome
     </p>
     <h2
       id="outcome-title"
       class="max-w-4xl font-display text-3xl font-bold leading-tight sm:text-4xl"
     >
-      MLScraper keeps a failed page from rewriting product history and leaves
-      enough evidence to explain what happened.
+      MLScraper turned a missed bargain into a local price-watching service I
+      could trust day to day.
     </h2>
     <p class="mt-6 max-w-3xl text-lg leading-relaxed opacity-80">
-      The service keeps store parsing local, saves history as inspectable JSON,
-      and exposes scheduling state through health. It still runs as one process,
-      writes local files, sends alerts only through Telegram, and depends on
-      parsers that must keep pace with external stores.
+      It watches four stores, keeps product history, handles blocked pages
+      without corrupting state, and sends Telegram alerts only after a real price
+      change. The project is still intentionally small. It runs as one process
+      and writes local files, but it has the pieces that made it useful:
+      provider boundaries, guarded reconciliation, operator health, and alerts
+      that arrive before the deal disappears.
     </p>
   </section>
 </ProjectLayout>

@@ -11,6 +11,6 @@ import BaseLayout from "@layouts/BaseLayout.astro";
   image={projectCatalog[0].image}
   mainClass="pb-0"
 >
-  <ProjectsHero slot="hero" />
+  <ProjectsHero slot="hero" projectCount={projectCatalog.length} />
   <ProjectsCatalog projects={projectCatalog} />
 </BaseLayout>

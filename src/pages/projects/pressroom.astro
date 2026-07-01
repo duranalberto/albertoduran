@@ -1,0 +1,451 @@
+---
+import type { ProjectPageConfig } from "@appTypes/project";
+import coverImage from "@assets/thejournal/stock/12.jpg";
+import Callout from "@components/ui/display/Callout.astro";
+import SectionHeader from "@components/ui/display/SectionHeader.astro";
+import Steps, { type StepItem } from "@components/ui/display/Steps.astro";
+import MermaidDiagram from "@components/ui/mdx/MermaidDiagram.astro";
+import { defineMermaidDiagram } from "@integrations/mermaid/definition";
+import ProjectLayout from "@layouts/ProjectLayout.astro";
+
+const project: ProjectPageConfig = {
+  title: "Pressroom",
+  eyebrow: "Local AI · Editorial Pipeline",
+  description:
+    "Nine AI agents turn a rough brief into an .mdx article with charts, diagrams, frontmatter, and an audit trail. The model runs locally through Ollama.",
+  image: coverImage,
+  imageAlt:
+    "An open handwritten notebook with a fountain pen resting on the page",
+  facts: [
+    { label: "Runtime", value: "LangGraph" },
+    { label: "Model", value: "Ollama · local" },
+    { label: "Agents", value: "9 nodes" },
+    { label: "Output", value: "Publication" },
+  ],
+  links: {
+    githubUrl: "https://github.com/duranalberto/pressroom",
+  },
+};
+
+const agents = [
+  {
+    marker: "01",
+    name: "Loader",
+    description:
+      "Reads every file in input/ plus the selected publication template into shared pipeline state.",
+  },
+  {
+    marker: "02",
+    name: "Interview",
+    description:
+      "Reads the brief and asks a few clarifying questions, without rerunning when a paused pipeline resumes.",
+  },
+  {
+    marker: "03",
+    name: "Outline Designer",
+    description:
+      "Uses the answers to build a section plan and reserve places for charts, diagrams, or UI blocks.",
+  },
+  {
+    marker: "04",
+    name: "Visualizer",
+    description:
+      "Fills chart templates from extracted data, then asks the model for Mermaid diagrams and UI components when the article needs them.",
+  },
+  {
+    marker: "05",
+    name: "Writer",
+    description:
+      "Writes the MDX draft from the outline and revises it whenever the reviewer sends the piece back.",
+  },
+  {
+    marker: "06",
+    name: "Reviewer",
+    description:
+      "Runs mechanical checks and editorial criteria, then returns specific issues to the writer.",
+  },
+  {
+    marker: "07",
+    name: "Humanizer",
+    description:
+      "Removes recognizable AI patterns and adjusts the rhythm while keeping the article structure intact.",
+  },
+  {
+    marker: "08",
+    name: "Metadata",
+    description:
+      "Writes the frontmatter title, description, and tags from the publication template.",
+  },
+  {
+    marker: "09",
+    name: "Publisher",
+    description:
+      "Replaces visual placeholders, merges imports, and writes the final .mdx file.",
+  },
+];
+
+const configuration = [
+  {
+    label: "Publication templates",
+    title: "Template controls the run",
+    description:
+      "A publication template sets the editorial goal, section structure, chart recipes, and per-agent tuning. The repo ships with a default template for general posts and a finance-analysis template for beginner-friendly stock write-ups.",
+  },
+  {
+    label: "Visual templates",
+    title: "Charts without the model touching code",
+    description:
+      "Declarative YAML recipes for price lines, category bars, grouped bars, and verdict callouts are filled from extracted data. The model never has to write an ECharts option object or balance a brace.",
+  },
+  {
+    label: "CLI flags",
+    title: "Control a run from the CLI",
+    description:
+      "Choose the template, cap the review loop with --max-iterations, review defaults with --ask, or resume a paused run with --thread-id. Sensible defaults stay quiet.",
+  },
+];
+
+const pipelineSteps: StepItem[] = [
+  { label: "Load", marker: "1", color: "success" },
+  { label: "Interview", marker: "2", color: "success" },
+  { label: "Outline", marker: "3", color: "success" },
+  { label: "Visualize", marker: "4", color: "success" },
+  { label: "Write", marker: "5", color: "success" },
+  { label: "Review", marker: "6", color: "success" },
+  { label: "Humanize", marker: "7", color: "success" },
+  { label: "Metadata", marker: "8", color: "success" },
+  { label: "Publish", marker: "9", color: "success" },
+];
+
+const pipelineFlow = defineMermaidDiagram(String.raw`
+flowchart TD
+    In["📥 input/<br/>briefs, reports, JSON"] --> Loader["📂 Loader"]
+    Loader --> Interview["❓ Interview"]
+    Interview --> Human{"🧑 Human answers<br/>or defaults"}
+    Human --> Outline["🗂️ Outline Designer"]
+    Outline --> Visualizer["📊 Visualizer"]
+    Visualizer --> Writer["✍️ Writer"]
+    Writer --> Reviewer{"🔍 Reviewer"}
+    Reviewer -->|issues remain| Writer
+    Reviewer -->|approved or capped| Humanizer["🧹 Humanizer"]
+    Humanizer --> Metadata["🏷️ Metadata"]
+    Metadata --> Publisher["📦 Publisher"]
+    Publisher --> Out["📄 output/<br/>run-id-date-slug.mdx"]
+    Publisher --> Audit["🗄️ output/audit/run-id/<br/>state + step files"]
+
+    classDef source fill:#FFE4B5,stroke:#333,stroke-width:2px,color:#000
+    classDef process fill:#90EE90,stroke:#333,stroke-width:2px,color:#064E3B
+    classDef decision fill:#FFD700,stroke:#333,stroke-width:2px,color:#000
+    classDef data fill:#E6E6FA,stroke:#333,stroke-width:2px,color:#1E3A8A
+    classDef output fill:#87CEEB,stroke:#333,stroke-width:2px,color:#0F172A
+
+    class In source
+    class Loader,Outline,Visualizer,Writer,Humanizer,Metadata process
+    class Human,Reviewer decision
+    class Audit data
+    class Out,Publisher output
+`);
+
+const caseStudyFlow = defineMermaidDiagram(String.raw`
+flowchart LR
+    Equilyze["🧮 Equilyze<br/>runs ORCL analysis"] --> Artifacts["🗂️ report.md +<br/>valuation · analysis · news JSON"]
+    Artifacts --> Input["📥 Pressroom input/"]
+    Input --> Pipeline["🖨️ 9-agent pipeline"]
+    Pipeline --> Publication["📄 is-oracle-stock-undervalued.mdx"]
+    Publication --> Site["🌐 Published on thejournal"]
+
+    classDef upstream fill:#E6E6FA,stroke:#333,stroke-width:2px,color:#1E3A8A
+    classDef data fill:#FFE4B5,stroke:#333,stroke-width:2px,color:#000
+    classDef process fill:#90EE90,stroke:#333,stroke-width:2px,color:#064E3B
+    classDef output fill:#87CEEB,stroke:#333,stroke-width:2px,color:#0F172A
+
+    class Equilyze upstream
+    class Artifacts,Input data
+    class Pipeline process
+    class Publication,Site output
+`);
+---
+
+<ProjectLayout project={project}>
+  <section id="overview" class="w-full" aria-labelledby="overview-title">
+    <SectionHeader id="overview-title" title="From rough brief to MDX" />
+
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12">
+      <div class="flex flex-col gap-5 lg:col-span-7">
+        <p class="text-xl leading-relaxed text-base-content md:text-2xl">
+          Pressroom takes source material and turns it into an MDX article. Nine
+          agents split the work across loading, interviewing, outlining,
+          visuals, drafting, review, cleanup, metadata, and publishing.
+        </p>
+        <p
+          class="max-w-3xl text-base leading-relaxed text-base-content/70 md:text-lg"
+        >
+          Drop briefs, reports, or JSON data into <code>input/</code> and the
+          pipeline writes an <code>.mdx</code> file to <code>output/</code>.
+          Charts are rendered, diagrams are drawn, frontmatter is filled in, and
+          the voice pass runs before publication. Every model runs locally
+          through Ollama, so the whole thing works offline with no cloud API
+          keys.
+        </p>
+      </div>
+
+      <Callout
+        variant="information"
+        title="What it is for"
+        class="lg:col-span-5"
+      >
+        <p>
+          Move the repetitive parts of publishing into one repeatable pipeline,
+          while keeping a human in the loop for the choices that shape the
+          piece.
+        </p>
+      </Callout>
+    </div>
+  </section>
+
+  <section id="how" class="w-full" aria-labelledby="how-title">
+    <SectionHeader
+      id="how-title"
+      title="Nine agents with one human checkpoint"
+    />
+    <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
+      The workflow runs in order. It pauses after the interview agent asks its
+      questions, then collects your answers or accepts the suggested defaults.
+      The reviewer can send a draft back to the writer until it approves the
+      piece or reaches the iteration cap.
+    </p>
+    <MermaidDiagram code={pipelineFlow} />
+  </section>
+
+  <section id="agents" class="w-full" aria-labelledby="agents-title">
+    <SectionHeader
+      id="agents-title"
+      title="What each agent contributes"
+    />
+
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+      {
+        agents.map((agent) => (
+          <article class="rounded-box border border-base-300 bg-base-100 p-6 text-base-content shadow-sm">
+            <span
+              class="mb-4 block font-mono text-sm font-bold text-primary"
+              aria-hidden="true"
+            >
+              {agent.marker}
+            </span>
+            <h3 class="mb-3 font-display text-xl font-semibold">
+              {agent.name}
+            </h3>
+            <p class="leading-relaxed text-base-content/70">
+              {agent.description}
+            </p>
+          </article>
+        ))
+      }
+    </div>
+  </section>
+
+  <section id="loop" class="w-full" aria-labelledby="loop-title">
+    <SectionHeader
+      id="loop-title"
+      title="The writer and reviewer negotiate until the piece holds up"
+    />
+
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-center">
+      <div class="lg:col-span-7">
+        <p class="mb-5 text-xl leading-relaxed text-base-content">
+          The reviewer runs mechanical checks and editorial criteria on every
+          draft. When it finds issues, it hands them back to the writer, which
+          revises and returns for another pass.
+        </p>
+        <p class="leading-relaxed text-base-content/70 md:text-lg">
+          That loop is bounded. Once the piece is approved, or the
+          <code>--max-iterations</code> cap is reached, the pipeline advances to
+          the humanizer regardless of approval status. A stubborn draft cannot
+          stall the run forever.
+        </p>
+      </div>
+      <Callout
+        variant="note"
+        title="Human in the loop, once"
+        class="lg:col-span-5"
+      >
+        <p>
+          The only interrupt is between the interview and the outline. Answer
+          the three to five questions to steer tone, audience, and scope, or
+          press Enter to accept the defaults and let the pipeline run through.
+        </p>
+      </Callout>
+    </div>
+  </section>
+
+  <section id="pipeline" class="w-full" aria-labelledby="pipeline-title">
+    <SectionHeader
+      id="pipeline-title"
+      title="How a run moves through the pipeline"
+    />
+    <Steps
+      items={pipelineSteps}
+      aria-label="Pressroom publication pipeline"
+      class="mb-10 w-full"
+    />
+
+    <Callout variant="information" title="Local model, local files">
+      <p>
+        Pressroom works best with a large-context model such as
+        <code>gemma3:27b</code>. Pull it with <code>ollama pull</code>, point to
+        it from a single <code>.env</code> file, and the drafts stay on the
+        machine.
+      </p>
+    </Callout>
+  </section>
+
+  <section id="configuration" class="w-full" aria-labelledby="configuration-title">
+    <SectionHeader
+      id="configuration-title"
+      title="Configured by templates, not by editing code"
+    />
+
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+      {
+        configuration.map((item) => (
+          <article class="rounded-box border border-base-300 bg-base-200 p-6 text-base-content shadow-sm">
+            <p class="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-primary">
+              {item.label}
+            </p>
+            <h3 class="mb-3 font-display text-xl font-semibold">
+              {item.title}
+            </h3>
+            <p class="leading-relaxed text-base-content/70">
+              {item.description}
+            </p>
+          </article>
+        ))
+      }
+    </div>
+  </section>
+
+  <section id="audit" class="w-full" aria-labelledby="audit-title">
+    <SectionHeader
+      id="audit-title"
+      title="Every file keeps its audit trail"
+    />
+
+    <div class="mb-10 grid grid-cols-1 gap-6 md:grid-cols-2">
+      <div class="rounded-box border border-base-300 bg-base-100 p-7 shadow-sm">
+        <h3 class="mb-4 font-display text-2xl font-semibold text-base-content">
+          An id on every run
+        </h3>
+        <p class="leading-relaxed text-base-content/70 md:text-lg">
+          Each run gets an incrementing numeric id. It prefixes the output
+          filename and names a per-run directory under <code>output/audit/</code>,
+          so any published article maps directly to the run that produced it.
+        </p>
+      </div>
+      <div class="rounded-box border border-base-300 bg-base-100 p-7 shadow-sm">
+        <h3 class="mb-4 font-display text-2xl font-semibold text-base-content">
+          Step files in order
+        </h3>
+        <p class="leading-relaxed text-base-content/70 md:text-lg">
+          To trace a defect, open the audit directory and read the step files in
+          order. The outline, writer, reviewer, and humanizer outputs are saved
+          separately, and the full writer-to-reviewer history lives in a single
+          state snapshot.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section id="case-study" class="w-full" aria-labelledby="case-study-title">
+    <SectionHeader
+      id="case-study-title"
+      title="Case study, Oracle from analysis to article"
+      linkHref="/thejournal/is-oracle-stock-undervalued/"
+      linkLabel="Read the published article"
+    />
+    <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
+      <a
+        href="/thejournal/is-oracle-stock-undervalued/"
+        class="font-bold text-primary underline-offset-4 hover:underline"
+      >Is Oracle Stock Undervalued?</a> was produced by two projects working in
+      sequence. Equilyze did the analysis. Pressroom did the writing. No section
+      was authored by hand.
+    </p>
+
+    <MermaidDiagram code={caseStudyFlow} />
+
+    <div class="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2">
+      <div class="rounded-box border border-base-300 bg-base-100 p-7 shadow-sm">
+        <p class="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-primary">
+          Step one · Equilyze
+        </p>
+        <h3 class="mb-4 font-display text-2xl font-semibold text-base-content">
+          Generate the analysis and artifacts
+        </h3>
+        <p class="leading-relaxed text-base-content/70 md:text-lg">
+          Equilyze evaluated Oracle and wrote <code>report.md</code> alongside
+          <code>valuation_data.json</code>, <code>analysis.json</code>, and
+          <code>news_data.json</code>. Those files held the numbers, the
+          structured recommendation, and the researched news behind the story.
+        </p>
+      </div>
+      <div class="rounded-box border border-base-300 bg-base-100 p-7 shadow-sm">
+        <p class="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-primary">
+          Step two · Pressroom
+        </p>
+        <h3 class="mb-4 font-display text-2xl font-semibold text-base-content">
+          Turn the artifacts into a publication
+        </h3>
+        <p class="leading-relaxed text-base-content/70 md:text-lg">
+          That report and its artifacts were dropped straight into Pressroom's
+          <code>input/</code>. The nine agents outlined, drafted, fact-checked
+          against the JSON, rendered the charts, and published the finished
+          <code>.mdx</code> file.
+        </p>
+      </div>
+    </div>
+
+    <Callout
+      variant="information"
+      title="Why the handoff works"
+      class="mt-8"
+    >
+      <p>
+        Equilyze emits structured artifacts and Pressroom reads a folder of
+        source files, so the two fit together without glue code. The JSON keeps
+        the published charts and figures tied to the same numbers the engine
+        produced.
+      </p>
+    </Callout>
+
+    <a
+      href="/thejournal/three-projects-one-pipeline/"
+      class="mt-8 inline-flex font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+    >
+      Read more about the full pipeline &rarr;
+    </a>
+  </section>
+
+  <section
+    id="outcome"
+    class="overflow-hidden rounded-box bg-primary p-8 text-primary-content shadow-xl md:p-12 lg:p-16"
+    aria-labelledby="outcome-title"
+  >
+    <p class="mb-4 text-xs font-bold uppercase tracking-[0.2em] opacity-70">
+      The outcome
+    </p>
+    <h2
+      id="outcome-title"
+      class="max-w-4xl font-display text-3xl font-bold leading-tight sm:text-4xl"
+    >
+      Pressroom turns a folder of source material into a finished, formatted
+      article and leaves a full audit trail behind it.
+    </h2>
+    <p class="mt-6 max-w-3xl text-lg leading-relaxed opacity-80">
+      Deterministic visuals keep charts tied to their data. A bounded review
+      loop keeps the run moving, and local models keep every draft on the
+      machine. If an artifact is missing, Pressroom records the problem and
+      keeps going instead of breaking the run.
+    </p>
+  </section>
+</ProjectLayout>

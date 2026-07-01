@@ -37,6 +37,30 @@ and ECharts output only for publishable entries. Draft entries still render
 during local development, but draft-only Mermaid and ECharts fences do not need
 to produce production assets.
 
+## LaTeX math
+
+The Markdown processor supports LaTeX-style math only when an author asks for it
+with double-dollar display math:
+
+```md
+$$
+x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}
+$$
+```
+
+Single-dollar inline math is disabled in `astro.config.mjs` with
+`math.singleDollarTextMath: false`. This is intentional because finance
+and valuation articles use currency values like `$144.60` and `$237.53`; with
+automatic single-dollar math enabled, prose between two prices can be parsed as
+`language-math math-inline` code.
+
+Authoring rules:
+
+- Use `$$ ... $$` for explicit display math.
+- Do not use `$ ... $` for inline math; it remains plain text.
+- Write normal currency values as `$144.60`; escaping the dollar sign is not
+  required while `math.singleDollarTextMath` stays disabled.
+
 ## Mermaid fences
 
 Mermaid fences contain Mermaid source directly. There is no JSON wrapper and no

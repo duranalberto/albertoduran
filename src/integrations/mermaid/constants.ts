@@ -29,8 +29,19 @@
  *
  * v4.6 — preserves Mermaid style cascade order inside emitted SVG assets and
  *         invalidates immutable SVG URLs emitted with older style processing.
+ *
+ * v4.7 — mermaid.ink fallback path now sends the palette's fontFamily as a
+ *         top-level Mermaid config key (not just inside themeVariables), so
+ *         node/label boxes are measured and rendered with the correct font
+ *         instead of silently falling back to Mermaid's default font stack.
+ *
+ * v4.8 — Cloudflare Worker's render loop now prepares each item's page once
+ *         (instead of once per theme) and resets the DOM between themes
+ *         instead of reloading scripts, fixing chunk-request timeouts. Bump
+ *         covers the (expected-null but unverified) chance that removing the
+ *         per-theme full page reload subtly changes output bytes.
  */
-export const RENDERER_VERSION = "v4.6";
+export const RENDERER_VERSION = "v4.9";
 
 /**
  * Default subfolder (inside .astro/) for the on-disk SVG cache.
@@ -61,9 +72,17 @@ export const FLUSH_DEBOUNCE_MS = 800;
 
 /**
  * Maximum number of diagrams sent in a single Worker request.
- * Prevents the JSON payload from exceeding the ~900 KB limit.
+ *
+ * This is sized by render *time*, not payload size: the worker renders one
+ * Chromium page per item, sequentially, within a single request. Measured
+ * against the live worker (2 themes/item): 10 items ≈ 12s, 20 items ≈ 29.5s
+ * server-side — worse than linear, so 40 items (the old value, picked purely
+ * for the ~900 KB JSON payload cap) comfortably exceeds
+ * WORKER_RENDER_TIMEOUT_MS on renderers.ts and aborts the whole chunk,
+ * falling back to mermaid.ink. 15 keeps chunks well under that budget even
+ * for heavier real diagrams than the flat test cases measured above.
  */
-export const CHUNK_SIZE = 40;
+export const CHUNK_SIZE = 15;
 
 /**
  * Pause between Worker chunk requests (ms).

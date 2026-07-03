@@ -46,6 +46,7 @@ import type { Element as HastElement } from "hast";
 import fsAsync from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadEnv } from "vite";
 import {
   filterPublishedJournalEntries,
   type JournalManifestSourceEntry,
@@ -75,6 +76,33 @@ interface MermaidSourceDocument {
 }
 
 const JOURNAL_CONTENT_PREFIX = "src/thejournal/";
+
+/**
+ * Astro only merges non-`PUBLIC_`-prefixed `.env` values into `process.env`
+ * from a Vite plugin's `buildStart` hook (see `astro/dist/env/vite-plugin-env.js`),
+ * which fires during `viteBuild()` — strictly *after* Astro's own
+ * `astro:build:start` integration hook has already resolved (see
+ * `astro/dist/core/build/index.js`: `runHookBuildStart()` runs on the line
+ * before `viteBuild()` is called). This integration reads
+ * `MERMAID_RENDERER_URL`/`MERMAID_RENDERER_API_KEY`/`MERMAID_DISABLE_WORKER`
+ * from `process.env` inside `astro:build:start` (see renderers.ts), which is
+ * too early to see values that only live in a `.env` file — they read as
+ * `undefined` and the pipeline silently falls back to mermaid.ink, even
+ * though the same variables work fine once actually exported into the shell.
+ *
+ * Loading them ourselves in `astro:config:setup` (which always runs before
+ * `astro:build:start`) closes that gap. Real environment variables already
+ * set by the shell/CI/host platform take precedence and are never
+ * overwritten.
+ */
+function populateProcessEnvFromDotenv(root: URL, mode: string): void {
+  const loaded = loadEnv(mode, fileURLToPath(root), "");
+  for (const [key, value] of Object.entries(loaded)) {
+    if (process.env[key] === undefined && value !== undefined) {
+      process.env[key] = value;
+    }
+  }
+}
 
 function normalizeSourcePath(filePath: string): string {
   return filePath.replaceAll("\\", "/");
@@ -298,7 +326,12 @@ export function mermaidIntegration(
        * to the prepared build registry (captured by reference; initialised
        * later in astro:build:start).
        */
-      "astro:config:setup": ({ config, updateConfig, logger }) => {
+      "astro:config:setup": ({ config, command, updateConfig, logger }) => {
+        populateProcessEnvFromDotenv(
+          config.root,
+          command === "build" ? "production" : "development",
+        );
+
         logger.info(
           themes.size > 0
             ? `Injecting mermaid Sätteri plugin with ${themes.size} theme(s): ${[...themes.keys()].join(", ")}`

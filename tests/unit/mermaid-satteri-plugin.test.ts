@@ -53,10 +53,12 @@ describe("mermaid Satteri plugin", () => {
     expect(result.html).toContain('class="mermaid-diagram-container"');
     expect(result.html).toContain('data-diagram-src="/_app/mermaid/');
     expect(result.html).toContain('data-diagram-dark-src="/_app/mermaid/');
-    expect(result.html).toContain("mermaid-diagram-image-light");
-    expect(result.html).toContain("mermaid-diagram-image-dark");
-    expect(result.html).not.toContain("<svg");
-    expect(result.html).not.toContain("set:html");
+    // The diagram is inlined as a single SVG (selectable text, multi-theme),
+    // not a pair of light/dark <img> elements.
+    expect(result.html).toContain('class="mermaid-diagram-image"');
+    expect(result.html).toContain("<svg");
+    expect(result.html).toContain('id="fixture-diagram"');
+    expect(result.html).not.toContain("<img");
     expect(result.html).not.toContain("data-mermaid-stable-id");
   });
 
@@ -79,6 +81,9 @@ describe("mermaid Satteri plugin", () => {
     expect(result.code).toContain('"data-diagram-src": "/_app/mermaid/');
     expect(result.code).toContain('"data-diagram-dark-src": "/_app/mermaid/');
     expect(result.code).toContain('"data-diagram-type": "sequence"');
+    // The inline SVG is passed to the component as a base64 prop (the component
+    // decodes and renders it), so the raw markup never appears in the MDX code.
+    expect(result.code).toContain('"data-diagram-svg"');
     expect(result.code).not.toContain("set:html");
     expect(result.code).not.toContain("<svg");
     expect(result.code).not.toContain("data-mermaid-stable-id");

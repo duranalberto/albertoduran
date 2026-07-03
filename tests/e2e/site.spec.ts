@@ -1330,21 +1330,12 @@ test("Mermaid diagram shell expands diagrams and switches asset links by theme",
   const shell = page.locator("mermaid-diagram-shell").first();
   await expect(shell).toBeVisible();
 
-  const lightImage = shell.locator(
-    ":scope > .mermaid-diagram-container .mermaid-diagram-image-light",
+  // The diagram renders as a single inline SVG in the reading view (selectable
+  // text, follows the page theme) rather than a light/dark <img> pair.
+  const readingSvg = shell.locator(
+    ":scope > .mermaid-diagram-container .mermaid-diagram-image > svg",
   );
-  const darkImage = shell.locator(
-    ":scope > .mermaid-diagram-container .mermaid-diagram-image-dark",
-  );
-  await expect(lightImage).toBeVisible();
-  await expect(lightImage).toHaveAttribute(
-    "src",
-    /\/_app\/mermaid\/.*\.svg$/,
-  );
-  await expect(darkImage).toHaveAttribute(
-    "src",
-    /\/_app\/mermaid\/.*-dark\.svg$/,
-  );
+  await expect(readingSvg).toBeVisible();
 
   const openLink = shell.locator("[data-diagram-open-link]");
   await expect(openLink).toHaveAttribute("href", /\/_app\/mermaid\/.*\.svg$/);
@@ -1360,18 +1351,15 @@ test("Mermaid diagram shell expands diagrams and switches asset links by theme",
   const popover = shell.locator(".diagram-popover");
   await expect(popover).toBeVisible();
 
-  const expandedDarkImage = popover.locator(
-    "[data-diagram-popover-content] .mermaid-diagram-image-dark",
+  // The popover is populated at runtime with a cloned copy of the diagram SVG.
+  const expandedSvg = popover.locator(
+    "[data-diagram-popover-content] .mermaid-diagram-image > svg",
   );
-  await expect(expandedDarkImage).toBeVisible();
-  await expect(expandedDarkImage).toHaveAttribute(
-    "src",
-    /\/_app\/mermaid\/.*-dark\.svg$/,
-  );
+  await expect(expandedSvg).toBeVisible();
   expect(problems).toEqual([]);
 });
 
-test("Mermaid diagrams render static SVG images without JavaScript", async ({
+test("Mermaid diagrams render inline SVG without JavaScript", async ({
   browser,
 }) => {
   const context = await browser.newContext({
@@ -1382,15 +1370,13 @@ test("Mermaid diagrams render static SVG images without JavaScript", async ({
 
   await page.goto("/thejournal/ai_ops_agent/");
 
-  const diagramImage = page
-    .locator(".mermaid-diagram-container .mermaid-diagram-image-light")
+  // The SVG is inlined into the static HTML, so the diagram is present and
+  // its label text is readable/selectable even with JavaScript disabled.
+  const diagramSvg = page
+    .locator(".mermaid-diagram-container .mermaid-diagram-image > svg")
     .first();
-  await expect(diagramImage).toBeVisible();
-
-  const src = await diagramImage.getAttribute("src");
-  expect(src).toMatch(/^\/_app\/mermaid\/.*\.svg$/);
-  const response = await page.request.get(src!);
-  expect(response.ok()).toBe(true);
+  await expect(diagramSvg).toBeVisible();
+  await expect(diagramSvg.locator("foreignObject").first()).toBeVisible();
 
   await expect(page.locator("html")).toHaveClass(/no-js/);
 

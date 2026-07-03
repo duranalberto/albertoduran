@@ -17,7 +17,14 @@ interface Props {
 const { siteManifest, image = kirby, mainClass } = Astro.props;
 
 const hasHero = Astro.slots.has("hero");
-const optimizedImage = await getImage({ src: image, format: "webp" });
+const optimizedImage = await getImage({
+  src: image,
+  format: "webp",
+  width: 1200,
+  height: 630,
+  fit: "cover",
+  position: "center",
+});
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 const socialImageURL = new URL(optimizedImage.src, Astro.site);

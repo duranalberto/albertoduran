@@ -1,0 +1,577 @@
+---
+import BaseLayout from "@layouts/BaseLayout.astro";
+import FlexShell from "@layouts/FlexShell.astro";
+import type { SiteManifest } from "@appTypes/navigation";
+
+// Standalone diagnostics page for the video-lambda-workflow catalog.
+// Intentionally not registered in @data/site_manifest or Header nav.
+const siteManifest: SiteManifest = {
+  label: "Video Catalog HLS Test",
+  pageTitle: "Video Catalog HLS Test",
+  description:
+    "Loads the newest video from the CloudFront catalog and reports playback diagnostics.",
+};
+---
+
+<BaseLayout siteManifest={siteManifest}>
+  <FlexShell class="flex flex-col gap-8">
+    <div class="flex items-center h-10 md:h-12 gap-4 border-l-4 border-primary">
+      <h1
+        class="pl-4 text-3xl sm:text-4xl font-display font-semibold tracking-tight text-base-content"
+      >
+        Video Catalog HLS Test
+      </h1>
+    </div>
+    <p class="-mt-4 text-base-content/70">
+      Loads the newest video from the CloudFront catalog and reports playback
+      diagnostics.
+    </p>
+
+    <div class="grid grid-cols-1 gap-4 items-end md:grid-cols-[minmax(220px,1.2fr)_auto_minmax(220px,0.9fr)]">
+      <label class="grid gap-1.5 font-semibold text-sm text-base-content/80">
+        Catalog manifest URL
+        <input
+          id="catalogUrl"
+          type="url"
+          value="https://d2mcml34hdlt3o.cloudfront.net/catalog/catalog.json"
+          spellcheck="false"
+          class="input input-bordered w-full bg-base-100 border-base-300 focus:outline-none focus:ring-2 focus:ring-primary"
+        />
+      </label>
+
+      <button
+        id="catalogButton"
+        type="button"
+        class="btn btn-primary whitespace-nowrap"
+      >
+        Reload catalog
+      </button>
+
+      <label class="grid gap-1.5 font-semibold text-sm text-base-content/80">
+        Video
+        <select
+          id="videoSelect"
+          disabled
+          class="select w-full min-h-11 rounded-btn border border-base-300 bg-base-100 px-3 text-sm disabled:text-base-content/50"
+        >
+          <option value="">Loading catalog...</option>
+        </select>
+      </label>
+    </div>
+
+    <label class="grid gap-1.5 font-semibold text-sm text-base-content/80">
+      HLS manifest URL
+      <input
+        id="sourceUrl"
+        type="url"
+        readonly
+        value=""
+        spellcheck="false"
+        class="input input-bordered w-full bg-base-200 border-base-300 text-base-content/70"
+      />
+    </label>
+
+    <div class="grid grid-cols-1 gap-4 items-start lg:grid-cols-[minmax(0,1.65fr)_minmax(320px,0.85fr)]">
+      <section
+        aria-label="Video player"
+        class="card card-border bg-base-200 border-base-300 p-4"
+      >
+        <div class="aspect-video w-full overflow-hidden rounded-box bg-black">
+          <video
+            id="player"
+            controls
+            playsinline
+            preload="metadata"
+            crossorigin="anonymous"
+            class="block h-full w-full bg-black object-contain"
+          ></video>
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 gap-4 items-end sm:grid-cols-3">
+          <div class="sm:col-span-3 flex flex-wrap items-center gap-2 text-sm">
+            <span class="text-base-content/70">Status:</span>
+            <span id="status" class="font-bold">Not loaded</span>
+          </div>
+
+          <label class="grid gap-1.5 font-semibold text-sm text-base-content/80">
+            Quality
+            <select
+              id="quality"
+              disabled
+              class="select w-full min-h-11 rounded-btn border border-base-300 bg-base-100 px-3 text-sm disabled:text-base-content/50"
+            >
+              <option value="-1">Auto</option>
+            </select>
+          </label>
+
+          <div class="text-sm">
+            <strong class="text-base-content/80">Current level:</strong>
+            <span id="currentLevel" class="text-base-content/70">—</span>
+          </div>
+
+          <div class="text-sm">
+            <strong class="text-base-content/80">Video dimensions:</strong>
+            <span id="dimensions" class="text-base-content/70">—</span>
+          </div>
+
+          <details class="sm:col-span-3">
+            <summary class="cursor-pointer text-sm font-semibold text-base-content/80">
+              Diagnostic log
+            </summary>
+            <pre
+              id="log"
+              class="mt-2 max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-box border border-base-300 bg-base-100 p-3 font-mono text-xs"
+            ></pre>
+          </details>
+        </div>
+      </section>
+
+      <aside class="lg:sticky lg:top-20">
+        <div
+          class="card card-border bg-base-200 border-base-300 flex flex-col gap-4 p-4"
+        >
+          <h2 class="text-sm font-display font-bold uppercase tracking-wide text-base-content/80">
+            Catalog Entry
+          </h2>
+
+          <dl class="grid grid-cols-[max-content_minmax(0,1fr)] gap-x-3 gap-y-2 text-sm">
+            <dt class="font-bold text-base-content/60">ID</dt>
+            <dd id="videoId" class="min-w-0 break-words">—</dd>
+
+            <dt class="font-bold text-base-content/60">Title</dt>
+            <dd id="videoTitle" class="min-w-0 break-words">—</dd>
+
+            <dt class="font-bold text-base-content/60">Published</dt>
+            <dd id="publishedAt" class="min-w-0 break-words">—</dd>
+
+            <dt class="font-bold text-base-content/60">Duration</dt>
+            <dd id="duration" class="min-w-0 break-words">—</dd>
+
+            <dt class="font-bold text-base-content/60">Tags</dt>
+            <dd id="tags" class="min-w-0 break-words">—</dd>
+
+            <dt class="font-bold text-base-content/60">Catalog</dt>
+            <dd id="catalogInfo" class="min-w-0 break-words">—</dd>
+          </dl>
+
+          <h2 class="text-sm font-display font-bold uppercase tracking-wide text-base-content/80">
+            Raw Catalog Entry
+          </h2>
+          <pre
+            id="metadataJson"
+            class="max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-box border border-base-300 bg-base-100 p-3 font-mono text-xs"
+          >{"{}"}</pre>
+
+          <h2 class="text-sm font-display font-bold uppercase tracking-wide text-base-content/80">
+            HLS Manifest
+          </h2>
+          <pre
+            id="manifestText"
+            class="max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-box border border-base-300 bg-base-100 p-3 font-mono text-xs"
+          >Waiting for catalog...</pre>
+        </div>
+      </aside>
+    </div>
+  </FlexShell>
+
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js" is:inline></script>
+  <script is:inline>
+    const player = document.querySelector("#player");
+    const catalogInput = document.querySelector("#catalogUrl");
+    const catalogButton = document.querySelector("#catalogButton");
+    const videoSelect = document.querySelector("#videoSelect");
+    const sourceInput = document.querySelector("#sourceUrl");
+    const statusElement = document.querySelector("#status");
+    const qualityElement = document.querySelector("#quality");
+    const currentLevelElement = document.querySelector("#currentLevel");
+    const dimensionsElement = document.querySelector("#dimensions");
+    const logElement = document.querySelector("#log");
+    const videoIdElement = document.querySelector("#videoId");
+    const videoTitleElement = document.querySelector("#videoTitle");
+    const publishedAtElement = document.querySelector("#publishedAt");
+    const durationElement = document.querySelector("#duration");
+    const tagsElement = document.querySelector("#tags");
+    const catalogInfoElement = document.querySelector("#catalogInfo");
+    const metadataJsonElement = document.querySelector("#metadataJson");
+    const manifestTextElement = document.querySelector("#manifestText");
+
+    let hls = null;
+    let catalog = null;
+    let videos = [];
+    let selectedVideo = null;
+    let selectionToken = 0;
+    let isResettingPlayer = false;
+
+    function log(message, details) {
+      const timestamp = new Date().toISOString();
+      const suffix = details === undefined
+        ? ""
+        : `\n${JSON.stringify(details, null, 2)}`;
+
+      logElement.textContent += `[${timestamp}] ${message}${suffix}\n\n`;
+      logElement.scrollTop = logElement.scrollHeight;
+      console.log(message, details ?? "");
+    }
+
+    function setStatus(message) {
+      statusElement.textContent = message;
+      log(message);
+    }
+
+    function resetPlayer() {
+      isResettingPlayer = true;
+
+      if (hls) {
+        hls.stopLoad();
+        hls.destroy();
+        hls = null;
+      }
+
+      player.pause();
+      player.removeAttribute("src");
+      player.load();
+      isResettingPlayer = false;
+
+      qualityElement.innerHTML = '<option value="-1">Auto</option>';
+      qualityElement.disabled = true;
+      currentLevelElement.textContent = "—";
+      dimensionsElement.textContent = "—";
+      logElement.textContent = "";
+    }
+
+    function resetMetadata() {
+      selectedVideo = null;
+      sourceInput.value = "";
+      videoIdElement.textContent = "—";
+      videoTitleElement.textContent = "—";
+      publishedAtElement.textContent = "—";
+      durationElement.textContent = "—";
+      tagsElement.textContent = "—";
+      catalogInfoElement.textContent = "—";
+      metadataJsonElement.textContent = "{}";
+      manifestTextElement.textContent = "Waiting for catalog...";
+    }
+
+    function describeLevel(level) {
+      if (!level) {
+        return "Unknown";
+      }
+
+      const fps = level.frameRate ? ` @ ${level.frameRate.toFixed(2)} fps` : "";
+      const bitrate = level.bitrate
+        ? ` — ${(level.bitrate / 1_000_000).toFixed(2)} Mbps`
+        : "";
+
+      return `${level.width}×${level.height}${fps}${bitrate}`;
+    }
+
+    function formatDuration(durationMs) {
+      if (!Number.isFinite(durationMs)) {
+        return "—";
+      }
+
+      const totalSeconds = Math.round(durationMs / 1000);
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = String(totalSeconds % 60).padStart(2, "0");
+
+      return `${minutes}:${seconds}`;
+    }
+
+    function sortVideosByNewest(items) {
+      return [...items].sort((a, b) => {
+        const published = String(b.publishedAt || "")
+          .localeCompare(String(a.publishedAt || ""));
+
+        if (published !== 0) {
+          return published;
+        }
+
+        return String(b.id || "").localeCompare(String(a.id || ""));
+      });
+    }
+
+    function populateQualityLevels(levels) {
+      qualityElement.innerHTML = '<option value="-1">Auto</option>';
+
+      levels.forEach((level, index) => {
+        const option = document.createElement("option");
+        option.value = String(index);
+        option.textContent = describeLevel(level);
+        qualityElement.append(option);
+      });
+
+      qualityElement.disabled = false;
+    }
+
+    function populateVideoSelect() {
+      videoSelect.innerHTML = "";
+
+      videos.forEach((video, index) => {
+        const option = document.createElement("option");
+        option.value = String(index);
+        option.textContent = [
+          video.publishedAt,
+          video.title || video.id || "Untitled video"
+        ].filter(Boolean).join(" — ");
+        videoSelect.append(option);
+      });
+
+      videoSelect.disabled = videos.length === 0;
+    }
+
+    function renderSelectedMetadata(video) {
+      videoIdElement.textContent = video.id || "—";
+      videoTitleElement.textContent = video.title || "—";
+      publishedAtElement.textContent = video.publishedAt || "—";
+      durationElement.textContent = formatDuration(video.durationMs);
+      tagsElement.textContent = Array.isArray(video.tags) && video.tags.length
+        ? video.tags.join(", ")
+        : "—";
+      catalogInfoElement.textContent = catalog
+        ? `version ${catalog.version ?? "—"}, ${catalog.updatedAt || "not dated"}`
+        : "—";
+      metadataJsonElement.textContent = JSON.stringify(video, null, 2);
+    }
+
+    async function loadManifestText(sourceUrl, token) {
+      manifestTextElement.textContent = "Loading manifest...";
+
+      try {
+        const response = await fetch(sourceUrl, { mode: "cors" });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const text = await response.text();
+
+        if (token === selectionToken) {
+          manifestTextElement.textContent = text;
+        }
+      } catch (error) {
+        if (token === selectionToken) {
+          manifestTextElement.textContent =
+            `Unable to load manifest text: ${error.message}`;
+        }
+      }
+    }
+
+    function loadVideo(sourceUrl) {
+      if (!sourceUrl) {
+        setStatus("Selected catalog entry has no playback URL.");
+        return;
+      }
+
+      resetPlayer();
+      setStatus("Loading HLS manifest...");
+
+      if (window.Hls && Hls.isSupported()) {
+        let mediaRecoveryAttempted = false;
+
+        hls = new Hls({
+          enableWorker: true,
+          startLevel: -1,
+          manifestLoadingMaxRetry: 1,
+          manifestLoadingRetryDelay: 500,
+          manifestLoadingMaxRetryTimeout: 1000,
+          levelLoadingMaxRetry: 1,
+          levelLoadingRetryDelay: 500,
+          levelLoadingMaxRetryTimeout: 1000,
+          fragLoadingMaxRetry: 1,
+          fragLoadingRetryDelay: 500,
+          fragLoadingMaxRetryTimeout: 1000
+        });
+        const currentHls = hls;
+
+        hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+          if (hls !== currentHls) {
+            return;
+          }
+
+          log("Media element attached.");
+          currentHls.loadSource(sourceUrl);
+        });
+
+        hls.on(Hls.Events.MANIFEST_PARSED, (_event, data) => {
+          if (hls !== currentHls) {
+            return;
+          }
+
+          populateQualityLevels(data.levels);
+          setStatus(`Manifest loaded. ${data.levels.length} video levels detected.`);
+        });
+
+        hls.on(Hls.Events.LEVEL_SWITCHED, (_event, data) => {
+          if (hls !== currentHls) {
+            return;
+          }
+
+          const level = currentHls.levels[data.level];
+          currentLevelElement.textContent = describeLevel(level);
+          log(`Switched to level ${data.level}.`, level);
+        });
+
+        hls.on(Hls.Events.ERROR, (_event, data) => {
+          if (hls !== currentHls) {
+            return;
+          }
+
+          log(`HLS ${data.fatal ? "fatal " : ""}error: ${data.type} / ${data.details}`, {
+            fatal: data.fatal,
+            response: data.response,
+            reason: data.reason,
+            url: data.url
+          });
+
+          if (!data.fatal) {
+            return;
+          }
+
+          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+            setStatus("Fatal network error. Loading stopped. Check the URL, CloudFront response, and CORS.");
+            currentHls.stopLoad();
+            currentHls.destroy();
+            hls = null;
+            return;
+          }
+
+          if (data.type === Hls.ErrorTypes.MEDIA_ERROR && !mediaRecoveryAttempted) {
+            mediaRecoveryAttempted = true;
+            setStatus("Fatal media error. Attempting recovery.");
+            currentHls.recoverMediaError();
+            return;
+          }
+
+          setStatus("Fatal unrecoverable HLS error.");
+          currentHls.destroy();
+          hls = null;
+        });
+
+        hls.attachMedia(player);
+        return;
+      }
+
+      if (player.canPlayType("application/vnd.apple.mpegurl")) {
+        player.src = sourceUrl;
+        player.addEventListener(
+          "loadedmetadata",
+          () => setStatus("Manifest loaded using native HLS playback."),
+          { once: true }
+        );
+        return;
+      }
+
+      setStatus("This browser does not support HLS playback.");
+    }
+
+    function selectVideo(index) {
+      const video = videos[index];
+      const token = ++selectionToken;
+
+      if (!video) {
+        resetMetadata();
+        resetPlayer();
+        setStatus("No video selected.");
+        return;
+      }
+
+      selectedVideo = video;
+      sourceInput.value = video.playbackUrl || "";
+      renderSelectedMetadata(video);
+      loadManifestText(sourceInput.value, token);
+      loadVideo(sourceInput.value);
+    }
+
+    async function loadCatalog() {
+      const catalogUrl = catalogInput.value.trim();
+
+      resetMetadata();
+      resetPlayer();
+      videoSelect.disabled = true;
+      videoSelect.innerHTML = '<option value="">Loading catalog...</option>';
+
+      if (!catalogUrl) {
+        setStatus("Enter a catalog manifest URL.");
+        return;
+      }
+
+      setStatus("Loading catalog manifest...");
+
+      try {
+        const response = await fetch(catalogUrl, { mode: "cors" });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const nextCatalog = await response.json();
+
+        if (!nextCatalog || !Array.isArray(nextCatalog.videos)) {
+          throw new Error("Catalog does not contain a videos array.");
+        }
+
+        catalog = nextCatalog;
+        videos = sortVideosByNewest(
+          nextCatalog.videos.filter((video) => video && video.playbackUrl)
+        );
+
+        if (videos.length === 0) {
+          videoSelect.innerHTML = '<option value="">No videos in catalog</option>';
+          setStatus("Catalog loaded, but no playable videos were found.");
+          return;
+        }
+
+        populateVideoSelect();
+        videoSelect.value = "0";
+        selectVideo(0);
+      } catch (error) {
+        videoSelect.innerHTML = '<option value="">Catalog load failed</option>';
+        manifestTextElement.textContent = `Unable to load catalog: ${error.message}`;
+        setStatus(`Catalog load failed: ${error.message}`);
+      }
+    }
+
+    qualityElement.addEventListener("change", () => {
+      if (!hls) {
+        return;
+      }
+
+      const selectedLevel = Number(qualityElement.value);
+      hls.currentLevel = selectedLevel;
+
+      if (selectedLevel === -1) {
+        log("Quality selection changed to Auto.");
+      } else {
+        log(`Quality selection forced to level ${selectedLevel}.`);
+      }
+    });
+
+    videoSelect.addEventListener("change", () => {
+      selectVideo(Number(videoSelect.value));
+    });
+
+    catalogButton.addEventListener("click", loadCatalog);
+
+    player.addEventListener("loadedmetadata", () => {
+      dimensionsElement.textContent =
+        `${player.videoWidth}×${player.videoHeight}`;
+    });
+
+    player.addEventListener("playing", () => setStatus("Playing."));
+    player.addEventListener("waiting", () => setStatus("Buffering..."));
+    player.addEventListener("pause", () => {
+      if (!isResettingPlayer && !player.ended) {
+        setStatus("Paused.");
+      }
+    });
+    player.addEventListener("ended", () => setStatus("Playback completed."));
+    player.addEventListener("error", () => {
+      const error = player.error;
+      setStatus(`Video element error${error ? `: ${error.code}` : ""}.`);
+    });
+
+    window.addEventListener("beforeunload", () => hls?.destroy());
+
+    loadCatalog();
+  </script>
+</BaseLayout>

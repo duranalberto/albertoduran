@@ -37,7 +37,12 @@ import {
 } from "./types.ts";
 
 const deflateAsync = promisify(zlibDeflate);
-const WORKER_RENDER_TIMEOUT_MS = 60_000;
+// The worker renders one Chromium page per item, sequentially, within a
+// single request (see CHUNK_SIZE in constants.ts for the measured throughput
+// this budget is sized against). 90s leaves headroom over a 15-item chunk of
+// real (heavier-than-trivial) diagrams without masking a genuinely hung
+// request for too long.
+const WORKER_RENDER_TIMEOUT_MS = 90_000;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Theme generation — memoized per palette reference.
@@ -125,7 +130,11 @@ class CloudflareWorkerRenderer implements MermaidRenderer {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-API-Key": apiKey || "",
+        // The worker's getClientToken() only reads `Authorization: Bearer`
+        // or `X-Auth-Token` — `X-API-Key` is never checked and silently
+        // authenticates as anonymous (see mermaid-cloudflare-browser-rendering
+        // src/index.ts).
+        ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
       },
       body: requestBody,
       signal: AbortSignal.timeout(WORKER_RENDER_TIMEOUT_MS),
@@ -233,6 +242,15 @@ class MermaidInkRenderer implements MermaidRenderer {
       ? {
           theme: "base",
           themeVariables: getCachedTheme(palette),
+          // Mermaid's base theme only writes themeVariables.fontFamily into
+          // an unused `--mermaid-font-family` CSS variable — it never applies
+          // it to actual text. The top-level `fontFamily` key is what mermaid
+          // uses both to measure label/node box widths at layout time AND to
+          // emit the real `font-family` CSS rule. Omitting it here silently
+          // falls back to Mermaid's default font ("trebuchet ms", verdana,
+          // arial, sans-serif) for layout while the displayed SVG still
+          // inherits Inter from the page — the mismatch overflows node boxes.
+          fontFamily: palette.fontFamily,
           flowchart: { htmlLabels: true, useMaxWidth: true },
           securityLevel: "loose",
         }

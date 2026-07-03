@@ -259,7 +259,7 @@ flowchart LR
           revises and returns for another pass.
         </p>
         <p class="leading-relaxed text-base-content/70 md:text-lg">
-          That loop is bounded. Once the piece is approved, or the
+          That loop is bounded. Once the piece is approved, or the{" "}
           <code>--max-iterations</code> cap is reached, the pipeline advances to
           the humanizer regardless of approval status. A stubborn draft cannot
           stall the run forever.
@@ -292,7 +292,7 @@ flowchart LR
 
     <Callout variant="information" title="Local model, local files">
       <p>
-        Pressroom works best with a large-context model such as
+        Pressroom works best with a large-context model such as{" "}
         <code>gemma3:27b</code>. Pull it with <code>ollama pull</code>, point to
         it from a single <code>.env</code> file, and the drafts stay on the
         machine.
@@ -383,8 +383,8 @@ flowchart LR
           Generate the analysis and artifacts
         </h3>
         <p class="leading-relaxed text-base-content/70 md:text-lg">
-          Equilyze evaluated Oracle and wrote <code>report.md</code> alongside
-          <code>valuation_data.json</code>, <code>analysis.json</code>, and
+          Equilyze evaluated Oracle and wrote <code>report.md</code> alongside{" "}
+          <code>valuation_data.json</code>, <code>analysis.json</code>, and{" "}
           <code>news_data.json</code>. Those files held the numbers, the
           structured recommendation, and the researched news behind the story.
         </p>
@@ -397,9 +397,9 @@ flowchart LR
           Turn the artifacts into a publication
         </h3>
         <p class="leading-relaxed text-base-content/70 md:text-lg">
-          That report and its artifacts were dropped straight into Pressroom's
+          That report and its artifacts were dropped straight into Pressroom's{" "}
           <code>input/</code>. The nine agents outlined, drafted, fact-checked
-          against the JSON, rendered the charts, and published the finished
+          against the JSON, rendered the charts, and published the finished{" "}
           <code>.mdx</code> file.
         </p>
       </div>

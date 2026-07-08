@@ -1,11 +1,11 @@
 ---
 import type { ProjectPageConfig } from "@appTypes/project";
 import coverImage from "@assets/thejournal/stock/08.avif";
-import Callout from "@components/ui/display/Callout.astro";
-import SectionHeader from "@components/ui/display/SectionHeader.astro";
-import Steps, { type StepItem } from "@components/ui/display/Steps.astro";
-import MermaidDiagram from "@components/ui/mdx/MermaidDiagram.astro";
-import { defineMermaidDiagram } from "@integrations/mermaid/definition";
+import Callout from "bloomwright-ui/components/display/Callout.astro";
+import SectionHeader from "bloomwright-ui/components/display/SectionHeader.astro";
+import Steps, { type StepItem } from "bloomwright-ui/components/display/Steps.astro";
+import MermaidDiagram from "bloomwright-ui/components/render/MermaidDiagram.astro";
+import { defineMermaidDiagram } from "bloomwright-ui/mermaid";
 import ProjectLayout from "@layouts/ProjectLayout.astro";
 
 const project: ProjectPageConfig = {

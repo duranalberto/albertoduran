@@ -1,0 +1,106 @@
+albertoduran → bloomwright-* MIGRATION BASELINE (Phase M0)
+==========================================================
+Captured: 2026-07-08T05:40Z
+Commit:   c409a5d  (master)
+Node:     v26.3.1
+Flags:    ALBERTODURAN_TEST_MODE=true  MERMAID_RENDERER_FIXTURE=true  (deterministic, offline)
+
+This file is the regression ORACLE for phases M2/M3/M5/M6. The goal of the
+migration is PARITY with these numbers — NOT a pristine all-green tree. The
+baseline is captured "as-is" and contains PRE-EXISTING failures (below) that
+predate the migration and must NOT be attributed to it.
+
+--------------------------------------------------------------------
+1. SUITE RESULTS (current tree, before any migration change)
+--------------------------------------------------------------------
+npm run test        →  144 passed / 4 FAILED (148 total, 27 files)   ← pre-existing red
+npm run check       →  0 errors, 0 warnings, 8 hints (160 files)     ← GREEN
+                        (8 hints = Hls globals in src/pages/testing.astro, unrelated)
+npm run build:test  →  86 pages built, Complete                      ← GREEN
+npm run check:bundle→  PASS (JS gate green: .js 862.3 KiB raw / 298.7 gzip)
+                        report-only warning: raster images 52089.6 KiB > 51200 threshold (non-blocking)
+npm run test:e2e    →  32 passed / 8 FAILED (Playwright chromium)     ← pre-existing red
+
+--------------------------------------------------------------------
+2. GOLDEN DIST NUMBERS  (dist/, fixture build) — the parity oracle
+--------------------------------------------------------------------
+Emitted assets:
+  _app mermaid *.svg .......... 162
+  _app chart   *.svg ..........   2
+  _app total   *.svg .......... 164   (165 incl. non-_app per check:bundle)
+
+Rendered markers (across all 86 built HTML pages):
+  mermaid-diagram-container ... 149 total, on 57 pages
+  echart-surface ..............  53 total, on  8 pages
+  mermaid-error ...............   9 total, on  6 pages   ← see §3 (pre-existing)
+  inline "<svg" ............... 2934 total  (dominated by icon sprites; NOT a useful oracle)
+  total HTML pages ............  86
+
+mermaid-error breakdown (all on the direct-authoring component path,
+  <MermaidDiagram code={defineMermaidDiagram(...)} /> under src/pages/projects/):
+  projects/equity-valuation-engine  1   (containers 0, echart 0)
+  projects/mlscraper                1   (containers 0, echart 0)
+  projects/sin-pluma                1   (containers 0, echart 0)
+  projects/albertoduran             2   (containers 0, echart 2)
+  projects/equilyze                 2   (containers 0, echart 0)
+  projects/pressroom                2   (containers 0, echart 0)
+
+--------------------------------------------------------------------
+3. PRE-EXISTING FAILURES (NOT caused by the migration; do not "fix" — read-only)
+--------------------------------------------------------------------
+Two root clusters, both traceable to the recent commit "Adding pressroom,
+equilyze and publications" (project count grew 4 → 6) and the component-based
+Mermaid path.
+
+CLUSTER A — stale "four projects" assertions (6 projects now exist):
+  unit:  project-pages.test.ts > "exposes four unique project landing-page summaries"
+         (expects length 4, got 6)
+  e2e:   site.spec.ts:271  projects index presents four compact showcases…
+  e2e:   site.spec.ts:370  / presents four accessible project cards…
+  e2e:   site.spec.ts:370  /profile/ presents four accessible project cards…
+  e2e:   site.spec.ts:453  project showcase renders hero actions/body/vault
+  e2e:   site.spec.ts:593  Equity Valuation Engine renders complete showcase
+  e2e:   site.spec.ts:593  MLScraper renders complete showcase
+  e2e:   site.spec.ts:593  Sin Pluma renders complete showcase
+
+CLUSTER B — component-path Mermaid does not render (project-page diagrams):
+  unit:  mermaid-component-registry.test.ts  (2 failed: resolves prepared
+         component diagrams by source; fails clearly when not prepared)
+  unit:  mermaid-pipeline-registry.test.ts   (1 failed: prepares diagrams for
+         synchronous lookup and emits SVG assets — assetHref resolved to "")
+  e2e:   site.spec.ts:1362  "Mermaid diagrams render inline SVG without JavaScript"
+         (expects .mermaid-diagram-image > svg > foreignObject; not found)
+  build: the 9 mermaid-error markers in §2.
+
+  Mechanism (confirmed): src/components/ui/mdx/MermaidDiagram.astro passes only
+  data-diagram-src=diagram.assetHref to the wrapper and has NO inline-SVG
+  fallback. When a project-page defineMermaidDiagram() diagram is not prepared
+  by the build pre-scan, assetHref is empty and MermaidDiagramWrapper.astro
+  renders <div class="mermaid-error">Failed to render Mermaid diagram.</div>.
+  The fence-based journal path (149 containers) is prepared and renders fine.
+  ALBERTODURAN_TEST_MODE does NOT touch mermaid selection, so this is genuine
+  current behavior of build:test (not a test-mode artifact).
+
+--------------------------------------------------------------------
+4. MIGRATION ORACLE (how to read this baseline in M2/M3/M5/M6)
+--------------------------------------------------------------------
+Parity target for the fixture build after migration:
+  - _app mermaid svg == 162,  _app chart svg == 2   (± only if D3 changes bytes)
+  - mermaid-diagram-container == 149 on 57 pages
+  - echart-surface == 53 on 8 pages
+  - mermaid-error: NO NEW errors beyond the baseline 9 on the same 6 project pages.
+    (The plan's earlier "0 mermaid-error" wording was WRONG for albertoduran.)
+  - unit/e2e: the SAME pre-existing failures in §3, no NEW ones.
+
+Potential IMPROVEMENT to verify (not required for parity):
+  bloomwright-ui's MermaidDiagram.astro serializes the resolved SVG inline
+  (serializeMermaidNode → data-diagram-svg) AND keeps the external-asset path.
+  IF the package pre-scan prepares the project-page component diagrams, the 9
+  mermaid-errors could drop toward 0 and containers rise toward 158. Treat any
+  reduction as a welcome side effect, confirm visually, but do NOT gate on it.
+  If they still error, that is faithful parity with today's behavior.
+
+OPEN QUESTION (flag to owner): are the 6 project pages' hand-authored Mermaid
+diagrams supposed to render? They do not today. Decide during M2/M3 whether the
+selectSources scope should include src/pages/projects/*.astro so the pre-scan
+prepares them — a behavior change, out of scope for a pure parity migration.

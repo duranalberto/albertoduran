@@ -1,11 +1,11 @@
 ---
 import Article from "@components/thejournal/article/Article.astro";
-import Callout from "@components/ui/display/Callout.astro";
-import List, { type ListItem } from "@components/ui/display/List.astro";
-import MockupBrowser from "@components/ui/display/MockupBrowser.astro";
-import MockupPhone from "@components/ui/display/MockupPhone.astro";
-import MockupWindow from "@components/ui/display/MockupWindow.astro";
-import EChart from "@components/ui/mdx/EChart.astro";
+import Callout from "bloomwright-ui/components/display/Callout.astro";
+import List, { type ListItem } from "bloomwright-ui/components/display/List.astro";
+import MockupBrowser from "bloomwright-ui/components/display/MockupBrowser.astro";
+import MockupPhone from "bloomwright-ui/components/display/MockupPhone.astro";
+import MockupWindow from "bloomwright-ui/components/display/MockupWindow.astro";
+import EChart from "bloomwright-ui/components/render/EChart.astro";
 import BaseLayout from "@layouts/BaseLayout.astro";
 import browserPreview from "@assets/thejournal/pub/sinpluma_03.png";
 import mobilePreview from "@assets/thejournal/pub/sinpluma_08.png";
@@ -15,7 +15,7 @@ import {
   heatmapChartOption,
   lineChartOption,
   pieChartOption,
-} from "@integrations/echarts/options";
+} from "bloomwright-ui/echarts";
 import { Image } from "astro:assets";
 
 export function getStaticPaths() {

@@ -18,6 +18,12 @@
 /* ─── 1. FRAMEWORK ─────────────────────────────────────── */
 @import "tailwindcss";
 
+/* Tailwind v4 auto-scans the app source but ignores node_modules, so utility
+   classes that live ONLY in bloomwright-ui's shipped components (e.g.
+   SectionHeader's `pb-8 md:pb-10 sm:justify-between sm:gap-0`) get purged.
+   Register the package source explicitly so those classes are generated. */
+@source "../../node_modules/bloomwright-ui/src";
+
 /* ─── 2. DAISYUI COMPONENTS ────────────────────────────── */
 @plugin "daisyui" {
   themes: light, dark;

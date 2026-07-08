@@ -7,12 +7,12 @@ import Pagination from "@components/thejournal/article/Pagination.astro";
 import PublicationHeader from "@components/thejournal/article/PublicationHeader.astro";
 import VaultExplorer from "@components/thejournal/article/VaultExplorer.astro";
 import VaultNavContent from "@components/thejournal/article/VaultNavContent.astro";
-import CodeBlock from "@components/ui/mdx/CodeBlock.astro";
-import HeadingAnchor from "@components/ui/mdx/HeadingAnchor.astro";
-import ProseTable from "@components/ui/mdx/ProseTable.astro";
-import MermaidDiagramWrapper from "@components/ui/mdx/MermaidDiagramWrapper.astro";
-import OverlayPanel from "@components/ui/primitive/OverlayPanel.astro";
-import SVGIcon from "@components/ui/primitive/SVGIcon.astro";
+import CodeBlock from "bloomwright-ui/components/prose/CodeBlock.astro";
+import HeadingAnchor from "bloomwright-ui/components/prose/HeadingAnchor.astro";
+import ProseTable from "bloomwright-ui/components/prose/ProseTable.astro";
+import MermaidDiagram from "bloomwright-ui/components/render/MermaidDiagram.astro";
+import OverlayPanel from "bloomwright-ui/components/primitive/OverlayPanel.astro";
+import SVGIcon from "bloomwright-ui/components/primitive/SVGIcon.astro";
 import {
   entryManifest,
   publishedEntries,
@@ -55,8 +55,9 @@ const components = {
   h2: HeadingAnchor,
   h3: HeadingAnchor,
   table: ProseTable,
-  div: MermaidDiagramWrapper,
-  MermaidDiagramWrapper,
+  // bloomwright-mdx's mermaid fence emits <MermaidDiagram code>; the render
+  // bridge + SVG creation are owned by bloomwright-ui's mermaidRenderer().
+  MermaidDiagram,
 };
 
 const prevEntry = entry.previous

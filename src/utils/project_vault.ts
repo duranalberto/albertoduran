@@ -5,7 +5,7 @@ import type {
   VaultItem,
 } from "@appTypes/content_context";
 import { isNestedGroup } from "@appTypes/content_context";
-import type { ListItem } from "@components/ui/display/list";
+import type { ListItem } from "bloomwright-ui/logic/list";
 
 export interface ProjectVaultGroup {
   id: string;

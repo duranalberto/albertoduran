@@ -28,7 +28,7 @@ import {
   type RenderResult,
 } from "bloomwright-ui/mermaid";
 
-export interface MermaidRendererConfig {
+interface MermaidRendererConfig {
   /** Cloudflare Worker endpoint. Omit → skip straight to mermaid.ink. */
   url?: string | undefined;
   /** Bearer token for the Worker (sent as `Authorization: Bearer …`). */

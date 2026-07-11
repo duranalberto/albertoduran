@@ -2,23 +2,22 @@
 import { type EntryContext } from "@appTypes/content_context";
 import image from "@assets/thejournal/stock/10.jpg";
 import AtlasNote from "@components/index/AtlasNote.astro";
-import AtlasStats from "@components/index/AtlasStats.astro";
 import IndexHero from "@components/index/IndexHero.astro";
 import ProfileView from "@components/index/ProfileView.astro";
 import Quote from "@components/index/Quote.astro";
 import JournalGrid from "@components/shared/JournalGrid.astro";
 import ProjectsGrid from "@components/shared/ProjectsGrid.astro";
-import SectionHeader from "bloomwright-ui/components/display/SectionHeader.astro";
-import OverlayPanel from "bloomwright-ui/components/primitive/OverlayPanel.astro";
 import { entryManifest } from "@content/processors/thejournal";
 import { sitesManifest } from "@data/site_manifest";
 import BaseLayout from "@layouts/BaseLayout.astro";
 import FlexShell from "@layouts/FlexShell.astro";
+import SectionHeader from "bloomwright-ui/components/display/SectionHeader.astro";
+import OverlayPanel from "bloomwright-ui/components/primitive/OverlayPanel.astro";
 
 const publications: Set<string> = new Set([
   "siliconboutique",
-  "building_albertoduran",
-  "ai_ops_agent",
+  "langchain_ollama",
+  "aws_serverless_vod",
 ]);
 
 const manifestMap = new Map(
@@ -44,8 +43,6 @@ const isTestMode = process.env.ALBERTODURAN_TEST_MODE === "true";
       <SectionHeader title="Featured Projects" />
       <ProjectsGrid />
     </FlexShell>
-
-    <AtlasStats noteToggleId={atlasNoteToggleId} />
 
     <FlexShell>
       <SectionHeader

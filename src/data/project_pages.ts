@@ -1,6 +1,6 @@
 export type ProjectLandingRoute = `/projects/${string}/`;
 
-export const projectLandingRoutes = {
+const projectLandingRoutes = {
   building_albertoduran: "/projects/albertoduran/",
   equity_valuation_engine: "/projects/equity-valuation-engine/",
   mlscraper: "/projects/mlscraper/",

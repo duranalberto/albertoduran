@@ -15,7 +15,6 @@
       "@assets/*": ["src/assets/*"],
       "@styles/*": ["src/styles/*"],
       "@integrations/*": ["src/integrations/*"],
-      "@lib/*": ["src/lib/*"],
       "@content/*": ["src/content/*"],
       "@runtime/*": ["src/runtime/*"]
     }

@@ -7,6 +7,9 @@ export default tseslint.config(
   {
     ignores: [
       ".astro/**",
+      // nested git worktrees carry their own tsconfig, which makes the
+      // typescript-eslint project service see two candidate roots and fail
+      ".claude/**",
       ".wrangler/**",
       "coverage/**",
       "dist/**",

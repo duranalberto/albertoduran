@@ -27,6 +27,7 @@ const skills: Skills[] = [
   {
     category: "DevOps and platforms",
     skills_icons: [
+      icons.aws!,
       icons.docker!,
       icons.git!,
       icons.jenkins!,
@@ -114,6 +115,10 @@ const education: Education[] = [
 ];
 
 const certifications: Certifications[] = [
+  {
+    name: "AWS Certified Cloud Practitioner",
+    link: "https://www.credly.com/badges/e9debe12-afae-4d0f-82d5-453f8ca830a1/",
+  },
   {
     name: "Oracle Cloud Infrastructure 2025 AI Foundations Associate",
     link: "https://catalog-education.oracle.com/pls/certview/sharebadge?id=E494C7D9F76122F3536EED33BBD2790F98E8FBE4C4A035BFAF8EBC9AB0568C9B",

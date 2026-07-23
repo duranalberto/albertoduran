@@ -67,6 +67,12 @@ export const skills: Record<string, Icon> = {
     content: get_content_from_file(`oracle_infrastructure`),
     isFile: true,
   },
+  aws: {
+    text: "AWS",
+    viewBox: "0 0 128 128",
+    content: get_content_from_file(`aws`),
+    isFile: true,
+  },
   docker: {
     text: "Docker",
     viewBox: "0 0 128 128",

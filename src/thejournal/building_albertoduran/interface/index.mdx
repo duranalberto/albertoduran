@@ -1,0 +1,49 @@
+---
+title: "The visual system after extraction"
+description: "What the app still owns of its look, what bloomwright-ui now owns, and where the line between them falls after the UI kit moved out."
+tags: ["css", "daisyui", "bloomwright"]
+pubDate: 2026-08-03
+order: 10
+---
+
+Extraction moved the components out but left the site looking exactly the same, which is the interesting part. A reader sees no seam where the UI kit became a package. That only works because the visual system was split along a clean line. The app kept the parts that are its own identity, and the package took the parts that are generically reusable. This section covers what the reader sees and how the browser helps, and this page draws the line the rest of it depends on.
+
+---
+
+## Who owns what
+
+The look of the site now has two owners, and the split is consistent. The app owns identity. The package owns mechanism.
+
+- The app owns the design tokens, the brand, the page layouts, and the icon data. The OKLCH theme values, the hero and layout CSS, and the glyphs in `src/data/icons.ts` are all this site specifically.
+- `bloomwright-ui` owns the component CSS and the primitives. The callout, mockup, list, and code-block styles, and the button and panel primitives, are the same anywhere the kit is used.
+
+That division is why a second project could adopt `bloomwright-ui` and look nothing like this one. It would bring its own tokens, brand, and icons, and get the same components underneath. The `bloomwright/ui_components` page argues this from the package side. Here it sets up the sections that follow.
+
+---
+
+## What this section covers
+
+The interface pages move from the static look to the browser's role in it.
+
+- `css_architecture` walks the ordered stylesheet manifest, the DaisyUI include list, and a duplication the extraction left behind.
+- `theming` covers the OKLCH themes and the three separate moments a theme has to be correct.
+- `progressive_enhancement` covers the runtime boundary, now split across repositories.
+- `build_time_data` covers consuming an external source at build time and letting the browser localize the result.
+- `reading_navigation` covers the app-owned reading experience, from heading tracking to the vault explorer.
+- `portfolio_surfaces` covers the project pages and the recruiter profile, the surfaces outside the journal.
+
+---
+
+## Motion is part of the system
+
+One piece of the visual system is easy to forget because it is subtle. The site uses parallax and small transitions, and it treats reduced-motion as a first-class case rather than an afterthought. The layout CSS carries the parallax rules, and the transition rules respect a reader's motion preference, so a reader who asks for less motion gets a calmer page rather than a broken one.
+
+Motion belongs to the app, not the package, because it is part of this site's feel. A component from `bloomwright-ui` renders the same whether the page around it animates or not, and the app decides how much movement wraps it. That keeps the kit neutral and the personality local, which is the same split the rest of this section describes.
+
+---
+
+## The line holds under maintenance
+
+The payoff of a clean visual split is that a change has an obvious home. A new brand color is a token change in the app. A callout that needs a new style is a package change. A page layout tweak is app CSS, and a primitive's appearance is package CSS. The reader sees one coherent surface, and a maintainer sees two clearly separated sets of responsibilities behind it.
+
+The line is not perfectly clean, and the next page is honest about where it blurs. The app keeps local copies of some component CSS the package also ships, which is a real cost of the extraction. Naming it is more useful than pretending the split is flawless, and the `css_architecture` page does exactly that.

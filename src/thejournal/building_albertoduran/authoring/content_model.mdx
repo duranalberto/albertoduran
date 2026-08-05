@@ -1,0 +1,45 @@
+---
+title: "The schema, and what it refuses"
+description: "The live Zod schema every publication satisfies, the glob that hides partials, and the one field the schema accepts but the page never shows."
+tags: ["content", "mdx", "astro"]
+pubDate: 2026-08-03
+order: 20
+---
+
+The first stage of the publication compiler is the one that says no. Before a file can publish, it has to satisfy a Zod schema, and the schema is small, strict, and honest about what it accepts. Reading it closely is the fastest way to understand what a publication is on this site, and it also surfaces a gap worth naming. One field passes validation and reaches the manifest, then quietly never appears on the page. This is where the compiler decides what an article may contain.
+
+---
+
+## Nine fields, defined once
+
+The schema lives in `src/content.config.ts` and defines the `thejournal` collection. Nine frontmatter fields, with sensible defaults where a field is optional.
+
+- `title` is a required string. `description` is a string with a default, so a missing one does not fail the build.
+- `pubDate` is a required date, coerced from a string. `updatePubDate` is an optional date.
+- `image` is an optional image, run through Astro's asset pipeline. `github` is an optional string.
+- `tags` is an array of strings that defaults to empty. `order` is a number that defaults to 100.
+- `draft` is an optional boolean, and it does more than its size suggests.
+
+Two things stand out. The defaults mean a minimal article needs only a title and a `pubDate`, and the schema is deliberately narrow. There is no author field, no free-form metadata, and no room to smuggle in structure the rest of the pipeline does not understand.
+
+---
+
+## The refinement and the glob
+
+Two smaller rules shape what the collection accepts. The schema carries a refinement tying `updatePubDate` to `pubDate`, so an entry cannot claim an update date without a publish date. It is a small guard against a nonsensical state, and it fails the build with a clear message rather than rendering something incoherent.
+
+The collection's loader uses a glob, `**/[^_]*.{md,mdx}`, and the `[^_]` matters. Any file whose name starts with an underscore is excluded from the collection. That gives authors a private-file convention for free. A partial or a work-in-progress named with a leading underscore is invisible to the content collection, so it never becomes a candidate for publication in the first place.
+
+---
+
+## What the schema accepts but the page drops
+
+The interesting gap is `updatePubDate`. The schema accepts it, the refinement validates it, and the manifest reads it, so by every upstream measure it is a real field. Then the article header renders only `pubDate`. The publication component formats and displays the original publish date and never the update date, so a value an author sets in good faith reaches the manifest and stops there.
+
+This is worth stating plainly rather than hiding, because it is exactly the kind of drift a schema invites. A field can be structurally valid and still have no effect on the page, and the only way to know is to trace it all the way to the component. It stays worth watching until the header displays the field or the field is removed.
+
+---
+
+## A schema is a contract, not a guarantee
+
+The schema is the contract for what an article may contain. Whether each field survives to the page is a separate question, answered downstream, one component at a time. A metadata claim is only worth making after opening the component that renders it, because the gap between what a schema accepts and what a reader receives is real, and `updatePubDate` is the proof that it can be wide.

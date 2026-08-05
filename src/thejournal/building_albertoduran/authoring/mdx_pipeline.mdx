@@ -1,0 +1,80 @@
+---
+title: "Satteri, the component map, and highlighting"
+description: "The Markdown processor, why the fence integration registers before mdx, how Markdown elements become components, and how code gets two themes."
+tags: ["mdx", "astro", "bloomwright"]
+pubDate: 2026-08-03
+order: 50
+---
+
+Between a raw `.mdx` file and a rendered article sits a processor with several moving parts that have to run in the right order. The Markdown engine is Satteri, not the remark and rehype stack an Astro site usually reaches for. A fence integration has to attach before MDX compiles. A component map rewires plain Markdown elements into components. And code gets highlighted in two themes at once. Getting the order wrong breaks the whole chain quietly, so this page walks the pipeline as it is configured.
+
+---
+
+## Satteri is the processor
+
+The site configures its Markdown processor explicitly in `astro.config.mjs`, and it is Satteri. It enables directive syntax, heading attributes, and a math mode with single-dollar text math turned off, and it registers two HAST plugins from `bloomwright-mdx`, one for code blocks and one for heading anchors.
+
+```js
+markdown: {
+  processor: satteri({
+    features: { directive: true, math: { singleDollarTextMath: false }, headingAttributes: true },
+    hastPlugins: [createCodeBlockPlugin(), createHeadingAnchorPlugin()],
+  }),
+}
+```
+
+Naming this correctly matters. Calling the setup a custom remark plugin would be inaccurate, and it would make the fence behavior sound like something it is not. The processor is Satteri, and the fence and prose plugins are HAST plugins that run inside it.
+
+---
+
+## Order is load-bearing
+
+The integration list in the config is ordered, and the order is a requirement rather than a preference.
+
+```js
+integrations: [
+  bloomwrightMdx({ selectSources: collectPublishableDocuments }),
+  mermaidRenderer({ render, themes, selectSources, remoteCache }),
+  mdx(),
+  customHtmlMinifier(),
+]
+```
+
+`bloomwrightMdx()` comes before `mdx()` because its setup hook augments the Markdown processor that `mdx()` then uses. Register it after and the fence plugins never attach, so a `daisyui` block would render as a plain code listing. The minifier comes last, because it operates on finished HTML. The `bloomwright/mdx_layer` page covers why the fence integration has to run when it does.
+
+---
+
+## Markdown elements become components
+
+MDX lets a route supply a component map, and the journal route uses it to rewire plain Markdown into `bloomwright-ui` components. Four mappings do the work.
+
+- `pre` becomes `CodeBlock`, so every fenced code sample renders through the shared code component.
+- `h2` and `h3` both become `HeadingAnchor`, so section headings get linkable anchors.
+- `table` becomes `ProseTable`, so Markdown tables get the styled table treatment.
+- `MermaidDiagram` is mapped by name, because the `mermaid` fence emits that component rather than baked HTML.
+
+An author writes ordinary Markdown, a heading, a table, a fenced block, and the map turns each into the right component without an import. This is the same parity idea the `fences` page describes, applied to the plain Markdown elements an author writes without thinking about components at all.
+
+---
+
+## Two themes in one render
+
+Code is highlighted at build time with Shiki, configured for two themes at once. The light theme is `one-light` and the dark theme is `one-dark-pro`, with light as the default, and a transformer tags each line with its number for styling.
+
+Rendering both themes into the markup is what lets a reader switch light and dark without the code re-highlighting in the browser. The highlighted output for both themes is already present, and the theme switch is pure CSS choosing which one to show. That is the same static-baseline principle the rendering section applies to diagrams, applied here to syntax highlighting. The work happens once, during the build, and the browser only chooses.
+
+---
+
+## The minifier protects code
+
+The last stage is the custom HTML minifier, and it has one job worth calling out. Minifying HTML normally collapses whitespace, which would destroy the exact spacing inside a code sample. So the minifier is told to leave three tags untouched, protecting the contents of `<pre>`, `<code>`, and `<kbd>` from any collapsing.
+
+```js
+ignoreCustomFragments: [
+  /<pre[\s\S]*?<\/pre>/,
+  /<code[\s\S]*?<\/code>/,
+  /<kbd[\s\S]*?<\/kbd>/,
+]
+```
+
+That protection is why a code block ships with its indentation and line breaks intact while the surrounding HTML is aggressively compressed. The pipeline squeezes everything it safely can and leaves alone the one kind of content where whitespace is meaning.

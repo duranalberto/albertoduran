@@ -1,0 +1,61 @@
+---
+title: "From dist to the reader"
+description: "How the static build reaches Cloudflare Workers Static Assets, the caching and security headers it ships, and where configuration ends and platform capability begins."
+tags: ["cloudflare", "performance", "architecture"]
+pubDate: 2026-08-03
+order: 40
+---
+
+The build's whole job is to produce a folder, and the deployment's whole job is to serve it. That clean split is only possible because the site does no request-time assembly. Astro writes a `dist/` directory, Cloudflare Workers Static Assets serves it, and nothing between them runs application code per request. This page follows that handoff, the headers the site ships with its files, and the line between what the repository configures and what only a deployed response could confirm.
+
+---
+
+## The host serves files, nothing more
+
+The deployment target is recorded in `wrangler.json`, and it is short on purpose.
+
+```json
+{
+  "name": "albertoduran",
+  "compatibility_date": "2026-04-10",
+  "assets": {
+    "directory": "dist",
+    "not_found_handling": "404-page"
+  }
+}
+```
+
+That is the entire contract. Serve the `dist` directory, and handle a missing path with the built 404 page. There is no server assembling journal pages on demand, because the build already assembled them. The `not_found_handling` setting is the one behavioral rule, mapping an unmatched request to the static 404 rather than a blank response.
+
+Keeping production this thin is deliberate. If the build prepares routes, diagrams, images, styles, and HTML, delivery can focus on handing back bytes, which is the architectural split the whole site is built around.
+
+---
+
+## Headers ship with the files
+
+Caching and security are declared in `public/_headers`, which Cloudflare applies to the served assets. The rules match the shape of the output. Hashed assets under `_app/` are immutable for a year, because their names change when their contents do. Styles, scripts, images, and fonts get a day of caching with a long stale-while-revalidate window, so a stale asset can serve instantly while a fresh one loads behind it. HTML entry points are told to revalidate every time, so a reader never sees a stale page shell.
+
+```text
+/_app/*
+  Cache-Control: public, max-age=31536000, immutable
+/*.html
+  Cache-Control: public, max-age=0, must-revalidate
+```
+
+The same file adds a set of global security headers to every response, including `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, a strict referrer policy, and HSTS with preload. These are configured intent. Whether they arrive on a live response is a deployment fact, which the last section of this page is careful about.
+
+---
+
+## Navigation without full reloads
+
+The reading experience leans on two Astro features that live at this layer. Prefetch is configured conservatively, with `prefetchAll` off and a `defaultStrategy` of `tap`, so the site fetches a destination when a reader presses a link rather than eagerly pulling every link on a page. That keeps prefetching cheap while still hiding most navigation latency.
+
+View transitions handle the swap between pages, so a navigation updates the changed content without a full reload or a flash of blank page. Those transitions are also why the runtime has to preserve theme and re-run small enhancements across a swap, which the `interface/progressive_enhancement` page covers. Here the point is that navigation feels continuous while the underlying delivery is still just static files.
+
+---
+
+## Configuration versus capability
+
+There is a discipline this page has to keep, and it is the same one the whole vault keeps. What is written in `wrangler.json` and `_headers` is configuration. What Cloudflare actually does with it, edge caching, compression, global distribution, TLS, is a platform capability that this repository cannot prove on its own.
+
+The honest line is that the site declares its caching and security intent, and a deployed response would be needed to confirm the platform honored it. There is no captured production response header in the repository, and no `public/_redirects` file either, which is why renaming this vault's sections accepts broken deep links rather than mapping them. Both stay stated as gaps here, so the difference between configured intent and verified behavior never quietly blurs.

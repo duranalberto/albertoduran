@@ -6,12 +6,14 @@ import { projectCatalog } from "@data/projects";
 import { describe, expect, it } from "vitest";
 
 describe("project page routing", () => {
-  it("exposes four unique project landing-page summaries", () => {
-    expect(projectCatalog).toHaveLength(4);
+  it("exposes six unique project landing-page summaries", () => {
+    expect(projectCatalog).toHaveLength(6);
 
     const routes = projectCatalog.map(({ href }) => href);
-    expect(new Set(routes).size).toBe(4);
+    expect(new Set(routes).size).toBe(6);
     expect(routes).toEqual([
+      "/projects/pressroom/",
+      "/projects/equilyze/",
       "/projects/mlscraper/",
       "/projects/sin-pluma/",
       "/projects/equity-valuation-engine/",

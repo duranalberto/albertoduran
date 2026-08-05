@@ -1,6 +1,6 @@
 # Testing Strategy
 
-This project is static-first, content-heavy, and uses a small amount of browser JavaScript for progressive enhancement. The test suite focuses on the parts most likely to break production behavior: build-time content processing, custom Mermaid rendering, external Atlas data loading, generated routes, theme persistence, and journal navigation.
+This project is static-first, content-heavy, and uses a small amount of browser JavaScript for progressive enhancement. The test suite focuses on the parts most likely to break production behavior: build-time content processing, the injected Mermaid render pipeline and content selection (the render engine's own internals are tested in `bloomwright-ui`), external Atlas data loading, generated routes, theme persistence, and journal navigation.
 
 ## Testing Pyramid
 
@@ -11,7 +11,7 @@ This project is static-first, content-heavy, and uses a small amount of browser 
 | Production E2E       | `npm run test:e2e`      | Builds deterministic production output, serves `dist`, then validates browser behavior with Playwright. |
 | Coverage             | `npm run test:coverage` | Vitest coverage report for TypeScript logic.                                                            |
 
-`npm run lint` is not part of the required gate yet because ESLint 10 needs a flat `eslint.config.*` file. Add that config before making lint mandatory in CI.
+`npm run lint` runs in CI as a required gate. The flat `eslint.config.mjs` config is in place, so lint is mandatory alongside `check`, `test`, and `test:e2e`.
 
 ## Commands
 
@@ -62,7 +62,7 @@ Vitest currently covers:
 - Navigation path normalization and journal publication detection.
 - Ribbon SVG dimensions, ID scoping, and reference rewriting.
 - Atlas loader normal schedule data, zero-record standings fallback, missing match behavior, failed fetch handling, and deterministic test mode.
-- Mermaid HAST sanitation, prepared registry lookup, asset emission, ID/reference rewriting, foreignObject line break cleanup, Worker theme merging, Ink inline-color hoisting, and dispatcher failure guards.
+- The app-owned Mermaid seams: the injected `render-pipeline.ts` provider chain (Worker → mermaid.ink → placeholder) and the `publishable.ts` content selection. The HAST sanitation, registry lookup, asset emission, ID/reference rewriting, foreignObject cleanup, and theme merging now live in `bloomwright-ui`'s own suite.
 - Journal manifest build rules: standalone/vault image requirements, draft standalone and draft index subtree filtering, nested vault grouping, child image inheritance, sorted traversal, previous/next links, read time, and path context lookup.
 - HTML minification while preserving `<pre>`, `<code>`, and `<kbd>` fragments.
 

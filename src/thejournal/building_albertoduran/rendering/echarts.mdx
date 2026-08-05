@@ -1,0 +1,61 @@
+---
+title: "Charts as static SVG, with optional life"
+description: "How an ECharts options object becomes a server-rendered SVG at build time, how it is cached and emitted, and the five ways it can wake up."
+tags: ["echarts", "performance", "astro"]
+pubDate: 2026-08-03
+order: 70
+---
+
+The ECharts path is the opposite of the Mermaid path in one important way. It needs no browser and no network. A chart is data, and ECharts can lay it out with math, so the whole render happens locally inside the Node build. That makes the engine simpler to reason about and lets it do something the Mermaid path cannot, which is to hand the reader a fully static figure that can optionally come alive if, and only if, interacting with it would help.
+
+---
+
+## Options in, SVG out
+
+An `echart` fence carries a small definition, a chart type and its data. The engine compiles that into a full ECharts options object through a preset builder, then renders it on the server. It initializes a chart with no DOM, sets the SVG renderer and server-side mode, applies the options, and reads back an SVG string.
+
+```ts
+const chart = echarts.init(null, theme, { renderer: "svg", ssr: true });
+chart.setOption(option);
+return chart.renderToSVGString();
+```
+
+That is the entire render. No headless browser, no canvas, no client. The `authoring/fences` page covers writing the fence. Here the point is that the output of a chart is a string of SVG produced during the build, exactly like a Mermaid diagram, just made a different way.
+
+---
+
+## Presets keep the fence small
+
+An author does not write a raw ECharts options object, which would be long and easy to get wrong. They pick a preset type and supply data. The engine ships a fixed set of preset builders, currently twenty-one of them, covering trends, distributions, hierarchy, flow, and finance shapes. A `line`, a `donut`, a `heatmap`, a `sankey`, a `boxplot`, a `candlestick-volume`, and a `treemap` are all names an author can reach for.
+
+Each preset is a function that turns the small definition into the full options object. That keeps the fence declarative and the surface honest. An author states what the chart is and what it shows, and the preset owns the dozens of options that make it render well. The `chart_gallery` page shows the range in real figures.
+
+---
+
+## Cached and emitted like any asset
+
+A rendered chart is content-addressed. The engine hashes the inputs, including the ECharts version, into a key, and a chart with the same inputs produces the same key and the same file. Charts that opt into a file artifact are emitted under `_app/charts/{key}.svg` at the end of the build, and a chart that has not changed is not re-rendered.
+
+Render mode decides where the SVG lives. The default writes the figure inline into the HTML, which is simplest for a small chart. A large chart can choose the file mode instead, emitting a standalone asset and referencing it, which keeps heavy SVG out of the page markup. The choice is the author's, expressed in the fence, and it trades HTML weight against an extra request.
+
+---
+
+## A static figure is still accessible
+
+Because the baseline is a rendered SVG rather than a client widget, a chart is readable before any script runs and readable with no script at all. The engine wraps each figure with accessibility defaults, so a chart carries a title, a caption, and a longer description drawn from the fence. A screen reader gets the description, and a reader with JavaScript disabled gets the figure. Nothing about the chart depends on hydration to be perceivable.
+
+That is the rule the whole path protects. The static figure is the product. Interactivity is an addition that can fail without taking the content with it.
+
+---
+
+## Five ways to wake up
+
+A chart can stay a plain image, or it can hydrate into a live ECharts instance. The engine supports five hydration modes, and the author picks one per chart. The mode is a statement about when interaction is worth its cost.
+
+- `none` leaves the figure static, which is the default and the right choice for most charts.
+- `load` hydrates as soon as the page loads, for a chart the reader will interact with immediately.
+- `idle` waits for the browser to be idle, so hydration never competes with first paint.
+- `visible` waits until the chart scrolls into view, so a chart far down the page costs nothing until it is seen.
+- `media` hydrates only when a media query matches, for interactivity that only makes sense above a certain viewport width.
+
+Two more modes exist as names but deliberately throw if used, a reminder that the engine would rather fail loudly than half-support a path. Whichever mode a chart uses, the static SVG is already on the page. Hydration swaps a live chart in over a figure that already rendered, so the reader never waits on JavaScript to see the data, and a reader who never gets JavaScript never knows the difference.

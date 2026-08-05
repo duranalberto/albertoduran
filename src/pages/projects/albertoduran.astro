@@ -19,7 +19,7 @@ const project: ProjectPageConfig = {
   imageAlt: "A bright development workspace with source code open on a laptop",
   facts: [
     { label: "Role", value: "Design & Engineering" },
-    { label: "Platform", value: "Astro 6" },
+    { label: "Platform", value: "Astro 7" },
     { label: "Rendering", value: "Static-first" },
     { label: "Delivery", value: "Workers Static Assets" },
   ],
@@ -55,7 +55,7 @@ const productSurfaces = [
     title: "Diagrams and charts stay close to their source",
     description:
       "Mermaid and ECharts produce static SVG during the build, so technical visuals remain part of the article when JavaScript is off.",
-    href: "/thejournal/building_albertoduran/echarts/",
+    href: "/thejournal/building_albertoduran/rendering/",
   },
 ];
 
@@ -65,28 +65,28 @@ const architectureHighlights = [
     title: "Content becomes routes before deployment",
     description:
       "Collections validate MDX, the manifest applies publication rules, and Astro generates every known article route before deployment.",
-    href: "/thejournal/building_albertoduran/publications/static_generation/",
+    href: "/thejournal/building_albertoduran/authoring/routing/",
   },
   {
     marker: "02",
     title: "Visual explanations arrive as static assets",
     description:
       "Mermaid diagrams and ECharts figures render during the build. The browser receives useful SVG before any optional interaction starts.",
-    href: "/thejournal/building_albertoduran/mermaid/pipeline/",
+    href: "/thejournal/building_albertoduran/rendering/mermaid_pipeline/",
   },
   {
     marker: "03",
     title: "Runtime code stays deliberately narrow",
     description:
       "Theme persistence, overlays, and article navigation improve complete HTML instead of becoming prerequisites for reading it.",
-    href: "/thejournal/building_albertoduran/runtime/",
+    href: "/thejournal/building_albertoduran/interface/progressive_enhancement/",
   },
   {
     marker: "04",
     title: "Production receives finished work",
     description:
       "Workers Static Assets serves the generated file graph. It does not need to understand MDX, vault rules, or page assembly.",
-    href: "/thejournal/building_albertoduran/foundations/cloudflare_deployment/",
+    href: "/thejournal/building_albertoduran/platform/delivery/",
   },
 ];
 
@@ -95,19 +95,19 @@ const publishingCapabilities = [
     title: "Typed content and visible publishing rules",
     description:
       "Schemas and manifest tests catch malformed metadata, draft leaks, missing images, and broken vault structure before routing begins.",
-    href: "/thejournal/building_albertoduran/publications/manifest_rules/",
+    href: "/thejournal/building_albertoduran/authoring/content_model/",
   },
   {
     title: "Directory-driven vault navigation",
     description:
       "Folders become ordered reading paths with nested sections, breadcrumbs, responsive navigation, and previous or next links from one model.",
-    href: "/thejournal/building_albertoduran/publications/collections/",
+    href: "/thejournal/building_albertoduran/authoring/manifest_policy/",
   },
   {
     title: "MDX with a controlled component vocabulary",
     description:
       "Articles can use editorial components, diagrams, charts, code, and tables while keeping typography and static output consistent.",
-    href: "/thejournal/building_albertoduran/publications/mdx_rendering/",
+    href: "/thejournal/building_albertoduran/authoring/mdx_pipeline/",
   },
 ];
 
@@ -116,25 +116,25 @@ const readerExperience = [
     title: "Theme continuity without a flash",
     description:
       "An inline bootstrap applies the initial preference, while a small manager preserves it across Astro route swaps.",
-    href: "/thejournal/building_albertoduran/runtime/theme_system/",
+    href: "/thejournal/building_albertoduran/interface/theming/",
   },
   {
     title: "Navigation that respects the reading surface",
     description:
       "Vault explorers, heading tracking, pagination, and mobile overlays adapt without making the article depend on client rendering.",
-    href: "/thejournal/building_albertoduran/runtime/on_this_page/",
+    href: "/thejournal/building_albertoduran/interface/reading_navigation/",
   },
   {
     title: "Images and fonts prepared ahead of time",
     description:
       "Astro prepares responsive image variants and registered fonts during the build, with selected preloads for the first reading surface.",
-    href: "/thejournal/building_albertoduran/performance/image_and_font_strategy/",
+    href: "/thejournal/building_albertoduran/platform/delivery/",
   },
   {
     title: "Generated output receives a final pass",
     description:
       "Vite bundles assets, the HTML minifier protects code fragments, and the build emits inspectable files for deployment.",
-    href: "/thejournal/building_albertoduran/performance/file_optimization/",
+    href: "/thejournal/building_albertoduran/authoring/mdx_pipeline/",
   },
 ];
 
@@ -316,10 +316,10 @@ flowchart LR
 
     <div class="mb-10 grid grid-cols-1 gap-6 lg:grid-cols-12">
       <p class="text-xl leading-relaxed text-base-content lg:col-span-7">
-        Both examples below are SVG produced during the build. The Mermaid fence
-        travels through the diagram integration, while the ECharts option uses
-        the server renderer. Neither visual waits for client-side JavaScript to
-        become readable.
+        Both examples below are SVG produced during the build. The Mermaid
+        source travels through the diagram integration, while the ECharts option
+        uses the server renderer. Neither visual waits for client-side
+        JavaScript to become readable.
       </p>
       <Callout
         variant="information"
@@ -514,9 +514,10 @@ flowchart LR
         </h3>
         <p class="text-base leading-relaxed text-base-content/70 md:text-lg">
           Astro diagnostics protect source and content shapes. Vitest covers
-          manifest rules, SVG transforms, charts, loaders, and minification. A
-          deterministic production build replaces unstable outside inputs, and
-          Playwright checks selected reader behavior in Chromium.
+          manifest rules, content loaders, the JavaScript bundle budget, and
+          HTML minification. A deterministic production build replaces unstable
+          outside inputs, and Playwright checks selected reader behavior in
+          Chromium.
         </p>
       </div>
 

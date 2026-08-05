@@ -1,0 +1,89 @@
+---
+title: "What extraction actually cost"
+description: "The honest counterweight to the extraction story: duplicated CSS, git-ref versioning, source-shipped compilation, and two bugs only the real build found."
+tags: ["bloomwright", "css", "architecture"]
+pubDate: 2026-08-03
+order: 60
+---
+
+Every page in this section so far has argued for the extraction. This one argues against it, or at least tallies the bill. Pulling code into packages bought reuse and a clean dependency graph, and it charged for them. Some of the cost is duplicated CSS I have not resolved. Some is a versioning shortcut that trades safety for speed. And some arrived as two bugs that no amount of package testing could surface, because only a real consumer's build exercises the failing path. A case study that skipped this would be a sales pitch.
+
+---
+
+## Duplicated CSS that nobody imports
+
+`bloomwright-ui` ships a full stylesheet at `bloomwright-ui/styles.css`. The app never imports it. Instead, `src/styles/global.css` imports sixteen local partials and reproduces most of what the package already ships.
+
+The comparison is uncomfortable when you run it. Six partials are byte-for-byte identical to their package versions. `_callout`, `_chat`, `_list`, `_steps`, `_mockup-browser`, and `_mockup-media` are pure duplication, maintained in two places for no reason beyond history. Seven more have drifted, which is arguably worse because now the app and the package disagree.
+
+| Partial | Difference from the package version |
+| --- | --- |
+| `_callout`, `_chat`, `_list`, `_steps`, `_mockup-browser`, `_mockup-media` | identical, pure duplication |
+| `_daisyui-overrides` | 17 lines diverge |
+| `_code-block` | 16 lines diverge |
+| `_glass` | 7 lines diverge |
+| `_heading-anchor` | 5 lines diverge |
+| `_echart`, `_panel` | 2 lines diverge |
+| `_prose-table` | 1 line diverges |
+
+This is a real seam I have not closed. The honest version is that the styles were extracted into the package but the app kept its own copies while other work took priority, and the divergences are small local tweaks that were never pushed back upstream. Naming it here is more useful than a clean story that is not true.
+
+---
+
+## Tailwind has to be told the package exists
+
+A source-shipped component brings a subtler CSS cost. Tailwind scans source for the classes it should generate, and by default it never looks inside `node_modules`. So every DaisyUI or utility class used only inside a `bloomwright-ui` component would be purged, and those components would render unstyled.
+
+The fix is one line in `global.css`.
+
+```css
+@source "../../node_modules/bloomwright-ui/src";
+```
+
+That directive tells Tailwind to scan the package source alongside the app source. It works, and it is a standing dependency on the package's internal folder layout. If the package reorganizes its source tree, that path has to follow. A published, pre-built package would not need this, which is one thing the git-dependency approach gives up.
+
+---
+
+## Versioning through git references
+
+Both packages are consumed as `github:duranalberto/bloomwright-ui` and `github:duranalberto/bloomwright-mdx`. There is no semver range, no published release, and no changelog gate. The lockfile pins a commit hash, so a build is reproducible, but moving to newer package code means updating that pin by hand and hoping the diff is compatible.
+
+That is a deliberate trade. During active co-development, semver ceremony would slow every change to a crawl, and these packages have exactly one serious consumer. The cost is that the safety net semver provides, a package promising not to break you within a major version, does not exist here. It stands as an accepted gap rather than a solved problem.
+
+---
+
+## Two bugs only the real build could find
+
+The sharpest cost showed up at the very end of the migration, and both instances were bugs in `bloomwright-ui` that its own test suite passed cleanly. They only appeared when a real application bundled the package from `node_modules`.
+
+The first was a tree-shaking bug. A component like `OverlayPanel` carries a client script it imports for its side effects. When the app consumed that component from `node_modules`, the bundler decided the import was dead and shook it out, so the overlay's keyboard handling silently died. The fix was to declare the runtime files as side effects in the package manifest.
+
+```json
+"sideEffects": ["*.css", "./src/runtime/*.ts"]
+```
+
+The second was an export bug. The ECharts option builders existed in the package but were never re-exported from the `echarts` barrel, so the app's chart fixtures could not import them. The fix was a single line added to `bloomwright-ui/src/echarts/index.ts`.
+
+```ts
+export * from "./options.ts";
+```
+
+Both fixes are present in the installed package now. The lesson is the expensive part. A package can be green on its own terms and still be broken for a real consumer, because bundling behavior is a property of the consuming build, not the package's tests. The app's production build was the only test that could catch these, which is an argument for keeping at least one real consumer in the loop of any extraction.
+
+---
+
+## Every consumer compiles the package
+
+Neither package ships built output. They export raw `.astro` and `.ts` files, and the consuming build compiles them. For this project that is a feature, because it means no build step to maintain in either package and no stale `dist` to forget to rebuild. It also means the app inherits the packages' source at face value, and has to agree with them on tooling.
+
+That agreement is a real coupling. The app and both packages have to line up on Astro, TypeScript, Tailwind, and DaisyUI versions closely enough that source written for one compiles under the other. The package manifests encode this as peer dependencies, `astro ^7`, `daisyui ^5.5`, `echarts ^6.1`, `tailwindcss ^4.3` for the render core, so a mismatch surfaces at install rather than at runtime. The cost is that a major bump in any of those is not a local decision anymore. It has to move across all four repositories together, or the source-shipped compilation breaks.
+
+There is also no cross-repository integration gate. Each package has its own checks, `guard:leaf` and a test suite for the render core, `guard:host` and a test suite for the mdx layer, and both pass in isolation. Nothing runs the three together except the app's real build. That is the same lesson the two bugs taught, stated as a standing gap. The only proof that a package change works with this site is building this site, and that gate lives here, not in the packages.
+
+---
+
+## Documentation that can now disagree
+
+The last cost is the one you are reading. Before extraction, one repository held the code and its story. Now there are four, and four sets of docs that can contradict each other. This vault describes how albertoduran consumes the packages, each package has its own spec, and the render Worker has a third. Nothing keeps them synchronized except attention.
+
+That is the counterweight to the reuse the rest of this section celebrates. Extraction did not create the complexity, it relocated and multiplied the surfaces where a claim can go stale. Writing it down, dated and specific, is the cheapest defense I have against a story drifting away from the code it describes.

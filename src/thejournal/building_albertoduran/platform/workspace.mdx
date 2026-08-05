@@ -1,0 +1,55 @@
+---
+title: "Working across four repositories"
+description: "The Node 22 devcontainer, how github dependencies resolve, and what a source-shipped package asks of the workspace that consumes it."
+tags: ["astro", "bloomwright", "architecture"]
+pubDate: 2026-08-03
+order: 30
+---
+
+A one-repository project has a simple workspace story. You clone it, install, and build. Splitting into four repositories complicates that story in ways worth writing down, because the packages are consumed from GitHub rather than a registry and shipped as source rather than built output. That choice keeps co-development fast and hands the workspace a few obligations it would not otherwise have. This page covers the container the site is built in and what a source-shipped dependency asks of it.
+
+---
+
+## A container that pins the machine
+
+The workspace is a devcontainer, so the machine that builds the site is described in files rather than remembered as setup lore. It pins Node 22.13.0, runs as a `node` user, defaults the shell to zsh, and builds from a Dockerfile. It installs the GitHub CLI as a feature and configures the editor with the extensions this project actually uses, Astro, MDX, Tailwind, ESLint, and Prettier among them.
+
+That predictability matters more for this project than for most, because the build touches Astro, TypeScript, Sharp image transforms, the Mermaid render path, and Playwright. A reproducible container keeps those tools consistent, so a build behaves the same whether it runs on a laptop or a CI runner. The container does not make the site more complex. It makes the existing complexity repeatable.
+
+---
+
+## How github dependencies resolve
+
+The two packages are listed in `package.json` as `github:duranalberto/bloomwright-ui` and `github:duranalberto/bloomwright-mdx`, not as version ranges. When npm installs them, it fetches a git snapshot and the lockfile pins a specific commit. So an install is reproducible, but there is no semver range doing the resolving.
+
+The practical consequence is that `node_modules/bloomwright-ui` is a commit snapshot, not a live link to a sibling checkout. A local edit to the package does not reach the app until the package is pushed and the app reinstalls or updates the pin. That is the right default for a build that must be reproducible, and it means updating package code is a deliberate act rather than an ambient one. The `bloomwright/costs` page treats the versioning tradeoff in full.
+
+---
+
+## Co-developing a package
+
+Reproducible installs are good for the app and awkward for active package work, where you want an edit to show up immediately. For that, the workspace can point the app at a local checkout with an `npm link` or a `file:` dependency, so changes flow without a push. When the work settles, the dependency goes back to the `github:` ref and the lockfile re-pins a commit.
+
+This is the seam between two modes. Fast local iteration on a package, and reproducible consumption of it. Moving between them is a `package.json` edit and a reinstall, which is a small price for keeping the published install honest while still allowing quick changes during development.
+
+---
+
+## What source-shipped code asks of Tailwind
+
+A package that ships raw source instead of built output pushes one obligation onto the app's styling. Tailwind scans source for the classes it should generate, and by default it never looks inside `node_modules`. A DaisyUI or utility class used only inside a `bloomwright-ui` component would be purged, and that component would render unstyled.
+
+The fix is a single directive in `global.css`.
+
+```css
+@source "../../node_modules/bloomwright-ui/src";
+```
+
+That line tells Tailwind to scan the package source alongside the app source. It works, and it ties the app to the package's internal folder layout, so a reorganization upstream has to be matched here. It is a small standing cost of consuming source, and it is the kind of coupling the `costs` page argues is the true price of extraction.
+
+---
+
+## Lockfile churn as a signal
+
+Because the packages are git dependencies, moving to newer package code shows up as a lockfile change rather than a version bump. That is worth reading as a signal rather than noise. A changed commit pin in the lockfile means the app is now building against different package source, and the only gate that proves the combination works is the app's own build.
+
+So the workspace treats a package update as a real event. Re-pin the commit, reinstall, and run the full build and checks, because a package that is green on its own terms can still break a consumer. This missing cross-repository gate is the honest gap in a workspace spread across four repositories.

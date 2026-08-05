@@ -25,12 +25,13 @@ or the implementation so they match.
 
 ## Publication Length
 
-Published journal entries should display between 10 minutes and 16
-minutes of reading time. As priority, prefer between 12 and 16, decide depending of the content being redacted.
+There is no fixed reading-time band. Write dense, non-padded prose at the length the
+material genuinely supports, and merge rather than pad. A page whose subject is thin
+should be short and merged into a neighbor, not stretched to hit a minute count.
 
 The manifest estimates reading time from the MDX body using prose words and code
-fence lines. As a rough prose-only range, this means about 1,400 to 3,000 words,
-then adjust for dense code samples, diagrams, and tables.
+fence lines, as `ceil(proseWords / 200 + codeLines / 40)`. Treat that number as a
+readout of density, not a target to engineer toward.
 
 ## Required Frontmatter
 

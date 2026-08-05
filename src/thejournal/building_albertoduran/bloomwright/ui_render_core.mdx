@@ -1,0 +1,100 @@
+---
+title: "bloomwright-ui as a render core"
+description: "How a package that was meant to stay a dependency-free leaf deliberately reversed course and absorbed build-time rendering."
+tags: ["bloomwright", "mermaid", "echarts"]
+pubDate: 2026-08-03
+order: 30
+---
+
+The most interesting decision in `bloomwright-ui` is one it reversed. The first version of its charter said the package should stay a leaf. No build-time rendering, no heavy dependencies, just presentation components and pure logic. The second version tore that up on purpose and pulled the rendering engines inside. That reversal is the story of this page, because getting it wrong in either direction produces a worse system than admitting the boundary was in the wrong place.
+
+---
+
+## Why the leaf rule broke
+
+A leaf package is appealing. It installs light, it depends on almost nothing, and it never surprises a consumer. The problem showed up as soon as you traced a diagram or a chart from source to screen. The component that displayed a chart lived in `bloomwright-ui`, but the engine that turned an options object into SVG lived somewhere else, on the far side of a package boundary.
+
+That split added no value. The render component and the engine feeding it changed together, shipped together, and were tested together, yet a rule kept them apart. So the charter changed. `bloomwright-ui` stopped being a leaf and became the render core, absorbing the engines so that a component and the code producing its pixels could live in one repository.
+
+---
+
+## What it absorbed
+
+Three bodies of build-time code moved in, each with its own export.
+
+- The **ECharts** engine at `bloomwright-ui/src/echarts/*`, exported as `bloomwright-ui/echarts`. It renders an options object to SVG on the server through `renderEChartSvg`, tracks artifacts, and builds the option presets. It runs with `echarts` as a peer dependency.
+- The **Mermaid** pipeline at `bloomwright-ui/src/mermaid/*`, exported as `bloomwright-ui/mermaid`. It owns addressing, theming, the HAST transform, and the palettes, and it defines the render port the app plugs into.
+- The **cache and addressing** port at `bloomwright-ui/src/shared/cache.ts`, exported as `bloomwright-ui/cache`. It decides how a diagram is keyed while leaving storage to the caller.
+
+Absorbing that code changed the package's own dependency footprint. `bloomwright-ui` now carries `hast-util-*`, `unist-util-visit`, and `postcss` as dependencies, and lists `echarts` alongside `astro`, `daisyui`, and `tailwindcss` as peers. A leaf it is not, and the charter is honest about that.
+
+---
+
+## What owning rendering looks like in practice
+
+Absorbing the engines meant absorbing their decisions, and those decisions are more detailed than a leaf package would ever carry. The ECharts engine is the clearest example. A chart is not just an SVG. It has a render mode and a hydration mode, and the component validates both.
+
+Render mode decides where the SVG lives. `svg-inline` writes the figure straight into the page, and `svg-file` emits a standalone asset and references it, which keeps a large chart out of the HTML. Hydration mode decides when, or whether, the static figure becomes interactive. The engine supports `none`, `load`, `idle`, `visible`, and `media`, so a chart can stay a plain image, wake on idle, wake when scrolled into view, or wake only above a viewport width. A JavaScript-disabled reader always keeps the static figure, because hydration only ever adds to a baseline that already renders.
+
+The engine is also strict about what it will not do yet. A `png-file` render mode and a `light` hydration mode exist as names but throw if you use them, and `hydrate="media"` throws without a query string. That validation lives in the render core now, next to the component that depends on it, which is the entire argument for absorbing the engine rather than leaving it across a boundary.
+
+---
+
+## Addressing is part of the core
+
+The Mermaid side shows the same principle from a different angle. Owning the pipeline means owning how a diagram is addressed, because addressing is what makes caching correct. The core pins a `RENDERER_VERSION`, currently `v4.9`, and builds a cache key from the diagram code and that version. The emitted asset path follows from the key, landing at `/_app/mermaid/{stableId}-{cacheKey}.svg` with a `-dark` sibling for the dark theme.
+
+That scheme has a useful property. Change the renderer and the version changes, so every old cache key misses and every diagram re-renders, with no manual cache clearing. The `rendering/` section traces the full lifecycle. The point here is that versioning, keying, and asset naming are core concerns now, not something a consumer reinvents, because the package that displays a diagram is the package that decides how it is stored.
+
+---
+
+## The integration it grew
+
+Absorbing engines was the second version of the change. The third added an Astro integration. `bloomwright-ui` exports `mermaidRenderer` from `bloomwright-ui/mermaid-renderer`, and that integration owns Mermaid SVG creation from end to end. It pre-scans sources, batches diagrams, renders them through the caller's port, caches the result, and emits the SVG assets.
+
+```mermaid
+flowchart LR
+    Scan["🔎 pre-scan sources"] --> Batch["📦 batch diagrams"]
+    Batch --> Render["🎨 caller render port"]
+    Render --> Cache["💾 cache in .astro/"]
+    Cache --> Emit["📤 emit _app/mermaid/*.svg"]
+
+    classDef step fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+    class Scan,Batch,Render,Cache,Emit step
+```
+
+Moving that work into the package meant `bloomwright-mdx` no longer had to run it. The `mdx_layer` page picks up that thread. Here the point is that the render core owns rendering, top to bottom, so a consumer wires one integration instead of assembling a pipeline by hand.
+
+---
+
+## The invariant that replaced the leaf rule
+
+Dropping the leaf rule did not mean dropping discipline. A new invariant took its place, enforced by a `guard:leaf` check that runs in the package's own CI. The package may import rendering libraries, but it must never import the host application, must never import `bloomwright-mdx`, and must never read ambient environment variables.
+
+Each clause prevents a specific failure. Importing the host would invert the dependency graph. Importing `bloomwright-mdx` would create a cycle, since that package already depends on this one. And reading `process.env` would smuggle deployment configuration into a package that is supposed to be configured by its caller. The `seams` page shows how that last clause is honored in practice, because refusing to read the environment is what forces the render port to exist.
+
+---
+
+## How this project uses it
+
+Two wiring points connect the app to the render core. The Astro config registers the integration with the app's own render function, theme palettes, source selection, and remote-cache flag.
+
+```js
+// astro.config.mjs
+mermaidRenderer({
+  render: mermaidRenderPipeline,
+  themes: mermaidThemes,
+  selectSources: collectPublishableDocuments,
+  remoteCache: readEnv("MERMAID_DISABLE_REMOTE_CACHE") !== "true",
+})
+```
+
+The second point is the runtime side. `BaseLayout.astro` imports the two client shells the render components need, straight from the package.
+
+```js
+// src/layouts/BaseLayout.astro
+import "bloomwright-ui/runtime/echart-shell";
+import "bloomwright-ui/runtime/mermaid-diagram-shell";
+```
+
+Those two lines carry more history than they show. The runtime shells are the reason `bloomwright-ui` had to declare its client scripts as side effects, because a bundler will otherwise tree-shake a component's script out of a source-shipped package. The `costs` page tells that story, since the app's real build is what surfaced it.

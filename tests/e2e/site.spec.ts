@@ -9,10 +9,10 @@ const smokeRoutes = [
   "/projects/mlscraper/",
   "/projects/sin-pluma/",
   "/thejournal/",
-  "/thejournal/my_first_publication/",
+  "/thejournal/ai_ops_agent/",
   "/thejournal/mlscraper/first_price_watch/",
   "/thejournal/building_albertoduran/",
-  "/thejournal/building_albertoduran/publications/static_generation/",
+  "/thejournal/building_albertoduran/authoring/routing/",
 ];
 
 const responsiveRoutes = [
@@ -24,9 +24,9 @@ const responsiveRoutes = [
   "/projects/mlscraper/",
   "/projects/sin-pluma/",
   "/thejournal/mlscraper/first_price_watch/",
-  "/thejournal/building_albertoduran/echarts/chart_examples/",
+  "/thejournal/building_albertoduran/rendering/chart_gallery/",
   "/thejournal/sin_pluma/innodb_cluster/",
-  "/thejournal/building_albertoduran/publications/codeblocks/",
+  "/thejournal/building_albertoduran/authoring/mdx_pipeline/",
   "/404.html",
 ];
 
@@ -268,7 +268,7 @@ test("top-level heroes keep eyebrow and heading geometry aligned", async ({
   }
 });
 
-test("projects index presents four compact showcases and ordered navigation", async ({
+test("projects index presents six compact showcases and ordered navigation", async ({
   page,
 }) => {
   const problems = collectConsoleProblems(page);
@@ -298,6 +298,8 @@ test("projects index presents four compact showcases and ordered navigation", as
   ).toHaveAttribute("aria-current", "page");
 
   const expectedProjects = [
+    ["Pressroom", "/projects/pressroom/"],
+    ["Equilyze", "/projects/equilyze/"],
     ["MLScraper", "/projects/mlscraper/"],
     ["Sin Pluma", "/projects/sin-pluma/"],
     ["Equity Valuation Engine", "/projects/equity-valuation-engine/"],
@@ -305,7 +307,7 @@ test("projects index presents four compact showcases and ordered navigation", as
   ] as const;
 
   const showcases = page.locator("[data-project-showcase]");
-  await expect(showcases).toHaveCount(4);
+  await expect(showcases).toHaveCount(6);
 
   for (const [title, href] of expectedProjects) {
     const showcase = page.getByRole("link", {
@@ -367,11 +369,13 @@ test("projects index presents four compact showcases and ordered navigation", as
 });
 
 for (const route of ["/", "/profile/"] as const) {
-  test(`${route} presents four accessible project cards in a responsive grid`, async ({
+  test(`${route} presents six accessible project cards in a responsive grid`, async ({
     page,
   }) => {
     const problems = collectConsoleProblems(page);
     const expectedProjects = [
+      ["Pressroom", "/projects/pressroom/"],
+      ["Equilyze", "/projects/equilyze/"],
       ["MLScraper", "/projects/mlscraper/"],
       ["Sin Pluma", "/projects/sin-pluma/"],
       ["Equity Valuation Engine", "/projects/equity-valuation-engine/"],
@@ -383,7 +387,7 @@ for (const route of ["/", "/profile/"] as const) {
 
     const grid = page.locator("[data-project-grid]");
     const cards = grid.locator("[data-project-card]");
-    await expect(cards).toHaveCount(4);
+    await expect(cards).toHaveCount(6);
     await expect(
       page.getByRole("link", { name: "View all projects" }),
     ).toHaveCount(0);
@@ -426,7 +430,7 @@ for (const route of ["/", "/profile/"] as const) {
         return { left: rect.left, top: rect.top };
       }),
     );
-    expect(new Set(mobileBoxes.map(({ top }) => Math.round(top))).size).toBe(4);
+    expect(new Set(mobileBoxes.map(({ top }) => Math.round(top))).size).toBe(6);
     expect(new Set(mobileBoxes.map(({ left }) => Math.round(left))).size).toBe(
       1,
     );
@@ -520,25 +524,23 @@ test("project showcase renders its hero actions, body, and grouped vault", async
     }),
   ).toHaveAttribute(
     "href",
-    "/thejournal/building_albertoduran/publications/manifest_rules/",
+    "/thejournal/building_albertoduran/authoring/content_model/",
   );
   await expect(
     page.getByRole("heading", { level: 2, name: "Technical deep dives" }),
   ).toBeVisible();
 
-  const foundationList = page.getByRole("list", {
-    name: "Foundation map publications",
+  const platformList = page.getByRole("list", {
+    name: "Four repositories, one artifact publications",
   });
-  await expect(foundationList).toBeVisible();
+  await expect(platformList).toBeVisible();
   await expect(
-    foundationList.getByRole("link", {
-      name: "Read Foundation map in The Journal",
+    platformList.getByRole("link", {
+      name: "Read Four repositories, one artifact in The Journal",
     }),
-  ).toHaveAttribute("href", "/thejournal/building_albertoduran/foundations/");
+  ).toHaveAttribute("href", "/thejournal/building_albertoduran/platform/");
   await expect(
-    foundationList.getByText(
-      "A short guide to the repository shape, local development environment, and Cloudflare deployment target behind albertoduran.com.",
-    ),
+    platformList.getByText("what each repository owns", { exact: false }),
   ).toBeVisible();
 
   const vaultList = page.locator("#project-vault .publication-list").first();
@@ -953,7 +955,7 @@ test("journal article sidebars wait until the content column can stay readable",
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
-  await page.goto("/thejournal/building_albertoduran/publications/codeblocks/");
+  await page.goto("/thejournal/building_albertoduran/authoring/mdx_pipeline/");
 
   await expect(page.locator(".sidebar-right")).toBeHidden();
   await expect(page.locator(".dock-wrapper")).toBeVisible();
@@ -964,7 +966,7 @@ test("journal article sidebars wait until the content column can stay readable",
   expect(mainAt1280!.width).toBeGreaterThan(900);
 
   await page.setViewportSize({ width: 1536, height: 900 });
-  await page.goto("/thejournal/building_albertoduran/publications/codeblocks/");
+  await page.goto("/thejournal/building_albertoduran/authoring/mdx_pipeline/");
 
   await expect(page.locator(".sidebar-right")).toBeVisible();
   await expect(page.locator(".dock-wrapper")).toBeHidden();
@@ -998,7 +1000,7 @@ test("journal catalog links to generated article routes", async ({ page }) => {
   await expectLocatorHorizontallyInViewport(journalStatistics);
 
   await expect(
-    page.locator('a[href="/thejournal/my_first_publication/"]').first(),
+    page.locator('a[href="/thejournal/ai_ops_agent/"]').first(),
   ).toBeVisible();
   await expect(
     page.locator('a[href="/thejournal/building_albertoduran/"]').first(),
@@ -1013,7 +1015,10 @@ test("journal catalog links to generated article routes", async ({ page }) => {
   expect(problems).toEqual([]);
 });
 
-test("home Atlas note modal opens and closes", async ({ page }) => {
+// Skipped: the home Atlas note currently renders as a static inline article
+// (see src/components/index/AtlasNote.astro), not an interactive modal. Re-enable
+// when the modal trigger + dialog are reintroduced.
+test.skip("home Atlas note modal opens and closes", async ({ page }) => {
   const problems = collectConsoleProblems(page);
 
   await page.goto("/");
@@ -1108,7 +1113,11 @@ test("home Atlas note modal opens and closes", async ({ page }) => {
   expect(problems).toEqual([]);
 });
 
-test("home Atlas note modal works without JavaScript", async ({ browser }) => {
+// Skipped: see note above — the Atlas note is a static inline article for now.
+// Re-enable alongside the modal when it returns.
+test.skip("home Atlas note modal works without JavaScript", async ({
+  browser,
+}) => {
   test.setTimeout(60_000);
 
   const context = await browser.newContext({ javaScriptEnabled: false });
@@ -1190,9 +1199,7 @@ test("article pages expose article navigation, headings, and vault context", asy
   const problems = collectConsoleProblems(page);
 
   await page.setViewportSize({ width: 1536, height: 900 });
-  await page.goto(
-    "/thejournal/building_albertoduran/publications/static_generation/",
-  );
+  await page.goto("/thejournal/sin_pluma/architecture/");
 
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(
@@ -1206,16 +1213,14 @@ test("article pages expose article navigation, headings, and vault context", asy
   ).toBeVisible();
   await expect(page.getByText("Vault Explorer").first()).toBeVisible();
 
-  const h2 = page.locator("h2#one-route-for-many-article-shapes");
-  const h3 = page.locator("h3#why-path-generation-stays-boring");
+  const h2 = page.locator("h2#logical-layers");
+  const h3 = page.locator("h3#saving-a-draft-notebook");
 
   await expect(h2).toBeVisible();
   await expect(h3).toBeVisible();
   await expect(h2.locator("[data-anchor-trigger]")).toBeVisible();
   await expect(h3.locator("[data-anchor-trigger]")).toBeVisible();
-  await expect(page.locator("h2#why-path-generation-stays-boring")).toHaveCount(
-    0,
-  );
+  await expect(page.locator("h2#saving-a-draft-notebook")).toHaveCount(0);
 
   expect(problems).toEqual([]);
 });
@@ -1226,9 +1231,7 @@ test("mobile On This Page panel preserves selected heading scroll after close", 
   const problems = collectConsoleProblems(page);
 
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto(
-    "/thejournal/building_albertoduran/publications/static_generation/",
-  );
+  await page.goto("/thejournal/sin_pluma/architecture/");
 
   await page.evaluate(() => window.scrollTo(0, 0));
   const pageScrollBeforeOpen = await page.evaluate(() => window.scrollY);
@@ -1268,8 +1271,8 @@ test("mobile On This Page panel preserves selected heading scroll after close", 
     ),
   ).toBe(true);
 
-  await dialog.getByRole("link", { name: "Heading navigation" }).click();
-  await expect(page).toHaveURL(/#heading-navigation$/);
+  await dialog.getByRole("link", { name: "Deployment and local runtime" }).click();
+  await expect(page).toHaveURL(/#deployment-and-local-runtime$/);
   await expect
     .poll(() => page.evaluate(() => window.scrollY))
     .toBeGreaterThan(pageScrollBeforeOpen + 500);
@@ -1372,11 +1375,13 @@ test("Mermaid diagrams render inline SVG without JavaScript", async ({
 
   // The SVG is inlined into the static HTML, so the diagram is present and
   // its label text is readable/selectable even with JavaScript disabled.
+  // Note: e2e builds run with MERMAID_RENDERER_FIXTURE=true, whose fixture SVGs
+  // render labels as <text> (production Worker SVGs use <foreignObject>).
   const diagramSvg = page
     .locator(".mermaid-diagram-container .mermaid-diagram-image > svg")
     .first();
   await expect(diagramSvg).toBeVisible();
-  await expect(diagramSvg.locator("foreignObject").first()).toBeVisible();
+  await expect(diagramSvg.locator("text").first()).toBeVisible();
 
   await expect(page.locator("html")).toHaveClass(/no-js/);
 

@@ -4,7 +4,7 @@ This document tracks planned features, technical integrations, and quality impro
 
 ## Current Baseline
 
-- Static Astro 6 site with MDX journal content.
+- Static Astro 7 site with MDX journal content.
 - Tailwind CSS 4 and DaisyUI 5 theme system.
 - Light/dark theme persistence is implemented.
 - GitHub Actions quality workflow is in place for pull requests and pushes to `dev` or `master`.

@@ -1,0 +1,77 @@
+---
+title: "What is left in src after extraction"
+description: "The app got smaller when the packages left. A tour of what remains in src, and one publication change traced through the boundaries that stayed."
+tags: ["architecture", "astro", "bloomwright"]
+pubDate: 2026-08-03
+order: 20
+---
+
+Extraction is easiest to understand by looking at the hole it left. When the render engines and the UI kit moved into packages, the app got smaller and its remaining folders got sharper. A few directories that used to be crowded now hold one or two things, and those survivors are the parts that could not be reused because they encode this site specifically. This page tours what is left in `src/` and traces one publication change through it.
+
+---
+
+## The folders that shrank
+
+Three folders tell the extraction story just by their contents. Each used to hold general-purpose machinery and now holds only the app's own pieces.
+
+- `src/integrations/` holds a single integration, the HTML minifier. The DaisyUI, ECharts, and Mermaid integrations that used to live here are gone, replaced by `bloomwright-mdx` and `bloomwright-ui`.
+- `src/runtime/elements/` holds three custom elements, `atlas-schedule`, `on-this-page`, and `video-player-shell`. The overlay, echart, and mermaid shells now ship from `bloomwright-ui/runtime/*`.
+- `src/components/ui/` holds five components, `StripBackground`, `VideoPlayer`, `ThemeToggle`, `AlbertoDuran`, and `SocialTire`. Everything generic became a package component.
+
+What stayed did so for a reason. It is brand, it is app-specific data, or it is a seam the packages deliberately left open.
+
+---
+
+## The two files that hold the seams
+
+Two files in `src/` matter more than their size suggests, because they are the plugs for the packages' sockets. The `bloomwright/seams` page covers them from the package side. From the app side, they are simply the code that survived the deletion of the old integrations.
+
+`src/mermaid/render-pipeline.ts` is the injected render backend. It turns diagram text into themed SVG through the Worker, the public fallback, and a placeholder, and it exists because rendering to a specific service is site-specific. `src/content/processors/publishable.ts` is the app's content selection. It decides which sources are publishable, rendering all non-journal documents and only published journal entries, and it exists because the publish rule is this site's policy.
+
+Both used to live inside the local integrations. When those were deleted, these were pulled out to survive, which is the clearest sign the extraction found the right boundary.
+
+---
+
+## Where everything lives now
+
+The rest of `src/` keeps its plain shape, one class of work per folder.
+
+```text
+src/
+├─ assets/        # local images and fonts
+├─ components/    # app components by feature area
+├─ content/       # manifest + content processors (publishable.ts)
+├─ data/          # site, profile, icon, and manifest data
+├─ integrations/  # HTML minifier only
+├─ layouts/       # shared Astro document shells
+├─ mermaid/       # render-pipeline.ts (the injected backend)
+├─ pages/         # file-based routes
+├─ runtime/       # elements/ + managers/ (theme_manager)
+├─ styles/        # ordered CSS partials
+└─ thejournal/    # publication source
+```
+
+`src/pages/` owns routes. `src/thejournal/` owns publication source. `src/content/` owns processing. What used to be a fourth pillar, `src/integrations/` owning build-time behavior, is now mostly a package concern, with the app keeping only the minifier and the two seam files.
+
+---
+
+## One change, traced through the boundaries
+
+The layering earns its keep when something changes, because a change enters through one boundary and the others hold still. Trace a new journal article.
+
+```mermaid
+flowchart LR
+    F["📄 new .mdx"] --> S["✅ schema validates"]
+    S --> M["🗂️ manifest: publish, order, read time"]
+    M --> P["🛣️ getStaticPaths"]
+    P --> R["🧩 route renders MDX"]
+
+    classDef a fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
+    classDef b fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+    class F a
+    class S,M,P,R b
+```
+
+The file enters the content tree. The schema in `src/content.config.ts` validates its frontmatter. The manifest in `src/content/processors/` decides whether and where it publishes and computes its read time. `getStaticPaths()` turns it into a route, and the catch-all page renders it into the article shell. No component moves, no package changes, and no diagram renders unless the article carries one.
+
+That is the payoff of keeping the boundaries visible. A wrong publication order is a manifest question, a missing route is a static-paths question, and a broken component is a package question. The `authoring/` section follows this same path in full detail, one boundary per page.

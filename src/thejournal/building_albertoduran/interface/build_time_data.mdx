@@ -1,0 +1,67 @@
+---
+title: "Live data at build time"
+description: "Consuming an unstable third-party source during the build, validating it like any other content, and letting the browser finish the one job the build cannot."
+tags: ["astro", "content", "runtime"]
+pubDate: 2026-08-03
+order: 45
+---
+
+There is a tension every static site eventually meets. You want fresh data from somewhere you do not control, and you want a build that is reproducible and a page that never breaks in front of a reader. This is the story of one small widget that resolves that tension cleanly. It pulls a football club's standing and next fixture from a source that was never meant to be an API, validates it like any other content, degrades without throwing, and hands the browser exactly one job it alone can do.
+
+---
+
+## External data through a content collection
+
+The widget shows a single club's league standing, record, points, and next fixture with its venue and kickoff time. What makes it worth writing about is not the data but where it enters. It comes in through an Astro content collection, the same mechanism that validates MDX frontmatter, rather than an ad-hoc fetch in a component.
+
+The collection defines a custom loader function instead of a file glob, paired with a Zod schema that names every field the widget needs, the standing, the record, the points, the two teams, the raw date, and the venue. The consequence is the interesting part. A remote HTTP source is validated by the same machinery that validates an article's frontmatter, at the same moment in the build. If the source changes shape, the schema rejects it and the build fails, rather than a broken panel rendering to a reader.
+
+---
+
+## Two sources, two ways in
+
+The data comes from two places, and only one of them is a real API. The next fixture comes from a public JSON endpoint, a team schedule feed keyed to the club's id with a fixture flag. That part is clean.
+
+The standing is not so lucky, because there is no JSON endpoint for it. So the loader fetches the league standings page, the human-facing HTML, and recovers the data the page embedded for its own client. It looks for the assignment where the page stores its application state, `window['__espnfitt__']=`, and parses the object that follows.
+
+```js
+const marker = "window['__espnfitt__']=";
+// find the marker, then JSON.parse the object literal after it
+```
+
+That is scraping, and the page should say so plainly. It is fragile, and a redesign of that source page would break it. What makes it acceptable is timing. It runs at build time, so a source change breaks a build the author sees, never a page a reader sees. Scraping a page you do not control is a bad idea at request time and a defensible one at build time, and the difference is who encounters the failure.
+
+---
+
+## Degradation is designed, not incidental
+
+Because one source is fragile, the loader treats failure as a normal path rather than an exception. Several guards keep a bad fetch from becoming a bad build.
+
+- A fetch timeout of ten seconds, so a slow source cannot hang the build indefinitely.
+- A zero-record check that distinguishes a season that has not started from a fetch that returned nothing, because those are different situations that would otherwise look the same.
+- A missing-fixture path, for when there is no next match to show.
+- A failed-fetch path that logs and falls back rather than throwing.
+
+Nothing propagates an error upward. The loader's job is to return usable data or a clean absence, never to crash the build over a third-party hiccup. That posture is what lets a fragile source sit inside a reproducible build without making the build fragile too.
+
+---
+
+## The one job the browser owns
+
+There is exactly one thing the build cannot know, and it is the reader's timezone. A kickoff time is meaningless without one, and the build has no way to guess where a reader is. So the build does not try. It renders the kickoff time as a raw ISO value in a `data-raw` attribute alongside a readable default, and leaves the localization to the browser.
+
+A small custom element finishes the job. It reads the raw value, reformats it with the reader's own timezone through `Intl.DateTimeFormat().resolvedOptions().timeZone`, and appends the zone name so the reader sees a local, labeled time. If parsing ever fails, it returns the original string untouched rather than showing nothing.
+
+```js
+const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+```
+
+This is the cleanest small example on the whole site of the static-baseline-plus-enhancement rule. The build produces a correct, readable time that works with no JavaScript, and the browser improves it into a local one. The baseline never depends on the enhancement, which is why a reader with scripting disabled still gets a sensible time rather than a blank.
+
+---
+
+## The flag that resolves the tension
+
+External data and reproducible builds are usually in tension, and one flag resolves it here. Setting `ALBERTODURAN_TEST_MODE=true` swaps the live fetch for a frozen fixture baked into the loader, so the deterministic build and the entire test suite never touch the external source at all.
+
+That is the piece that makes the whole design safe to depend on. The production build fetches live data, and the test build and the reproducible build use the fixture, so a flaky source can never turn a passing test suite red or make one build differ from another. Fresh data when you want it, frozen data when you need determinism, chosen by a single environment variable. The tension the widget started with is real, and this is the switch that lets a site have both sides of it.

@@ -1,97 +1,95 @@
 ---
 title: "Building albertoduran.com"
-description: "A personal site built after a layoff grew into an Astro portfolio and publishing platform with an inspectable static-first system."
+description: "How albertoduran.com is built as a static-first Astro platform that compiles MDX, diagrams, and charts into inspectable files."
 image: "../../assets/thejournal/stock/01.avif"
-tags: ["astro", "architecture", "mdx", "cloudflare"]
-pubDate: 2026-06-17
-updatePubDate: 2026-06-19
+tags: ["astro", "architecture", "bloomwright", "cloudflare"]
+pubDate: 2026-08-03
 order: 10
 ---
 
-I started albertoduran.com after I was laid off. Applying for work kept exposing the same limitation: a résumé could summarize my experience, but it could not show much of how I approach a problem, and an interview rarely left enough time to explain the projects properly. I wanted a place where people could meet me through the work itself.
-
-The first version was simply a personal site. It grew into a portfolio, a collection of project case studies, and a place for writing about technology, work, and anything else I want to explore. That growth created a new engineering problem: articles, diagrams, charts, navigation, and profile pages all had to remain readable without turning every visit into a client-rendered application. This vault follows the decisions, compromises, and unfinished work behind the system that emerged.
+I started albertoduran.com after I was laid off. Applying for work kept exposing the same limitation. A résumé could summarize my experience, but it could not show much of how I approach a problem, and an interview rarely left enough time to explain the projects properly. I wanted a place where people could meet me through the work itself.
 
 ---
 
-## The reader experience
+## One site became four repositories
 
-The public result is a portfolio and long-form journal. Articles have vault navigation, previous and next links, anchored headings, highlighted code, themed Mermaid diagrams, static ECharts figures, responsive images, and optional browser interaction. The same system publishes this case study, which gives the documentation a useful constraint. Its claims can be checked against the page delivering them.
+The first version was a personal site. It grew into a portfolio, a set of project case studies, and a place for writing about technology and work. That growth created an engineering problem. Articles, diagrams, charts, navigation, and profile pages all had to stay readable without turning every visit into a client-rendered application.
 
-The journal does more than describe projects. It lets an experienced developer inspect implementation boundaries, gives a newer developer enough context to learn unfamiliar terms, and shows a hiring team how I reason about ownership, tradeoffs, failure modes, and verification. Those readers do not need the same route through the material.
-
----
-
-## Why the site starts with static output
-
-Astro compiles the site to files. MDX becomes HTML, the content manifest turns folders into publication policy, Mermaid fences become themed SVG, ECharts options become static figures, and images become responsive assets. Cloudflare Workers Static Assets receives the resulting `dist` directory.
+The interesting part is what happened next. The pieces that solved that problem were project-shaped but generically useful, so a second project would have meant copy-paste. I pulled them out into their own packages. The site is now four repositories instead of one, and three of them hold most of the engineering worth reading about.
 
 ```mermaid
 flowchart LR
-    Source[MDX, components, and data] --> Policy[Schema and publication manifest]
-    Policy --> Build[Astro and build integrations]
-    Build --> Files[Static HTML and assets]
-    Files --> Host[Workers Static Assets]
-    Host --> Browser[Optional interaction]
+    App["🌐 albertoduran<br/>the site"] --> MDX["📝 bloomwright-mdx<br/>fence extraction"]
+    App --> UI["🧱 bloomwright-ui<br/>render core + UI kit"]
+    MDX --> UI
+    App -. "HTTP, build time only" .-> Worker["⚙️ mermaid worker<br/>browser rendering"]
+
+    classDef app fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
+    classDef pkg fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+    classDef ext fill:#FFE4B5,stroke:#333,stroke-width:2px,color:black
+    class App app
+    class MDX,UI pkg
+    class Worker ext
 ```
 
-Static output is an organizing constraint, not a performance result by itself. It removes request-time page assembly and gives every route a readable baseline before JavaScript runs. The repository has no recorded Lighthouse or Web Vitals baseline, and the deterministic build enforces a 500 KiB raw per-file JavaScript budget while reporting broader asset totals. Those facts belong beside the design choice.
+The dependency arrows only point one way. The site depends on both packages, `bloomwright-mdx` depends on `bloomwright-ui`, and nothing points back toward the site. That rule is the whole reason the extraction holds together, and the `bloomwright/` section explains what each repository is allowed to know about the others. The fourth repository is different in kind. It is a Cloudflare Worker that renders diagrams in a real browser, and the site talks to it over HTTP only at build time.
 
 ---
 
-## One publication request
+## The site is built ahead of time
 
-A journal page begins as an `.mdx` file under `src/thejournal/`. The content collection validates supported frontmatter. The manifest filters drafts, checks vault invariants, inherits images, calculates read time, orders entries, and assigns navigation. `getStaticPaths()` gives the catch-all route a finite list of pages, then the route renders MDX into the article shell.
+Astro compiles the whole site to files before anyone visits. MDX becomes HTML, folders become publication policy, Mermaid fences become themed SVG, ECharts options become static figures, and images become responsive assets. Cloudflare serves the finished `dist` directory, and nothing assembles a page at request time.
 
-That path exposes a useful ownership rule. The schema decides what an entry may contain. The manifest decides whether and where it publishes. The route assembles prepared context. Components and CSS present it. Runtime modules may improve interaction, but they do not decide what the article is.
-
-Two metadata gaps show why tracing the whole path matters. The vault previously carried an unsupported `author` field, so this rewrite removes it. `updatePubDate` enters the schema and manifest but never reaches the article header. The standard description meta tag also receives the page title instead of the article description, although Open Graph receives the right value.
+Static output is an organizing constraint more than a performance boast. It removes request-time assembly and gives every route a readable baseline before a single line of JavaScript runs. The repository records no Lighthouse or Web Vitals numbers, and the build enforces a raw per-file JavaScript budget, so the honest claim is that the site is built to be fast rather than measured fast. Naming that plainly matters more than a tidy story.
 
 ---
 
-## Where the browser is allowed to help
+## Content becomes a publication
 
-The browser knows facts the build cannot know, including the reader's theme preference, viewport, current scroll position, focus location, and local timezone. Small runtime modules own those concerns. They preserve theme across Astro swaps, track the active heading, control overlays, expand finished Mermaid SVGs, hydrate selected charts, and localize the Atlas match time.
+Every article starts as an `.mdx` file in a folder, and a small pipeline decides its fate from there. A schema says what the file may contain, a manifest decides whether and where it publishes and works out its read time, static path generation turns it into a route, and the route renders it into the article shell. Folders become an ordered table of contents, and drafts stay invisible until they are ready.
 
-The readable content remains in static HTML. A diagram arrives as SVG before its popover shell connects. A chart has a static figure before optional hydration. The Atlas widget has a Mexico City time before its inline custom element localizes it. This boundary keeps failures local and gives no-JavaScript tests something meaningful to verify.
-
----
-
-## Eight ownership boundaries
-
-The vault mirrors the repository rather than grouping articles by fashionable topics.
-
-| Section         | Decision it explains                                                                       |
-| --------------- | ------------------------------------------------------------------------------------------ |
-| `foundations/`  | Repository ownership, workspace repeatability, and the static deployment contract.         |
-| `publications/` | The path from MDX candidate to policy, route, and rendered article.                        |
-| `mermaid/`      | Remote rendering, caching, SVG transforms, theming, and generated diagram assets.          |
-| `echarts/`      | The boundary between quantitative charts, static SVG, and optional hydration.              |
-| `performance/`  | Build work, artifact weight, navigation behavior, images, fonts, and missing measurements. |
-| `runtime/`      | Browser-only state, focus, scroll, local time, and progressive enhancement.                |
-| `design/`       | Semantic tokens, CSS ordering, icons, editorial components, and motion.                    |
-| `quality/`      | Evidence matched to content rules, transforms, builds, and Chromium behavior.              |
-
-The sections meet through explicit contracts. That has a practical payoff during maintenance. A wrong publication order points to the manifest, while a missing route points to static path generation. A malformed SVG points to the transform layer, and a broken popover points to the runtime shell. The codebase still has leaks, but the intended ownership is visible.
+That pipeline holds one clean rule in place. The schema owns content, the manifest owns policy, the route assembles the pieces, and components and CSS present them. Nothing downstream gets to redefine what an article is. The page you are reading went through that exact pipeline, which keeps the writing honest, because every claim can be checked against the page delivering it.
 
 ---
 
-## Verified facts and honest limits
+## Nothing renders in the reader's browser
 
-This vault was audited against the repository on 2026-06-20. `npm run check` passed across 130 files. Vitest passed 97 tests in 14 files. The deterministic build produced 75 pages, 73 Mermaid asset pairs, and two ECharts SVG assets. Playwright is configured for Chromium only.
+Open the network tab on any article and there is no diagram library and no charting bundle. Both are gone before the page ships. A Mermaid flowchart arrives as a themed SVG file, an ECharts figure arrives as a static SVG, and the reader's browser draws neither. The work of turning source into pixels happens during the build, so a slow phone loads a picture instead of running a layout engine.
 
-The same audit found boundaries the writing must respect. The external Mermaid Worker's source and telemetry are absent, so its internals remain unverified. Cloudflare caching, compression, DNS, certificates, and global delivery are platform capabilities until deployed configuration and response headers are captured. The browser suite checks selected accessibility behaviors but runs no Axe ruleset and documents no screen-reader audit.
+Keeping the reader's browser out of that work is a deliberate constraint, and it shapes the whole rendering path, from how a chart is hashed and cached to how a diagram survives a render outage. The `rendering/` section follows all of it.
 
-The content itself needed repair. More than half the previous pages claimed the same eight-minute read, 29 descriptions began with "How," and 23 entries ended with the same lesson heading. The rewrite keeps useful implementation evidence but stops treating repeated length and structure as quality signals.
+---
+
+## The browser adds the finishing touches
+
+A few things only the browser can know. The reader's theme, viewport, scroll position, focus, and local timezone are facts the build never has, and small scripts own exactly those. They hold the theme across navigations, track the heading being read, open overlays, expand a finished diagram, wake a chart, and localize a match time.
+
+Everything a reader actually needs is already in the static HTML. A diagram is an SVG before its expander connects, a chart is a figure before it hydrates, and an article is complete before any script loads. So a failed enhancement dims one small feature and never breaks the page, which is also what gives the no-JavaScript tests something real to check.
+
+---
+
+## The five sections
+
+The vault follows the shape of the system rather than the `src/` folder tree. Five sections trace how the site is built, from the platform underneath to the interface a reader sees.
+
+| Section         | Decision it explains                                                                    |
+| --------------- | --------------------------------------------------------------------------------------- |
+| `platform/`     | The four repositories, what stays in `src/`, the workspace, and the deployment target.  |
+| `authoring/`    | The path from an MDX candidate to policy, route, and rendered article, fences included. |
+| `bloomwright/`  | The two extracted packages, why they exist, and how this site consumes them.            |
+| `rendering/`    | Build-time Mermaid and ECharts, the render Worker, caching, transforms, and fallbacks.  |
+| `interface/`    | The visual system, theming, progressive enhancement, and reading navigation.            |
+
+The sections meet through clear contracts, which pays off in maintenance. A wrong publication order points at the manifest, a missing route at path generation, a malformed diagram at the transform layer, and a broken overlay at a runtime script. The code still has leaks, but the intended ownership stays visible.
 
 ---
 
 ## Choose a route through the case study
 
-Experienced developers can begin with `publications/manifest_rules`, `mermaid/pipeline`, or `quality/testing_strategy`. Those pages contain the densest local decisions and show where framework behavior ends and project policy begins.
+Experienced developers can start with `authoring/fences`, `rendering/render_service`, or `bloomwright/seams`. Those pages hold the densest decisions and show where framework behavior ends and project policy begins.
 
-Developers newer to Astro should start with `foundations/project_architecture`, then read `publications/index` and `runtime/index`. Each section introduces the relevant term before following it into code, so prior knowledge of content collections, static generation, or custom elements is helpful but not required.
+Developers newer to Astro should start with `platform/index`, then `authoring/index` and `interface/index`. Each section introduces its terms before following them into code, so prior knowledge of content collections or static generation helps but is not required.
 
-Hiring teams can read the three section indexes for foundations, performance, and quality. Together they show scope, deployment judgment, known performance debt, test strategy, and the limits of current evidence. The Mermaid renderer boundary is a useful fourth stop because it shows how I document a dependency I cannot fully verify from this repository.
+Hiring teams can read `platform/index` and `bloomwright/index` together for the scope and judgment behind the build, with the render Worker as a useful third stop for how I document a dependency that runs outside this repository.
 
-Whichever route you take, the contributor boundary stays the same. Preserve readable static output, keep policy out of page assembly, label operational claims, and add evidence at the layer where a failure can occur. That is the engineering argument this site can defend today.
+Whichever route you take, the contributor rule is the same. Keep the static output readable, keep policy out of page assembly, label operational claims, and add proof at the layer where a failure can happen. That is the engineering argument this site can defend today.

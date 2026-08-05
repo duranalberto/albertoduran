@@ -18,10 +18,10 @@ Astro is configured with `output: "static"` in `astro.config.mjs`. Runtime brows
 
 | Area              | Current implementation                                         |
 | :---------------- | :------------------------------------------------------------- |
-| Framework         | Astro `^6.4.4`                                                 |
+| Framework         | Astro `^7.1.3`                                                 |
 | Content           | Astro content collections and MDX                              |
-| Styling           | Tailwind CSS `^4.3.0` and DaisyUI `^5.5.20`                    |
-| Diagrams          | Custom Mermaid integration that emits themed static SVG assets |
+| Styling           | Tailwind CSS `^4.3.3` and DaisyUI `^5.7.0` (via bloomwright-ui) |
+| Diagrams & charts | `bloomwright-mdx` fence extraction driving the `bloomwright-ui` render core (themed static SVG) |
 | HTML output       | Custom HTML minifier integration                               |
 | Tests             | Astro Check, Vitest, and Playwright                            |
 | Deployment config | Cloudflare Workers Assets via `wrangler.json`                  |
@@ -36,12 +36,13 @@ Client-side scripts are loaded only where they improve the experience:
 
 - `src/runtime/managers/theme_manager.ts` keeps light/dark theme state synchronized.
 - `src/runtime/elements/on-this-page.ts` enhances article heading navigation.
-- `src/runtime/elements/mermaid-diagram-shell.ts` handles Mermaid diagram expansion and theme-specific assets.
+- `bloomwright-ui/runtime/mermaid-diagram-shell` handles Mermaid diagram expansion and theme-specific assets (imported in `BaseLayout.astro`).
 - `src/runtime/elements/atlas-schedule.ts` enhances Atlas schedule display.
 
-Mermaid rendering has release-specific cache and CSS cascade requirements. See
-`docs/components/MERMAID_RENDERING.md` before changing the Mermaid integration, Mermaid
-theme output, diagram shell runtime, or diagram styles.
+Mermaid rendering has release-specific cache and CSS cascade requirements. The render engine now
+lives in `bloomwright-ui`; the app owns only the injected render backend at
+`src/mermaid/render-pipeline.ts`. See `docs/components/MERMAID_RENDERING.md` before changing the
+render pipeline, theme output, diagram shell runtime, or diagram styles.
 
 ### View Transitions
 
@@ -58,9 +59,9 @@ instructions unless the article intentionally teaches that workflow to a public
 audience. Follow `docs/content/THEJOURNAL_PUBLICATION_GUIDE.md` before publishing or
 restructuring any entry under `src/thejournal/`.
 
-Published journal entries should display as at least 8 minutes and less than 16
-minutes of reading time. The manifest computes this from prose words and code
-fence lines, so authors should target a displayed read time of 8 to 15 minutes.
+The manifest computes a displayed read time from prose words and code fence lines
+(`ceil(proseWords / 200 + codeLines / 40)`). There is no fixed minute band. Write dense,
+non-padded prose at the length the material supports, and let the read time follow the content.
 
 The manifest builder in `src/content/processors/thejournal-manifest.ts` maps raw collection entries into:
 
@@ -85,7 +86,7 @@ albertoduran/
 │  ├─ components/           # Astro components by feature area
 │  ├─ content/              # Journal processors and manifest logic
 │  ├─ data/                 # Site, profile, icon, and manifest data
-│  ├─ integrations/         # Mermaid and HTML minifier integrations
+│  ├─ integrations/         # HTML minifier only (Mermaid/ECharts/DaisyUI extracted to bloomwright-*)
 │  ├─ layouts/              # Shared Astro layouts
 │  ├─ pages/                # File-based route entry points
 │  ├─ runtime/              # Browser-side progressive enhancements

@@ -1,0 +1,53 @@
+---
+title: "Moving through an article"
+description: "The app-owned reading experience: heading tracking with sticky offsets and page edges, the vault explorer tree, and previous-next pagination."
+tags: ["runtime", "astro", "architecture"]
+pubDate: 2026-08-03
+order: 50
+---
+
+Reading a long article is a navigation problem the build cannot solve. The build knows the headings, but it does not know where the reader is, how tall the sticky header is, or whether they have scrolled to the very top or bottom. Those are browser facts, and the app owns a small set of runtime pieces that turn them into a reading experience. This page covers how the on-this-page tracker follows a reader, and how the vault explorer and pagination place an article inside its larger sequence.
+
+---
+
+## Headings become a live outline
+
+The route hands the on-this-page element a list of headings, filtered to depth two and three, and the element turns that list into an outline that tracks the reader. As the reader scrolls, the active heading updates to match where they are, so the outline always shows their position rather than a static table of contents.
+
+The tracking uses an `IntersectionObserver` rather than a scroll listener, which is both cheaper and more accurate. The observer watches the headings and reports when they cross a line near the top of the viewport, and the element marks the corresponding outline entry active. This is browser work by nature, because the position it reflects only exists in the browser.
+
+---
+
+## The sticky header changes the math
+
+A naive active-heading tracker gets one thing wrong, and it is the sticky header. If the header floats over the top of the content, a heading is visually hidden behind it well before it reaches the top of the viewport, so the outline highlights the wrong entry. The element corrects for this by offsetting its observation line by the header's height.
+
+```js
+{ rootMargin: `-${offset}px 0px 0px 0px`, threshold: 0 }
+```
+
+That offset moves the trigger line down to where the content actually becomes visible below the header. The element caches the header height so it is not measured on every frame, and it recomputes the active heading against that adjusted line. The result is that the highlighted entry matches what the reader can actually see, not what is technically at the top of the page.
+
+---
+
+## The edges are special cases
+
+The top and bottom of an article need their own handling, because a reader at the very top expects the first heading active and a reader at the very bottom expects the last one, regardless of what the observer reports. The element checks for both edges explicitly, treating a scroll position within a few pixels of the top or the bottom as a definite state.
+
+Those edge checks matter more than they sound. Without the top check, the first heading might not activate until the reader scrolls past it. Without the bottom check, the last heading might never activate because it never reaches the trigger line on a short final section. Handling the edges is what makes the outline feel correct at the two positions a reader notices most.
+
+---
+
+## Placing an article in its vault
+
+Two more pieces place an article inside its larger structure. The vault explorer renders the vault as a tree, so a reader can see every publication in the vault and where the current one sits. It is powered by the manifest's vault context, the same structure the `authoring/manifest_policy` page describes, and it renders through the `bloomwright-ui` list component.
+
+Pagination handles the linear path. The manifest computed a previous and next entry for every publication, and the article foot renders them as links, so a reader can move forward and back through a vault in order. On a narrow screen both of these collapse into the overlay dock the routing page described, so the same navigation is available whether there is room for sidebars or not.
+
+---
+
+## Cleaning up across navigations
+
+One detail keeps all of this working on a site with view transitions. Because a navigation swaps content without a full reload, a runtime element has to tear itself down and rebuild for the incoming page, or it would observe stale headings from the previous article. The elements handle that lifecycle, disconnecting their observers and reconnecting against the new content on each swap.
+
+That cleanup is invisible when it works and obvious when it does not, because a stale observer would highlight headings that no longer exist. It is the same class of concern the theme manager handles across swaps, and it is why the reading experience stays correct as a reader moves from one article to the next without the page ever fully reloading.

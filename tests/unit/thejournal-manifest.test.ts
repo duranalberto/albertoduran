@@ -219,6 +219,35 @@ describe("thejournal manifest builder", () => {
     expect(entries["vault/section/deep"]?.next).toBe("vault/late");
   });
 
+  it("inherits the root github repository for children without their own", () => {
+    const [entries] = buildJournalManifest([
+      entry("vault", "vault/index.mdx", { image, github: "albertoduran" }),
+      entry("vault/early", "vault/early.mdx"),
+      entry("vault/section", "vault/section/index.mdx"),
+      entry("vault/section/deep", "vault/section/deep.mdx", {
+        github: "own-repo",
+      }),
+    ]);
+
+    // Vault root keeps its own repository.
+    expect(entries["vault"]?.github).toBe("albertoduran");
+    // Children without a github inherit the root's, including section indexes.
+    expect(entries["vault/early"]?.github).toBe("albertoduran");
+    expect(entries["vault/section"]?.github).toBe("albertoduran");
+    // A child that declares its own github is left untouched.
+    expect(entries["vault/section/deep"]?.github).toBe("own-repo");
+  });
+
+  it("leaves children without github when the root has none", () => {
+    const [entries] = buildJournalManifest([
+      entry("vault", "vault/index.mdx", { image }),
+      entry("vault/early", "vault/early.mdx"),
+    ]);
+
+    expect(entries["vault"]?.github).toBeUndefined();
+    expect(entries["vault/early"]?.github).toBeUndefined();
+  });
+
   it("resolves entries and vault context from generated journal paths", () => {
     const [entries, vaults] = buildJournalManifest([
       entry("vault", "vault/index.mdx", { image }),

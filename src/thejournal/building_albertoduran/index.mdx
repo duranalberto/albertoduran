@@ -2,6 +2,7 @@
 title: "Building albertoduran.com"
 description: "How albertoduran.com is built as a static-first Astro platform that compiles MDX, diagrams, and charts into inspectable files."
 image: "../../assets/thejournal/stock/01.avif"
+github: "albertoduran"
 tags: ["astro", "architecture", "bloomwright", "cloudflare"]
 pubDate: 2026-08-03
 order: 10
@@ -72,13 +73,13 @@ Everything a reader actually needs is already in the static HTML. A diagram is a
 
 The vault follows the shape of the system rather than the `src/` folder tree. Five sections trace how the site is built, from the platform underneath to the interface a reader sees.
 
-| Section         | Decision it explains                                                                    |
-| --------------- | --------------------------------------------------------------------------------------- |
-| `platform/`     | The four repositories, what stays in `src/`, the workspace, and the deployment target.  |
-| `authoring/`    | The path from an MDX candidate to policy, route, and rendered article, fences included. |
-| `bloomwright/`  | The two extracted packages, why they exist, and how this site consumes them.            |
-| `rendering/`    | Build-time Mermaid and ECharts, the render Worker, caching, transforms, and fallbacks.  |
-| `interface/`    | The visual system, theming, progressive enhancement, and reading navigation.            |
+| Section        | Decision it explains                                                                    |
+| -------------- | --------------------------------------------------------------------------------------- |
+| `platform/`    | The four repositories, what stays in `src/`, the workspace, and the deployment target.  |
+| `authoring/`   | The path from an MDX candidate to policy, route, and rendered article, fences included. |
+| `bloomwright/` | The two extracted packages, why they exist, and how this site consumes them.            |
+| `rendering/`   | Build-time Mermaid and ECharts, the render Worker, caching, transforms, and fallbacks.  |
+| `interface/`   | The visual system, theming, progressive enhancement, and reading navigation.            |
 
 The sections meet through clear contracts, which pays off in maintenance. A wrong publication order points at the manifest, a missing route at path generation, a malformed diagram at the transform layer, and a broken overlay at a runtime script. The code still has leaks, but the intended ownership stays visible.
 

@@ -245,10 +245,17 @@ export function buildJournalManifest(
             `must declare an image in their frontmatter.`,
         );
       }
-    } else if (isVaultChild && !entry.image) {
+    } else if (isVaultChild) {
       const vault = vaultsManifest[entry.vaultId];
-      if (vault?.index?.image) {
+
+      // Vault children inherit the root index's image and GitHub repository
+      // unless they declare their own, so the whole vault shares one repo link.
+      if (!entry.image && vault?.index?.image) {
         entry.image = vault.index.image;
+      }
+
+      if (!entry.github && vault?.index?.github) {
+        entry.github = vault.index.github;
       }
     }
   }

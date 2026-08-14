@@ -474,9 +474,17 @@ test("project showcase renders its hero actions, body, and grouped vault", async
     name: "See how albertoduran.com works in The Journal",
   });
 
-  await expect(
-    page.getByRole("link", { name: /source code on GitHub/ }),
-  ).toHaveCount(0);
+  const sourceLink = page.getByRole("link", {
+    name: "View the albertoduran.com source code on GitHub",
+  });
+  await expect(sourceLink).toHaveAttribute(
+    "href",
+    "https://github.com/duranalberto/albertoduran",
+  );
+  await expect(sourceLink).toHaveAttribute("target", "_blank");
+  await expect(sourceLink).toHaveAttribute("rel", "noopener noreferrer");
+  await expect(sourceLink).toHaveClass(/btn-outline/);
+  await expect(sourceLink).toHaveClass(/btn-md/);
   await expect(page.getByRole("link", { name: /Visit the live/ })).toHaveCount(
     0,
   );

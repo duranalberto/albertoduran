@@ -8,6 +8,8 @@ const smokeRoutes = [
   "/projects/equity-valuation-engine/",
   "/projects/mlscraper/",
   "/projects/sin-pluma/",
+  "/projects/serverless-vod/",
+  "/projects/ravnary/",
   "/thejournal/",
   "/thejournal/ai_ops_agent/",
   "/thejournal/mlscraper/first_price_watch/",
@@ -23,6 +25,8 @@ const responsiveRoutes = [
   "/projects/equity-valuation-engine/",
   "/projects/mlscraper/",
   "/projects/sin-pluma/",
+  "/projects/serverless-vod/",
+  "/projects/ravnary/",
   "/thejournal/mlscraper/first_price_watch/",
   "/thejournal/building_albertoduran/rendering/chart_gallery/",
   "/thejournal/sin_pluma/innodb_cluster/",
@@ -268,7 +272,7 @@ test("top-level heroes keep eyebrow and heading geometry aligned", async ({
   }
 });
 
-test("projects index presents six compact showcases and ordered navigation", async ({
+test("projects index presents eight compact showcases and ordered navigation", async ({
   page,
 }) => {
   const problems = collectConsoleProblems(page);
@@ -298,6 +302,8 @@ test("projects index presents six compact showcases and ordered navigation", asy
   ).toHaveAttribute("aria-current", "page");
 
   const expectedProjects = [
+    ["Ravnary", "/projects/ravnary/"],
+    ["Serverless VOD and StreamVault", "/projects/serverless-vod/"],
     ["Pressroom", "/projects/pressroom/"],
     ["Equilyze", "/projects/equilyze/"],
     ["MLScraper", "/projects/mlscraper/"],
@@ -307,7 +313,7 @@ test("projects index presents six compact showcases and ordered navigation", asy
   ] as const;
 
   const showcases = page.locator("[data-project-showcase]");
-  await expect(showcases).toHaveCount(6);
+  await expect(showcases).toHaveCount(8);
 
   for (const [title, href] of expectedProjects) {
     const showcase = page.getByRole("link", {
@@ -369,11 +375,13 @@ test("projects index presents six compact showcases and ordered navigation", asy
 });
 
 for (const route of ["/", "/profile/"] as const) {
-  test(`${route} presents six accessible project cards in a responsive grid`, async ({
+  test(`${route} presents eight accessible project cards in a responsive grid`, async ({
     page,
   }) => {
     const problems = collectConsoleProblems(page);
     const expectedProjects = [
+      ["Ravnary", "/projects/ravnary/"],
+    ["Serverless VOD and StreamVault", "/projects/serverless-vod/"],
       ["Pressroom", "/projects/pressroom/"],
       ["Equilyze", "/projects/equilyze/"],
       ["MLScraper", "/projects/mlscraper/"],
@@ -387,7 +395,7 @@ for (const route of ["/", "/profile/"] as const) {
 
     const grid = page.locator("[data-project-grid]");
     const cards = grid.locator("[data-project-card]");
-    await expect(cards).toHaveCount(6);
+    await expect(cards).toHaveCount(8);
     await expect(
       page.getByRole("link", { name: "View all projects" }),
     ).toHaveCount(0);
@@ -430,7 +438,7 @@ for (const route of ["/", "/profile/"] as const) {
         return { left: rect.left, top: rect.top };
       }),
     );
-    expect(new Set(mobileBoxes.map(({ top }) => Math.round(top))).size).toBe(6);
+    expect(new Set(mobileBoxes.map(({ top }) => Math.round(top))).size).toBe(8);
     expect(new Set(mobileBoxes.map(({ left }) => Math.round(left))).size).toBe(
       1,
     );
@@ -985,6 +993,57 @@ test("journal article sidebars wait until the content column can stay readable",
   expect(mainAt1536!.width).toBeGreaterThan(640);
 });
 
+test("Serverless VOD and StreamVault showcases two projects with one public repository", async ({
+  page,
+}) => {
+  const problems = collectConsoleProblems(page);
+  const title = "Serverless VOD and StreamVault";
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/projects/serverless-vod/");
+
+  await expect(page).toHaveTitle(title);
+  await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+  await expect(page.locator('dl[aria-label="Project facts"] dd')).toHaveCount(4);
+
+  const sourceLink = page.getByRole("link", {
+    name: `View the ${title} source code on GitHub`,
+  });
+  await expect(sourceLink).toHaveAttribute(
+    "href",
+    "https://github.com/duranalberto/stream-vault",
+  );
+  await expect(sourceLink).toHaveAttribute("rel", "noopener noreferrer");
+
+  const liveLink = page.getByRole("link", { name: `Visit the live ${title} site` });
+  await expect(liveLink).toHaveAttribute(
+    "href",
+    "https://duranalberto.github.io/stream-vault/",
+  );
+  await expect(liveLink).toHaveAttribute("target", "_blank");
+
+  await expect(
+    page.getByRole("link", { name: `See how ${title} works in The Journal` }),
+  ).toHaveCount(0);
+
+  await expect(page.locator("video").first()).toBeAttached();
+  await expect(page.locator(".mermaid-diagram-container").first()).toBeVisible();
+
+  const deepDives = page.locator("#go-deeper");
+  await expect(
+    deepDives.locator('a[href="/thejournal/aws_serverless_vod/"]'),
+  ).toBeVisible();
+  await expect(
+    deepDives.locator('a[href="/thejournal/aws_serverless_vod_manager/"]'),
+  ).toBeVisible();
+  await expect(page.locator("#project-vault")).toHaveCount(0);
+  await expect(page.locator('a[href*="aws-serverless-vod"]')).toHaveCount(0);
+
+  await expectNoPageHorizontalOverflow(page);
+  expect(problems).toEqual([]);
+});
+
 test("journal catalog links to generated article routes", async ({ page }) => {
   const problems = collectConsoleProblems(page);
 
@@ -1013,6 +1072,10 @@ test("journal catalog links to generated article routes", async ({ page }) => {
   await expect(
     page.locator('a[href="/thejournal/building_albertoduran/"]').first(),
   ).toBeVisible();
+  await expect(
+    page.locator('a[href="/thejournal/aws_serverless_vod_manager/"] > .card'),
+  ).toBeVisible();
+  await expect(page.locator('a[href^="/projects/"] > .card')).toHaveCount(0);
 
   await page.setViewportSize({ width: 1536, height: 900 });
   await page.goto("/thejournal/");

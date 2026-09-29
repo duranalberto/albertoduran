@@ -32,18 +32,18 @@ This is why the vault's top-level folder name is load-bearing. A helper resolves
 
 A project landing page is assembled from a small set of components on a shared layout. `ProjectLayout` provides the shell, `ProjectHero` opens it, `ProjectVaultSection` lists the vault's publications, and `ProjectJournalCTA` invites the reader into the case study. The catalog of all projects renders through `ProjectsCatalog` and `ProjectCard` on the projects index.
 
-`ProjectVaultSection` is the interesting one, because it is where a portfolio surface meets a journal vault. It renders the vault's entries through the `bloomwright-ui` list and section-header components, the same components an article uses, so the project page shows a live view of the vault built from the same manifest data. The six project landing pages under `src/pages/projects/` each follow this pattern, and `docs/content/PROJECT_PAGE_GUIDE.md` is the contract they hold to.
+`ProjectVaultSection` is the interesting one, because it is where a portfolio surface meets a journal vault. It renders the vault's entries through the `bloomwright-ui` list and section-header components, the same components an article uses, so the project page shows a live view of the vault built from the same manifest data. The eight project landing pages under `src/pages/projects/` share this shell, the vault-backed ones add this section, and `docs/content/PROJECT_PAGE_GUIDE.md` is the contract they hold to.
 
 ---
 
-## Six projects, one catalog
+## Eight projects, one catalog
 
-The projects are defined once, in a typed catalog, and everything else reads from it. The catalog currently holds six entries, each a summary with a title, a description, and a landing route.
+The projects are defined once, in a typed catalog, and everything else reads from it. The catalog currently holds eight entries, each a summary with a title, a description, and a landing route.
 
 ```mermaid
 flowchart TD
-    Cat["📇 projectCatalog (6)"] --> Grid["🗂️ ProjectsCatalog + ProjectCard"]
-    Cat --> Land["🚪 six landing pages"]
+    Cat["📇 projectCatalog (8)"] --> Grid["🗂️ ProjectsCatalog + ProjectCard"]
+    Cat --> Land["🚪 eight landing pages"]
     Land --> Vault["📚 ProjectVaultSection → journal vault"]
 
     classDef a fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue

@@ -2,7 +2,8 @@
 import type { ProjectPageConfig } from "@appTypes/project";
 import ProjectHero from "@components/projects/ProjectHero.astro";
 import ProjectVaultSection from "@components/projects/ProjectVaultSection.astro";
-import { entryManifest, vaultsManifest } from "@content/processors/thejournal";
+import { defineJournalLinks } from "@content/define_journal_links";
+import { vaultsManifest } from "@content/processors/thejournal";
 import BaseLayout from "@layouts/BaseLayout.astro";
 import FlexShell from "@layouts/FlexShell.astro";
 
@@ -19,29 +20,23 @@ if (project.facts && project.facts.length > 4) {
 }
 
 const journalId = project.links?.journalId;
-const journalEntry = journalId ? entryManifest[journalId] : undefined;
+const heroLink = journalId
+  ? (
+      await defineJournalLinks(
+        { hero: journalId },
+        { owner: `"${project.title}"` },
+      )
+    ).hero
+  : undefined;
 
-if (journalId && !journalEntry) {
+if (heroLink?.vaultId && heroLink.id !== heroLink.vaultId) {
   throw new Error(
-    `[projects] "${project.title}" references missing Journal entry "${journalId}". Use an existing standalone publication or vault root ID.`,
+    `[projects] "${project.title}" references Journal child entry "${heroLink.id}". Project pages may reference only standalone publications or vault roots.`,
   );
 }
 
-if (
-  journalEntry?.vaultId &&
-  journalEntry.id !== journalEntry.vaultId
-) {
-  throw new Error(
-    `[projects] "${project.title}" references Journal child entry "${journalEntry.id}". Project pages may reference only standalone publications or vault roots.`,
-  );
-}
-
-const journalHref = journalEntry
-  ? `/thejournal/${journalEntry.id}/`
-  : undefined;
-const vault = journalEntry?.vaultId
-  ? vaultsManifest[journalEntry.vaultId]
-  : undefined;
+const journalHref = heroLink?.href;
+const vault = heroLink?.vaultId ? vaultsManifest[heroLink.vaultId] : undefined;
 
 const siteManifest = {
   label: project.title,

@@ -1,0 +1,687 @@
+---
+import type { ProjectPageConfig } from "@appTypes/project";
+import streamvaultHome from "@assets/thejournal/pub/streamvault_home.png";
+import streamvaultVideo from "@assets/thejournal/pub/streamvault_video.png";
+import vodCatalog from "@assets/thejournal/pub/vod_catalog.png";
+import vodLogin from "@assets/thejournal/pub/vod_login.png";
+import vodStart from "@assets/thejournal/pub/vod_recording_start_mediaconvert_job.png";
+import coverImage from "@assets/thejournal/stock/17.jpg";
+import VideoPlayer from "@components/ui/mdx/VideoPlayer.astro";
+import { defineJournalLinks } from "@content/define_journal_links";
+import ProjectLayout from "@layouts/ProjectLayout.astro";
+import Callout from "bloomwright-ui/components/display/Callout.astro";
+import MockupBrowser from "bloomwright-ui/components/display/MockupBrowser.astro";
+import SectionHeader from "bloomwright-ui/components/display/SectionHeader.astro";
+import Steps, { type StepItem } from "bloomwright-ui/components/display/Steps.astro";
+import MermaidDiagram from "bloomwright-ui/components/render/MermaidDiagram.astro";
+import { defineMermaidDiagram } from "bloomwright-ui/mermaid";
+import { Picture } from "astro:assets";
+
+const repositoryUrl = "https://github.com/duranalberto/stream-vault";
+const liveUrl = "https://duranalberto.github.io/stream-vault/";
+const featuredVideoId = "2026-07-12-16-22-18";
+
+const project: ProjectPageConfig = {
+  title: "Serverless VOD and StreamVault",
+  eyebrow: "Serverless Video · AWS · Public Player",
+  description:
+    "My gameplay goes from a Switch capture to a shareable HLS stream through a serverless AWS pipeline, a private manager page, and a public site on GitHub Pages.",
+  image: coverImage,
+  imageAlt:
+    "Nintendo Switch Joy-Con, Xbox and PlayStation controllers, and headphones on a dark desk",
+  facts: [
+    { label: "Pipeline", value: "S3 · MediaConvert · Lambda" },
+    { label: "Control", value: "Cognito · API Gateway" },
+    { label: "Edge", value: "CloudFront" },
+    { label: "Player", value: "React · hls.js · Pages" },
+  ],
+  links: {
+    githubUrl: repositoryUrl,
+    liveUrl,
+  },
+};
+
+const journal = await defineJournalLinks(
+  {
+    partOne: "aws_serverless_vod",
+    partTwo: "aws_serverless_vod_manager",
+    cognito: {
+      id: "aws_serverless_vod_manager",
+      anchor: "authentication-with-cognito-and-a-jwt-authorizer",
+    },
+    managerApi: {
+      id: "aws_serverless_vod_manager",
+      anchor: "one-lambda-five-routes",
+    },
+    smallestRole: {
+      id: "aws_serverless_vod_manager",
+      anchor: "the-new-role-is-the-smallest-one",
+    },
+    corsIncident: {
+      id: "aws_serverless_vod_manager",
+      anchor: "cors-broke-twice",
+    },
+  },
+  { owner: "Serverless VOD and StreamVault" },
+);
+
+const projects = [
+  {
+    eyebrow: "Project one · Private",
+    title: "Serverless VOD workflow",
+    description:
+      "The AWS side ingests private recordings, transcodes them to adaptive HLS, publishes a catalog, and gives me a login-protected page to run it all.",
+    badges: ["S3", "Lambda", "MediaConvert", "EventBridge", "CloudFront", "Cognito", "API Gateway"],
+  },
+  {
+    eyebrow: "Project two · Open source",
+    title: "StreamVault",
+    description:
+      "The viewer side is a static React site on GitHub Pages. It reads the published catalog and plays each video straight from CloudFront.",
+    badges: ["React 19", "TypeScript", "Chakra UI", "Video.js", "hls.js", "GitHub Pages"],
+  },
+];
+
+const journeySteps: StepItem[] = [
+  { label: "Capture on Switch", marker: "1", color: "success" },
+  { label: "Upload to S3", marker: "2", color: "success" },
+  { label: "Start from the manager", marker: "3", color: "success" },
+  { label: "Transcode to HLS", marker: "4", color: "success" },
+  { label: "Verify and publish", marker: "5", color: "success" },
+  { label: "Watch on StreamVault", marker: "6", color: "success" },
+];
+
+const controlPlaneCards = [
+  {
+    title: "The token is checked before any Lambda runs",
+    description:
+      "A Cognito app client with no secret and no self-registration signs the operator in, and the HTTP API's JWT authorizer rejects bad tokens at the door.",
+    href: journal.cognito.href,
+  },
+  {
+    title: "One Lambda, five routes, no new powers",
+    description:
+      "ManagerApi hands starting and cleaning up videos to the functions that already existed, so every validation rule still lives in one place.",
+    href: journal.managerApi.href,
+  },
+  {
+    title: "The smallest role in the account",
+    description:
+      "It lists recordings, reads and writes one catalog object, and invokes two functions. It has no MediaConvert, PassRole, or delete permission.",
+    href: journal.smallestRole.href,
+  },
+];
+
+const publications = [
+  {
+    eyebrow: "Part one · The pipeline",
+    focus: "S3, MediaConvert, EventBridge, CloudFront, and the IAM behind them.",
+    link: journal.partOne,
+  },
+  {
+    eyebrow: "Part two · The manager and the player",
+    focus: "Cognito, API Gateway, ManagerApi, two rounds of CORS, and StreamVault.",
+    link: journal.partTwo,
+  },
+];
+
+const architectureDiagram = defineMermaidDiagram(String.raw`
+flowchart TB
+    Operator["🧑‍💻 Operator"]
+    Viewer["👤 Viewer"]
+
+    subgraph Admin["Admin plane, local only"]
+        Manager["🖥️ Manager SPA"]
+    end
+
+    subgraph Control["Control plane"]
+        Cognito["🔐 Cognito user pool"]
+        Api["🚪 HTTP API with JWT authorizer"]
+        MgrFn["⚙️ ManagerApi"]
+    end
+
+    subgraph Core["Processing core"]
+        Input[("📥 S3 recordings")]
+        Start["⚙️ StartVideo"]
+        Convert["🎞️ MediaConvert"]
+        Events["📨 EventBridge"]
+        Finalize["✅ FinalizeVideo with CORS gate"]
+        Output[("📦 S3 HLS output")]
+    end
+
+    Catalog[("📄 catalog.json")]
+
+    subgraph Edge["Playback edge"]
+        CF["🌐 CloudFront with CORS function"]
+    end
+
+    subgraph Public["Public client"]
+        Vault["📺 StreamVault on GitHub Pages"]
+    end
+
+    Operator --> Manager
+    Manager -->|sign in| Cognito
+    Manager -->|Bearer token| Api
+    Api --> MgrFn
+    MgrFn -->|list| Input
+    MgrFn -->|start job| Start
+    MgrFn -->|edit metadata| Catalog
+    Start --> Convert
+    Input --> Convert
+    Convert --> Output
+    Convert --> Events
+    Events --> Finalize
+    Finalize -->|publish| Catalog
+    CF --> Output
+    CF --> Catalog
+    Viewer --> Vault
+    Vault -->|catalog and HLS| CF
+
+    classDef person fill:#FFE4B5,stroke:#333,stroke-width:2px,color:#000
+    classDef security fill:#E6E6FA,stroke:#333,stroke-width:2px,color:#1E3A8A
+    classDef compute fill:#90EE90,stroke:#333,stroke-width:2px,color:#064E3B
+    classDef storage fill:#87CEEB,stroke:#333,stroke-width:2px,color:#0F172A
+    classDef edge fill:#FFD700,stroke:#333,stroke-width:2px,color:#000
+    classDef contract fill:#FFB6C1,stroke:#C2185B,stroke-width:3px,color:#000
+
+    class Operator,Viewer person
+    class Cognito,Api security
+    class Manager,MgrFn,Start,Convert,Events,Finalize compute
+    class Input,Output storage
+    class CF,Vault edge
+    class Catalog contract
+`);
+
+const controlPlaneDiagram = defineMermaidDiagram(String.raw`
+sequenceDiagram
+    participant SPA as 🖥️ Manager SPA
+    participant Cognito as 🔐 Cognito
+    participant API as 🚪 HTTP API
+    participant Fn as ⚙️ ManagerApi
+
+    SPA->>Cognito: Sign in with email and password
+    Cognito-->>SPA: Access token
+    SPA->>API: POST /videos/start with Bearer token
+    alt Token valid for issuer and audience
+        API->>Fn: Invoke
+        Fn->>Fn: Invoke StartVideo
+        Fn-->>SPA: 202 job submitted
+    else Token missing or expired
+        API-->>SPA: 401 Unauthorized
+        Note over API,Fn: ManagerApi never runs
+    end
+`);
+
+const pipelineDiagram = defineMermaidDiagram(String.raw`
+stateDiagram-v2
+    [*] --> Submitted: StartVideo creates the job
+    Submitted --> Transcoding
+    Transcoding --> Complete: COMPLETE event
+    Transcoding --> Failed: ERROR event
+    Complete --> ManifestCheck
+    ManifestCheck --> CorsGate: master.m3u8 exists
+    ManifestCheck --> Rejected: manifest missing
+    CorsGate --> Published: browser can read every file
+    CorsGate --> Rejected: header or status wrong
+    Published --> [*]: catalog.json updated
+    Rejected --> [*]: logged, catalog untouched
+    Failed --> [*]: logged, catalog untouched
+
+    classDef working fill:#87CEEB,stroke:#333,stroke-width:2px,color:#0F172A
+    classDef check fill:#E6E6FA,stroke:#333,stroke-width:2px,color:#1E3A8A
+    classDef success fill:#90EE90,stroke:#333,stroke-width:2px,color:#064E3B
+    classDef failure fill:#FFB6C1,stroke:#C2185B,stroke-width:2px,color:#000
+
+    class Submitted,Transcoding working
+    class Complete,ManifestCheck,CorsGate check
+    class Published success
+    class Rejected,Failed failure
+`);
+
+const corsDiagram = defineMermaidDiagram(String.raw`
+sequenceDiagram
+    participant Probe as 🔧 curl or health check
+    participant Browser as 🌐 Browser on github.io
+    participant CF as ☁️ CloudFront
+    participant S3 as 📦 Private S3
+
+    Probe->>CF: GET segment, no Origin header
+    CF->>S3: Cache miss
+    S3-->>CF: 200 without CORS headers
+    Note over CF: Stored by path only
+    Browser->>CF: GET same segment, Origin github.io
+    CF-->>Browser: Cache hit, still no CORS headers
+    Browser->>Browser: Blocks the read, playback fails
+`);
+
+const imageProps = {
+  formats: ["avif", "webp"] as ("avif" | "webp")[],
+  quality: 80,
+  loading: "lazy" as const,
+  decoding: "async" as const,
+  class: "block h-auto w-full select-none",
+  draggable: false,
+};
+
+const linkClass =
+  "inline-flex font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary";
+---
+
+<ProjectLayout project={project}>
+  <section id="overview" class="w-full" aria-labelledby="overview-title">
+    <SectionHeader id="overview-title" title="From a console capture to a shareable link" />
+
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12">
+      <div class="flex flex-col gap-5 lg:col-span-7">
+        <p class="text-xl leading-relaxed text-base-content md:text-2xl">
+          I wanted to share my Switch matches without handing them to a video
+          platform, so I built a small video service of my own. Private
+          recordings go in, adaptive HLS streams come out, and a public site
+          plays them.
+        </p>
+        <p class="max-w-3xl text-base leading-relaxed text-base-content/70 md:text-lg">
+          The product spans two codebases. A serverless AWS workflow does the
+          processing and has its own login-protected manager page. A static
+          React site handles playback. Nothing runs while nobody is uploading or
+          watching.
+        </p>
+      </div>
+
+      <Callout
+        variant="information"
+        title="One public repository"
+        class="my-0 self-start lg:col-span-5"
+      >
+        <p>
+          The repository and live site linked above are StreamVault, the viewer
+          side. The AWS pipeline and the manager page are private, and the two
+          Journal articles at the end of this page explain how they work.
+        </p>
+      </Callout>
+    </div>
+
+    <div class="mt-10 flex flex-col gap-4">
+      <VideoPlayer
+        src={`https://d2mcml34hdlt3o.cloudfront.net/videos/${featuredVideoId}/master.m3u8`}
+        title="Splatoon 3 - Splatfest Turf War - 12 July 2026"
+      />
+      <p class="max-w-4xl leading-relaxed text-base-content/70">
+        This match was recorded on a Switch, transcoded by MediaConvert,
+        published by the pipeline, and is streamed from CloudFront, the same path
+        every video on StreamVault takes.{" "}
+        <a
+          href={`${liveUrl}video/${featuredVideoId}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="font-bold text-primary underline-offset-4 hover:underline"
+        >
+          Watch it on StreamVault &rarr;
+        </a>
+      </p>
+    </div>
+  </section>
+
+  <section id="two-projects" class="w-full" aria-labelledby="two-projects-title">
+    <SectionHeader id="two-projects-title" title="Two projects, one product" />
+
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+      {
+        projects.map((item) => (
+          <div class="rounded-box border border-base-300 bg-base-100 p-7 shadow-sm">
+            <p class="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-primary">
+              {item.eyebrow}
+            </p>
+            <h3 class="mb-4 font-display text-2xl font-semibold text-base-content">
+              {item.title}
+            </h3>
+            <p class="mb-5 leading-relaxed text-base-content/70 md:text-lg">
+              {item.description}
+            </p>
+            <ul class="flex flex-wrap gap-2" aria-label={`${item.title} technologies`}>
+              {item.badges.map((badge) => (
+                <li class="badge badge-outline badge-primary">{badge}</li>
+              ))}
+            </ul>
+          </div>
+        ))
+      }
+    </div>
+
+    <Callout variant="note" title="One file holds them together" class="mt-8">
+      <p>
+        <code>catalog/catalog.json</code> on CloudFront is the only contract. The
+        pipeline writes it, the manager edits four of its fields, and StreamVault
+        validates every entry before showing it. The projects share no code, so
+        either side can change on its own schedule.
+      </p>
+    </Callout>
+  </section>
+
+  <section id="journey" class="w-full" aria-labelledby="journey-title">
+    <SectionHeader id="journey-title" title="A recording's path to a viewer" />
+    <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
+      Every video follows the same six steps, and only the first three involve me.
+    </p>
+    <Steps
+      items={journeySteps}
+      aria-label="Path of a recording from capture to playback"
+      class="mb-10 w-full"
+    />
+
+    <div class="grid grid-cols-1 gap-8 md:grid-cols-2">
+      <div>
+        <h3 class="mb-4 font-display text-2xl font-semibold text-base-content">
+          Nothing waits on the transcode
+        </h3>
+        <p class="text-lg leading-relaxed text-base-content/70">
+          The Lambda submits a MediaConvert job and exits. EventBridge reports
+          when the job finishes, so no function sits idle while a long recording
+          is processed.
+        </p>
+      </div>
+      <div>
+        <h3 class="mb-4 font-display text-2xl font-semibold text-base-content">
+          Publishing is earned
+        </h3>
+        <p class="text-lg leading-relaxed text-base-content/70">
+          A video enters the catalog only after its master playlist exists and a
+          browser-style CORS check passes on its playlists and segments.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section id="architecture" class="w-full" aria-labelledby="architecture-title">
+    <SectionHeader id="architecture-title" title="Five boundaries around one catalog" />
+    <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
+      The system splits into a local admin plane, a control plane in AWS, the
+      processing core, a playback edge, and a public client. Everything added
+      after the first version sits at the edges of the core, and all of it
+      meets at the catalog file.
+    </p>
+    <MermaidDiagram code={architectureDiagram} />
+  </section>
+
+  <section id="manager" class="w-full" aria-labelledby="manager-title">
+    <SectionHeader id="manager-title" title="A private door for the operator" />
+    <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
+      The first version ran on <code>aws lambda invoke</code> and hand-written
+      JSON. The manager page puts the same actions behind a login, validates
+      input, and asks for the video ID typed out before it deletes anything.
+    </p>
+
+    <div class="grid grid-cols-1 gap-8 xl:grid-cols-2">
+      <MockupBrowser url="localhost:5173" aria-label="Manager sign-in page preview">
+        <Picture
+          src={vodLogin}
+          alt="Manager sign-in form with username and password fields and no sign-up option"
+          widths={[640, 960, 1252]}
+          sizes="(max-width: 1279px) 100vw, 50vw"
+          {...imageProps}
+        />
+        <span slot="caption">
+          Sign-in only. Accounts are created by an administrator.
+        </span>
+      </MockupBrowser>
+
+      <MockupBrowser url="localhost:5173" aria-label="Manager catalog editor preview">
+        <Picture
+          src={vodCatalog}
+          alt="Catalog list of gameplay videos with playback URLs beside a metadata editor with Save and Remove buttons"
+          widths={[640, 960, 1254]}
+          sizes="(max-width: 1279px) 100vw, 50vw"
+          {...imageProps}
+        />
+        <span slot="caption">
+          Edit titles, dates, and tags, copy playback URLs, or remove a video.
+        </span>
+      </MockupBrowser>
+
+      <MockupBrowser
+        url="localhost:5173"
+        class="xl:col-span-2"
+        aria-label="Manager start video preview"
+      >
+        <Picture
+          src={vodStart}
+          alt="Recordings list from the input bucket with one file selected and the Start Video form filled in"
+          widths={[640, 960, 1254]}
+          sizes="100vw"
+          {...imageProps}
+        />
+        <span slot="caption">
+          Pick a recording from S3, describe it, and start a MediaConvert job.
+        </span>
+      </MockupBrowser>
+    </div>
+
+    <p class="mt-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
+      It can't upload files or delete source recordings. That's deliberate, and
+      it keeps the page's permissions smaller than the command line it replaced.
+    </p>
+  </section>
+
+  <section id="control-plane" class="w-full" aria-labelledby="control-plane-title">
+    <SectionHeader
+      id="control-plane-title"
+      title="Every request is checked before code runs"
+    />
+    <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
+      The browser calls the API directly, so the API is public at the network
+      level. Cognito and API Gateway decide who gets in before any Lambda starts.
+    </p>
+    <MermaidDiagram code={controlPlaneDiagram} />
+
+    <div class="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-3">
+      {
+        controlPlaneCards.map((card) => (
+          <a
+            href={card.href}
+            class="group rounded-box border border-base-300 bg-base-100 p-6 text-base-content shadow-sm transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          >
+            <h3 class="mb-3 font-display text-xl font-semibold transition-colors group-hover:text-primary">
+              {card.title}
+            </h3>
+            <p class="mb-5 leading-relaxed text-base-content/70">{card.description}</p>
+            <span class="text-sm font-bold text-primary">
+              Read the implementation detail &rarr;
+            </span>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+
+  <section id="pipeline" class="w-full" aria-labelledby="pipeline-title">
+    <SectionHeader id="pipeline-title" title="Asynchronous from upload to publish" />
+    <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
+      A job moves through a short lifecycle, and only one path ends with a video
+      in the catalog. Failures are logged and leave the catalog untouched.
+    </p>
+    <MermaidDiagram code={pipelineDiagram} />
+
+    <div class="mt-10 grid grid-cols-1 gap-8 md:grid-cols-2">
+      <div>
+        <h3 class="mb-4 font-display text-2xl font-semibold text-base-content">
+          Adaptive HLS from one template
+        </h3>
+        <p class="text-lg leading-relaxed text-base-content/70">
+          The MediaConvert template produces the master playlist, the
+          renditions, and the segments. There is no transcoder code to maintain.
+        </p>
+      </div>
+      <div>
+        <h3 class="mb-4 font-display text-2xl font-semibold text-base-content">
+          Private buckets, public edge
+        </h3>
+        <p class="text-lg leading-relaxed text-base-content/70">
+          Both buckets stay private. CloudFront reads the output bucket through
+          Origin Access Control and is the only public path to a video.
+        </p>
+      </div>
+    </div>
+
+    <a href={journal.partOne.href} class={`mt-8 ${linkClass}`}>
+      See how the pipeline is built &rarr;
+    </a>
+  </section>
+
+  <section id="cors" class="w-full" aria-labelledby="cors-title">
+    <SectionHeader id="cors-title" title="The bug curl couldn't see" />
+
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-start">
+      <div class="flex flex-col gap-6 lg:col-span-7">
+        <p class="text-xl leading-relaxed text-base-content">
+          Some videos played on the public site and others didn't, while every
+          curl test passed. <code>Origin</code> wasn't part of CloudFront's cache
+          key, so whoever requested a file first decided whether the cached copy
+          carried CORS headers.
+        </p>
+        <MermaidDiagram code={corsDiagram} />
+      </div>
+
+      <a
+        href={journal.corsIncident.href}
+        class="group rounded-box bg-primary p-8 text-primary-content shadow-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary lg:col-span-5"
+      >
+        <p class="mb-3 text-xs font-bold uppercase tracking-[0.2em] opacity-70">
+          The fix
+        </p>
+        <h3 class="mb-3 font-display text-2xl font-semibold">
+          Make the header constant, then check it before publishing
+        </h3>
+        <p class="leading-relaxed opacity-80">
+          A CloudFront Function now adds CORS headers to every response, cached
+          or not. The publishing Lambda requests each new video the way a browser
+          would and refuses to list one that a browser couldn't read.
+        </p>
+        <span class="mt-5 block font-bold">Read the incident &rarr;</span>
+      </a>
+    </div>
+  </section>
+
+  <section id="streamvault" class="w-full" aria-labelledby="streamvault-title">
+    <SectionHeader id="streamvault-title" title="The public vault" />
+
+    <MockupBrowser
+      url="duranalberto.github.io/stream-vault/"
+      class="mb-10"
+      aria-label="StreamVault home page preview"
+    >
+      <Picture
+        src={streamvaultHome}
+        alt="StreamVault home page with a welcome panel, game and mode filters, and a grid of six gameplay video cards"
+        widths={[640, 960, 1280, 1476]}
+        sizes="100vw"
+        {...imageProps}
+      />
+      <span slot="caption">
+        The catalog as a grid, filterable by game and by online or offline play.
+      </span>
+    </MockupBrowser>
+
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-center">
+      <div class="flex flex-col gap-5 lg:col-span-4">
+        <p class="leading-relaxed text-base-content/75 md:text-lg">
+          <strong class="text-base-content">Static by design.</strong> React 19,
+          TypeScript, and Chakra UI, with a lazy-loaded player route so Video.js
+          and hls.js only download when someone opens a video.
+        </p>
+        <p class="leading-relaxed text-base-content/75 md:text-lg">
+          <strong class="text-base-content">It doesn't trust the catalog.</strong>
+          A timeout and a strict parser guard every fetch, and a copy bundled at
+          build time kept the grid on screen during the CORS incident.
+        </p>
+        <p class="leading-relaxed text-base-content/75 md:text-lg">
+          <strong class="text-base-content">Hosted on GitHub Pages.</strong> A
+          project base path and a 404 redirect handle deep links, and GitHub
+          Actions deploys every push to main.
+        </p>
+        <div class="flex flex-wrap gap-x-6 gap-y-2">
+          <a href={liveUrl} target="_blank" rel="noopener noreferrer" class={linkClass}>
+            Visit StreamVault &rarr;
+          </a>
+          <a href={repositoryUrl} target="_blank" rel="noopener noreferrer" class={linkClass}>
+            Browse the source &rarr;
+          </a>
+        </div>
+      </div>
+
+      <MockupBrowser
+        url="duranalberto.github.io/stream-vault/video/…"
+        class="lg:col-span-8"
+        aria-label="StreamVault video page preview"
+      >
+        <Picture
+          src={streamvaultVideo}
+          alt="StreamVault video page playing a Splatoon 3 Turf War match with its title, publish date, and duration below"
+          widths={[640, 960, 1280, 1476]}
+          sizes="(max-width: 1023px) 100vw, 66vw"
+          {...imageProps}
+        />
+        <span slot="caption">
+          Each video gets its own route with metadata and a share bar.
+        </span>
+      </MockupBrowser>
+    </div>
+  </section>
+
+  <section id="go-deeper" class="w-full" aria-labelledby="go-deeper-title">
+    <SectionHeader id="go-deeper-title" title="Read the full build" />
+    <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
+      This page is the overview. The two articles cover the private pipeline and
+      manager in detail, including the decisions and the mistakes.
+    </p>
+
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+      {
+        publications.map((publication) => (
+          <a
+            href={publication.link.href}
+            class="group flex flex-col rounded-box border border-base-300 bg-base-100 p-7 text-base-content shadow-sm transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          >
+            <p class="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-primary">
+              {publication.eyebrow}
+            </p>
+            <h3 class="mb-3 font-display text-2xl font-semibold transition-colors group-hover:text-primary">
+              {publication.link.title}
+            </h3>
+            <p class="mb-4 leading-relaxed text-base-content/70">
+              {publication.link.description}
+            </p>
+            <p class="mb-5 grow text-sm leading-relaxed text-base-content/60">
+              {publication.focus}
+            </p>
+            <p class="flex items-center justify-between gap-4 text-sm">
+              <span class="text-base-content/60">
+                {publication.link.readTime} min read
+              </span>
+              <span class="font-bold text-primary">Read the article &rarr;</span>
+            </p>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+
+  <section
+    id="outcome"
+    class="overflow-hidden rounded-box bg-primary p-8 text-primary-content shadow-xl md:p-12 lg:p-16"
+    aria-labelledby="outcome-title"
+  >
+    <p class="mb-4 text-xs font-bold uppercase tracking-[0.2em] opacity-70">
+      The outcome
+    </p>
+    <h2
+      id="outcome-title"
+      class="max-w-4xl font-display text-3xl font-bold leading-tight sm:text-4xl"
+    >
+      A private pipeline and a public player that meet at one JSON file.
+    </h2>
+    <p class="mt-6 max-w-3xl text-lg leading-relaxed opacity-80">
+      Recordings stay private, playback stays public, and nothing runs between
+      uploads. Each side can change on its own schedule as long as the catalog
+      keeps its shape.
+    </p>
+  </section>
+</ProjectLayout>

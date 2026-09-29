@@ -11,8 +11,20 @@ import SectionHeader from "bloomwright-ui/components/display/SectionHeader.astro
 import Steps, { type StepItem } from "bloomwright-ui/components/display/Steps.astro";
 import MermaidDiagram from "bloomwright-ui/components/render/MermaidDiagram.astro";
 import { defineMermaidDiagram } from "bloomwright-ui/mermaid";
+import { defineJournalLinks } from "@content/define_journal_links";
 import ProjectLayout from "@layouts/ProjectLayout.astro";
 import { Picture } from "astro:assets";
+
+const journal = await defineJournalLinks(
+  {
+    flaskService: "flask_service",
+    jwt: "jwt",
+    architecture: "architecture",
+    frontend: "frontend",
+    innodbCluster: "innodb_cluster",
+  },
+  { owner: "Sin Pluma", vault: "sin_pluma" },
+);
 
 const project: ProjectPageConfig = {
   title: "Sin Pluma",
@@ -66,19 +78,19 @@ const platformCapabilities = [
     title: "REST contracts keep the product replaceable",
     description:
       "The Flask API owns business rules and validation without knowing whether React, a mobile client, or another interface made the request.",
-    href: "/thejournal/sin_pluma/flask_service/",
+    href: journal.flaskService.href,
   },
   {
     title: "Authentication supports a real logout",
     description:
       "Short-lived access tokens, refresh tokens, an Axios refresh queue, and Redis-backed revocation combine continuity with server-enforced logout.",
-    href: "/thejournal/sin_pluma/jwt/",
+    href: journal.jwt.href,
   },
   {
     title: "Storage matches the shape of the data",
     description:
       "MySQL owns transactional content, MinIO owns uploaded objects, and Redis owns ephemeral security state instead of forcing one database to do every job.",
-    href: "/thejournal/sin_pluma/architecture/",
+    href: journal.architecture.href,
   },
 ];
 
@@ -292,7 +304,7 @@ flowchart TB
           and Axios manages authenticated communication with the API.
         </p>
         <a
-          href="/thejournal/sin_pluma/frontend/"
+          href={journal.frontend.href}
           class="inline-flex font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
         >
           Explore the frontend engineering &rarr;
@@ -378,7 +390,7 @@ flowchart TB
         </p>
       </div>
       <a
-        href="/thejournal/sin_pluma/innodb_cluster/"
+        href={journal.innodbCluster.href}
         class="group rounded-box bg-primary p-8 text-primary-content shadow-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary lg:col-span-5"
       >
         <p class="mb-3 text-xs font-bold uppercase tracking-[0.2em] opacity-70">

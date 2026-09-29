@@ -92,6 +92,51 @@ Do not replace it with labels such as “Explore the Journal,” “Open vault,�
 “Learn more”; those labels describe the site structure or remain too vague
 rather than telling the reader what they will learn.
 
+## Linking to the Journal
+
+Never type a `/thejournal/...` URL in a project page. Declare every Journal link
+once, near the top of the page frontmatter, with `defineJournalLinks`, and read
+the resolved links in the markup:
+
+```ts
+import { defineJournalLinks } from "@content/define_journal_links";
+
+const journal = await defineJournalLinks(
+  {
+    firstWatch: "first_price_watch",
+    runtime: "runtime_flow",
+    pipelineArticle: "three-projects-one-pipeline",
+    backoff: { id: "fetching_and_backoff", anchor: "retry-budget" },
+  },
+  { owner: "MLScraper", vault: "mlscraper" },
+);
+```
+
+```astro
+<a href={journal.runtime.href}>Follow one scheduled scrape cycle &rarr;</a>
+```
+
+- **Ids.** With `vault`, ids are relative to it (`"runtime_flow"` means
+  `mlscraper/runtime_flow`, and `"mlscraper"` is the vault root). Sections work
+  the same way (`"rendering"` in `building_albertoduran`). A full id or a
+  standalone article id still resolves when it isn't inside the vault.
+- **What a link carries.** `href`, `title`, `description`, `readTime`,
+  `pubDate`, and `updatedDate`, all read from the article's frontmatter. Use
+  them for article facts, and keep curated card copy in the page.
+- **Validation.** A missing or draft entry fails the build and suggests the
+  closest id. An `anchor` must match a heading in the article. A mismatch fails
+  `npm run build` and only warns in `astro dev`, so renaming a heading while
+  writing doesn't break the page.
+- **Journal index.** Link the Journal home with `journalIndexHref`.
+- **Guardrail.** `tests/unit/journal-links.test.ts` fails if any project page
+  contains a literal `/thejournal/` URL.
+
+`links.journalId` goes through the same resolver, so it uses the same
+validation and error format.
+
+Links only go from project pages to the Journal. Journal cards always open the
+publication itself, never a project page.
+
 ## Body composition
 
 The body is intentionally a normal Astro slot. Choose sections that explain the

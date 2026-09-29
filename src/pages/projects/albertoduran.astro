@@ -8,7 +8,24 @@ import EChart from "bloomwright-ui/components/render/EChart.astro";
 import MermaidDiagram from "bloomwright-ui/components/render/MermaidDiagram.astro";
 import { lineChartOption } from "bloomwright-ui/echarts";
 import { defineMermaidDiagram } from "bloomwright-ui/mermaid";
+import { defineJournalLinks, journalIndexHref } from "@content/define_journal_links";
 import ProjectLayout from "@layouts/ProjectLayout.astro";
+
+const journal = await defineJournalLinks(
+  {
+    rendering: "rendering",
+    routing: "authoring/routing",
+    mermaidPipeline: "rendering/mermaid_pipeline",
+    progressiveEnhancement: "interface/progressive_enhancement",
+    delivery: "platform/delivery",
+    contentModel: "authoring/content_model",
+    manifestPolicy: "authoring/manifest_policy",
+    mdxPipeline: "authoring/mdx_pipeline",
+    theming: "interface/theming",
+    readingNavigation: "interface/reading_navigation",
+  },
+  { owner: "albertoduran.com", vault: "building_albertoduran" },
+);
 
 const project: ProjectPageConfig = {
   title: "albertoduran.com",
@@ -49,14 +66,14 @@ const productSurfaces = [
     title: "The decisions that do not fit on a project card",
     description:
       "Standalone articles and structured vaults document architecture, debugging work, tradeoffs, and contributor boundaries.",
-    href: "/thejournal/",
+    href: journalIndexHref,
   },
   {
     label: "Technical media",
     title: "Diagrams and charts stay close to their source",
     description:
       "Mermaid and ECharts produce static SVG during the build, so technical visuals remain part of the article when JavaScript is off.",
-    href: "/thejournal/building_albertoduran/rendering/",
+    href: journal.rendering.href,
   },
 ];
 
@@ -66,28 +83,28 @@ const architectureHighlights = [
     title: "Content becomes routes before deployment",
     description:
       "Collections validate MDX, the manifest applies publication rules, and Astro generates every known article route before deployment.",
-    href: "/thejournal/building_albertoduran/authoring/routing/",
+    href: journal.routing.href,
   },
   {
     marker: "02",
     title: "Visual explanations arrive as static assets",
     description:
       "Mermaid diagrams and ECharts figures render during the build. The browser receives useful SVG before any optional interaction starts.",
-    href: "/thejournal/building_albertoduran/rendering/mermaid_pipeline/",
+    href: journal.mermaidPipeline.href,
   },
   {
     marker: "03",
     title: "Runtime code stays deliberately narrow",
     description:
       "Theme persistence, overlays, and article navigation improve complete HTML instead of becoming prerequisites for reading it.",
-    href: "/thejournal/building_albertoduran/interface/progressive_enhancement/",
+    href: journal.progressiveEnhancement.href,
   },
   {
     marker: "04",
     title: "Production receives finished work",
     description:
       "Workers Static Assets serves the generated file graph. It does not need to understand MDX, vault rules, or page assembly.",
-    href: "/thejournal/building_albertoduran/platform/delivery/",
+    href: journal.delivery.href,
   },
 ];
 
@@ -96,19 +113,19 @@ const publishingCapabilities = [
     title: "Typed content and visible publishing rules",
     description:
       "Schemas and manifest tests catch malformed metadata, draft leaks, missing images, and broken vault structure before routing begins.",
-    href: "/thejournal/building_albertoduran/authoring/content_model/",
+    href: journal.contentModel.href,
   },
   {
     title: "Directory-driven vault navigation",
     description:
       "Folders become ordered reading paths with nested sections, breadcrumbs, responsive navigation, and previous or next links from one model.",
-    href: "/thejournal/building_albertoduran/authoring/manifest_policy/",
+    href: journal.manifestPolicy.href,
   },
   {
     title: "MDX with a controlled component vocabulary",
     description:
       "Articles can use editorial components, diagrams, charts, code, and tables while keeping typography and static output consistent.",
-    href: "/thejournal/building_albertoduran/authoring/mdx_pipeline/",
+    href: journal.mdxPipeline.href,
   },
 ];
 
@@ -117,25 +134,25 @@ const readerExperience = [
     title: "Theme continuity without a flash",
     description:
       "An inline bootstrap applies the initial preference, while a small manager preserves it across Astro route swaps.",
-    href: "/thejournal/building_albertoduran/interface/theming/",
+    href: journal.theming.href,
   },
   {
     title: "Navigation that respects the reading surface",
     description:
       "Vault explorers, heading tracking, pagination, and mobile overlays adapt without making the article depend on client rendering.",
-    href: "/thejournal/building_albertoduran/interface/reading_navigation/",
+    href: journal.readingNavigation.href,
   },
   {
     title: "Images and fonts prepared ahead of time",
     description:
       "Astro prepares responsive image variants and registered fonts during the build, with selected preloads for the first reading surface.",
-    href: "/thejournal/building_albertoduran/platform/delivery/",
+    href: journal.delivery.href,
   },
   {
     title: "Generated output receives a final pass",
     description:
       "Vite bundles assets, the HTML minifier protects code fragments, and the build emits inspectable files for deployment.",
-    href: "/thejournal/building_albertoduran/authoring/mdx_pipeline/",
+    href: journal.mdxPipeline.href,
   },
 ];
 

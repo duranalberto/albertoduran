@@ -6,7 +6,21 @@ import SectionHeader from "bloomwright-ui/components/display/SectionHeader.astro
 import Steps, { type StepItem } from "bloomwright-ui/components/display/Steps.astro";
 import MermaidDiagram from "bloomwright-ui/components/render/MermaidDiagram.astro";
 import { defineMermaidDiagram } from "bloomwright-ui/mermaid";
+import { defineJournalLinks } from "@content/define_journal_links";
 import ProjectLayout from "@layouts/ProjectLayout.astro";
+
+const journal = await defineJournalLinks(
+  {
+    firstPriceWatch: "first_price_watch",
+    jobConfiguration: "job_configuration",
+    runtimeFlow: "runtime_flow",
+    providerBoundaries: "provider_boundaries",
+    fetchingAndBackoff: "fetching_and_backoff",
+    persistenceAndLifecycle: "persistence_and_lifecycle",
+    operationsAndExtension: "operations_and_extension",
+  },
+  { owner: "MLScraper", vault: "mlscraper" },
+);
 
 const project: ProjectPageConfig = {
   title: "MLScraper",
@@ -33,28 +47,28 @@ const readingPath = [
     title: "Follow one watch before opening the internals",
     description:
       "Configure an illustrative Amazon Mexico job, preview its URL, and trace its baseline, later price change, health report, and optional alert.",
-    href: "/thejournal/mlscraper/first_price_watch/",
+    href: journal.firstPriceWatch.href,
   },
   {
     marker: "02",
     title: "See how YAML becomes a store URL",
     description:
       "Learn which fields define a watch, how provider options build a route, and why previewing the result is safer than discovering a mistake inside the scheduler.",
-    href: "/thejournal/mlscraper/job_configuration/",
+    href: journal.jobConfiguration.href,
   },
   {
     marker: "03",
     title: "Follow one scheduled scrape cycle",
     description:
       "See how FastAPI starts the service, provider loops share concurrency, motor failures stay isolated, and health describes the work running in the background.",
-    href: "/thejournal/mlscraper/runtime_flow/",
+    href: journal.runtimeFlow.href,
   },
   {
     marker: "04",
     title: "Keep store parsing inside adapters",
     description:
       "Compare the four page formats and the small product record that lets shared lifecycle code work without importing store-specific selectors.",
-    href: "/thejournal/mlscraper/provider_boundaries/",
+    href: journal.providerBoundaries.href,
   },
 ];
 
@@ -225,7 +239,7 @@ flowchart LR
           stop before reconciliation.
         </p>
         <a
-          href="/thejournal/mlscraper/fetching_and_backoff/"
+          href={journal.fetchingAndBackoff.href}
           class="mt-6 inline-flex font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
         >
           Follow the fetch and backoff paths &rarr;
@@ -273,7 +287,7 @@ flowchart LR
     </div>
 
     <a
-      href="/thejournal/mlscraper/persistence_and_lifecycle/"
+      href={journal.persistenceAndLifecycle.href}
       class="mt-6 inline-flex font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
     >
       See how streams preserve product history &rarr;
@@ -310,7 +324,7 @@ flowchart LR
     </div>
 
     <a
-      href="/thejournal/mlscraper/operations_and_extension/"
+      href={journal.operationsAndExtension.href}
       class="inline-flex font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
     >
       Operate and extend the service &rarr;

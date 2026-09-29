@@ -1,0 +1,694 @@
+---
+import type { ProjectPageConfig } from "@appTypes/project";
+import ravnaryCard from "@assets/thejournal/pub/ravnary_card.png";
+import ravnaryCardMobile from "@assets/thejournal/pub/ravnary_card_mobile.png";
+import ravnaryCategories from "@assets/thejournal/pub/ravnary_categories.png";
+import ravnaryCommunity from "@assets/thejournal/pub/ravnary_community.png";
+import ravnaryHome from "@assets/thejournal/pub/ravnary_home.png";
+import ravnaryPath from "@assets/thejournal/pub/ravnary_path.png";
+import ravnaryQuiz from "@assets/thejournal/pub/ravnary_quiz_explanation.png";
+import ravnaryTopic from "@assets/thejournal/pub/ravnary_topic.png";
+import coverImage from "@assets/thejournal/stock/18.jpg";
+import ProjectLayout from "@layouts/ProjectLayout.astro";
+import Callout from "bloomwright-ui/components/display/Callout.astro";
+import MockupBrowser from "bloomwright-ui/components/display/MockupBrowser.astro";
+import MockupPhone from "bloomwright-ui/components/display/MockupPhone.astro";
+import SectionHeader from "bloomwright-ui/components/display/SectionHeader.astro";
+import Steps, { type StepItem } from "bloomwright-ui/components/display/Steps.astro";
+import MermaidDiagram from "bloomwright-ui/components/render/MermaidDiagram.astro";
+import { defineMermaidDiagram } from "bloomwright-ui/mermaid";
+import { Picture } from "astro:assets";
+
+const liveUrl = "https://ravnary.com/";
+
+const project: ProjectPageConfig = {
+  title: "Ravnary",
+  eyebrow: "Micro-learning · Next.js · AWS",
+  description:
+    "An open library of short, checked cards with quizzes graded on the server, a review queue that lives in your browser, and community figures that never name a reader.",
+  image: coverImage,
+  imageAlt: "Two black ravens perched on a pale rock, in black and white",
+  facts: [
+    { label: "App", value: "Next.js 15 · React 19" },
+    { label: "Data", value: "DynamoDB · 2 tables" },
+    { label: "Hosting", value: "Amplify Hosting" },
+    { label: "Infra", value: "AWS CDK · IAM" },
+  ],
+  links: {
+    liveUrl,
+  },
+};
+
+const loopSteps: StepItem[] = [
+  { label: "Learn a concept", marker: "1", color: "success" },
+  { label: "See an example or a gotcha", marker: "2", color: "success" },
+  { label: "Answer a quiz", marker: "3", color: "success" },
+  { label: "Read the explanation", marker: "4", color: "success" },
+  { label: "Continue or review", marker: "5", color: "success" },
+];
+
+const architectureCards = [
+  {
+    title: "Prerendered by default",
+    description:
+      "Every content route is static. The build reads DynamoDB, so a content import asks Amplify to rebuild the site through an incoming webhook. Amplify Hosting doesn't support on-demand revalidation.",
+  },
+  {
+    title: "The quiz is the one exception",
+    description:
+      "It draws a new seed and reshuffles its questions on every request. Prerendering it would freeze one question order for good, which would change the product.",
+  },
+  {
+    title: "Two tables that never join",
+    description:
+      "Content is immutable between imports and has point-in-time recovery. Events are append-only, expire after 90 days, and have no backups, so the two live in separate tables.",
+  },
+];
+
+const privacyCards = [
+  {
+    title: "Fields come from an allowlist",
+    description:
+      "The event schema is a strict object, so email, IP address, user agent, and a client-sent correct flag are refused simply because the schema doesn't define them. The server stamps the id and the time.",
+  },
+  {
+    title: "The threshold applies at write time",
+    description:
+      "Below 20 distinct sessions, aggregation produces no row at all. The raw figure never exists anywhere a later reader could find it, and a session is only a browser tab.",
+  },
+  {
+    title: "IAM draws the same line",
+    description:
+      "The web role can only append to raw event partitions and can only read published ones. Even a bug in the site couldn't read another reader's events back.",
+  },
+];
+
+const architectureDiagram = defineMermaidDiagram(String.raw`
+flowchart TB
+    Reader["👤 Reader"] --> Hosting["☁️ Amplify Hosting and CloudFront"]
+    Hosting --> Pages["📄 Prerendered pages<br/>every content route"]
+    Hosting --> SSR["⚙️ SSR compute<br/>quiz route · server actions · /api/events"]
+
+    Pages -. built from .-> Content[("🗄️ ravnary-content<br/>published generation")]
+    SSR -->|GetItem and Query| Content
+    SSR -->|append raw events only| Analytics[("📊 ravnary-analytics<br/>raw events expire in 90 days")]
+    SSR -->|read published aggregates only| Analytics
+
+    Import["🧰 content:import CLI"] -->|new generation| Content
+    Import -->|rebuild webhook| Hosting
+    Aggregate["🧮 Aggregation"] --> Analytics
+
+    CDK["🏗️ AWS CDK"] -.-> Content
+    CDK -.-> Analytics
+    CDK -.-> IAM["🔐 IAM roles<br/>leading-key conditions"]
+
+    classDef person fill:#FFE4B5,stroke:#333,stroke-width:2px,color:#000
+    classDef edge fill:#FFD700,stroke:#333,stroke-width:2px,color:#000
+    classDef compute fill:#90EE90,stroke:#333,stroke-width:2px,color:#064E3B
+    classDef storage fill:#87CEEB,stroke:#333,stroke-width:2px,color:#0F172A
+    classDef ops fill:#E6E6FA,stroke:#333,stroke-width:2px,color:#1E3A8A
+
+    class Reader person
+    class Hosting edge
+    class Pages,SSR compute
+    class Content,Analytics storage
+    class Import,Aggregate,CDK,IAM ops
+`);
+
+const contentModelDiagram = defineMermaidDiagram(String.raw`
+flowchart LR
+    Subject["📚 Subject"] --> Section["🔖 Section<br/>an anchor, not a page"]
+    Subject --> Topic["🧩 Topic"]
+    Section -. optional .-> Topic
+    Topic --> Cards["🃏 Cards<br/>8 types in a fixed order"]
+    Topic --> Questions["❓ Questions<br/>7 types"]
+    Path["🧭 Path<br/>editorial order"] -. names .-> Subject
+    Path -. names .-> Topic
+    Cards -- tags --> Taxonomy["🕸️ Category graph<br/>a node may have many parents"]
+    Cards <-. prerequisite · related · next .-> Cards
+
+    classDef owns fill:#87CEEB,stroke:#333,stroke-width:2px,color:#0F172A
+    classDef leaf fill:#90EE90,stroke:#333,stroke-width:2px,color:#064E3B
+    classDef cross fill:#FFD700,stroke:#333,stroke-width:2px,color:#000
+
+    class Subject,Section,Topic owns
+    class Cards,Questions leaf
+    class Path,Taxonomy cross
+`);
+
+const publishingDiagram = defineMermaidDiagram(String.raw`
+sequenceDiagram
+    autonumber
+    participant Author as ✍️ Author
+    participant Import as 🧰 content:import
+    participant Table as 🗄️ ravnary-content
+    participant Amplify as ☁️ Amplify
+
+    Author->>Import: JSON document
+    Import->>Import: Validate with Zod, reject before any write
+    Import->>Table: Read every canonical record, strongly consistent
+    Import->>Import: Merge and build the whole read model in memory
+    Import->>Table: Atomic ADD reserves generation n+1
+    Import->>Table: Write canonical records, then generation n+1
+    Import->>Table: Flip the pointer to n+1 only if it still says n
+    alt Another import won the race
+        Table-->>Import: Condition failed, exit 1
+        Note over Table: Readers stay on generation n
+    else Pointer flipped
+        Import->>Amplify: POST rebuild webhook
+        Amplify->>Table: Build prerenders every page from n+1
+    end
+`);
+
+const quizDiagram = defineMermaidDiagram(String.raw`
+sequenceDiagram
+    autonumber
+    participant Browser as 🌐 Browser
+    participant Server as ⚙️ Quiz route
+    participant Content as 🗄️ ravnary-content
+    participant Events as 📊 ravnary-analytics
+
+    Browser->>Server: GET the topic quiz
+    Server->>Content: Read question prompts, no answers
+    Server-->>Browser: Questions with options shuffled by a request seed
+    Note over Browser: No correct option, no explanation,<br/>no related card in the page
+    Browser->>Server: Server action submits the draft answer
+    Server->>Content: GetItem the question with its answer
+    Server->>Server: Evaluate by option id, never by position
+    Server->>Events: Record quiz_answered, stamped by the server
+    Server-->>Browser: Verdict, correct answer, explanation, related card
+`);
+
+const privacyDiagram = defineMermaidDiagram(String.raw`
+flowchart LR
+    Queue["🌐 Browser queue<br/>20 events · 4s idle · page hidden"] -->|sendBeacon| Route["🛂 /api/events<br/>strict allowlist"]
+    Route -->|conditional PutItem| Raw[("📥 Raw events by type and month<br/>pruned after 90 days")]
+    Raw --> Aggregate["🧮 Aggregate<br/>first attempt per session"]
+    Aggregate -->|20 or more sessions| Published[("📤 Published aggregates<br/>metrics and ratings")]
+    Aggregate -->|fewer than 20| Dropped["🚫 Never written"]
+    Published --> Community["👥 /community"]
+
+    classDef client fill:#FFE4B5,stroke:#333,stroke-width:2px,color:#000
+    classDef gate fill:#E6E6FA,stroke:#333,stroke-width:2px,color:#1E3A8A
+    classDef storage fill:#87CEEB,stroke:#333,stroke-width:2px,color:#0F172A
+    classDef drop fill:#FFB6C1,stroke:#C2185B,stroke-width:3px,color:#000
+
+    class Queue,Community client
+    class Route,Aggregate gate
+    class Raw,Published storage
+    class Dropped drop
+`);
+
+const reviewDiagram = defineMermaidDiagram(String.raw`
+stateDiagram-v2
+    [*] --> Queued: answered wrong
+    Queued --> Due: due date reached
+    Due --> Queued: wrong again, back tomorrow with a lower ease
+    Due --> Scheduled: right, the interval grows
+    Scheduled --> Due: due date reached
+    Scheduled --> Graduated: next interval would pass 21 days
+    Graduated --> [*]
+
+    classDef waiting fill:#FFE4B5,stroke:#333,stroke-width:2px,color:#000
+    classDef active fill:#87CEEB,stroke:#333,stroke-width:2px,color:#0F172A
+    classDef done fill:#90EE90,stroke:#333,stroke-width:2px,color:#064E3B
+
+    class Queued,Scheduled waiting
+    class Due active
+    class Graduated done
+`);
+
+const imageProps = {
+  formats: ["avif", "webp"] as ("avif" | "webp")[],
+  quality: 80,
+  loading: "lazy" as const,
+  decoding: "async" as const,
+  class: "block h-auto w-full select-none",
+  draggable: false,
+};
+
+const linkClass =
+  "inline-flex font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary";
+---
+
+<ProjectLayout project={project}>
+  <section id="overview" class="w-full" aria-labelledby="overview-title">
+    <SectionHeader id="overview-title" title="Read one card, then the next" />
+
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12">
+      <div class="flex flex-col gap-5 lg:col-span-7">
+        <p class="text-xl leading-relaxed text-base-content md:text-2xl">
+          Ravnary is a library where every page holds one short, checked idea.
+          You read a card, then the next, and a quiz is there whenever you want
+          to test yourself. You don't need an account, and there's nothing to
+          sign in to.
+        </p>
+        <p class="max-w-3xl text-base leading-relaxed text-base-content/70 md:text-lg">
+          The name comes from Odin's ravens. Huginn carries the thought out and
+          Muninn brings it back, which is the loop the site is built around.
+          It's a Next.js app on AWS, and most of the design work went into two
+          things, publishing content atomically and keeping answers and reader
+          data away from the browser.
+        </p>
+        <a href={liveUrl} target="_blank" rel="noopener noreferrer" class={linkClass}>
+          Open the library &rarr;
+        </a>
+      </div>
+
+      <Callout
+        variant="information"
+        title="The library today"
+        class="my-0 self-start lg:col-span-5"
+      >
+        <p>
+          At the time of writing the live site holds 383 cards across 50 topics
+          and 6 subjects. They cover Docker, Java, Java Collections and Streams,
+          Java Concurrency, Spring Core, and Spring Boot, plus two learning paths
+          that cross them.
+        </p>
+      </Callout>
+    </div>
+
+    <MockupBrowser url="ravnary.com" class="mt-10" aria-label="Ravnary home page preview">
+      <Picture
+        src={ravnaryHome}
+        alt="Ravnary home page with the headline Read one card. Then the next, and the library counts beside it"
+        widths={[640, 960, 1280, 1440]}
+        sizes="100vw"
+        {...imageProps}
+      />
+      <span slot="caption">
+        The home page leads with subjects, then paths, then the library by field.
+      </span>
+    </MockupBrowser>
+  </section>
+
+  <section id="loop" class="w-full" aria-labelledby="loop-title">
+    <SectionHeader id="loop-title" title="The learning loop" />
+    <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
+      Every topic is built for the same five steps. The reader decides when to
+      switch from reading to answering, and the quiz is always optional.
+    </p>
+    <Steps
+      items={loopSteps}
+      aria-label="The Ravnary learning loop from concept to review"
+      class="mb-10 w-full"
+    />
+
+    <div class="grid grid-cols-1 gap-8 md:grid-cols-2">
+      <div>
+        <h3 class="mb-4 font-display text-2xl font-semibold text-base-content">
+          Eight kinds of card
+        </h3>
+        <p class="text-lg leading-relaxed text-base-content/70">
+          Concept, example, walkthrough, comparison, gotcha, code, exercise, and
+          recap. They're declared once, in reading order, and the import schema
+          refuses any type it doesn't know before anything is written.
+        </p>
+      </div>
+      <div>
+        <h3 class="mb-4 font-display text-2xl font-semibold text-base-content">
+          Seven kinds of question
+        </h3>
+        <p class="text-lg leading-relaxed text-base-content/70">
+          Multiple choice, true or false, multiple select, ordered steps, fill in
+          the blank, numeric, and matching. A quiz is its own model, separate
+          from cards, and every answer comes with an explanation.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section id="architecture" class="w-full" aria-labelledby="architecture-title">
+    <SectionHeader
+      id="architecture-title"
+      title="Static pages, one dynamic route, two tables"
+    />
+    <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
+      Content changes only when I import it, so almost everything is prerendered.
+      The server does three jobs at request time. It serves the quiz, runs the
+      server actions, and accepts analytics events. The CDK stack owns the
+      tables and the roles.
+    </p>
+    <MermaidDiagram code={architectureDiagram} />
+
+    <div class="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-3">
+      {
+        architectureCards.map((card) => (
+          <div class="rounded-box border border-base-300 bg-base-100 p-6 shadow-sm">
+            <h3 class="mb-3 font-display text-xl font-semibold text-base-content">
+              {card.title}
+            </h3>
+            <p class="leading-relaxed text-base-content/70">{card.description}</p>
+          </div>
+        ))
+      }
+    </div>
+  </section>
+
+  <section id="content-model" class="w-full" aria-labelledby="content-model-title">
+    <SectionHeader
+      id="content-model-title"
+      title="Three fixed levels and a graph beside them"
+    />
+    <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
+      A subject owns its topics and a topic owns its cards and questions. The
+      depth never changes, so no cycle can form and the URL spells the hierarchy
+      as <code>/learn/subject/topic/card</code>. Paths, categories, and links
+      between cards cross the hierarchy, so they're stored beside it.
+    </p>
+    <MermaidDiagram code={contentModelDiagram} />
+
+    <div class="mt-10 grid grid-cols-1 gap-8 md:grid-cols-2">
+      <div>
+        <h3 class="mb-4 font-display text-2xl font-semibold text-base-content">
+          A path is an order over existing places
+        </h3>
+        <p class="text-lg leading-relaxed text-base-content/70">
+          A path puts subjects and topics in an order across the library.
+          The <code>?path=</code> parameter only records where the reader came from
+          and never changes what a page contains. The browser carries the
+          journey, so every page stays prerendered.
+        </p>
+      </div>
+      <div>
+        <h3 class="mb-4 font-display text-2xl font-semibold text-base-content">
+          Categories are a graph, not a tree
+        </h3>
+        <p class="text-lg leading-relaxed text-base-content/70">
+          A card tagged <code>react</code> shows up under Web Development and
+          under Technology without moving. The importer precomputes every
+          ancestor, so the database never walks the graph while someone waits.
+        </p>
+      </div>
+    </div>
+
+    <div class="mt-10 grid grid-cols-1 gap-8 xl:grid-cols-2">
+      <MockupBrowser
+        url="ravnary.com/learn/java-concurrency/deadlock"
+        aria-label="Ravnary topic page preview"
+      >
+        <Picture
+          src={ravnaryTopic}
+          alt="Topic page for Deadlock and the Failures Near It, with card and question counts, difficulty, and a Start reading button"
+          widths={[640, 960, 1280, 1440]}
+          sizes="(max-width: 1279px) 100vw, 50vw"
+          {...imageProps}
+        />
+        <span slot="caption">
+          A topic page states what it holds before you start.
+        </span>
+      </MockupBrowser>
+
+      <MockupBrowser
+        url="ravnary.com/paths/from-a-first-class-to-a-thread-pool"
+        aria-label="Ravnary learning path preview"
+      >
+        <Picture
+          src={ravnaryPath}
+          alt="Learning path page listing three subject steps with a progress bar"
+          widths={[640, 960, 1280, 1440]}
+          sizes="(max-width: 1279px) 100vw, 50vw"
+          {...imageProps}
+        />
+        <span slot="caption">
+          A path orders subjects that live elsewhere in the library.
+        </span>
+      </MockupBrowser>
+
+      <MockupBrowser
+        url="ravnary.com/categories"
+        class="xl:col-span-2"
+        aria-label="Ravnary categories page preview"
+      >
+        <Picture
+          src={ravnaryCategories}
+          alt="Categories page with five fields and the number of topics filed under each category"
+          widths={[640, 960, 1280, 1440]}
+          sizes="100vw"
+          {...imageProps}
+        />
+        <span slot="caption">
+          Categories come from a taxonomy kept in Git and resolved at import.
+        </span>
+      </MockupBrowser>
+    </div>
+  </section>
+
+  <section id="publishing" class="w-full" aria-labelledby="publishing-title">
+    <SectionHeader id="publishing-title" title="Publishing a whole generation at once" />
+
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-start">
+      <div class="flex flex-col gap-6 lg:col-span-7">
+        <p class="text-xl leading-relaxed text-base-content">
+          An import builds a complete new generation of the read model next to
+          the live one and flips a single pointer last. Readers see the old
+          library until the flip and the new one after it.
+        </p>
+        <MermaidDiagram code={publishingDiagram} />
+      </div>
+
+      <div class="rounded-box bg-primary p-8 text-primary-content shadow-xl lg:col-span-5">
+        <p class="mb-3 text-xs font-bold uppercase tracking-[0.2em] opacity-70">
+          Key design
+        </p>
+        <h3 class="mb-3 font-display text-2xl font-semibold">
+          Every page read is a GetItem or a prefix Query
+        </h3>
+        <p class="mb-5 leading-relaxed opacity-80">
+          The importer resolves joins and counts ahead of time, so the table
+          needs no secondary index. A slug lookup is one GetItem. The whole
+          category graph is a single 41 KB item.
+        </p>
+        <pre
+          class="overflow-x-auto rounded-box bg-primary-content/10 p-4 text-xs leading-relaxed"><code>CONTENT            POINTER
+CANONICAL          TOPIC#id
+Vn#SLUG            TOPIC#subject#topic
+Vn#TOPIC#id        CARD#id
+Vn#QUESTION#id     PROMPT</code></pre>
+      </div>
+    </div>
+
+    <div class="mt-10 grid grid-cols-1 gap-8 md:grid-cols-2">
+      <div>
+        <h3 class="mb-4 font-display text-2xl font-semibold text-base-content">
+          Safe to interrupt, safe to race
+        </h3>
+        <p class="text-lg leading-relaxed text-base-content/70">
+          An import that dies halfway leaves an unreferenced generation and an
+          unchanged site, and running it again repairs it. Two imports can't
+          both win, because each one reserves its generation number with an
+          atomic counter first.
+        </p>
+      </div>
+      <div>
+        <h3 class="mb-4 font-display text-2xl font-semibold text-base-content">
+          Visibility is decided once
+        </h3>
+        <p class="text-lg leading-relaxed text-base-content/70">
+          Drafts live only in the canonical records. The read model holds just
+          what's published and reachable, so no page filters on status and the
+          previous generation stays around for a rollback.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section id="reading" class="w-full" aria-labelledby="reading-title">
+    <SectionHeader id="reading-title" title="Cards that read without JavaScript" />
+
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-start">
+      <MockupBrowser
+        url="ravnary.com/learn/java-concurrency/deadlock/neither-one-moving"
+        class="my-0 lg:col-span-8"
+        aria-label="Ravnary card page preview"
+      >
+        <Picture
+          src={ravnaryCard}
+          alt="A concept card on deadlock with a diagram of two threads, each holding one lock and waiting for the other, and the topic's card list beside it"
+          widths={[640, 960, 1280, 1440]}
+          sizes="(max-width: 1023px) 100vw, 66vw"
+          {...imageProps}
+        />
+        <span slot="caption">
+          A concept card with a Mermaid diagram and a warning callout.
+        </span>
+      </MockupBrowser>
+
+      <MockupPhone class="my-0 lg:col-span-4" aria-label="Ravnary card on a phone">
+        <Picture
+          src={ravnaryCardMobile}
+          alt="The same card on a phone, with one progress segment per card and a bottom navigation bar"
+          widths={[390, 780]}
+          sizes="(max-width: 1023px) 90vw, 30vw"
+          {...imageProps}
+        />
+        <span slot="caption">The same card at phone width.</span>
+      </MockupPhone>
+    </div>
+
+    <div class="mt-10 grid grid-cols-1 gap-8 md:grid-cols-2">
+      <div>
+        <h3 class="mb-4 font-display text-2xl font-semibold text-base-content">
+          A card is a list of blocks
+        </h3>
+        <p class="text-lg leading-relaxed text-base-content/70">
+          Markdown, diagrams, callouts, code, tables, steps, tabs, and reveals
+          are each a typed block. Steps, tabs, and reveals can't nest, so every
+          step and tab has one address, like <code>#step-2</code>. Raw HTML is
+          never rendered.
+        </p>
+      </div>
+      <div>
+        <h3 class="mb-4 font-display text-2xl font-semibold text-base-content">
+          No loading boundary anywhere
+        </h3>
+        <p class="text-lg leading-relaxed text-base-content/70">
+          A loading boundary would stream the response. A missing card would then
+          answer 200 instead of 404, and with JavaScript off a card would show
+          only its skeleton. The skeleton is drawn in the browser instead, so the
+          server always sends complete HTML.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section id="quiz" class="w-full" aria-labelledby="quiz-title">
+    <SectionHeader id="quiz-title" title="The answer stays on the server" />
+    <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
+      The quiz page reads prompts, which are questions with the correct options,
+      accepted answers, pairings, and explanations taken out. Only the grading
+      step reads the record that holds the answer, and the verdict comes back
+      after you submit.
+    </p>
+    <MermaidDiagram code={quizDiagram} />
+
+    <div class="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-center">
+      <div class="flex flex-col gap-5 lg:col-span-4">
+        <p class="leading-relaxed text-base-content/75 md:text-lg">
+          Options are shuffled with a seed derived from the request and the
+          question id. Every evaluator matches on option id, so the order a
+          reader sees never affects the grade. A numeric answer is parsed on the
+          server, and a matching question sends both sides without the pairing.
+        </p>
+        <p class="leading-relaxed text-base-content/75 md:text-lg">
+          The link to the card that teaches the question arrives with the
+          verdict, because a card title can give the answer away.
+        </p>
+      </div>
+
+      <MockupBrowser
+        url="ravnary.com/learn/java-concurrency/deadlock/quiz"
+        class="my-0 lg:col-span-8"
+        aria-label="Ravnary quiz explanation preview"
+      >
+        <Picture
+          src={ravnaryQuiz}
+          alt="An ordered steps question after checking, with the verdict Not quite, the correct order, an explanation, and a link to the card that teaches it"
+          widths={[640, 960, 1280, 1440]}
+          sizes="(max-width: 1023px) 100vw, 66vw"
+          {...imageProps}
+        />
+        <span slot="caption">
+          A wrong answer still ends with the reason and the card to reread.
+        </span>
+      </MockupBrowser>
+    </div>
+  </section>
+
+  <section id="privacy" class="w-full" aria-labelledby="privacy-title">
+    <SectionHeader id="privacy-title" title="Analytics that cannot name a reader" />
+    <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
+      Ravnary wants to know which questions are too hard or badly written. It
+      doesn't want to know who answered them. Raw events stay private and expire
+      after 90 days, and only aggregates ever reach a public page.
+    </p>
+    <MermaidDiagram code={privacyDiagram} />
+
+    <div class="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-3">
+      {
+        privacyCards.map((card) => (
+          <div class="rounded-box border border-base-300 bg-base-100 p-6 shadow-sm">
+            <h3 class="mb-3 font-display text-xl font-semibold text-base-content">
+              {card.title}
+            </h3>
+            <p class="leading-relaxed text-base-content/70">{card.description}</p>
+          </div>
+        ))
+      }
+    </div>
+
+    <MockupBrowser url="ravnary.com/community" class="mt-10" aria-label="Ravnary community page preview">
+      <Picture
+        src={ravnaryCommunity}
+        alt="Community page explaining that a question appears only after 20 separate visits have answered it, above an empty state"
+        widths={[640, 960, 1280, 1440]}
+        sizes="100vw"
+        {...imageProps}
+      />
+      <span slot="caption">
+        No question has reached 20 sessions yet, so the page is empty.
+      </span>
+    </MockupBrowser>
+
+    <p class="mt-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
+      Once a question clears the threshold, the page reports its accuracy, the
+      wrong option readers pick most, and a discrimination index. A negative
+      index means stronger readers get the question wrong. That points to a
+      miskeyed answer, ambiguous wording, or a question about something the
+      cards never taught.
+    </p>
+  </section>
+
+  <section id="review" class="w-full" aria-labelledby="review-title">
+    <SectionHeader id="review-title" title="Your progress stays in your browser" />
+
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-start">
+      <div class="flex flex-col gap-5 lg:col-span-5">
+        <p class="text-xl leading-relaxed text-base-content">
+          With no accounts, there's nowhere on the server to keep your progress.
+          Reading progress, favourites, your last place, and the review schedule
+          live in versioned browser storage keys.
+        </p>
+        <p class="leading-relaxed text-base-content/75 md:text-lg">
+          They hold ids and scheduling state, never answers or card text. The
+          site discards any stored value in a shape it doesn't recognize, and it
+          reads an older version once before removing it.
+        </p>
+      </div>
+      <div class="lg:col-span-7">
+        <MermaidDiagram code={reviewDiagram} />
+      </div>
+    </div>
+  </section>
+
+  <section
+    id="outcome"
+    class="overflow-hidden rounded-box bg-primary p-8 text-primary-content shadow-xl md:p-12 lg:p-16"
+    aria-labelledby="outcome-title"
+  >
+    <p class="mb-4 text-xs font-bold uppercase tracking-[0.2em] opacity-70">
+      The outcome
+    </p>
+    <h2
+      id="outcome-title"
+      class="max-w-4xl font-display text-3xl font-bold leading-tight sm:text-4xl"
+    >
+      A library that prerenders its pages and grades every answer on the server.
+    </h2>
+    <p class="mt-6 max-w-3xl text-lg leading-relaxed opacity-80">
+      Each rebuild renders the site from one published generation. Nobody needs
+      an account, progress stays in the browser, and the reader data the site
+      keeps is anonymous, expires after 90 days, and goes public only in
+      aggregate.
+    </p>
+    <a
+      href={liveUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      class="btn mt-8 border-primary-content/30 bg-primary-content text-primary hover:bg-primary-content/90"
+    >
+      Visit ravnary.com
+    </a>
+  </section>
+</ProjectLayout>

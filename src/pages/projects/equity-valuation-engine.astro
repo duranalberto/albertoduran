@@ -6,7 +6,23 @@ import SectionHeader from "bloomwright-ui/components/display/SectionHeader.astro
 import Steps, { type StepItem } from "bloomwright-ui/components/display/Steps.astro";
 import MermaidDiagram from "bloomwright-ui/components/render/MermaidDiagram.astro";
 import { defineMermaidDiagram } from "bloomwright-ui/mermaid";
+import { defineJournalLinks } from "@content/define_journal_links";
 import ProjectLayout from "@layouts/ProjectLayout.astro";
+
+const journal = await defineJournalLinks(
+  {
+    firstValuationRun: "first_valuation_run",
+    choosingAValuationModel: "choosing_a_valuation_model",
+    trustingTheInputs: "trusting_the_inputs",
+    dcfAndReverseDcf: "dcf_and_reverse_dcf",
+    otherValuationModels: "other_valuation_models",
+    assumptionsAndScenarios: "assumptions_and_scenarios",
+    readingTheResults: "reading_the_results",
+    extendingTheEngine: "extending_the_engine",
+    threeProjectsOnePipeline: "three-projects-one-pipeline",
+  },
+  { owner: "Equity Valuation Engine", vault: "equity_valuation_engine" },
+);
 
 const project: ProjectPageConfig = {
   title: "Equity Valuation Engine",
@@ -34,21 +50,21 @@ const foundations = [
     title: "Run a valuation before studying the formulas",
     description:
       "Start with the CLI, learn the output order, and see why a skipped model can be more useful than another per-share estimate.",
-    href: "/thejournal/equity_valuation_engine/first_valuation_run/",
+    href: journal.firstValuationRun.href,
   },
   {
     marker: "02",
     title: "Choose a model that fits the business",
     description:
       "Match cash flow, earnings, revenue, dividends, returns, and assets to the question each valuation method can answer.",
-    href: "/thejournal/equity_valuation_engine/choosing_a_valuation_model/",
+    href: journal.choosingAValuationModel.href,
   },
   {
     marker: "03",
     title: "Check the inputs behind the result",
     description:
       "Follow provider fields into StockMetrics, inspect selected missing-value reasons, and understand the currency boundary that still needs work.",
-    href: "/thejournal/equity_valuation_engine/trusting_the_inputs/",
+    href: journal.trustingTheInputs.href,
   },
 ];
 
@@ -235,13 +251,13 @@ flowchart LR
 
     <div class="mt-6 flex flex-wrap gap-x-6 gap-y-3">
       <a
-        href="/thejournal/equity_valuation_engine/dcf_and_reverse_dcf/"
+        href={journal.dcfAndReverseDcf.href}
         class="inline-flex font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
       >
         Work through DCF and Reverse DCF &rarr;
       </a>
       <a
-        href="/thejournal/equity_valuation_engine/other_valuation_models/"
+        href={journal.otherValuationModels.href}
         class="inline-flex font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
       >
         Compare the other valuation models &rarr;
@@ -267,7 +283,7 @@ flowchart LR
         </p>
       </div>
       <a
-        href="/thejournal/equity_valuation_engine/assumptions_and_scenarios/"
+        href={journal.assumptionsAndScenarios.href}
         class="group rounded-box border border-base-300 bg-primary p-8 text-primary-content shadow-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
       >
         <p class="mb-3 text-xs font-bold uppercase tracking-[0.2em] opacity-70">
@@ -317,13 +333,13 @@ flowchart LR
 
     <div class="mt-6 flex flex-wrap gap-x-6 gap-y-3">
       <a
-        href="/thejournal/equity_valuation_engine/reading_the_results/"
+        href={journal.readingTheResults.href}
         class="inline-flex font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
       >
         Learn how to read the final output &rarr;
       </a>
       <a
-        href="/thejournal/equity_valuation_engine/extending_the_engine/"
+        href={journal.extendingTheEngine.href}
         class="inline-flex font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
       >
         Follow the extension contracts &rarr;
@@ -335,7 +351,7 @@ flowchart LR
     <SectionHeader
       id="pipeline-title"
       title="The foundation of a larger pipeline"
-      linkHref="/thejournal/three-projects-one-pipeline/"
+      linkHref={journal.threeProjectsOnePipeline.href}
       linkLabel="Read the full story"
     />
 
@@ -348,7 +364,7 @@ flowchart LR
           that analysis into a finished, published article.
         </p>
         <a
-          href="/thejournal/three-projects-one-pipeline/"
+          href={journal.threeProjectsOnePipeline.href}
           class="inline-flex font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
         >
           Read more: how three projects merge into one pipeline &rarr;

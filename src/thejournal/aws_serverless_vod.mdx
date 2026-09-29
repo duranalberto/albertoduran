@@ -4,12 +4,25 @@ description: "A practical look at a serverless AWS video pipeline that turns pri
 image: "../assets/thejournal/stock/16.jpg"
 tags: ["aws", "serverless", "video", "cloudfront"]
 pubDate: 2026-07-04
+updatePubDate: 2026-09-29
 author: "Alberto Duran"
 ---
 
 import VideoPlayer from "@components/ui/mdx/VideoPlayer.astro";
 
 Uploading a video sounds like the easy part until the browser has to play it. A single video in a bucket is fine for storage, but it does not answer adaptive playback, private source files, publishable metadata, browser CORS, cache behavior, or how the system learns that a transcode finished. This project solves that with a small AWS workflow that turns operator-managed recordings into HLS streams and a static catalog.
+
+```daisyui
+{
+  "component": "callout",
+  "variant": "information",
+  "title": "There is a part two",
+  "content": [
+    "Since this was published, the workflow gained an authenticated manager page on Cognito, API Gateway, and a new ManagerApi Lambda. It also needed a CloudFront fix for intermittent CORS failures, and it now feeds StreamVault, a public site that plays the catalog.",
+    { "type": "link", "href": "/thejournal/aws_serverless_vod_manager/", "label": "Read part two" }
+  ]
+}
+```
 
 ---
 
@@ -68,11 +81,11 @@ This shape keeps the pipeline asynchronous. The operator gets a submitted job, M
 
 The system has four boundaries that are worth keeping separate. There is an administrative ingestion side, an AWS processing side, a playback edge, and a consuming client. Treating those as different spaces makes the project easier to reason about.
 
-The ingestion side is deliberately small. There is no public upload API and no user account model. The operator uploads a recording to S3 and invokes a Lambda. That is less convenient than a polished admin app, but it also removes a lot of surface area from a project whose main job is video packaging.
+The ingestion side is deliberately small. There is no public upload API and no user account model. The operator uploads a recording to S3 and invokes a Lambda. That is less convenient than a polished admin app, but it also removes a lot of surface area from a project whose main job is video packaging. That admin app exists now, behind Cognito and API Gateway, and part two explains how it stays as narrow as this CLI flow.
 
 The AWS processing side is event based. Lambda validates and submits work, MediaConvert creates the HLS package, EventBridge routes state changes, and another Lambda publishes the static catalog. CloudWatch Logs collects function logs and the optional MediaConvert observability stream.
 
-The playback side is CloudFront over a private S3 origin. Viewers never read directly from a public bucket. CloudFront uses Origin Access Control to fetch from S3, applies the managed cache and CORS policies in the distribution, and gives the browser stable URLs for the catalog and manifests.
+The playback side is CloudFront over a private S3 origin. Viewers never read directly from a public bucket. CloudFront uses Origin Access Control to fetch from S3, applies the managed cache and CORS policies in the distribution, and gives the browser stable URLs for the catalog and manifests. CORS later moved to a CloudFront Function after the managed policy failed under caching, which part two covers in detail.
 
 ```mermaid
 graph TB
@@ -277,3 +290,5 @@ The static catalog is a good fit for this version. It is easy to inspect, cheap 
 The tradeoff is that simple storage does not remove all coordination problems. `FinalizeVideo` writes the catalog without an ETag precondition, while `CleanupVideos` does use conditional writes during reconciliation. That is fine for a small operator-driven workflow, but it is the kind of detail I would revisit before adding concurrent publishers or a public admin UI.
 
 Mostly, I like that every part has a plain reason to exist. There is no always-on backend waiting for a request, no public bucket shortcut, and no custom video worker trying to be smarter than a managed transcoder. The system uses AWS where AWS has a native handoff, then gives clients simple files they can consume.
+
+The next step was an admin UI and a real client. Both arrived, and [part two](/thejournal/aws_serverless_vod_manager/) covers what it took to build them.

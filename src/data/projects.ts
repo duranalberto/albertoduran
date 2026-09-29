@@ -4,6 +4,8 @@ import pressroomImage from "@assets/thejournal/stock/12.jpg";
 import equityImage from "@assets/thejournal/stock/06.avif";
 import sinPlumaImage from "@assets/thejournal/stock/07.avif";
 import mlscraperImage from "@assets/thejournal/stock/08.avif";
+import serverlessVodImage from "@assets/thejournal/stock/17.jpg";
+import ravnaryImage from "@assets/thejournal/stock/18.jpg";
 import type { ProjectLandingRoute } from "@data/project_pages";
 import type { ImageMetadata } from "astro";
 
@@ -19,6 +21,31 @@ export interface ProjectSummary {
 }
 
 export const projectCatalog = [
+  {
+    title: "Ravnary",
+    category: "Micro-learning platform on Next.js and AWS",
+    description:
+      "An open library of short, checked cards. You read one card, then the next, and a quiz is there whenever you want to test yourself.",
+    signal:
+      "A Next.js app on Amplify Hosting with prerendered pages, a DynamoDB read model published in atomic generations, quizzes graded on the server, and analytics that publish only anonymous aggregates.",
+    href: "/projects/ravnary/",
+    image: ravnaryImage,
+    imageAlt: "Two black ravens perched on a pale rock, in black and white",
+    technologies: ["Next.js", "DynamoDB", "AWS Amplify", "AWS CDK"],
+  },
+  {
+    title: "Serverless VOD and StreamVault",
+    category: "Serverless video pipeline and public player",
+    description:
+      "I wanted to share gameplay without a video platform, so I built a small one. Nothing runs between uploads, and the viewer site is fully static.",
+    signal:
+      "An S3, MediaConvert, Lambda, and EventBridge pipeline with a Cognito and API Gateway manager page, serving HLS through CloudFront to a React site on GitHub Pages.",
+    href: "/projects/serverless-vod/",
+    image: serverlessVodImage,
+    imageAlt:
+      "Nintendo Switch Joy-Con, Xbox and PlayStation controllers, and headphones on a dark desk",
+    technologies: ["AWS Lambda", "MediaConvert", "CloudFront", "React"],
+  },
   {
     title: "Pressroom",
     category: "Local multi-agent editorial pipeline",

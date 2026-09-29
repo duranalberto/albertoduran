@@ -6,7 +6,16 @@ import SectionHeader from "bloomwright-ui/components/display/SectionHeader.astro
 import Steps, { type StepItem } from "bloomwright-ui/components/display/Steps.astro";
 import MermaidDiagram from "bloomwright-ui/components/render/MermaidDiagram.astro";
 import { defineMermaidDiagram } from "bloomwright-ui/mermaid";
+import { defineJournalLinks } from "@content/define_journal_links";
 import ProjectLayout from "@layouts/ProjectLayout.astro";
+
+const journal = await defineJournalLinks(
+  {
+    isOracleStockUndervalued: "is-oracle-stock-undervalued",
+    threeProjectsOnePipeline: "three-projects-one-pipeline",
+  },
+  { owner: "Equilyze" },
+);
 
 const project: ProjectPageConfig = {
   title: "Equilyze",
@@ -393,12 +402,12 @@ flowchart LR
     <SectionHeader
       id="case-study-title"
       title="Case study, from Oracle analysis to article"
-      linkHref="/thejournal/is-oracle-stock-undervalued/"
+      linkHref={journal.isOracleStockUndervalued.href}
       linkLabel="Read the published article"
     />
     <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
       <a
-        href="/thejournal/is-oracle-stock-undervalued/"
+        href={journal.isOracleStockUndervalued.href}
         class="font-bold text-primary underline-offset-4 hover:underline"
       >Is Oracle Stock Undervalued?</a> began here. Equilyze evaluated Oracle
       and produced its report and artifacts. Those files then became the input
@@ -436,7 +445,7 @@ flowchart LR
     </div>
 
     <a
-      href="/thejournal/three-projects-one-pipeline/"
+      href={journal.threeProjectsOnePipeline.href}
       class="mt-8 inline-flex font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
     >
       Read more about the full pipeline &rarr;

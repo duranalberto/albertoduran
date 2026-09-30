@@ -272,7 +272,7 @@ test("top-level heroes keep eyebrow and heading geometry aligned", async ({
   }
 });
 
-test("projects index presents eight compact showcases and ordered navigation", async ({
+test("projects index presents eight showcases with media and stack", async ({
   page,
 }) => {
   const problems = collectConsoleProblems(page);
@@ -302,7 +302,7 @@ test("projects index presents eight compact showcases and ordered navigation", a
   ).toHaveAttribute("aria-current", "page");
 
   const expectedProjects = [
-    ["Ravnary", "/projects/ravnary/"],
+    ["Ravnary.com", "/projects/ravnary/"],
     ["Serverless VOD and StreamVault", "/projects/serverless-vod/"],
     ["Pressroom", "/projects/pressroom/"],
     ["Equilyze", "/projects/equilyze/"],
@@ -316,21 +316,42 @@ test("projects index presents eight compact showcases and ordered navigation", a
   await expect(showcases).toHaveCount(8);
 
   for (const [title, href] of expectedProjects) {
-    const showcase = page.getByRole("link", {
-      name: `Open the ${title} project showcase`,
-    });
-    await expect(showcase).toHaveAttribute("href", href);
+    const showcase = page.locator(`[data-project-showcase="${href}"]`);
+    await expect(
+      showcase.getByRole("link", {
+        name: `Open the ${title} project showcase`,
+      }),
+    ).toHaveAttribute("href", href);
     await expect(
       showcase.getByRole("heading", { level: 2, name: title }),
     ).toBeVisible();
-    await expect(showcase.getByRole("img")).toBeVisible();
-    await expect(showcase.locator("[data-project-signal]")).toBeVisible();
+    await expect(
+      showcase.getByRole("group", { name: `${title} screenshots` }),
+    ).toBeVisible();
+    await expect(showcase.locator("[data-project-stat]")).toBeVisible();
+    await expect(
+      showcase.getByRole("list", { name: `${title} stack` }).getByRole("listitem"),
+    ).not.toHaveCount(0);
 
     const height = await showcase.evaluate(
       (element) => element.getBoundingClientRect().height,
     );
     expect(height).toBeLessThan(1000);
   }
+
+  const ravnaryMedia = page
+    .locator('[data-project-showcase="/projects/ravnary/"]')
+    .getByRole("group", { name: "Ravnary.com screenshots" });
+  await ravnaryMedia.hover();
+  await ravnaryMedia
+    .getByRole("button", { name: "Next Ravnary.com screenshot" })
+    .click();
+  await expect(ravnaryMedia.locator("[data-media-counter]")).toHaveText(
+    "2 / 3",
+  );
+  await expect(ravnaryMedia.locator("[data-media-caption]")).toHaveText(
+    "A card and its diagram",
+  );
 
   const firstShowcase = showcases.first();
   const secondShowcase = showcases.nth(1);
@@ -375,19 +396,23 @@ test("projects index presents eight compact showcases and ordered navigation", a
 });
 
 for (const route of ["/", "/profile/"] as const) {
-  test(`${route} presents eight accessible project cards in a responsive grid`, async ({
+  test(`${route} presents four featured projects in a bento grid`, async ({
     page,
   }) => {
     const problems = collectConsoleProblems(page);
     const expectedProjects = [
-      ["Ravnary", "/projects/ravnary/"],
-    ["Serverless VOD and StreamVault", "/projects/serverless-vod/"],
-      ["Pressroom", "/projects/pressroom/"],
-      ["Equilyze", "/projects/equilyze/"],
-      ["MLScraper", "/projects/mlscraper/"],
-      ["Sin Pluma", "/projects/sin-pluma/"],
-      ["Equity Valuation Engine", "/projects/equity-valuation-engine/"],
-      ["albertoduran.com", "/projects/albertoduran/"],
+      ["Ravnary.com", "Ravnary.com", "/projects/ravnary/"],
+      [
+        "Serverless VOD and StreamVault",
+        "Serverless VOD",
+        "/projects/serverless-vod/",
+      ],
+      ["Sin Pluma", "Sin Pluma", "/projects/sin-pluma/"],
+      [
+        "Equity Valuation Engine",
+        "Equity Valuation Engine",
+        "/projects/equity-valuation-engine/",
+      ],
     ] as const;
 
     await page.setViewportSize({ width: 1280, height: 900 });
@@ -395,41 +420,47 @@ for (const route of ["/", "/profile/"] as const) {
 
     const grid = page.locator("[data-project-grid]");
     const cards = grid.locator("[data-project-card]");
-    await expect(cards).toHaveCount(8);
+    await expect(cards).toHaveCount(4);
     await expect(
-      page.getByRole("link", { name: "View all projects" }),
-    ).toHaveCount(0);
+      page.getByRole("link", { name: "Browse all projects" }),
+    ).toHaveAttribute("href", "/projects/");
 
-    for (const [index, [title, href]] of expectedProjects.entries()) {
-      const card = grid.getByRole("link", {
+    for (const [title, heading, href] of expectedProjects) {
+      const card = grid.locator(`[data-project-card="${href}"]`);
+      const link = card.getByRole("link", {
         name: `Explore the ${title} project`,
       });
-      await expect(card).toHaveAttribute("href", href);
+      await expect(link).toHaveAttribute("href", href);
       await expect(
-        card.getByRole("heading", { level: 3, name: title }),
+        card.getByRole("heading", { level: 3, name: heading }),
       ).toBeVisible();
-      await expect(card.getByRole("img")).toHaveCount(0);
-      await expect(card.locator("[data-project-signal]")).toBeVisible();
-      await expect(card.locator("[data-project-ordinal]")).toHaveText(
-        String(index + 1).padStart(2, "0"),
-      );
+      await expect(card.getByRole("img").first()).toBeVisible();
+      await expect(card.locator("[data-project-stat]")).toBeVisible();
+      await expect(
+        card.getByRole("list", { name: `${title} stack` }).getByRole("listitem"),
+      ).not.toHaveCount(0);
     }
 
     const desktopBoxes = await cards.evaluateAll((elements) =>
       elements.map((element) => {
         const rect = element.getBoundingClientRect();
-        return { height: rect.height, left: rect.left, top: rect.top };
+        return { left: rect.left, top: rect.top, width: rect.width };
       }),
     );
     expect(Math.abs(desktopBoxes[0]!.top - desktopBoxes[1]!.top)).toBeLessThan(
       2,
     );
     expect(desktopBoxes[1]!.left).toBeGreaterThan(desktopBoxes[0]!.left);
+    expect(desktopBoxes[0]!.width).toBeGreaterThan(desktopBoxes[1]!.width);
     expect(desktopBoxes[2]!.top).toBeGreaterThan(desktopBoxes[0]!.top);
-    expect(Math.max(...desktopBoxes.map(({ height }) => height))).toBeCloseTo(
-      Math.min(...desktopBoxes.map(({ height }) => height)),
-      0,
-    );
+    expect(desktopBoxes[3]!.width).toBeGreaterThan(desktopBoxes[2]!.width);
+
+    const stageHeights = await grid
+      .locator("[data-media-stage]")
+      .evaluateAll((elements) =>
+        elements.map((element) => Math.round(element.getBoundingClientRect().height)),
+      );
+    expect(new Set(stageHeights).size).toBe(1);
 
     await page.setViewportSize({ width: 390, height: 844 });
     const mobileBoxes = await cards.evaluateAll((elements) =>
@@ -438,12 +469,12 @@ for (const route of ["/", "/profile/"] as const) {
         return { left: rect.left, top: rect.top };
       }),
     );
-    expect(new Set(mobileBoxes.map(({ top }) => Math.round(top))).size).toBe(8);
+    expect(new Set(mobileBoxes.map(({ top }) => Math.round(top))).size).toBe(4);
     expect(new Set(mobileBoxes.map(({ left }) => Math.round(left))).size).toBe(
       1,
     );
 
-    const firstCard = cards.first().locator("article");
+    const firstCard = cards.first();
     const lightBackground = await firstCard.evaluate(
       (element) => getComputedStyle(element).backgroundColor,
     );
@@ -459,6 +490,32 @@ for (const route of ["/", "/profile/"] as const) {
 
     await expectNoPageHorizontalOverflow(page);
     expect(problems).toEqual([]);
+  });
+}
+
+for (const route of [
+  "/projects/ravnary/",
+  "/projects/serverless-vod/",
+  "/projects/pressroom/",
+  "/projects/equilyze/",
+  "/projects/mlscraper/",
+  "/projects/sin-pluma/",
+  "/projects/equity-valuation-engine/",
+  "/projects/albertoduran/",
+] as const) {
+  test(`${route} hero lists its stack with icons`, async ({ page }) => {
+    await page.goto(route);
+
+    const stack = page.locator("[data-project-stack]");
+    await expect(
+      stack.getByRole("heading", { level: 2, name: "Built with" }),
+    ).toBeVisible();
+    const items = stack.locator('[data-tech-stack="tile"] > li');
+    expect(await items.count()).toBeGreaterThan(1);
+    await expect(items.first().locator("svg, [aria-hidden]").first()).toBeVisible();
+    await expect(
+      items.first().evaluate((element) => getComputedStyle(element).borderTopWidth),
+    ).resolves.toBe("0px");
   });
 }
 

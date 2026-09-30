@@ -11,7 +11,12 @@ const get_content_from_file = (fileName: string): string => {
 
     const match = svgString.match(/<svg[^>]*>([\s\S]*?)<\/svg>/i);
 
-    return match?.[1]?.trim() ?? "";
+    // Several icons share one page, so namespace ids (gradients, clips) per
+    // file to stop `url(#a)` in one icon resolving to another icon's def.
+    return (match?.[1]?.trim() ?? "")
+      .replace(/\bid="([^"]+)"/g, `id="${fileName}-$1"`)
+      .replace(/url\(#([^)]+)\)/g, `url(#${fileName}-$1)`)
+      .replace(/href="#([^"]+)"/g, `href="#${fileName}-$1"`);
   } catch (error) {
     console.error(`Could not read SVG file: ${fileName}.svg`, error);
     return "";
@@ -104,6 +109,16 @@ export const skills: Record<string, Icon> = {
     viewBox: "0 0 128 128",
     content: get_content_from_file(`preact`),
   },
+  next: {
+    text: "Next.js",
+    viewBox: "0 0 128 128",
+    content: get_content_from_file(`next`),
+  },
+  unity: {
+    text: "Unity 3D",
+    viewBox: "0 0 128 128",
+    content: get_content_from_file(`unity`),
+  },
   oracle_apex: {
     text: "Oracle Apex",
     viewBox: "0 0 128 128",
@@ -112,6 +127,141 @@ export const skills: Record<string, Icon> = {
 };
 
 export const ui: Record<string, Icon> = {
+  atlas: {
+    text: "Atlas FC",
+    viewBox: "0 0 128 128",
+    content: get_content_from_file(`atlas`),
+  },
+  feedBuilding: {
+    text: "Building",
+    viewBox: "0 0 24 24",
+    content: `<path d="m16 18 6-6-6-6" /><path d="m8 6-6 6 6 6" />`,
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.75,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+  },
+  feedPlaying: {
+    text: "Playing",
+    viewBox: "0 0 24 24",
+    content: `<rect width="20" height="12" x="2" y="6" rx="2" /><path d="M6 12h4M8 10v4" /><path d="M15 13h.01M18 11h.01" />`,
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.75,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+  },
+  feedWatching: {
+    text: "Watching",
+    viewBox: "0 0 24 24",
+    content: `<rect width="20" height="15" x="2" y="7" rx="2" /><path d="m17 2-5 5-5-5" />`,
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.75,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+  },
+  interestSeries: {
+    text: "Series",
+    viewBox: "0 0 24 24",
+    content: `<rect width="18" height="18" x="3" y="3" rx="2" /><path d="M7 3v18M17 3v18M3 7.5h4M3 12h18M3 16.5h4M17 7.5h4M17 16.5h4" />`,
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.75,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+  },
+  interestSports: {
+    text: "Sports",
+    viewBox: "0 0 24 24",
+    content: `<circle cx="12" cy="12" r="9" /><path d="m12 7.5 4 2.9-1.5 4.6h-5L8 10.4z" /><path d="M12 7.5V3M16 10.4l4.6-1.4M14.5 15l2.8 4.3M9.5 15l-2.8 4.3M8 10.4 3.4 9" />`,
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.75,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+  },
+  interestDrinks: {
+    text: "Drinks",
+    viewBox: "0 0 24 24",
+    content: `<path d="M10 2v2M14 2v2M6 2v2" /><path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1" />`,
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.75,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+  },
+  interestFood: {
+    text: "Food",
+    viewBox: "0 0 24 24",
+    content: `<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" /><path d="M7 2v20" /><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" />`,
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.75,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+  },
+  habitUnderstand: {
+    text: "Understand",
+    viewBox: "0 0 24 24",
+    content: `<circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /><path d="M11 8v6M8 11h6" />`,
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.75,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+  },
+  habitConstraints: {
+    text: "Constraints",
+    viewBox: "0 0 24 24",
+    content: `<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12" /><circle cx="16" cy="6" r="2" /><circle cx="10" cy="12" r="2" /><circle cx="18" cy="18" r="2" />`,
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.75,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+  },
+  habitReliability: {
+    text: "Reliability",
+    viewBox: "0 0 24 24",
+    content: `<path d="M12 3 5 6v6c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6z" /><path d="m9 12 2 2 4-4" />`,
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.75,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+  },
+  habitMaintain: {
+    text: "Maintainability",
+    viewBox: "0 0 24 24",
+    content: `<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z" />`,
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.75,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+  },
+  habitDeliver: {
+    text: "Delivery",
+    viewBox: "0 0 24 24",
+    content: `<path d="M5 19c1-3 3-5 3-5l2 2s-2 2-5 3z" /><path d="M14 4c3 0 6 3 6 6-2 4-6 7-8 8l-6-6c1-2 4-6 8-8z" /><circle cx="15" cy="9" r="1.5" />`,
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.75,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+  },
+  habitPeople: {
+    text: "People",
+    viewBox: "0 0 24 24",
+    content: `<circle cx="9" cy="8" r="3" /><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" /><circle cx="17" cy="9" r="2.5" /><path d="M16 14c2.8 0 5 2.2 5 5" />`,
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.75,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+  },
   sun: {
     text: "sun",
     viewBox: "0 0 24 24",
@@ -242,5 +392,69 @@ export const social: Record<string, Icon> = {
     text: "GitHub",
     viewBox: "0 0 128 128",
     content: `<path fill-rule="evenodd" clip-rule="evenodd" d="M64 5.103c-33.347 0-60.388 27.035-60.388 60.388 0 26.682 17.303 49.317 41.297 57.303 3.017.56 4.125-1.31 4.125-2.905 0-1.44-.056-6.197-.082-11.243-16.8 3.653-20.345-7.125-20.345-7.125-2.747-6.98-6.705-8.836-6.705-8.836-5.48-3.748.413-3.67.413-3.67 6.063.425 9.257 6.223 9.257 6.223 5.386 9.23 14.127 6.562 17.573 5.02.542-3.903 2.107-6.568 3.834-8.076-13.413-1.525-27.514-6.704-27.514-29.843 0-6.593 2.36-11.98 6.223-16.21-.628-1.52-2.695-7.662.584-15.98 0 0 5.07-1.623 16.61 6.19C53.7 35 58.867 34.327 64 34.304c5.13.023 10.3.694 15.127 2.033 11.526-7.813 16.59-6.19 16.59-6.19 3.287 8.317 1.22 14.46.593 15.98 3.872 4.23 6.215 9.617 6.215 16.21 0 23.194-14.127 28.3-27.574 29.796 2.167 1.874 4.097 5.55 4.097 11.183 0 8.08-.07 14.583-.07 16.572 0 1.607 1.088 3.49 4.148 2.897 23.98-7.994 41.263-30.622 41.263-57.294C124.388 32.14 97.35 5.104 64 5.104z"></path><path d="M26.484 91.806c-.133.3-.605.39-1.035.185-.44-.196-.685-.605-.543-.906.13-.31.603-.395 1.04-.188.44.197.69.61.537.91zm2.446 2.729c-.287.267-.85.143-1.232-.28-.396-.42-.47-.983-.177-1.254.298-.266.844-.14 1.24.28.394.426.472.984.17 1.255zM31.312 98.012c-.37.258-.976.017-1.35-.52-.37-.538-.37-1.183.01-1.44.373-.258.97-.025 1.35.507.368.545.368 1.19-.01 1.452zm3.261 3.361c-.33.365-1.036.267-1.552-.23-.527-.487-.674-1.18-.343-1.544.336-.366 1.045-.264 1.564.23.527.486.686 1.18.333 1.543zm4.5 1.951c-.147.473-.825.688-1.51.486-.683-.207-1.13-.76-.99-1.238.14-.477.823-.7 1.512-.485.683.206 1.13.756.988 1.237zm4.943.361c.017.498-.563.91-1.28.92-.723.017-1.308-.387-1.315-.877 0-.503.568-.91 1.29-.924.717-.013 1.306.387 1.306.88zm4.598-.782c.086.485-.413.984-1.126 1.117-.7.13-1.35-.172-1.44-.653-.086-.498.422-.997 1.122-1.126.714-.123 1.354.17 1.444.663zm0 0"></path>`,
+  },
+};
+
+/** Stack icons used only by project cards and pages, kept out of the skills ribbon. */
+export const projectStack: Record<string, Icon> = {
+  ...skills,
+  dynamodb: {
+    text: "DynamoDB",
+    viewBox: "0 0 128 128",
+    content: get_content_from_file(`dynamodb`),
+  },
+  flask: {
+    text: "Flask",
+    viewBox: "0 0 128 128",
+    content: get_content_from_file(`flask`),
+  },
+  mysql: {
+    text: "MySQL",
+    viewBox: "0 0 128 128",
+    content: get_content_from_file(`mysql`),
+  },
+  cloudflare: {
+    text: "Cloudflare",
+    viewBox: "0 0 128 128",
+    content: get_content_from_file(`cloudflare`),
+  },
+  markdown: {
+    text: "Markdown",
+    viewBox: "0 0 128 128",
+    content: get_content_from_file(`markdown`),
+  },
+  redis: {
+    text: "Redis",
+    viewBox: "0 0 128 128",
+    content: get_content_from_file(`redis`),
+  },
+  playwright: {
+    text: "Playwright",
+    viewBox: "0 0 128 128",
+    content: get_content_from_file(`playwright`),
+  },
+  yaml: {
+    text: "YAML",
+    viewBox: "0 0 128 128",
+    content: get_content_from_file(`yaml`),
+  },
+  pytest: {
+    text: "pytest",
+    viewBox: "0 0 128 128",
+    content: get_content_from_file(`pytest`),
+  },
+  vitest: {
+    text: "Vitest",
+    viewBox: "0 0 128 128",
+    content: get_content_from_file(`vitest`),
+  },
+  go: {
+    text: "Go",
+    viewBox: "0 0 128 128",
+    content: get_content_from_file(`go`),
+  },
+  github: {
+    ...social.github!,
+    text: "GitHub",
   },
 };

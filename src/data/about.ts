@@ -22,6 +22,8 @@ const skills: Skills[] = [
       icons.oracle_jet!,
       icons.fastapi!,
       icons.astro!,
+      icons.next!,
+      icons.unity!,
     ],
   },
   {
@@ -38,36 +40,54 @@ const skills: Skills[] = [
   },
 ];
 
+// Habits in the order work moves through them; the one with `everyStep`
+// runs underneath the whole path. `context` + `takeaway` is the full copy.
 const strengths: Strength[] = [
   {
     title: "Understand the system before changing it",
-    description:
-      "I first trace how the application, its data, and its users are connected. That helps me make changes in the right place instead of treating only the visible symptom.",
+    icon: "habitUnderstand",
+    context:
+      "I first trace how the application, its data, and its users are connected.",
+    takeaway:
+      "That helps me make changes in the right place instead of treating only the visible symptom.",
   },
   {
     title: "Work within real constraints",
-    description:
-      "I balance product needs with existing code, framework limitations, security requirements, and delivery timelines. A useful solution has to work in the environment the team actually has.",
+    icon: "habitConstraints",
+    context:
+      "I balance product needs with existing code, framework limitations, security requirements, and delivery timelines.",
+    takeaway:
+      "A useful solution has to work in the environment the team actually has.",
   },
   {
     title: "Build for reliability",
-    description:
-      "I think about bad input, race conditions, failed integrations, and recovery while I build. Reliability is part of the work, not something to add after the feature is finished.",
+    icon: "habitReliability",
+    context:
+      "I think about bad input, race conditions, failed integrations, and recovery while I build.",
+    takeaway:
+      "Reliability is part of the work, not something to add after the feature is finished.",
   },
   {
     title: "Leave software easier to maintain",
-    description:
-      "I look for clear responsibilities, reusable dependencies, simpler migration paths, and automation that removes repetitive work. The next change should be easier than the last one.",
+    icon: "habitMaintain",
+    context:
+      "I look for clear responsibilities, reusable dependencies, simpler migration paths, and automation that removes repetitive work.",
+    takeaway: "The next change should be easier than the last one.",
   },
   {
     title: "Follow the work through delivery",
-    description:
-      "I stay involved through implementation, testing, debugging, release checks, and maintenance. I want to know that the change works outside my local environment.",
+    icon: "habitDeliver",
+    context:
+      "I stay involved through implementation, testing, debugging, release checks, and maintenance.",
+    takeaway:
+      "I want to know that the change works outside my local environment.",
   },
   {
     title: "Work directly with the people involved",
-    description:
+    icon: "habitPeople",
+    context:
       "I clarify requirements with technical and business stakeholders, coordinate verification with QA, and explain decisions in terms each group can use.",
+    everyStep: true,
   },
 ];
 
@@ -143,7 +163,7 @@ const awards: Awards[] = [
   {
     title: "Second place at the DIVEC 2019 showcase",
     org: "Universidad De Guadalajara",
-    desc: "Placed second among 40 projects with a scalable microservices architecture.",
+    desc: "Placed second among more than 40 projects with a scalable microservices architecture.",
   },
 ];
 

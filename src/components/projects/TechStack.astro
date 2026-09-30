@@ -1,0 +1,81 @@
+---
+import type { ProjectTech } from "@appTypes/project";
+import { projectStack } from "@data/icons";
+import SVGIcon from "bloomwright-ui/components/primitive/SVGIcon.astro";
+
+interface Props {
+  stack: readonly ProjectTech[];
+  label: string;
+  /** `chip` is the bordered pill used on cards; `tile` is a borderless icon-over-name grid for project pages. */
+  variant?: "chip" | "tile";
+  size?: "md" | "lg";
+  class?: string;
+}
+
+const {
+  stack,
+  label,
+  variant = "chip",
+  size = "md",
+  class: className,
+} = Astro.props;
+const isTile = variant === "tile";
+const iconClass = isTile ? "size-10" : size === "lg" ? "size-7" : "size-6";
+---
+
+<ul
+  class:list={[
+    isTile
+      ? "grid grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))] gap-x-3 gap-y-6"
+      : "flex flex-wrap gap-2",
+    className,
+  ]}
+  aria-label={label}
+  data-tech-stack={variant}
+>
+  {
+    stack.map((tech) => {
+      const icon = tech.icon ? projectStack[tech.icon] : undefined;
+
+      return (
+        <li
+          class:list={
+            isTile
+              ? "flex min-w-0 flex-col items-start gap-2.5"
+              : [
+                  "badge h-auto gap-2 rounded-full border-base-300 bg-base-100 font-medium text-base-content",
+                  // Inset keeps a square icon's corners inside the pill's curve.
+                  size === "lg"
+                    ? "py-2 pl-3 pr-4 text-sm"
+                    : "py-1.5 pl-2.5 pr-3.5 text-xs sm:text-sm",
+                ]
+          }
+        >
+          {icon ? (
+            <SVGIcon icon={icon} label="" class:list={[iconClass, "shrink-0"]} />
+          ) : (
+            <span
+              class:list={[
+                iconClass,
+                "grid shrink-0 place-items-center font-mono font-bold leading-none",
+                isTile
+                  ? "rounded-lg bg-base-content/10 text-sm"
+                  : "rounded-md bg-base-content/12 text-[0.65rem]",
+              ]}
+              aria-hidden="true"
+            >
+              {tech.monogram}
+            </span>
+          )}
+          {isTile ? (
+            <span class="text-xs font-semibold leading-tight text-base-content/80">
+              {tech.label}
+            </span>
+          ) : (
+            tech.label
+          )}
+        </li>
+      );
+    })
+  }
+</ul>

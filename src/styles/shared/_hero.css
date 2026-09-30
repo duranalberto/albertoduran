@@ -39,6 +39,21 @@
   }
 }
 
+/* Project heroes split text and image from lg, where the shared grid still
+   stacks, so the image does not fill a tablet-width screen. */
+@media (min-width: theme(--breakpoint-lg)) {
+  .project-hero .hero-grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 3rem;
+  }
+}
+
+@media (min-width: theme(--breakpoint-xl)) {
+  .project-hero .hero-grid {
+    gap: 4rem;
+  }
+}
+
 .hero-primary {
   display: flex;
   min-width: 0;

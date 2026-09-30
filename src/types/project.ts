@@ -5,6 +5,13 @@ export interface ProjectFact {
   value: string;
 }
 
+/** `icon` is a key of `projectStack` in @data/icons; without one a monogram renders. */
+export interface ProjectTech {
+  label: string;
+  icon?: string;
+  monogram?: string;
+}
+
 export interface ProjectLinks {
   githubUrl?: string;
   liveUrl?: string;
@@ -19,4 +26,6 @@ export interface ProjectPageConfig {
   eyebrow?: string;
   facts?: ProjectFact[];
   links?: ProjectLinks;
+  /** Shown as the "Built with" grid under the hero image. */
+  stack?: readonly ProjectTech[];
 }

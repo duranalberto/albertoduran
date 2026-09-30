@@ -1,0 +1,19 @@
+---
+import type { ProjectStat } from "@data/projects";
+import { publishedEntries } from "@content/processors/thejournal";
+
+interface Props {
+  stat: ProjectStat;
+  class?: string;
+}
+
+const { stat, class: className } = Astro.props;
+const value = "count" in stat ? String(publishedEntries.length) : stat.value;
+---
+
+<p class:list={["flex flex-wrap items-baseline gap-x-2", className]} data-project-stat>
+  <strong class="font-display text-2xl font-bold tabular-nums text-primary">
+    {value}
+  </strong>
+  <span class="text-sm text-base-content/70">{stat.label}</span>
+</p>

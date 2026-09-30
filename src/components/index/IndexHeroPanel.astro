@@ -2,102 +2,114 @@
 /**
  * IndexHeroPanel.astro
  *
- * Personal "Currently + Interests" right-side panel for IndexHero.
- * Combines a "currently doing" status stack with a personality interests grid.
+ * Personal "Live Feed + Interests" right-side column for IndexHero. It sits
+ * in the hero like the text column does (eyebrow, line icons, display type)
+ * instead of as a separate card.
  */
+import { ui } from "@data/icons";
+import SVGIcon from "bloomwright-ui/components/primitive/SVGIcon.astro";
 
 interface CurrentItem {
-  emoji: string;
+  icon: string;
   label: string;
   values: string[];
 }
 
 interface InterestTile {
-  emoji: string;
+  icon: string;
   label: string;
   detail: string;
 }
 
 const currentItems: CurrentItem[] = [
   {
-    emoji: "🏗️",
+    icon: "feedBuilding",
     label: "Building",
-    values: ["AWS Lambda pipelines", "LangGraph agents workflows"],
+    values: [
+      "Ravnary.com",
+      "AWS Lambda pipelines",
+      "LangGraph agents workflows",
+    ],
   },
   {
-    emoji: "🎮",
+    icon: "feedPlaying",
     label: "Playing",
     values: ["Splatoon 3", "Pokopia"],
   },
   {
-    emoji: "📺",
+    icon: "feedWatching",
     label: "Watching",
-    values: ["Shop for Killers (Disney+)"],
+    values: ["Lanterns", "Rick and Morty"],
   },
-  /*{ emoji: "🎬", label: "Watched", values: ["Super Mario Galaxy"] },
-  { emoji: "🎵", label: "Listening", values: ["31 Minutos"] },*/
+  /*{ icon: "feedWatching", label: "Watched", values: ["Super Mario Galaxy"] },
+  { icon: "…", label: "Listening", values: ["31 Minutos"] },*/
 ];
 
 const interests: InterestTile[] = [
-  { emoji: "🦊", label: "Atlas FC", detail: "Even if they win" },
-  { emoji: "🎮", label: "Gaming", detail: "Zelda · Pokémon · Fire Emblem" },
-  { emoji: "📺", label: "TV Series", detail: "GoT · HotD · AKOTSK" },
-  { emoji: "⚽", label: "Sports", detail: "Football · Volleyball · Padel" },
-  { emoji: "☕", label: "Drinks", detail: "Cofee · Tea" },
-  { emoji: "🍴", label: "Food", detail: "Tacos · Chilaquiles" },
+  { icon: "atlas", label: "Atlas FC", detail: "Even if they win" },
+  { icon: "feedPlaying", label: "Gaming", detail: "Zelda · Pokémon · Fire Emblem" },
+  { icon: "interestSeries", label: "TV Series", detail: "GoT · HotD · AKOTSK" },
+  { icon: "interestSports", label: "Sports", detail: "Football · Volleyball · Padel" },
+  { icon: "interestDrinks", label: "Drinks", detail: "Cofee · Tea" },
+  { icon: "interestFood", label: "Food", detail: "Tacos · Chilaquiles" },
 ];
 ---
 
-<aside
-  class="hero-panel glass-surface rounded-3xl shadow-2xl flex flex-col gap-0 w-full"
-  aria-label="Personal snapshot"
->
-  <div
-    class="hero-panel-currently px-6 pt-6 pb-5 overflow-hidden rounded-t-3xl"
-  >
-    <p class="hero-panel-eyebrow mb-4" aria-hidden="true">
+<aside class="hero-panel" aria-label="Personal snapshot">
+  <section aria-labelledby="hero-panel-feed">
+    <h2 id="hero-panel-feed" class="hero-panel-eyebrow">
       <span class="hero-panel-pulse" aria-hidden="true"></span>
       Live Feed
-    </p>
+    </h2>
 
     <ul class="hero-panel-status-list" role="list">
       {
-        currentItems.map((item, i) => (
-          <li class="hero-panel-status-item" style={`--item-index: ${i};`}>
-            <span class="hero-panel-status-emoji" aria-hidden="true">
-              {item.emoji}
-            </span>
-            <span class="hero-panel-status-label">{item.label}</span>
-            <span class="hero-panel-status-value">
-              {item.values.join(" · ")}
-            </span>
-          </li>
-        ))
+        currentItems.map((item, i) => {
+          const icon = ui[item.icon];
+
+          return (
+            <li class="hero-panel-status-item" style={`--item-index: ${i};`}>
+              <span class="hero-panel-status-icon" aria-hidden="true">
+                {icon && <SVGIcon icon={icon} label="" class="size-5" />}
+              </span>
+              <span class="hero-panel-status-label">{item.label}</span>
+              <span class="hero-panel-status-value">
+                {item.values.join(" · ")}
+              </span>
+            </li>
+          );
+        })
       }
     </ul>
-  </div>
+  </section>
 
-  <div class="hero-panel-divider" aria-hidden="true"></div>
-
-  <div
-    class="hero-panel-interests px-6 pt-5 pb-6 overflow-hidden rounded-b-3xl"
-  >
-    <p class="hero-panel-eyebrow mb-4" aria-hidden="true">
+  <section aria-labelledby="hero-panel-interests">
+    <h2 id="hero-panel-interests" class="hero-panel-eyebrow">
       A few things I care about
-    </p>
+    </h2>
 
-    <ul class="hero-panel-grid" role="list" aria-label="Personal interests">
+    <ul class="hero-panel-grid" role="list">
       {
-        interests.map((tile, i) => (
-          <li class="hero-panel-tile" style={`--tile-index: ${i};`}>
-            <span class="hero-panel-tile-emoji" aria-hidden="true">
-              {tile.emoji}
-            </span>
-            <span class="hero-panel-tile-label">{tile.label}</span>
-            <span class="hero-panel-tile-detail">{tile.detail}</span>
-          </li>
-        ))
+        interests.map((tile, i) => {
+          const icon = ui[tile.icon];
+
+          return (
+            <li class="hero-panel-tile" style={`--tile-index: ${i};`}>
+              <span class="hero-panel-tile-head">
+                {icon && (
+                  <SVGIcon
+                    icon={icon}
+                    label=""
+                    class="hero-panel-tile-icon size-5"
+                  />
+                )}
+                <span class="hero-panel-tile-label">{tile.label}</span>
+              </span>
+              <span class="hero-panel-tile-detail">{tile.detail}</span>
+            </li>
+          );
+        })
       }
     </ul>
-  </div>
+  </section>
 </aside>

@@ -40,7 +40,11 @@ const isTestMode = process.env.ALBERTODURAN_TEST_MODE === "true";
     <ProfileView />
 
     <FlexShell>
-      <SectionHeader title="Featured Projects" />
+      <SectionHeader
+        title="Featured Projects"
+        linkHref="/projects/"
+        linkLabel="Browse all projects"
+      />
       <ProjectsGrid />
     </FlexShell>
 

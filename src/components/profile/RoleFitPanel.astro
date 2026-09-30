@@ -1,53 +1,138 @@
-<article
-  class="card card-border overflow-hidden bg-base-200 text-base-content shadow-sm"
+---
+// Plain strings are text; one-item arrays are highlighted keywords. Keeping
+// the spaces inside the strings stops whitespace collapsing next to <mark>.
+type Segment = string | [string];
+
+interface Stage {
+  id: string;
+  label: string;
+  title: string;
+  body: Segment[];
+  current?: boolean;
+}
+
+const stages: Stage[] = [
+  {
+    id: "role-fit-evidence",
+    label: "Today",
+    title: "What I bring",
+    body: [
+      "I have worked with ",
+      ["enterprise Java"],
+      ", ",
+      ["Python migration tools"],
+      ", ",
+      ["web platforms"],
+      ", and ",
+      ["production reliability"],
+      " issues. My personal projects add ",
+      ["AWS"],
+      " serverless services, ",
+      ["Next.js"],
+      ", ",
+      ["Astro"],
+      ", ",
+      ["FastAPI"],
+      ", ",
+      ["REST APIs"],
+      ", ",
+      ["authentication"],
+      ", and ",
+      ["data persistence"],
+      ".",
+    ],
+  },
+  {
+    id: "role-fit-target",
+    label: "Looking for",
+    title: "Where I fit",
+    current: true,
+    body: [
+      "I am looking for ",
+      ["full-stack or backend-oriented"],
+      " work. ",
+      ["Internal tools"],
+      ", ",
+      ["web platforms"],
+      ", ",
+      ["application modernization"],
+      ", and ",
+      ["migration projects"],
+      " are a particularly good match for my experience.",
+    ],
+  },
+  {
+    id: "role-fit-growth",
+    label: "Next",
+    title: "Where I want to grow",
+    body: [
+      "I want more responsibility for the ",
+      ["services and data behind a product"],
+      ". I also want to deepen my ",
+      ["cloud and backend framework"],
+      " experience.",
+    ],
+  },
+];
+---
+
+<div
+  class="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_auto_1fr_auto_1fr] lg:items-stretch"
   data-role-fit
 >
-  <div class="grid gap-0 lg:grid-cols-3">
-    <section class="p-6 sm:p-8" aria-labelledby="role-fit-target">
-      <h3
-        id="role-fit-target"
-        class="font-display text-xl font-semibold leading-tight"
-      >
-        Where I fit
-      </h3>
-      <p class="mt-3 leading-7 text-base-content/75">
-        I am looking for full-stack or backend-oriented work. Internal tools,
-        web platforms, application modernization, and migration projects are a
-        particularly good match for my experience.
-      </p>
-    </section>
+  {
+    stages.map((stage, index) => (
+      <>
+        {index > 0 && (
+          <span
+            class="hidden self-center text-2xl text-primary lg:block"
+            aria-hidden="true"
+          >
+            →
+          </span>
+        )}
+        <section
+          class:list={[
+            "flex flex-col gap-4 rounded-box p-6 sm:p-8",
+            stage.current ? "role-fit-now" : "bg-base-200",
+          ]}
+          aria-labelledby={stage.id}
+        >
+          <p class="text-xs font-bold uppercase tracking-widest text-base-content/60">
+            {stage.label}
+          </p>
+          <h3
+            id={stage.id}
+            class="font-display text-xl font-semibold leading-tight"
+          >
+            {stage.title}
+          </h3>
+          <p class="leading-7 text-base-content/75">
+            {stage.body.map((segment) =>
+              typeof segment === "string" ? segment : <mark>{segment[0]}</mark>,
+            )}
+          </p>
+        </section>
+      </>
+    ))
+  }
+</div>
 
-    <section
-      class="border-t border-base-300 p-6 sm:p-8 lg:border-l lg:border-t-0"
-      aria-labelledby="role-fit-evidence"
-    >
-      <h3
-        id="role-fit-evidence"
-        class="font-display text-xl font-semibold leading-tight"
-      >
-        What I bring
-      </h3>
-      <p class="mt-3 leading-7 text-base-content/75">
-        I have worked with enterprise Java, Python migration tools, web
-        platforms, and production reliability issues. My personal projects add
-        FastAPI, REST APIs, authentication, and data persistence.
-      </p>
-    </section>
+<style>
+  /* The target role stands out from the two cards around it. */
+  .role-fit-now {
+    background: color-mix(in srgb, var(--color-primary) 10%, var(--color-base-200));
+  }
 
-    <section
-      class="border-t border-base-300 p-6 sm:p-8 lg:border-l lg:border-t-0"
-      aria-labelledby="role-fit-growth"
-    >
-      <h3
-        id="role-fit-growth"
-        class="font-display text-xl font-semibold leading-tight"
-      >
-        Where I want to grow
-      </h3>
-      <p class="mt-3 leading-7 text-base-content/75">
-        I want more responsibility for the services and data behind a product. I
-        also want to deepen my cloud and backend framework experience.
-      </p>
-    </section>
-  </div>
-</article>
+  /* A low highlighter stroke, so keywords catch a skimming eye without
+     turning the paragraph into a wall of bold. */
+  mark {
+    padding-inline: 0.1em;
+    background: linear-gradient(
+      transparent 58%,
+      color-mix(in srgb, var(--color-primary) 22%, transparent) 58%
+    );
+    color: var(--color-base-content);
+    font-weight: 600;
+  }
+</style>

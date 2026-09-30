@@ -7,7 +7,14 @@ export interface Skills {
 
 export interface Strength {
   title: string;
-  description: string;
+  /** Key of the `ui` icon set in @data/icons. */
+  icon: string;
+  /** The supporting sentence, shown second in smaller type. */
+  context: string;
+  /** The habit's one-line conclusion, shown first. Omitted when the habit is a single sentence. */
+  takeaway?: string;
+  /** Applies across the whole path instead of being one step in it. */
+  everyStep?: boolean;
 }
 
 export interface Experience {

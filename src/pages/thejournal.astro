@@ -8,6 +8,7 @@ import FlexShell from "@layouts/FlexShell.astro";
 import image from "@assets/thejournal/stock/10.jpg";
 import { isVaultChild } from "@content/entry_kind";
 import { formatDuration } from "@utils/format";
+import { blogJsonLd, breadcrumbJsonLd } from "@utils/seo";
 
 const byNewestPubDate = (a: { pubDate: Date }, b: { pubDate: Date }) =>
   b.pubDate.getTime() - a.pubDate.getTime();
@@ -31,7 +32,19 @@ const totalReadMinutes = catalog.reduce(
 const totalReadTime = formatDuration(totalReadMinutes);
 ---
 
-<BaseLayout siteManifest={sitesManifest["/thejournal/"]} image={image}>
+<BaseLayout
+  siteManifest={sitesManifest["/thejournal/"]}
+  image={image}
+  seo={{
+    jsonLd: ({ site, url }) => [
+      blogJsonLd(site, url, sitesManifest["/thejournal/"].description),
+      breadcrumbJsonLd(site, [
+        ["Home", "/"],
+        ["theJournal", "/thejournal/"],
+      ]),
+    ],
+  }}
+>
   <JournalHero
     slot="hero"
     publicationCount={publicationCount}

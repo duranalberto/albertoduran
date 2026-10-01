@@ -5,12 +5,22 @@ import { withResolvedStats } from "@content/project_stats";
 import { projectCatalog } from "@data/projects";
 import { sitesManifest } from "@data/site_manifest";
 import BaseLayout from "@layouts/BaseLayout.astro";
+import { breadcrumbJsonLd } from "@utils/seo";
 ---
 
 <BaseLayout
   siteManifest={sitesManifest["/projects/"]}
   image={projectCatalog[0].image}
   mainClass="pb-0"
+  seo={{
+    imageAlt: projectCatalog[0].imageAlt,
+    jsonLd: ({ site }) => [
+      breadcrumbJsonLd(site, [
+        ["Home", "/"],
+        ["Projects", "/projects/"],
+      ]),
+    ],
+  }}
 >
   <ProjectsHero slot="hero" projectCount={projectCatalog.length} />
   <ProjectsCatalog projects={withResolvedStats(projectCatalog)} />

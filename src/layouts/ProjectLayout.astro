@@ -9,6 +9,7 @@ import {
 } from "@data/project_page";
 import { vaultsManifest } from "@content/processors/thejournal";
 import BaseLayout from "@layouts/BaseLayout.astro";
+import { breadcrumbJsonLd, projectJsonLd } from "@utils/seo";
 import FlexShell from "@layouts/FlexShell.astro";
 
 interface Props {
@@ -34,10 +35,34 @@ if (heroLink) {
 const journalHref = heroLink?.href;
 const vault = heroLink?.vaultId ? vaultsManifest[heroLink.vaultId] : undefined;
 
-const siteManifest = buildSiteManifest(project);
+const siteManifest = buildSiteManifest({
+  title: project.title,
+  description: project.metaDescription ?? project.description,
+});
+const path = Astro.url.pathname;
 ---
 
-<BaseLayout siteManifest={siteManifest} image={project.image}>
+<BaseLayout
+  siteManifest={siteManifest}
+  image={project.image}
+  seo={{
+    imageAlt: project.imageAlt,
+    jsonLd: ({ site, image }) => [
+      projectJsonLd(site, {
+        title: project.title,
+        description: siteManifest.description,
+        path,
+        image,
+        repository: project.links?.githubUrl,
+      }),
+      breadcrumbJsonLd(site, [
+        ["Home", "/"],
+        ["Projects", "/projects/"],
+        [project.title, path],
+      ]),
+    ],
+  }}
+>
   <ProjectHero slot="hero" project={project} journalHref={journalHref} />
 
   <FlexShell class="flex flex-col gap-20 md:gap-28 lg:gap-32">

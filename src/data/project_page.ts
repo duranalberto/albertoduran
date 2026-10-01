@@ -2,6 +2,7 @@ import type { SiteManifest } from "@appTypes/navigation";
 import type { ProjectPageConfig } from "@appTypes/project";
 import { isVaultChild } from "@content/entry_kind";
 import { projectCatalog, type ProjectSummary } from "@data/projects";
+import { pickDescription } from "@utils/seo";
 
 export type ProjectHref = (typeof projectCatalog)[number]["href"];
 
@@ -38,7 +39,13 @@ export function defineProjectPage(
     );
   }
 
-  return { ...rest, title, image: entry.image, imageAlt: entry.imageAlt };
+  return {
+    ...rest,
+    title,
+    image: entry.image,
+    imageAlt: entry.imageAlt,
+    metaDescription: pickDescription(rest.description, entry.tagline),
+  };
 }
 
 /** A project page may link to a standalone publication or a vault root only. */

@@ -8,6 +8,7 @@ import JournalGrid from "@components/shared/JournalGrid.astro";
 import ProjectsGrid from "@components/shared/ProjectsGrid.astro";
 import { entryManifest } from "@content/processors/thejournal";
 import { resolveFeaturedPublications } from "@data/featured_publications";
+import { websiteJsonLd } from "@utils/seo";
 import { sitesManifest } from "@data/site_manifest";
 import BaseLayout from "@layouts/BaseLayout.astro";
 import FlexShell from "@layouts/FlexShell.astro";
@@ -19,7 +20,15 @@ const catalog = resolveFeaturedPublications(entryManifest);
 const atlasNoteToggleId = "atlas-story-modal";
 ---
 
-<BaseLayout siteManifest={sitesManifest["/"]} image={image}>
+<BaseLayout
+  siteManifest={sitesManifest["/"]}
+  image={image}
+  seo={{
+    jsonLd: ({ site }) => [
+      websiteJsonLd(site, sitesManifest["/"].description),
+    ],
+  }}
+>
   <IndexHero slot="hero" />
 
   <div class="flex flex-col gap-20">

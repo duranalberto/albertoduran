@@ -19,6 +19,8 @@ import {
 } from "@content/processors/thejournal";
 import { ui } from "@data/icons";
 import { buildSiteManifest } from "@data/project_page";
+import { journalHref, journalIndexHref } from "@utils/routes";
+import { articleJsonLd, breadcrumbJsonLd, type PageSeo } from "@utils/seo";
 import BaseLayout from "@layouts/BaseLayout.astro";
 import FlexShell from "@layouts/FlexShell.astro";
 import { render } from "astro:content";
@@ -76,8 +78,51 @@ const vaultModalTitleId = "vault-modal-title";
 const otpModalTitleId = "otp-modal-title";
 const siteManifest = buildSiteManifest(entry);
 
+// Breadcrumb: Home > theJournal > each published ancestor (vault, section) > entry.
+const ancestors = entry.id
+  .split("/")
+  .slice(0, -1)
+  .map((_, index, parts) => parts.slice(0, index + 1).join("/"))
+  .flatMap((id) => {
+    const ancestor = entryManifest[id];
+    return ancestor ? [[ancestor.title, journalHref(id)] as const] : [];
+  });
+const entryPath = journalHref(entry.id);
+const series =
+  vaultContext && vaultContext.id !== entry.id
+    ? { name: vaultContext.title, path: journalHref(vaultContext.id) }
+    : undefined;
+
+const seo: PageSeo = {
+  imageAlt: entry.title,
+  article: {
+    published: entry.pubDate,
+    modified: entry.updatedDate,
+    tags: entry.tags,
+  },
+  jsonLd: ({ site, image }) => [
+    articleJsonLd(site, {
+      title: entry.title,
+      description: entry.description,
+      path: entryPath,
+      image,
+      published: entry.pubDate,
+      modified: entry.updatedDate,
+      tags: entry.tags,
+      series,
+    }),
+    breadcrumbJsonLd(site, [
+      ["Home", "/"],
+      ["theJournal", journalIndexHref],
+      ...ancestors,
+      [entry.title, entryPath],
+    ]),
+  ],
+};
+
 const layoutProps = {
   siteManifest,
+  seo,
   ...(entry.image ? { image: entry.image } : {}),
 };
 ---

@@ -6,7 +6,13 @@ import SVGIcon from "bloomwright-ui/components/primitive/SVGIcon.astro";
 import { ui } from "@data/icons";
 ---
 
-<BaseLayout siteManifest={sitesManifest["404"]}>
+<BaseLayout
+  siteManifest={sitesManifest["404"]}
+  seo={{
+    noindex: true,
+    imageAlt: "A pink Kirby plush in front of monitors showing this site",
+  }}
+>
   <section
     class="relative flex flex-col items-center justify-center min-h-dvh px-8 text-center bg-base-100 overflow-hidden isolate"
   >

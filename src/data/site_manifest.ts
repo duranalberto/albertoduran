@@ -4,14 +4,14 @@ import { identity } from "@data/identity";
 export const sitesManifest: Record<Sites, SiteManifest> = {
   "/": {
     label: "AlbertoDuran",
-    pageTitle: "Alberto Duran",
+    pageTitle: "Alberto Duran | Software Engineer",
     description:
       "Hi! You've found my tiny space in the digital world. Feel free to explore: whether it's for recruiting or reading my publications",
   },
   "/profile/": {
     label: "Professional profile",
     pageTitle: "Alberto Duran | Full-Stack and Backend Systems Engineer",
-    description: `${identity.name} is a software engineer with ${identity.experienceLabel} of experience across full-stack applications, backend systems, enterprise Java, Python tooling, and TypeScript platforms.`,
+    description: `${identity.name} is a software engineer with ${identity.experienceLabel} of experience in full-stack apps, backend systems, enterprise Java, Python tooling, and TypeScript.`,
   },
   "/projects/": {
     label: "Projects",
@@ -22,7 +22,8 @@ export const sitesManifest: Record<Sites, SiteManifest> = {
   "/thejournal/": {
     label: "TheJournal.",
     pageTitle: "TheJournal - Insights & Documentation",
-    description: "Like a blog, but with a cooler name",
+    description:
+      "Technical write-ups and project vaults by Alberto Duran on software architecture, AWS, Python, AI agents, and how this site is built.",
   },
   "404": {
     label: "404",

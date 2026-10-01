@@ -37,4 +37,6 @@ export interface ProjectPageConfig {
   links?: ProjectLinks;
   /** Shown as the "Built with" grid under the hero image. */
   stack?: readonly ProjectTech[];
+  /** Search snippet: the description if it fits, else the catalog tagline. */
+  metaDescription?: string;
 }

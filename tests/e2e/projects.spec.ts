@@ -1,3 +1,4 @@
+import { formatTitle } from "../../src/utils/seo";
 import { expect, test } from "@playwright/test";
 import { githubRepoUrl } from "../../src/data/identity";
 import { STREAM_VAULT_CATALOG_URL } from "../../src/data/stream_vault";
@@ -271,7 +272,7 @@ test("project showcase renders its hero actions, body, and grouped vault", async
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/projects/albertoduran/");
 
-  await expect(page).toHaveTitle("albertoduran.com");
+  await expect(page).toHaveTitle(formatTitle("albertoduran.com"));
   await expect(
     page.getByRole("heading", { level: 1, name: "albertoduran.com" }),
   ).toBeVisible();
@@ -417,7 +418,7 @@ for (const showcase of projectShowcases) {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(showcase.route);
 
-    await expect(page).toHaveTitle(showcase.title);
+    await expect(page).toHaveTitle(formatTitle(showcase.title));
     await expect(
       page.getByRole("heading", { level: 1, name: showcase.title }),
     ).toBeVisible();
@@ -535,7 +536,7 @@ test("Serverless VOD and StreamVault showcases two projects with one public repo
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/projects/serverless-vod/");
 
-  await expect(page).toHaveTitle(title);
+  await expect(page).toHaveTitle(formatTitle(title));
   await expect(
     page.getByRole("heading", { level: 1, name: title }),
   ).toBeVisible();

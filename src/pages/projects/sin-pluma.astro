@@ -1,18 +1,21 @@
 ---
-import type { ProjectPageConfig } from "@appTypes/project";
 import workImage from "@assets/thejournal/pub/sinpluma_01.png";
 import searchImage from "@assets/thejournal/pub/sinpluma_02.png";
 import editorImage from "@assets/thejournal/pub/sinpluma_04.png";
 import signInImage from "@assets/thejournal/pub/sinpluma_05.jpg";
-import coverImage from "@assets/thejournal/stock/07.avif";
 import Callout from "bloomwright-ui/components/display/Callout.astro";
 import MockupBrowser from "bloomwright-ui/components/display/MockupBrowser.astro";
-import SectionHeader from "bloomwright-ui/components/display/SectionHeader.astro";
-import Steps, { type StepItem } from "bloomwright-ui/components/display/Steps.astro";
+import Steps from "bloomwright-ui/components/display/Steps.astro";
 import MermaidDiagram from "bloomwright-ui/components/render/MermaidDiagram.astro";
 import { defineMermaidDiagram } from "bloomwright-ui/mermaid";
 import { defineJournalLinks } from "@content/define_journal_links";
 import ProjectLayout from "@layouts/ProjectLayout.astro";
+import { defineProjectPage } from "@data/project_page";
+import { completedSteps } from "@utils/steps";
+import ProjectSection from "@components/projects/sections/ProjectSection.astro";
+import OutcomeBanner from "@components/projects/sections/OutcomeBanner.astro";
+import ArrowLink from "@components/ui/navigation/ArrowLink.astro";
+import { githubRepoUrl } from "@data/identity";
 import { Picture } from "astro:assets";
 
 const journal = await defineJournalLinks(
@@ -26,14 +29,10 @@ const journal = await defineJournalLinks(
   { owner: "Sin Pluma", vault: "sin_pluma" },
 );
 
-const project: ProjectPageConfig = {
-  title: "Sin Pluma",
+const project = defineProjectPage("/projects/sin-pluma/", {
   eyebrow: "Writing Platform · Distributed Systems",
   description:
     "An academic writing platform that taught me how satisfying software architecture can be when many separate parts finally work as one system.",
-  image: coverImage,
-  imageAlt:
-    "A typewriter and writing desk representing the Sin Pluma publishing platform",
   facts: [
     { label: "Experience", value: "React · Slate" },
     { label: "API", value: "Flask REST" },
@@ -50,10 +49,10 @@ const project: ProjectPageConfig = {
     { label: "Docker", icon: "docker" },
   ],
   links: {
-    githubUrl: "https://github.com/duranalberto/SinPluma",
+    githubUrl: githubRepoUrl("SinPluma"),
     journalId: "sin_pluma",
   },
-};
+});
 
 const journeys = [
   {
@@ -103,13 +102,13 @@ const platformCapabilities = [
   },
 ];
 
-const requestSteps: StepItem[] = [
-  { label: "Enter through Nginx", marker: "1", color: "success" },
-  { label: "Validate in Flask", marker: "2", color: "success" },
-  { label: "Coordinate services", marker: "3", color: "success" },
-  { label: "Commit durable state", marker: "4", color: "success" },
-  { label: "Update the experience", marker: "5", color: "success" },
-];
+const requestSteps = completedSteps([
+  "Enter through Nginx",
+  "Validate in Flask",
+  "Coordinate services",
+  "Commit durable state",
+  "Update the experience",
+]);
 
 const architectureDiagram = defineMermaidDiagram(String.raw`
 flowchart TB
@@ -162,8 +161,7 @@ flowchart TB
 ---
 
 <ProjectLayout project={project}>
-  <section id="overview" class="w-full" aria-labelledby="overview-title">
-    <SectionHeader id="overview-title" title="The project that made architecture click" />
+  <ProjectSection id="overview" title="The project that made architecture click">
 
     <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12">
       <div class="flex flex-col gap-5 lg:col-span-7">
@@ -194,10 +192,9 @@ flowchart TB
         </p>
       </Callout>
     </div>
-  </section>
+  </ProjectSection>
 
-  <section id="journeys" class="w-full" aria-labelledby="journeys-title">
-    <SectionHeader id="journeys-title" title="From first discovery to the next draft" />
+  <ProjectSection id="journeys" title="From first discovery to the next draft">
 
     <div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
       {
@@ -214,17 +211,9 @@ flowchart TB
         ))
       }
     </div>
-  </section>
+  </ProjectSection>
 
-  <section
-    id="product-tour"
-    class="w-full"
-    aria-labelledby="product-tour-title"
-  >
-    <SectionHeader
-      id="product-tour-title"
-      title="From signing in to choosing a chapter"
-    />
+  <ProjectSection id="product-tour" title="From signing in to choosing a chapter">
 
     <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
       The finished interface gave readers a direct path into the library. They
@@ -300,10 +289,9 @@ flowchart TB
         </span>
       </MockupBrowser>
     </div>
-  </section>
+  </ProjectSection>
 
-  <section id="editor" class="w-full" aria-labelledby="editor-title">
-    <SectionHeader id="editor-title" title="The architecture begins with a writing surface" />
+  <ProjectSection id="editor" title="The architecture begins with a writing surface">
 
     <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-center">
       <div class="lg:col-span-4">
@@ -312,12 +300,9 @@ flowchart TB
           plain textarea. React composes the workspace, Redux holds shared state,
           and Axios manages authenticated communication with the API.
         </p>
-        <a
-          href={journal.frontend.href}
-          class="inline-flex font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
-        >
-          Explore the frontend engineering &rarr;
-        </a>
+        <ArrowLink href={journal.frontend.href}>
+          Explore the frontend engineering
+        </ArrowLink>
       </div>
 
       <MockupBrowser
@@ -343,24 +328,18 @@ flowchart TB
         </span>
       </MockupBrowser>
     </div>
-  </section>
+  </ProjectSection>
 
-  <section id="architecture" class="w-full" aria-labelledby="architecture-title">
-    <SectionHeader id="architecture-title" title="Specialized services behind one entry point" />
+  <ProjectSection id="architecture" title="Specialized services behind one entry point">
     <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
       Nginx exposes one public surface and routes requests inward. React owns the
       browser experience, Flask coordinates business behavior, and the storage
       layer separates content, objects, and revocation state.
     </p>
     <MermaidDiagram code={architectureDiagram} />
-  </section>
+  </ProjectSection>
 
-  <section
-    id="service-boundaries"
-    class="w-full"
-    aria-labelledby="service-boundaries-title"
-  >
-    <SectionHeader id="service-boundaries-title" title="Boundaries that support the product" />
+  <ProjectSection id="service-boundaries" title="Boundaries that support the product">
 
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
       {
@@ -380,10 +359,9 @@ flowchart TB
         ))
       }
     </div>
-  </section>
+  </ProjectSection>
 
-  <section id="availability" class="w-full" aria-labelledby="availability-title">
-    <SectionHeader id="availability-title" title="The database can lose a node without losing the product" />
+  <ProjectSection id="availability" title="The database can lose a node without losing the product">
 
     <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-center">
       <div class="lg:col-span-7">
@@ -415,10 +393,9 @@ flowchart TB
         <span class="mt-5 block font-bold">Read the cluster design &rarr;</span>
       </a>
     </div>
-  </section>
+  </ProjectSection>
 
-  <section id="delivery" class="w-full" aria-labelledby="delivery-title">
-    <SectionHeader id="delivery-title" title="A request crosses clear ownership boundaries" />
+  <ProjectSection id="delivery" title="A request crosses clear ownership boundaries">
     <Steps
       items={requestSteps}
       aria-label="Sin Pluma request and publishing lifecycle"
@@ -447,23 +424,13 @@ flowchart TB
         </p>
       </div>
     </div>
-  </section>
+  </ProjectSection>
 
-  <section
-    id="outcome"
-    class="overflow-hidden rounded-box bg-primary p-8 text-primary-content shadow-xl md:p-12 lg:p-16"
-    aria-labelledby="outcome-title"
-  >
-    <p class="mb-4 text-xs font-bold uppercase tracking-[0.2em] opacity-70">
-      The outcome
-    </p>
-    <h2 id="outcome-title" class="max-w-4xl font-display text-3xl font-bold leading-tight sm:text-4xl">
-      A complete writing experience and a distributed-systems case study in the same product.
-    </h2>
+  <OutcomeBanner title="A complete writing experience and a distributed-systems case study in the same product.">
     <p class="mt-6 max-w-3xl text-lg leading-relaxed opacity-80">
       Sin Pluma connects a useful domain, deliberate service boundaries, secure
       sessions, specialized storage, and automated high availability without
       asking readers or writers to think in containers.
     </p>
-  </section>
+  </OutcomeBanner>
 </ProjectLayout>

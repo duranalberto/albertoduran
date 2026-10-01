@@ -1,6 +1,5 @@
 ---
 import Article from "@components/thejournal/article/Article.astro";
-import type { SiteManifest } from "@appTypes/navigation";
 import OnThisPage from "@components/thejournal/article/OnThisPage.astro";
 import OnThisPageContent from "@components/thejournal/article/OnThisPageContent.astro";
 import Pagination from "@components/thejournal/article/Pagination.astro";
@@ -19,6 +18,7 @@ import {
   vaultsManifest,
 } from "@content/processors/thejournal";
 import { ui } from "@data/icons";
+import { buildSiteManifest } from "@data/project_page";
 import BaseLayout from "@layouts/BaseLayout.astro";
 import FlexShell from "@layouts/FlexShell.astro";
 import { render } from "astro:content";
@@ -35,20 +35,15 @@ const renderResult = await render(post);
 
 const entry = entryManifest[post.id];
 
+// entryManifest and getStaticPaths share publishedEntries, so a miss is a bug.
 if (!entry) {
-  return Astro.redirect("/404");
+  throw new Error(`[thejournal] No manifest entry for published post "${post.id}".`);
 }
 
 const vaultContext = entry.vaultId ? vaultsManifest[entry.vaultId] : undefined;
 
 const vaultIcon = ui.vault;
 const otpIcon = ui.onThisPage;
-
-if (!vaultIcon || !otpIcon) {
-  throw new Error(
-    "Required UI icons (vault/onThisPage) are missing from @data/icons",
-  );
-}
 
 const components = {
   pre: CodeBlock,
@@ -79,11 +74,7 @@ const vaultModalDialogId = `${vaultModalToggleId}-dialog`;
 const otpModalDialogId = `${otpModalToggleId}-dialog`;
 const vaultModalTitleId = "vault-modal-title";
 const otpModalTitleId = "otp-modal-title";
-const siteManifest: SiteManifest = {
-  description: entry.description,
-  pageTitle: entry.title,
-  label: entry.title,
-};
+const siteManifest = buildSiteManifest(entry);
 
 const layoutProps = {
   siteManifest,
@@ -95,8 +86,7 @@ const layoutProps = {
   <div class="journal-root">
     <div class="journal-content flex-1">
       <FlexShell
-        class="journal-shell 2xl:flex 2xl:items-start 2xl:gap-12 py-4 px-4 lg:pb-8"
-        py={0}
+        class="journal-shell 2xl:flex 2xl:items-start 2xl:gap-12 py-4 md:py-0 lg:pb-8"
       >
         {
           vaultContext && (

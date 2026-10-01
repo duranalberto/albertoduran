@@ -7,7 +7,7 @@ import {
   type JournalManifestSourceEntry,
 } from "@content/processors/thejournal-manifest";
 import type { ImageMetadata } from "astro";
-import { isNestedGroup } from "@appTypes/content_context";
+import { isNestedGroup } from "@content/entry_kind";
 
 const image = {
   src: "/fixtures/article.jpg",
@@ -304,5 +304,37 @@ describe("thejournal manifest builder", () => {
         }),
       ]),
     ).toThrow("updatePubDate requires pubDate");
+  });
+
+  it("does not mutate its input entries", () => {
+    const raw = [
+      entry("vault", "vault/index.mdx", { image, github: "repo" }),
+      entry("vault/child", "vault/child.mdx"),
+      entry("post", "post.mdx", { image }),
+    ];
+    const snapshot = structuredClone(raw);
+
+    buildJournalManifest(raw);
+
+    expect(raw).toEqual(snapshot);
+  });
+
+  it("shares the same linked entries between the tree and the manifest", () => {
+    const [entries, vaults] = buildJournalManifest([
+      entry("vault", "vault/index.mdx", { image }),
+      entry("vault/section", "vault/section/index.mdx"),
+      entry("vault/section/leaf", "vault/section/leaf.mdx"),
+    ]);
+    const vault = vaults["vault"]!;
+    const section = vault.items[0]!;
+
+    expect(vault.index).toBe(entries["vault"]);
+    expect(isNestedGroup(section) && section.index).toBe(
+      entries["vault/section"],
+    );
+    expect(entries["vault/section"]?.previous).toBe("vault");
+    expect(entries["vault/section/leaf"]?.previous).toBe("vault/section");
+    expect(entries["vault"]?.vaultId).toBe("vault");
+    expect(entries["vault/section/leaf"]?.image).toBe(image);
   });
 });

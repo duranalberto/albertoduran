@@ -3,6 +3,7 @@ import type { VaultContext } from "@appTypes/content_context";
 import List from "bloomwright-ui/components/display/List.astro";
 import SectionHeader from "bloomwright-ui/components/display/SectionHeader.astro";
 import { buildProjectVaultGroups } from "@utils/project_vault";
+import { journalHref } from "@utils/routes";
 
 interface Props {
   vault: VaultContext;
@@ -16,7 +17,7 @@ const groups = buildProjectVaultGroups(vault);
   <SectionHeader
     id="project-vault-title"
     title="Technical deep dives"
-    linkHref={`/thejournal/${vault.id}/`}
+    linkHref={journalHref(vault.id)}
     linkLabel="Read the project overview"
   />
 

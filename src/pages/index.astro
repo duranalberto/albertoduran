@@ -1,5 +1,4 @@
 ---
-import { type EntryContext } from "@appTypes/content_context";
 import image from "@assets/thejournal/stock/10.jpg";
 import AtlasNote from "@components/index/AtlasNote.astro";
 import IndexHero from "@components/index/IndexHero.astro";
@@ -8,29 +7,16 @@ import Quote from "@components/index/Quote.astro";
 import JournalGrid from "@components/shared/JournalGrid.astro";
 import ProjectsGrid from "@components/shared/ProjectsGrid.astro";
 import { entryManifest } from "@content/processors/thejournal";
+import { resolveFeaturedPublications } from "@data/featured_publications";
 import { sitesManifest } from "@data/site_manifest";
 import BaseLayout from "@layouts/BaseLayout.astro";
 import FlexShell from "@layouts/FlexShell.astro";
 import SectionHeader from "bloomwright-ui/components/display/SectionHeader.astro";
 import OverlayPanel from "bloomwright-ui/components/primitive/OverlayPanel.astro";
 
-const publications: Set<string> = new Set([
-  "siliconboutique",
-  "langchain_ollama",
-  "aws_serverless_vod",
-]);
-
-const manifestMap = new Map(
-  Object.values(entryManifest).map((entry) => [entry.id, entry]),
-);
-
-const catalog = Array.from(publications)
-  .map((id) => manifestMap.get(id))
-  .filter((entry): entry is EntryContext => !!entry);
+const catalog = resolveFeaturedPublications(entryManifest);
 
 const atlasNoteToggleId = "atlas-story-modal";
-const untitledOverlayTestToggleId = "untitled-overlay-test-modal";
-const isTestMode = process.env.ALBERTODURAN_TEST_MODE === "true";
 ---
 
 <BaseLayout siteManifest={sitesManifest["/"]} image={image}>
@@ -58,22 +44,6 @@ const isTestMode = process.env.ALBERTODURAN_TEST_MODE === "true";
     </FlexShell>
 
     <Quote />
-
-    {
-      isTestMode && (
-        <FlexShell>
-          <label
-            for={untitledOverlayTestToggleId}
-            role="button"
-            tabindex="0"
-            aria-haspopup="dialog"
-            class="btn btn-sm"
-          >
-            Open untitled overlay test
-          </label>
-        </FlexShell>
-      )
-    }
   </div>
 
   <Fragment slot="overlays">
@@ -87,27 +57,5 @@ const isTestMode = process.env.ALBERTODURAN_TEST_MODE === "true";
     >
       <AtlasNote />
     </OverlayPanel>
-
-    {
-      isTestMode && (
-        <OverlayPanel
-          toggleId={untitledOverlayTestToggleId}
-          ariaLabel="Untitled overlay test"
-          closeLabel="Close untitled overlay test"
-          maxWidthClass="sm:max-w-lg"
-        >
-          <div class="space-y-6" data-untitled-overlay-body>
-            <p>Untitled overlay body starts at the top of the panel.</p>
-            {Array.from({ length: 24 }, (_, index) => (
-              <p>
-                Scroll fixture row {index + 1}: enough content to verify the
-                floating close button stays anchored while the panel body
-                scrolls.
-              </p>
-            ))}
-          </div>
-        </OverlayPanel>
-      )
-    }
   </Fragment>
 </BaseLayout>

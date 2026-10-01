@@ -4,8 +4,10 @@ import type {
   VaultContext,
   VaultItem,
 } from "@appTypes/content_context";
-import { isNestedGroup } from "@appTypes/content_context";
+import { isNestedGroup } from "@content/entry_kind";
 import type { ListItem } from "bloomwright-ui/logic/list";
+import { formatReadTime } from "./format";
+import { journalHref } from "./routes";
 
 export interface ProjectVaultGroup {
   id: string;
@@ -18,8 +20,9 @@ export interface ProjectVaultGroup {
 function entrySubtitle(entry: EntryContext): string {
   const metadata: string[] = [];
 
-  if (entry.readTime > 0) {
-    metadata.push(`${entry.readTime} min read`);
+  const readTime = formatReadTime(entry.readTime);
+  if (readTime) {
+    metadata.push(readTime);
   }
 
   if (entry.tags.length > 0) {
@@ -47,7 +50,7 @@ function entryToListItem(
     ...(isSectionOverview
       ? { status: { label: "Section overview", color: "primary" } as const }
       : {}),
-    href: `/thejournal/${entry.id}/`,
+    href: journalHref(entry.id),
     ariaLabel: `Read ${entry.title} in The Journal`,
   };
 }

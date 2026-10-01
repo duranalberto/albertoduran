@@ -1,14 +1,14 @@
+import type { UiIconKey } from "@data/icons";
 import { type Icon } from "./icon";
 
 export interface Skills {
   category: string;
-  skills_icons: Icon[];
+  icons: Icon[];
 }
 
 export interface Strength {
   title: string;
-  /** Key of the `ui` icon set in @data/icons. */
-  icon: string;
+  icon: UiIconKey;
   /** The supporting sentence, shown second in smaller type. */
   context: string;
   /** The habit's one-line conclusion, shown first. Omitted when the habit is a single sentence. */
@@ -41,13 +41,4 @@ export interface Awards {
   org: string;
   desc: string;
   link?: string;
-}
-
-export interface Projects {
-  name: string;
-  tech: string;
-  desc: string;
-  link: string;
-  image: string;
-  github_link: string;
 }

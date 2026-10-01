@@ -1,0 +1,39 @@
+---
+import type { ProjectVisualSpec } from "@data/project_visuals";
+
+type Props = Omit<Extract<ProjectVisualSpec, { kind: "ranges" }>, "kind">;
+
+const { head, rows, price, scale, note } = Astro.props;
+const toPercent = (value: number) =>
+  `${(((value - scale.min) / (scale.max - scale.min)) * 100).toFixed(2)}%`;
+---
+
+<p class="project-visual-head">
+  <span>{head}</span>
+</p>
+<dl class="project-visual-ranges">
+  {
+    rows.map(({ model, bear, base, bull }) => (
+      <div>
+        <dt>{model}</dt>
+        <dd>
+          <span
+            class="project-visual-range"
+            style={`left:${toPercent(bear)};width:calc(${toPercent(bull)} - ${toPercent(bear)})`}
+          />
+          <span class="project-visual-base" style={`left:${toPercent(base)}`} />
+          <span class="project-visual-price" style={`left:${toPercent(price)}`} />
+        </dd>
+      </div>
+    ))
+  }
+  <div class="project-visual-axis">
+    {scale.ticks.map((tick) => <span>${tick}</span>)}
+  </div>
+</dl>
+<p class="project-visual-legend">
+  <span><i class="project-visual-key-range" />bear to bull</span>
+  <span><i class="project-visual-key-base" />base</span>
+  <span><i class="project-visual-key-price" />price ${price}</span>
+  <span>{note}</span>
+</p>

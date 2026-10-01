@@ -25,7 +25,7 @@ That division is why a second project could adopt `bloomwright-ui` and look noth
 
 The interface pages move from the static look to the browser's role in it.
 
-- `css_architecture` walks the ordered stylesheet manifest, the DaisyUI include list, and a duplication the extraction left behind.
+- `css_architecture` walks the ordered stylesheet manifest, the DaisyUI include list, and how the duplicated CSS the extraction left behind was retired.
 - `theming` covers the OKLCH themes and the three separate moments a theme has to be correct.
 - `progressive_enhancement` covers the runtime boundary, now split across repositories.
 - `build_time_data` covers consuming an external source at build time and letting the browser localize the result.
@@ -46,4 +46,4 @@ Motion belongs to the app, not the package, because it is part of this site's fe
 
 The payoff of a clean visual split is that a change has an obvious home. A new brand color is a token change in the app. A callout that needs a new style is a package change. A page layout tweak is app CSS, and a primitive's appearance is package CSS. The reader sees one coherent surface, and a maintainer sees two clearly separated sets of responsibilities behind it.
 
-The line is not perfectly clean, and the next page is honest about where it blurs. The app keeps local copies of some component CSS the package also ships, which is a real cost of the extraction. Naming it is more useful than pretending the split is flawless, and the `css_architecture` page does exactly that.
+The line was not always this clean. For a while after the extraction the app kept local copies of component CSS the package also shipped, and the `css_architecture` page records what those copies turned out to contain and how they were retired.

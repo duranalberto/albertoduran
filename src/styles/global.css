@@ -5,14 +5,17 @@
    Do not add rules directly here — use the appropriate partial.
 
    Load order:
-     1. Framework imports (Tailwind, plugins)
-     2. Theme tokens (Tailwind @theme, DaisyUI themes)
-     3. Base layer (normalization, transitions)
-     4. Utilities (sr-only, js states, gpu, touch, misc)
-     5. Shared (DaisyUI overrides, glass)
-     6. Layout (parallax)
-     7. UI components (strip-bg, mdx overrides)
-     8. Page-specific (index, thejournal)
+     1. Framework (Tailwind, bloomwright-ui source scan)
+     2. DaisyUI components
+     3. Theme tokens (Tailwind @theme, DaisyUI themes)
+     4. Base (normalization, transitions)
+     5. Utilities (js states, gpu, touch, misc)
+     6. bloomwright-ui component styles (package stylesheet)
+     7. Shared (profile timeline, hero)
+     8. Layout (page, parallax)
+     9. App UI components (ribbon, project media, code font)
+    10. Page: index
+    11. Page: thejournal
    ========================================================= */
 
 /* ─── 1. FRAMEWORK ─────────────────────────────────────── */
@@ -30,7 +33,7 @@
   include:
     "button", "card", "navbar", "swap", "badge", "menu", "dropdown", "timeline",
     "mockup", "steps", "chat", "list", "footer", "modal", "join", "alert",
-    "link", "table", "input", "textrotate";
+    "link", "table", "input";
 }
 
 /* ─── 3. THEME TOKENS ──────────────────────────────────── */
@@ -47,40 +50,32 @@
 @import "./utilities/_touch-hover.css";
 @import "./utilities/_misc.css";
 
-/* ── 6. SHARED ─────────────────────────────────────────────── */
-@import "./shared/_daisyui-overrides.css";
-@import "./shared/_glass.css";
+/* ─── 6. BLOOMWRIGHT-UI ──────────────────────────────────
+   Styles for bloomwright-ui components (callouts, lists, mockups, code
+   blocks, charts, diagrams, panels). Loaded after Tailwind, daisyUI and
+   the theme tokens, and before app partials so app rules win ties. */
+@import "bloomwright-ui/styles.css";
+
+/* ── 7. SHARED ─────────────────────────────────────────────── */
+@import "./profile/_experience-timeline.css";
 @import "./shared/_hero.css";
 
-/* ─── 7. LAYOUT ─────────────────────────────────────────── */
+/* ─── 8. LAYOUT ─────────────────────────────────────────── */
 @import "./layout/_page.css";
 @import "./layout/_parallax.css";
 
-/* ─── 8. UI ──────────────────────────────────────────────── */
+/* ─── 9. UI ──────────────────────────────────────────────── */
 @import "./ui/display/_strip-background.css";
-@import "./ui/display/_mockup-window.css";
-@import "./ui/display/_mockup-phone.css";
-@import "./ui/display/_mockup-browser.css";
-@import "./ui/display/_mockup-media.css";
 @import "./ui/display/_project-media.css";
-@import "./ui/display/_steps.css";
-@import "./ui/display/_chat.css";
-@import "./ui/display/_list.css";
-@import "./ui/display/_callout.css";
-@import "./ui/primitive/_panel.css";
-@import "./ui/mdx/_heading-anchor.css";
-@import "./ui/mdx/_code-block.css";
-@import "./ui/mdx/_prose-table.css";
-@import "./ui/mdx/_echart.css";
+@import "./ui/mdx/_code-font.css";
 
-/* ─── 9. PAGE — INDEX ───────────────────────────────────── */
+/* ─── 10. PAGE — INDEX ───────────────────────────────────── */
 @import "./index/_hero-panel.css";
 @import "./index/_atlas-note.css";
 
-/* ─── 10. PAGE — THEJOURNAL ─────────────────────────────── */
+/* ─── 11. PAGE — THEJOURNAL ─────────────────────────────── */
 @import "./thejournal/article/_layout.css";
 @import "./thejournal/article/_nav.css";
 @import "./thejournal/article/_dock.css";
 @import "./thejournal/article/_header.css";
 @import "./thejournal/article/_typography.css";
-@import "./thejournal/article/_diagram.css";

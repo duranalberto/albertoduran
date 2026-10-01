@@ -1,0 +1,27 @@
+---
+import { stepMarker } from "@utils/steps";
+
+interface Props {
+  head: readonly [string, string];
+  steps: readonly string[];
+  checkpoint?: string;
+}
+
+const { head, steps, checkpoint } = Astro.props;
+---
+
+<p class="project-visual-head">
+  <span>{head[0]}</span>
+  <span>{head[1]}</span>
+</p>
+<ol class="project-visual-flow">
+  {
+    steps.map((step, index) => (
+      <li data-checkpoint={step === checkpoint ? "" : undefined}>
+        <span>{stepMarker(index)}</span>
+        {step}
+        {step === checkpoint && <em>human check</em>}
+      </li>
+    ))
+  }
+</ol>

@@ -1,5 +1,4 @@
 ---
-import type { ProjectPageConfig } from "@appTypes/project";
 import ravnaryCard from "@assets/thejournal/pub/ravnary_card.png";
 import ravnaryCardMobile from "@assets/thejournal/pub/ravnary_card_mobile.png";
 import ravnaryCategories from "@assets/thejournal/pub/ravnary_categories.png";
@@ -8,26 +7,26 @@ import ravnaryHome from "@assets/thejournal/pub/ravnary_home.png";
 import ravnaryPath from "@assets/thejournal/pub/ravnary_path.png";
 import ravnaryQuiz from "@assets/thejournal/pub/ravnary_quiz_explanation.png";
 import ravnaryTopic from "@assets/thejournal/pub/ravnary_topic.png";
-import coverImage from "@assets/thejournal/stock/18.jpg";
 import ProjectLayout from "@layouts/ProjectLayout.astro";
+import { defineProjectPage } from "@data/project_page";
+import { completedSteps } from "@utils/steps";
+import ProjectSection from "@components/projects/sections/ProjectSection.astro";
+import OutcomeBanner from "@components/projects/sections/OutcomeBanner.astro";
 import Callout from "bloomwright-ui/components/display/Callout.astro";
 import MockupBrowser from "bloomwright-ui/components/display/MockupBrowser.astro";
 import MockupPhone from "bloomwright-ui/components/display/MockupPhone.astro";
-import SectionHeader from "bloomwright-ui/components/display/SectionHeader.astro";
-import Steps, { type StepItem } from "bloomwright-ui/components/display/Steps.astro";
+import Steps from "bloomwright-ui/components/display/Steps.astro";
 import MermaidDiagram from "bloomwright-ui/components/render/MermaidDiagram.astro";
 import { defineMermaidDiagram } from "bloomwright-ui/mermaid";
 import { Picture } from "astro:assets";
 
 const liveUrl = "https://ravnary.com/";
 
-const project: ProjectPageConfig = {
+const project = defineProjectPage("/projects/ravnary/", {
   title: "Ravnary",
   eyebrow: "Micro-learning · Next.js · AWS",
   description:
     "An open library of short, checked cards with quizzes graded on the server, a review queue that lives in your browser, and community figures that never name a reader.",
-  image: coverImage,
-  imageAlt: "Two black ravens perched on a pale rock, in black and white",
   facts: [
     { label: "App", value: "Next.js 15 · React 19" },
     { label: "Data", value: "DynamoDB · 2 tables" },
@@ -45,15 +44,15 @@ const project: ProjectPageConfig = {
   links: {
     liveUrl,
   },
-};
+});
 
-const loopSteps: StepItem[] = [
-  { label: "Learn a concept", marker: "1", color: "success" },
-  { label: "See an example or a gotcha", marker: "2", color: "success" },
-  { label: "Answer a quiz", marker: "3", color: "success" },
-  { label: "Read the explanation", marker: "4", color: "success" },
-  { label: "Continue or review", marker: "5", color: "success" },
-];
+const loopSteps = completedSteps([
+  "Learn a concept",
+  "See an example or a gotcha",
+  "Answer a quiz",
+  "Read the explanation",
+  "Continue or review",
+]);
 
 const architectureCards = [
   {
@@ -240,8 +239,7 @@ const linkClass =
 ---
 
 <ProjectLayout project={project}>
-  <section id="overview" class="w-full" aria-labelledby="overview-title">
-    <SectionHeader id="overview-title" title="Read one card, then the next" />
+  <ProjectSection id="overview" title="Read one card, then the next">
 
     <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12">
       <div class="flex flex-col gap-5 lg:col-span-7">
@@ -289,10 +287,9 @@ const linkClass =
         The home page leads with subjects, then paths, then the library by field.
       </span>
     </MockupBrowser>
-  </section>
+  </ProjectSection>
 
-  <section id="loop" class="w-full" aria-labelledby="loop-title">
-    <SectionHeader id="loop-title" title="The learning loop" />
+  <ProjectSection id="loop" title="The learning loop">
     <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
       Every topic is built for the same five steps. The reader decides when to
       switch from reading to answering, and the quiz is always optional.
@@ -325,13 +322,9 @@ const linkClass =
         </p>
       </div>
     </div>
-  </section>
+  </ProjectSection>
 
-  <section id="architecture" class="w-full" aria-labelledby="architecture-title">
-    <SectionHeader
-      id="architecture-title"
-      title="Static pages, one dynamic route, two tables"
-    />
+  <ProjectSection id="architecture" title="Static pages, one dynamic route, two tables">
     <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
       Content changes only when I import it, so almost everything is prerendered.
       The server does three jobs at request time. It serves the quiz, runs the
@@ -352,13 +345,9 @@ const linkClass =
         ))
       }
     </div>
-  </section>
+  </ProjectSection>
 
-  <section id="content-model" class="w-full" aria-labelledby="content-model-title">
-    <SectionHeader
-      id="content-model-title"
-      title="Three fixed levels and a graph beside them"
-    />
+  <ProjectSection id="content-model" title="Three fixed levels and a graph beside them">
     <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
       A subject owns its topics and a topic owns its cards and questions. The
       depth never changes, so no cycle can form and the URL spells the hierarchy
@@ -441,10 +430,9 @@ const linkClass =
         </span>
       </MockupBrowser>
     </div>
-  </section>
+  </ProjectSection>
 
-  <section id="publishing" class="w-full" aria-labelledby="publishing-title">
-    <SectionHeader id="publishing-title" title="Publishing a whole generation at once" />
+  <ProjectSection id="publishing" title="Publishing a whole generation at once">
 
     <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-start">
       <div class="flex flex-col gap-6 lg:col-span-7">
@@ -500,10 +488,9 @@ Vn#QUESTION#id     PROMPT</code></pre>
         </p>
       </div>
     </div>
-  </section>
+  </ProjectSection>
 
-  <section id="reading" class="w-full" aria-labelledby="reading-title">
-    <SectionHeader id="reading-title" title="Cards that read without JavaScript" />
+  <ProjectSection id="reading" title="Cards that read without JavaScript">
 
     <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-start">
       <MockupBrowser
@@ -559,10 +546,9 @@ Vn#QUESTION#id     PROMPT</code></pre>
         </p>
       </div>
     </div>
-  </section>
+  </ProjectSection>
 
-  <section id="quiz" class="w-full" aria-labelledby="quiz-title">
-    <SectionHeader id="quiz-title" title="The answer stays on the server" />
+  <ProjectSection id="quiz" title="The answer stays on the server">
     <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
       The quiz page reads prompts, which are questions with the correct options,
       accepted answers, pairings, and explanations taken out. Only the grading
@@ -602,10 +588,9 @@ Vn#QUESTION#id     PROMPT</code></pre>
         </span>
       </MockupBrowser>
     </div>
-  </section>
+  </ProjectSection>
 
-  <section id="privacy" class="w-full" aria-labelledby="privacy-title">
-    <SectionHeader id="privacy-title" title="Analytics that cannot name a reader" />
+  <ProjectSection id="privacy" title="Analytics that cannot name a reader">
     <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
       Ravnary wants to know which questions are too hard or badly written. It
       doesn't want to know who answered them. Raw events stay private and expire
@@ -646,10 +631,9 @@ Vn#QUESTION#id     PROMPT</code></pre>
       miskeyed answer, ambiguous wording, or a question about something the
       cards never taught.
     </p>
-  </section>
+  </ProjectSection>
 
-  <section id="review" class="w-full" aria-labelledby="review-title">
-    <SectionHeader id="review-title" title="Your progress stays in your browser" />
+  <ProjectSection id="review" title="Your progress stays in your browser">
 
     <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-start">
       <div class="flex flex-col gap-5 lg:col-span-5">
@@ -668,22 +652,9 @@ Vn#QUESTION#id     PROMPT</code></pre>
         <MermaidDiagram code={reviewDiagram} />
       </div>
     </div>
-  </section>
+  </ProjectSection>
 
-  <section
-    id="outcome"
-    class="overflow-hidden rounded-box bg-primary p-8 text-primary-content shadow-xl md:p-12 lg:p-16"
-    aria-labelledby="outcome-title"
-  >
-    <p class="mb-4 text-xs font-bold uppercase tracking-[0.2em] opacity-70">
-      The outcome
-    </p>
-    <h2
-      id="outcome-title"
-      class="max-w-4xl font-display text-3xl font-bold leading-tight sm:text-4xl"
-    >
-      A library that prerenders its pages and grades every answer on the server.
-    </h2>
+  <OutcomeBanner title="A library that prerenders its pages and grades every answer on the server.">
     <p class="mt-6 max-w-3xl text-lg leading-relaxed opacity-80">
       Each rebuild renders the site from one published generation. Nobody needs
       an account, progress stays in the browser, and the reader data the site
@@ -698,5 +669,5 @@ Vn#QUESTION#id     PROMPT</code></pre>
     >
       Visit ravnary.com
     </a>
-  </section>
+  </OutcomeBanner>
 </ProjectLayout>

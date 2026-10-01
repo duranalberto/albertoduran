@@ -236,21 +236,17 @@ Every row uses the shared `List` component and includes the publication title,
 read-time and tags when available, its manifest description, and an internal
 `Read page` action.
 
-## Make a landing page canonical
+## List the project
 
-Featured project cards continue to use their Journal routes until a complete
-landing page is ready. After the new route builds and its links have been
-reviewed, register it in `src/data/project_pages.ts`:
+A landing page becomes reachable from the projects index and project cards once
+it has an entry in `projectCatalog` (`src/data/projects.ts`) whose `href` is the
+page route. To show it on the home and profile pages as well, add that route to
+`featuredRoutes` in the same file.
 
-```ts
-export const projectLandingRoutes = {
-  example_project: "/projects/example/",
-} as const satisfies Record<string, ProjectLandingRoute>;
-```
-
-The key is the Journal entry ID used by the featured project card. Unregistered
-entries automatically fall back to `/thejournal/<id>/`, so partial migrations
-cannot create broken project links.
+Journal cards never link to a landing page: they always open the publication at
+`/thejournal/<id>/`. The landing page points at its vault through
+`links.journalId`, which `ProjectLayout` resolves at build time, so a missing
+or renamed vault fails the build.
 
 ## Verification
 

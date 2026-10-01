@@ -1,7 +1,9 @@
 /**
- * on_this_page.ts
+ * on-this-page.ts
  *
- * Scroll-based "On This Page" active link tracker.
+ * Scroll-based "On This Page" active link tracker. <on-this-page> wraps the
+ * tracked nav; connecting starts tracking and disconnecting (including an
+ * Astro client-side page swap) tears it down.
  */
 
 type HeadingEntry = { link: HTMLAnchorElement; target: HTMLElement };
@@ -18,7 +20,6 @@ class OnThisPage {
   private clickSuppressTimer = 0;
   private cachedHeaderOffset = 72;
   private ioRafId = 0;
-  private vpResizeHandler: (() => void) | null = null;
 
   constructor(private readonly container: HTMLElement) {
     this.entries = this.buildEntries();
@@ -239,30 +240,20 @@ class OnThisPage {
       { passive: true, signal },
     );
 
-    window.addEventListener(
-      "resize",
-      () => {
-        this.refreshHeaderOffset();
-        this.entries = this.buildEntries();
-        this.initObserver();
-        this.syncFromScroll();
-      },
-      { passive: true, signal },
-    );
+    const rebuild = () => {
+      if (this.destroyed) return;
+      this.refreshHeaderOffset();
+      this.entries = this.buildEntries();
+      this.initObserver();
+      cancelAnimationFrame(this.ioRafId);
+      this.ioRafId = requestAnimationFrame(() => this.syncFromScroll());
+    };
 
-    if ("visualViewport" in window && window.visualViewport) {
-      this.vpResizeHandler = () => {
-        if (this.destroyed) return;
-        this.refreshHeaderOffset();
-        this.entries = this.buildEntries();
-        this.initObserver();
-        cancelAnimationFrame(this.ioRafId);
-        this.ioRafId = requestAnimationFrame(() => this.syncFromScroll());
-      };
-      window.visualViewport.addEventListener("resize", this.vpResizeHandler, {
-        passive: true,
-      } as AddEventListenerOptions);
-    }
+    window.addEventListener("resize", rebuild, { passive: true, signal });
+    window.visualViewport?.addEventListener("resize", rebuild, {
+      passive: true,
+      signal,
+    });
   }
 
   destroy(): void {
@@ -273,36 +264,23 @@ class OnThisPage {
     this.controller.abort();
     this.observer?.disconnect();
     this.entries = [];
-
-    if (this.vpResizeHandler && window.visualViewport) {
-      window.visualViewport.removeEventListener("resize", this.vpResizeHandler);
-      this.vpResizeHandler = null;
-    }
   }
 }
 
-const instances = new Set<OnThisPage>();
-let lifecycleBound = false;
+class OnThisPageElement extends HTMLElement {
+  private tracker: OnThisPage | null = null;
 
-function destroyAll(): void {
-  instances.forEach((i) => i.destroy());
-  instances.clear();
+  connectedCallback() {
+    const nav = this.querySelector<HTMLElement>("nav");
+    if (nav) this.tracker = new OnThisPage(nav);
+  }
+
+  disconnectedCallback() {
+    this.tracker?.destroy();
+    this.tracker = null;
+  }
 }
 
-function mount(): void {
-  destroyAll();
-  document
-    .querySelectorAll<HTMLElement>(".onthispage-nav")
-    .forEach((el) => instances.add(new OnThisPage(el)));
-}
-
-function bindLifecycle(): void {
-  if (lifecycleBound) return;
-  lifecycleBound = true;
-  document.addEventListener("astro:before-swap", destroyAll);
-  document.addEventListener("astro:page-load", mount);
-}
-
-if (typeof window !== "undefined") {
-  bindLifecycle();
+if (typeof window !== "undefined" && !customElements.get("on-this-page")) {
+  customElements.define("on-this-page", OnThisPageElement);
 }

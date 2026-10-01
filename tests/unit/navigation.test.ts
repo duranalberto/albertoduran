@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  getCurrentSite,
-  isTheJourneyPublication,
-} from "@appTypes/navigation";
+import { getCurrentSite } from "@utils/navigation";
 
 describe("navigation helpers", () => {
   it("normalizes root and known section paths", () => {
@@ -29,14 +26,5 @@ describe("navigation helpers", () => {
       isRoot: false,
       path: "/thejournal/my_first_publication/",
     });
-  });
-
-  it("detects journal publication pages", () => {
-    expect(isTheJourneyPublication(getCurrentSite("/thejournal/"))).toBe(false);
-    expect(
-      isTheJourneyPublication(
-        getCurrentSite("/thejournal/my_first_publication/"),
-      ),
-    ).toBe(true);
   });
 });

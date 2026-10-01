@@ -80,24 +80,6 @@
   max-inline-size: 100%;
 }
 
-.hero-rotating-text {
-  display: block;
-  block-size: 1.2em;
-  line-height: 1.2;
-  overflow: hidden;
-  contain: layout;
-  max-inline-size: 100%;
-}
-
-.hero-rotating-text span {
-  display: block;
-  line-height: inherit;
-  max-inline-size: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .hero-eyebrow {
   display: flex;
   align-items: center;
@@ -129,7 +111,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-rotating-text,
   .hero-description {
     animation: none !important;
     transition: none !important;

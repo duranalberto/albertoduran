@@ -1,51 +1,11 @@
-interface HlsLevel {
-  width: number;
-  height: number;
-}
+import {
+  loadHlsScript,
+  type HlsInstance,
+  type HlsLevel,
+} from "@runtime/video/hls-loader";
+import { fetchCatalogEntry, type CatalogVideo } from "@runtime/video/catalog";
 
-interface HlsInstance {
-  currentLevel: number;
-  attachMedia(video: HTMLVideoElement): void;
-  loadSource(url: string): void;
-  destroy(): void;
-  recoverMediaError(): void;
-  on(event: string, callback: (event: string, data: unknown) => void): void;
-}
-
-interface HlsStatic {
-  isSupported(): boolean;
-  Events: {
-    MEDIA_ATTACHED: string;
-    MANIFEST_PARSED: string;
-    ERROR: string;
-  };
-  ErrorTypes: {
-    MEDIA_ERROR: string;
-    NETWORK_ERROR: string;
-  };
-  new (config?: Record<string, unknown>): HlsInstance;
-}
-
-declare global {
-  interface Window {
-    Hls?: HlsStatic;
-  }
-}
-
-// Catalog metadata (title/description/tags) is only published alongside
-// videos served from this CloudFront distribution's catalog.json.
-const CATALOG_METADATA_HOST = "d2mcml34hdlt3o.cloudfront.net";
-
-interface CatalogVideoEntry {
-  title?: string;
-  description?: string;
-  tags?: string[];
-  playbackUrl?: string;
-}
-
-function isManifestParsedData(
-  value: unknown,
-): value is { levels: HlsLevel[] } {
+function isManifestParsedData(value: unknown): value is { levels: HlsLevel[] } {
   return (
     typeof value === "object" &&
     value !== null &&
@@ -53,12 +13,10 @@ function isManifestParsedData(
   );
 }
 
-function isErrorData(value: unknown): value is { fatal: boolean; type: string } {
+function isErrorData(
+  value: unknown,
+): value is { fatal: boolean; type: string } {
   return typeof value === "object" && value !== null && "fatal" in value;
-}
-
-function isCatalogVideoEntry(value: unknown): value is CatalogVideoEntry {
-  return typeof value === "object" && value !== null;
 }
 
 class VideoPlayerShell extends HTMLElement {
@@ -84,7 +42,7 @@ class VideoPlayerShell extends HTMLElement {
       this.hls.currentLevel = Number(qualitySelect.value);
     });
 
-    this.load(video, qualityControl, qualitySelect, src);
+    void this.load(video, qualityControl, qualitySelect, src);
     void this.loadMetadata(src);
   }
 
@@ -93,10 +51,7 @@ class VideoPlayerShell extends HTMLElement {
     this.hls = null;
   }
 
-  private populateQualityLevels(
-    select: HTMLSelectElement,
-    levels: HlsLevel[],
-  ) {
+  private populateQualityLevels(select: HTMLSelectElement, levels: HlsLevel[]) {
     select.innerHTML = '<option value="-1">Auto</option>';
 
     levels.forEach((level, index) => {
@@ -109,13 +64,14 @@ class VideoPlayerShell extends HTMLElement {
     select.disabled = false;
   }
 
-  private load(
+  private async load(
     video: HTMLVideoElement,
     qualityControl: HTMLElement,
     qualitySelect: HTMLSelectElement,
     src: string,
   ) {
-    const Hls = window.Hls;
+    const Hls = await loadHlsScript();
+    if (!this.isConnected) return;
 
     if (Hls && Hls.isSupported()) {
       const hls = new Hls({ enableWorker: true, startLevel: -1 });
@@ -160,6 +116,14 @@ class VideoPlayerShell extends HTMLElement {
   }
 
   private async loadMetadata(src: string) {
+    const catalogUrl = this.dataset.catalogUrl;
+    if (!catalogUrl) return;
+
+    const entry = await fetchCatalogEntry(catalogUrl, src);
+    if (entry && this.isConnected) this.showMetadata(entry);
+  }
+
+  private showMetadata(entry: CatalogVideo) {
     const metadata = this.querySelector<HTMLElement>("[data-video-metadata]");
     const titleEl = this.querySelector<HTMLElement>(
       "[data-video-metadata-title]",
@@ -173,70 +137,34 @@ class VideoPlayerShell extends HTMLElement {
 
     if (!metadata || !titleEl || !descriptionEl || !tagsEl) return;
 
-    let hostname: string;
-    try {
-      hostname = new URL(src).hostname;
-    } catch {
-      return;
+    if (entry.title) {
+      titleEl.textContent = entry.title;
+      titleEl.hidden = false;
     }
 
-    if (hostname !== CATALOG_METADATA_HOST) return;
+    if (entry.description) {
+      descriptionEl.textContent = entry.description;
+      descriptionEl.hidden = false;
+    }
 
-    try {
-      const response = await fetch(
-        `https://${CATALOG_METADATA_HOST}/catalog/catalog.json`,
-        { mode: "cors" },
-      );
-      if (!response.ok) return;
-
-      const catalog: unknown = await response.json();
-      const videos =
-        typeof catalog === "object" &&
-        catalog !== null &&
-        Array.isArray((catalog as { videos?: unknown }).videos)
-          ? (catalog as { videos: unknown[] }).videos
-          : [];
-
-      const entry = videos.find(
-        (candidate): candidate is CatalogVideoEntry =>
-          isCatalogVideoEntry(candidate) && candidate.playbackUrl === src,
-      );
-      if (!entry) return;
-
-      let hasContent = false;
-
-      if (entry.title) {
-        titleEl.textContent = entry.title;
-        titleEl.hidden = false;
-        hasContent = true;
-      }
-
-      if (entry.description) {
-        descriptionEl.textContent = entry.description;
-        descriptionEl.hidden = false;
-        hasContent = true;
-      }
-
-      if (Array.isArray(entry.tags) && entry.tags.length > 0) {
-        tagsEl.innerHTML = "";
-        entry.tags.forEach((tag) => {
+    if (entry.tags.length > 0) {
+      tagsEl.replaceChildren(
+        ...entry.tags.map((tag) => {
           const span = document.createElement("span");
           span.textContent = `#${tag}`;
-          tagsEl.append(span);
-        });
-        tagsEl.hidden = false;
-        hasContent = true;
-      }
-
-      metadata.hidden = !hasContent;
-    } catch {
-      // Metadata is a nice-to-have; playback works fine without it.
+          return span;
+        }),
+      );
+      tagsEl.hidden = false;
     }
+
+    metadata.hidden = !(entry.title || entry.description || entry.tags.length);
   }
 }
 
-if (!customElements.get("video-player-shell")) {
+if (
+  typeof window !== "undefined" &&
+  !customElements.get("video-player-shell")
+) {
   customElements.define("video-player-shell", VideoPlayerShell);
 }
-
-export {};

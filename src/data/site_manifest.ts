@@ -1,4 +1,5 @@
 import type { SiteManifest, Sites } from "@appTypes/navigation";
+import { identity } from "@data/identity";
 
 export const sitesManifest: Record<Sites, SiteManifest> = {
   "/": {
@@ -10,8 +11,7 @@ export const sitesManifest: Record<Sites, SiteManifest> = {
   "/profile/": {
     label: "Professional profile",
     pageTitle: "Alberto Duran | Full-Stack and Backend Systems Engineer",
-    description:
-      "Alberto Duran is a software engineer with 6+ years of experience across full-stack applications, backend systems, enterprise Java, Python tooling, and TypeScript platforms.",
+    description: `${identity.name} is a software engineer with ${identity.experienceLabel} of experience across full-stack applications, backend systems, enterprise Java, Python tooling, and TypeScript platforms.`,
   },
   "/projects/": {
     label: "Projects",

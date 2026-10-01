@@ -36,11 +36,10 @@ integrations: [
   bloomwrightMdx({ selectSources: collectPublishableDocuments }),
   mermaidRenderer({ render, themes, selectSources, remoteCache }),
   mdx(),
-  customHtmlMinifier(),
 ]
 ```
 
-`bloomwrightMdx()` comes before `mdx()` because its setup hook augments the Markdown processor that `mdx()` then uses. Register it after and the fence plugins never attach, so a `daisyui` block would render as a plain code listing. The minifier comes last, because it operates on finished HTML. The `bloomwright/mdx_layer` page covers why the fence integration has to run when it does.
+`bloomwrightMdx()` comes before `mdx()` because its setup hook augments the Markdown processor that `mdx()` then uses. Register it after and the fence plugins never attach, so a `daisyui` block would render as a plain code listing. The `bloomwright/mdx_layer` page covers why the fence integration has to run when it does.
 
 ---
 
@@ -65,16 +64,8 @@ Rendering both themes into the markup is what lets a reader switch light and dar
 
 ---
 
-## The minifier protects code
+## Compression leaves code alone
 
-The last stage is the custom HTML minifier, and it has one job worth calling out. Minifying HTML normally collapses whitespace, which would destroy the exact spacing inside a code sample. So the minifier is told to leave three tags untouched, protecting the contents of `<pre>`, `<code>`, and `<kbd>` from any collapsing.
+The finished HTML is compressed by Astro itself, and code samples survive it intact. That matters because a code block's indentation and line breaks are its meaning, and the highlighted lines rely on `white-space: pre-wrap` to show them.
 
-```js
-ignoreCustomFragments: [
-  /<pre[\s\S]*?<\/pre>/,
-  /<code[\s\S]*?<\/code>/,
-  /<kbd[\s\S]*?<\/kbd>/,
-]
-```
-
-That protection is why a code block ships with its indentation and line breaks intact while the surrounding HTML is aggressively compressed. The pipeline squeezes everything it safely can and leaves alone the one kind of content where whitespace is meaning.
+The site used to run a second pass, a custom `html-minifier-terser` integration told to leave `<pre>`, `<code>`, and `<kbd>` untouched. Measured against Astro's own compression, it saved about 1.6% of the Brotli-compressed HTML, roughly 0.2 KB a page, and it produced the same text in all 1,835 code, pre, and kbd elements on the site. That was not enough to justify a dependency and a build step, so it was removed.

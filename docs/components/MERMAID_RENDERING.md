@@ -57,24 +57,32 @@ logic without changing the URL would not reliably update existing assets.
 
 ## Current Guardrails
 
-- `DiagramPipeline.prepareDiagrams()` renders publishable diagrams before
-  Markdown transforms run. The Sätteri plugin and `MermaidDiagram` component read
-  from that prepared registry.
-- `tests/unit/mermaid-pipeline-registry.test.ts` verifies prepared lookup and
-  light/dark asset emission.
-- `src/integrations/mermaid/constants.ts` owns `RENDERER_VERSION`. Bump it
-  whenever a code change can alter emitted Mermaid SVG or Mermaid CSS bytes for
-  the same diagram source.
-- `tests/e2e/site.spec.ts` checks static SVG image rendering, expanded popovers,
+The pipeline moved into the `bloomwright-ui` package during the bloomwright
+extraction. Ownership is now split:
+
+- `bloomwright-ui`'s `mermaidRenderer()` integration (registered in
+  `astro.config.mjs`) pre-scans sources, renders publishable diagrams before
+  Markdown transforms run, caches them under `.astro/`, and emits
+  `/_app/mermaid/` assets. `bloomwright-mdx` turns Mermaid fences into the
+  `MermaidDiagram` component that reads those assets.
+- `RENDERER_VERSION` lives in `bloomwright-ui/src/mermaid/constants.ts`. Bump it
+  there (and update the git ref here) whenever a change can alter emitted
+  Mermaid SVG or CSS bytes for the same diagram source.
+- `src/mermaid/render-pipeline.ts` is this app's render backend (Cloudflare
+  Worker, then mermaid.ink, then a placeholder SVG). `src/content/processors/publishable.ts`
+  decides which documents are rendered.
+- `tests/e2e/site.spec.ts` checks static SVG rendering, expanded popovers,
   no-JS visibility, and theme-specific open-link URLs.
 
 ## Release Checklist
 
 For any change touching these files, treat it as a Mermaid rendering release:
 
-- `src/integrations/mermaid/**`
-- `src/runtime/elements/mermaid-diagram-shell.ts`
-- `src/styles/**/_diagram.css`
+- `src/mermaid/render-pipeline.ts`
+- `src/content/processors/publishable.ts`
+- the `bloomwright-ui` git ref in `package.json` (its `src/mermaid/**`,
+  `runtime/mermaid-diagram-shell.ts` and `styles/render/_mermaid-diagram.css`,
+  which `src/styles/global.css` imports)
 - Mermaid theme palette or DaisyUI theme tokens used by Mermaid
 - Cloudflare Worker Mermaid renderer behavior or Mermaid package/version
 

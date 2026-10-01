@@ -22,7 +22,7 @@ Astro is configured with `output: "static"` in `astro.config.mjs`. Runtime brows
 | Content           | Astro content collections and MDX                              |
 | Styling           | Tailwind CSS `^4.3.3` and DaisyUI `^5.7.0` (via bloomwright-ui) |
 | Diagrams & charts | `bloomwright-mdx` fence extraction driving the `bloomwright-ui` render core (themed static SVG) |
-| HTML output       | Custom HTML minifier integration                               |
+| HTML output       | Astro static output with built-in HTML compression             |
 | Tests             | Astro Check, Vitest, and Playwright                            |
 | Deployment config | Cloudflare Workers Assets via `wrangler.json`                  |
 
@@ -30,7 +30,7 @@ Astro is configured with `output: "static"` in `astro.config.mjs`. Runtime brows
 
 ### Static-First Rendering
 
-All routes are generated as static pages. Build-time integrations handle content processing, Mermaid rendering, image optimization, and HTML minification before the site is deployed.
+All routes are generated as static pages. Build-time integrations handle content processing, Mermaid rendering, image optimization, and HTML compression before the site is deployed.
 
 Client-side scripts are loaded only where they improve the experience:
 
@@ -86,7 +86,6 @@ albertoduran/
 │  ├─ components/           # Astro components by feature area
 │  ├─ content/              # Journal processors and manifest logic
 │  ├─ data/                 # Site, profile, icon, and manifest data
-│  ├─ integrations/         # HTML minifier only (Mermaid/ECharts/DaisyUI extracted to bloomwright-*)
 │  ├─ layouts/              # Shared Astro layouts
 │  ├─ pages/                # File-based route entry points
 │  ├─ runtime/              # Browser-side progressive enhancements
@@ -120,10 +119,10 @@ Project showcase routes use `ProjectLayout.astro` and a typed
 `ProjectPageConfig`. Their bodies remain hand-authored Astro so each project can
 choose the most useful landing-page sections. An optional Journal ID adds a
 publication action and, for vault roots, a grouped list of every child
-publication. Featured project cards use the explicit registry in
-`src/data/project_pages.ts`, with their existing Journal routes as the fallback
-until a landing page is registered. See `docs/content/PROJECT_PAGE_GUIDE.md` for the
-authoring and registration contract.
+publication. Project cards and the projects index link to landing pages through
+`projectCatalog` in `src/data/projects.ts`; Journal cards always open the
+publication. See `docs/content/PROJECT_PAGE_GUIDE.md` for the authoring
+contract.
 
 ## theJournal Content Model
 

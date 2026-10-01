@@ -7,6 +7,10 @@ import { ClientRouter } from "astro:transitions";
 import "@styles/global.css";
 import kirby from "@assets/thejournal/pub/kirby.jpg";
 import type { SiteManifest } from "@appTypes/navigation";
+import {
+  THEME_META_COLORS,
+  THEME_STORAGE_KEY,
+} from "@runtime/managers/theme_config";
 
 interface Props {
   siteManifest: SiteManifest;
@@ -43,38 +47,41 @@ const socialImageURL = new URL(optimizedImage.src, Astro.site);
     <meta
       name="theme-color"
       id="meta-theme-color"
-      content="#ffffff"
+      content={THEME_META_COLORS.light}
       transition:persist
     />
 
-    <script is:inline>
-      (() => {
-        const stored = (() => {
-          try {
-            return localStorage.getItem("theme");
-          } catch {
-            return null;
-          }
-        })();
-        const theme =
-          stored ??
-          (window.matchMedia("(prefers-color-scheme: dark)").matches
-            ? "dark"
-            : "light");
-
-        const root = document.documentElement;
-        root.setAttribute("data-theme", theme);
-        root.style.setProperty("color-scheme", theme);
-        root.classList.remove("no-js");
-
-        const meta = document.getElementById("meta-theme-color");
-        if (meta) {
-          meta.setAttribute(
-            "content",
-            theme === "dark" ? "#121212" : "#ffffff",
-          );
+    <!-- Pre-paint theme. Mirrors resolveTheme() in theme_config.ts, which
+         cannot be imported here because this must run before first paint. -->
+    <script
+      is:inline
+      define:vars={{
+        storageKey: THEME_STORAGE_KEY,
+        metaColors: THEME_META_COLORS,
+      }}
+    >
+      const stored = (() => {
+        try {
+          return localStorage.getItem(storageKey);
+        } catch {
+          return null;
         }
       })();
+      const theme =
+        stored === "light" || stored === "dark"
+          ? stored
+          : window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "dark"
+            : "light";
+
+      const root = document.documentElement;
+      root.setAttribute("data-theme", theme);
+      root.style.setProperty("color-scheme", theme);
+      root.classList.remove("no-js");
+      document.getElementById("meta-theme-color")?.setAttribute(
+        "content",
+        metaColors[theme],
+      );
     </script>
 
     <meta name="description" content={siteManifest.description} />
@@ -111,7 +118,7 @@ const socialImageURL = new URL(optimizedImage.src, Astro.site);
     <Header />
     {
       hasHero ? (
-        <FlexShell class="py-0 md:py-0">
+        <FlexShell>
           <slot name="hero" />
         </FlexShell>
       ) : (

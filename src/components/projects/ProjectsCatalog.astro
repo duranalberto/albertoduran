@@ -1,11 +1,11 @@
 ---
-import type { ProjectSummary } from "@data/projects";
+import type { ResolvedProjectSummary } from "@content/project_stats";
 import ProjectMedia from "@components/projects/ProjectMedia.astro";
 import ProjectStat from "@components/projects/ProjectStat.astro";
 import TechStack from "@components/projects/TechStack.astro";
 
 interface Props {
-  projects: readonly ProjectSummary[];
+  projects: readonly ResolvedProjectSummary[];
 }
 
 const { projects } = Astro.props;

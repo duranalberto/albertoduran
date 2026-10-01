@@ -1,12 +1,12 @@
 import type { EntryContext } from "@appTypes/content_context";
 import {
-  journalHref,
   normalizeJournalRefId,
   resolveJournalLinks,
   suggestClosest,
   type JournalLinkContext,
 } from "@content/journal_links";
-import { readdirSync, readFileSync } from "node:fs";
+import glob from "fast-glob";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
@@ -46,13 +46,6 @@ function context(
     ...overrides,
   };
 }
-
-describe("journalHref", () => {
-  it("builds the Journal route with an optional anchor", () => {
-    expect(journalHref("vault/section")).toBe("/thejournal/vault/section/");
-    expect(journalHref("a", "b")).toBe("/thejournal/a/#b");
-  });
-});
 
 describe("normalizeJournalRefId", () => {
   it("prefixes vault-relative ids and keeps full ids", () => {
@@ -162,13 +155,23 @@ describe("suggestClosest", () => {
   });
 });
 
-describe("project pages", () => {
-  it("never hand-type Journal URLs", () => {
-    const directory = join(process.cwd(), "src/pages/projects");
-    const offenders = readdirSync(directory)
-      .filter((file) => file.endsWith(".astro"))
-      .filter((file) =>
-        /["'`]\/thejournal\//.test(readFileSync(join(directory, file), "utf8")),
+describe("Journal URLs", () => {
+  // An entry URL built in code: `/thejournal/${id}/` or "/thejournal/some_id/".
+  // The bare "/thejournal/" section key (navigation) is allowed.
+  const handBuilt = /[`"']\/thejournal\/(?:\$\{|[^"'`\s])/;
+
+  it("are only built by src/utils/routes.ts", () => {
+    const offenders = glob
+      .sync("src/**/*.{astro,ts}", {
+        cwd: process.cwd(),
+        ignore: ["src/utils/routes.ts"],
+      })
+      .flatMap((file) =>
+        readFileSync(join(process.cwd(), file), "utf8")
+          .split("\n")
+          .map((text, index) => ({ file, line: index + 1, text }))
+          .filter(({ text }) => handBuilt.test(text))
+          .map(({ file, line, text }) => `${file}:${line}: ${text.trim()}`),
       );
 
     expect(offenders).toEqual([]);

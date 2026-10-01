@@ -1,15 +1,17 @@
 ---
-import type { ProjectPageConfig } from "@appTypes/project";
-import coverImage from "@assets/thejournal/stock/01.avif";
 import Callout from "bloomwright-ui/components/display/Callout.astro";
-import SectionHeader from "bloomwright-ui/components/display/SectionHeader.astro";
-import Steps, { type StepItem } from "bloomwright-ui/components/display/Steps.astro";
+import Steps from "bloomwright-ui/components/display/Steps.astro";
 import EChart from "bloomwright-ui/components/render/EChart.astro";
 import MermaidDiagram from "bloomwright-ui/components/render/MermaidDiagram.astro";
 import { lineChartOption } from "bloomwright-ui/echarts";
 import { defineMermaidDiagram } from "bloomwright-ui/mermaid";
-import { defineJournalLinks, journalIndexHref } from "@content/define_journal_links";
+import { defineJournalLinks } from "@content/define_journal_links";
+import { journalIndexHref } from "@utils/routes";
 import ProjectLayout from "@layouts/ProjectLayout.astro";
+import { defineProjectPage } from "@data/project_page";
+import { completedSteps, stepMarker } from "@utils/steps";
+import ProjectSection from "@components/projects/sections/ProjectSection.astro";
+import { githubRepoUrl } from "@data/identity";
 
 const journal = await defineJournalLinks(
   {
@@ -27,13 +29,10 @@ const journal = await defineJournalLinks(
   { owner: "albertoduran.com", vault: "building_albertoduran" },
 );
 
-const project: ProjectPageConfig = {
-  title: "albertoduran.com",
+const project = defineProjectPage("/projects/albertoduran/", {
   eyebrow: "Portfolio · Publishing System",
   description:
     "A personal site I began after a layoff so my work would have more room than a résumé or interview, now built as a static-first portfolio and publishing platform.",
-  image: coverImage,
-  imageAlt: "A bright development workspace with source code open on a laptop",
   facts: [
     { label: "Role", value: "Design & Engineering" },
     { label: "Platform", value: "Astro 7" },
@@ -51,10 +50,10 @@ const project: ProjectPageConfig = {
     { label: "Playwright", icon: "playwright" },
   ],
   links: {
-    githubUrl: "https://github.com/duranalberto/albertoduran",
+    githubUrl: githubRepoUrl("albertoduran"),
     journalId: "building_albertoduran",
   },
-};
+});
 
 const productSurfaces = [
   {
@@ -89,28 +88,24 @@ const productSurfaces = [
 
 const architectureHighlights = [
   {
-    marker: "01",
     title: "Content becomes routes before deployment",
     description:
       "Collections validate MDX, the manifest applies publication rules, and Astro generates every known article route before deployment.",
     href: journal.routing.href,
   },
   {
-    marker: "02",
     title: "Visual explanations arrive as static assets",
     description:
       "Mermaid diagrams and ECharts figures render during the build. The browser receives useful SVG before any optional interaction starts.",
     href: journal.mermaidPipeline.href,
   },
   {
-    marker: "03",
     title: "Runtime code stays deliberately narrow",
     description:
       "Theme persistence, overlays, and article navigation improve complete HTML instead of becoming prerequisites for reading it.",
     href: journal.progressiveEnhancement.href,
   },
   {
-    marker: "04",
     title: "Production receives finished work",
     description:
       "Workers Static Assets serves the generated file graph. It does not need to understand MDX, vault rules, or page assembly.",
@@ -161,18 +156,18 @@ const readerExperience = [
   {
     title: "Generated output receives a final pass",
     description:
-      "Vite bundles assets, the HTML minifier protects code fragments, and the build emits inspectable files for deployment.",
+      "Vite bundles assets, Astro compresses the HTML without touching code samples, and the build emits inspectable files for deployment.",
     href: journal.mdxPipeline.href,
   },
 ];
 
-const deliverySteps: StepItem[] = [
-  { label: "Validate source", marker: "1", color: "success" },
-  { label: "Resolve content", marker: "2", color: "success" },
-  { label: "Render assets", marker: "3", color: "success" },
-  { label: "Test output", marker: "4", color: "success" },
-  { label: "Deliver files", marker: "5", color: "success" },
-];
+const deliverySteps = completedSteps([
+  "Validate source",
+  "Resolve content",
+  "Render assets",
+  "Test output",
+  "Deliver files",
+]);
 
 const samplePublicationTrend = lineChartOption({
   title: "Sample publication trend",
@@ -230,11 +225,7 @@ flowchart LR
 ---
 
 <ProjectLayout project={project}>
-  <section id="overview" class="w-full" aria-labelledby="overview-title">
-    <SectionHeader
-      id="overview-title"
-      title="More room than an interview"
-    />
+  <ProjectSection id="overview" title="More room than an interview">
 
     <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12">
       <div class="flex flex-col gap-5 lg:col-span-7">
@@ -267,17 +258,9 @@ flowchart LR
         </p>
       </Callout>
     </div>
-  </section>
+  </ProjectSection>
 
-  <section
-    id="product-surfaces"
-    class="w-full"
-    aria-labelledby="product-surfaces-title"
-  >
-    <SectionHeader
-      id="product-surfaces-title"
-      title="Choose how deep to read"
-    />
+  <ProjectSection id="product-surfaces" title="Choose how deep to read">
 
     <p class="mb-10 max-w-4xl text-lg leading-relaxed text-base-content/75">
       Visitors arrive with different amounts of time and curiosity. They can
@@ -310,10 +293,9 @@ flowchart LR
         ))
       }
     </div>
-  </section>
+  </ProjectSection>
 
-  <section id="build-flow" class="w-full" aria-labelledby="build-flow-title">
-    <SectionHeader id="build-flow-title" title="From source to reader" />
+  <ProjectSection id="build-flow" title="From source to reader">
 
     <div class="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-end">
       <p class="text-lg leading-relaxed text-base-content/75">
@@ -330,17 +312,9 @@ flowchart LR
     </div>
 
     <MermaidDiagram code={buildFlow} />
-  </section>
+  </ProjectSection>
 
-  <section
-    id="static-visuals"
-    class="w-full"
-    aria-labelledby="static-visuals-title"
-  >
-    <SectionHeader
-      id="static-visuals-title"
-      title="The browser can take the day off"
-    />
+  <ProjectSection id="static-visuals" title="The browser can take the day off">
 
     <div class="mb-10 grid grid-cols-1 gap-6 lg:grid-cols-12">
       <p class="text-xl leading-relaxed text-base-content lg:col-span-7">
@@ -394,21 +368,13 @@ flowchart LR
         />
       </article>
     </div>
-  </section>
+  </ProjectSection>
 
-  <section
-    id="architecture"
-    class="w-full"
-    aria-labelledby="architecture-title"
-  >
-    <SectionHeader
-      id="architecture-title"
-      title="Decisions that shape the experience"
-    />
+  <ProjectSection id="architecture" title="Decisions that shape the experience">
 
     <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
       {
-        architectureHighlights.map((item) => (
+        architectureHighlights.map((item, index) => (
           <a
             href={item.href}
             class="group card card-border h-full bg-base-100 text-base-content shadow-sm transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
@@ -418,7 +384,7 @@ flowchart LR
                 class="font-mono text-sm font-bold text-primary"
                 aria-hidden="true"
               >
-                {item.marker}
+                {stepMarker(index)}
               </span>
               <h3 class="card-title font-display text-xl transition-colors group-hover:text-primary">
                 {item.title}
@@ -434,17 +400,9 @@ flowchart LR
         ))
       }
     </div>
-  </section>
+  </ProjectSection>
 
-  <section
-    id="publishing-system"
-    class="w-full"
-    aria-labelledby="publishing-system-title"
-  >
-    <SectionHeader
-      id="publishing-system-title"
-      title="The Journal has publication rules"
-    />
+  <ProjectSection id="publishing-system" title="The Journal has publication rules">
 
     <div class="mb-10 grid grid-cols-1 gap-6 lg:grid-cols-12">
       <p class="text-xl leading-relaxed text-base-content lg:col-span-7">
@@ -480,17 +438,9 @@ flowchart LR
         ))
       }
     </div>
-  </section>
+  </ProjectSection>
 
-  <section
-    id="reader-experience"
-    class="w-full"
-    aria-labelledby="reader-experience-title"
-  >
-    <SectionHeader
-      id="reader-experience-title"
-      title="A complete page before enhancement"
-    />
+  <ProjectSection id="reader-experience" title="A complete page before enhancement">
 
     <p class="mb-10 max-w-4xl text-lg leading-relaxed text-base-content/75">
       The browser receives a complete document first. It then handles facts the
@@ -524,10 +474,9 @@ flowchart LR
         ))
       }
     </div>
-  </section>
+  </ProjectSection>
 
-  <section id="delivery" class="w-full" aria-labelledby="delivery-title">
-    <SectionHeader id="delivery-title" title="From validation to deployment" />
+  <ProjectSection id="delivery" title="From validation to deployment">
 
     <Steps
       items={deliverySteps}
@@ -542,8 +491,8 @@ flowchart LR
         </h3>
         <p class="text-base leading-relaxed text-base-content/70 md:text-lg">
           Astro diagnostics protect source and content shapes. Vitest covers
-          manifest rules, content loaders, the JavaScript bundle budget, and
-          HTML minification. A deterministic production build replaces unstable
+          manifest rules, content loaders, components, and the JavaScript
+          bundle budget. A deterministic production build replaces unstable
           outside inputs, and Playwright checks selected reader behavior in
           Chromium.
         </p>
@@ -569,7 +518,7 @@ flowchart LR
         or a documented screen-reader audit.
       </p>
     </Callout>
-  </section>
+  </ProjectSection>
 
   <section
     id="outcomes"

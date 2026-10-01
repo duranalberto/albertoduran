@@ -1,4 +1,5 @@
 import type { Icon, RibbonIcon } from "@appTypes/icon";
+import { stableHash } from "./hash";
 
 // Path data drops the leading zero and packs numbers together, so ".293.672" is
 // two values. A naive /\d+\.\d+/ reads across that boundary as "293.672" and
@@ -42,7 +43,10 @@ export const generateRibbonSVGData = (icons: Icon[], config: RibbonIcon) => {
 
   const svgWidth = icons.length * totalIconWidth;
   const svgHeight = Math.ceil(iconSize + verticalPadding * 2);
-  const instanceId = Math.random().toString(36).substring(2, 5);
+  // Derived from the inputs so identical ribbons produce identical markup.
+  const instanceId = stableHash(
+    JSON.stringify([icons.map((icon) => icon.content), config]),
+  );
 
   const innerContent = icons
     .map((icon, index) => {
@@ -56,10 +60,7 @@ export const generateRibbonSVGData = (icons: Icon[], config: RibbonIcon) => {
         .replace(/id=["']([^"']+)["']/g, `id="${prefix}$1"`)
         .replace(/url\(#([^)]+)\)/g, `url(#${prefix}$1)`)
         .replace(/xlink:href=["']#([^"']+)["']/g, `xlink:href="#${prefix}$1"`)
-        .replace(
-          /(^|\s)href=["']#([^"']+)["']/g,
-          `$1href="#${prefix}$2"`,
-        );
+        .replace(/(^|\s)href=["']#([^"']+)["']/g, `$1href="#${prefix}$2"`);
 
       return `<g transform="translate(${x},${y})"><svg width="${iconSize}" height="${iconSize}" viewBox="${icon.viewBox || "0 0 128 128"}" preserveAspectRatio="xMidYMid meet">${scopedContent}</svg></g>`;
     })

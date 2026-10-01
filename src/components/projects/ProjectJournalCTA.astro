@@ -1,5 +1,5 @@
 ---
-import Button from "bloomwright-ui/components/primitive/Button.astro";
+import OutlineActionButton from "@components/ui/primitive/OutlineActionButton.astro";
 import { ui } from "@data/icons";
 
 interface Props {
@@ -9,20 +9,12 @@ interface Props {
 
 const { href, projectTitle } = Astro.props;
 const journalIcon = ui.vault;
-
-if (!journalIcon) {
-  throw new Error(
-    "Required Journal CTA icon (vault) is missing from @data/icons",
-  );
-}
 ---
 
-<Button
+<OutlineActionButton
   href={href}
   icon={journalIcon}
   label="Technical details"
-  variant="btn-outline"
   size="btn-md"
   ariaLabel={`See how ${projectTitle} works in The Journal`}
-  class="border-base-300 hover:border-primary hover:bg-primary hover:text-primary-content"
 />

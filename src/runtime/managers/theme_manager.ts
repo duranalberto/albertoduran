@@ -6,42 +6,43 @@
  * module scripts so this never runs more than once per page.
  */
 
-const STORAGE_KEY = "theme";
-const DEFAULT_THEME = "light";
+import {
+  resolveTheme,
+  THEME_META_COLORS,
+  THEME_STORAGE_KEY,
+  type Theme,
+} from "./theme_config";
+
 const TOGGLE_ID = "theme-toggle-input";
 
 function getStoredTheme(): string | null {
   try {
-    return localStorage.getItem(STORAGE_KEY);
+    return localStorage.getItem(THEME_STORAGE_KEY);
   } catch {
     return null;
   }
 }
 
-function getSystemTheme(): string {
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
+function getTheme(): Theme {
+  return resolveTheme(
+    getStoredTheme(),
+    window.matchMedia("(prefers-color-scheme: dark)").matches,
+  );
 }
 
-function getTheme(): string {
-  return getStoredTheme() ?? getSystemTheme() ?? DEFAULT_THEME;
-}
-
-function storeTheme(theme: string): void {
+function storeTheme(theme: Theme): void {
   try {
-    localStorage.setItem(STORAGE_KEY, theme);
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
   } catch {}
 }
 
-function applyTheme(theme: string, target: Document = document): void {
+function applyTheme(theme: Theme, target: Document = document): void {
   const root = target.documentElement;
   root.setAttribute("data-theme", theme);
   root.style.setProperty("color-scheme", theme);
-  const meta = target.getElementById("meta-theme-color");
-  if (meta) {
-    meta.setAttribute("content", theme === "dark" ? "#121212" : "#ffffff");
-  }
+  target
+    .getElementById("meta-theme-color")
+    ?.setAttribute("content", THEME_META_COLORS[theme]);
 }
 
 function suppressTransitions(on: boolean, target: Document = document): void {
@@ -91,9 +92,6 @@ document.addEventListener("astro:after-swap", () => {
   );
 });
 
-document.addEventListener("astro:page-load", () => {
-  document.documentElement.classList.remove("no-js");
-  bindToggle();
-});
+document.addEventListener("astro:page-load", bindToggle);
 
 bindToggle();

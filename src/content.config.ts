@@ -1,3 +1,4 @@
+import { journalSchema } from "@content/journal_schema";
 import atlas_loader from "@utils/atlas_loader";
 import { glob } from "astro/loaders";
 import { z } from "astro/zod";
@@ -8,32 +9,7 @@ const thejournal = defineCollection({
     pattern: "**/[^_]*.{md,mdx}",
     base: "./src/thejournal",
   }),
-  schema: ({ image }) =>
-    z
-      .object({
-        title: z.string(),
-        github: z.string().optional(),
-        image: image().optional(),
-        description: z.string().default("Without description available."),
-        pubDate: z.coerce.date(),
-        updatePubDate: z.coerce.date().optional(),
-        tags: z.array(z.string()).default([]),
-        order: z.number().default(100),
-        draft: z.boolean().optional(),
-      })
-      .refine(
-        (data) => {
-          if (data.updatePubDate && !data.pubDate) {
-            return false;
-          }
-          return true;
-        },
-        {
-          message:
-            "updatePubDate requires pubDate to be set. Add a pubDate field to this entry.",
-          path: ["updatePubDate"],
-        },
-      ),
+  schema: ({ image }) => journalSchema({ image }),
 });
 
 const atlasData = defineCollection({

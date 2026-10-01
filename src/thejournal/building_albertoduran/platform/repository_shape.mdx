@@ -14,9 +14,9 @@ Extraction is easiest to understand by looking at the hole it left. When the ren
 
 Three folders tell the extraction story just by their contents. Each used to hold general-purpose machinery and now holds only the app's own pieces.
 
-- `src/integrations/` holds a single integration, the HTML minifier. The DaisyUI, ECharts, and Mermaid integrations that used to live here are gone, replaced by `bloomwright-mdx` and `bloomwright-ui`.
-- `src/runtime/elements/` holds three custom elements, `atlas-schedule`, `on-this-page`, and `video-player-shell`. The overlay, echart, and mermaid shells now ship from `bloomwright-ui/runtime/*`.
-- `src/components/ui/` holds five components, `StripBackground`, `VideoPlayer`, `ThemeToggle`, `AlbertoDuran`, and `SocialTire`. Everything generic became a package component.
+- `src/integrations/` is gone. The DaisyUI, ECharts, and Mermaid integrations that used to live there were replaced by `bloomwright-mdx` and `bloomwright-ui`, and the last one, an HTML minifier, was removed once measurement showed it added little over Astro's own compression.
+- `src/runtime/elements/` holds four custom elements, `atlas-schedule`, `on-this-page`, `project-media`, and `video-player-shell`. The overlay, echart, and mermaid shells now ship from `bloomwright-ui/runtime/*`.
+- `src/components/ui/` holds seven small components, `StripBackground`, `VideoPlayer`, `ArrowLink`, `ThemeToggle`, `AlbertoDuran`, `OutlineActionButton`, and `SocialTire`. Everything generic became a package component.
 
 What stayed did so for a reason. It is brand, it is app-specific data, or it is a seam the packages deliberately left open.
 
@@ -42,16 +42,15 @@ src/
 ├─ components/    # app components by feature area
 ├─ content/       # manifest + content processors (publishable.ts)
 ├─ data/          # site, profile, icon, and manifest data
-├─ integrations/  # HTML minifier only
 ├─ layouts/       # shared Astro document shells
 ├─ mermaid/       # render-pipeline.ts (the injected backend)
 ├─ pages/         # file-based routes
-├─ runtime/       # elements/ + managers/ (theme_manager)
+├─ runtime/       # elements/, managers/ (theme), video/ (hls, catalog)
 ├─ styles/        # ordered CSS partials
 └─ thejournal/    # publication source
 ```
 
-`src/pages/` owns routes. `src/thejournal/` owns publication source. `src/content/` owns processing. What used to be a fourth pillar, `src/integrations/` owning build-time behavior, is now mostly a package concern, with the app keeping only the minifier and the two seam files.
+`src/pages/` owns routes. `src/thejournal/` owns publication source. `src/content/` owns processing. What used to be a fourth pillar, `src/integrations/` owning build-time behavior, is now a package concern, with the app keeping only the two seam files.
 
 ---
 

@@ -1,28 +1,27 @@
 ---
 import { social } from "@data/icons";
-import Button from "bloomwright-ui/components/primitive/Button.astro";
+import { socialLinks } from "@data/identity";
+import OutlineActionButton from "@components/ui/primitive/OutlineActionButton.astro";
 
-const linkedInIcon = social.linked_in!;
-const githubIcon = social.github!;
+const linkedInIcon = social.linkedIn;
+const githubIcon = social.github;
 ---
 
 <div class="flex flex-wrap items-center gap-6">
-  <Button
+  <OutlineActionButton
     icon={linkedInIcon}
-    variant="btn-outline"
-    href="https://linkedin.com/in/duranalberto"
-    ariaLabel="LinkedIn Profile"
+    href={socialLinks.linkedIn.href}
+    ariaLabel={socialLinks.linkedIn.label}
     isExternal
-    class="w-32 border-base-300 hover:border-primary hover:bg-primary hover:text-primary-content group"
+    class="w-32 group"
   />
 
-  <Button
+  <OutlineActionButton
     icon={githubIcon}
-    variant="btn-outline"
-    href="https://github.com/duranalberto"
-    ariaLabel="GitHub Profile"
+    href={socialLinks.github.href}
+    ariaLabel={socialLinks.github.label}
     isExternal
-    class="w-32 border-base-300 hover:border-primary hover:bg-primary hover:text-primary-content group"
+    class="w-32 group"
   />
 
   <div class="select-none">

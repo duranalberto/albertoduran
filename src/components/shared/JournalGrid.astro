@@ -1,22 +1,24 @@
 ---
 import { type EntryContext } from "@appTypes/content_context";
 import JournalCard from "@components/shared/JournalCard.astro";
+import { vaultsManifest } from "@content/processors/thejournal";
 
 interface Props {
   catalog: EntryContext[];
-  hrefByEntryId?: Readonly<Record<string, string>>;
 }
 
-const { catalog, hrefByEntryId = {} } = Astro.props;
+const { catalog } = Astro.props;
 ---
 
 <div
   class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12 w-full place-items-stretch"
 >
   {
-    catalog.length > 0 &&
-      catalog.map((entry: EntryContext) => (
-        <JournalCard entry={entry} href={hrefByEntryId[entry.id]} />
-      ))
+    catalog.map((entry) => (
+      <JournalCard
+        entry={entry}
+        vaultTitle={entry.vaultId ? vaultsManifest[entry.vaultId]?.title : undefined}
+      />
+    ))
   }
 </div>

@@ -6,30 +6,29 @@ import { sitesManifest } from "@data/site_manifest";
 import BaseLayout from "@layouts/BaseLayout.astro";
 import FlexShell from "@layouts/FlexShell.astro";
 import image from "@assets/thejournal/stock/10.jpg";
+import { isVaultChild } from "@content/entry_kind";
+import { formatDuration } from "@utils/format";
 
 const byNewestPubDate = (a: { pubDate: Date }, b: { pubDate: Date }) =>
   b.pubDate.getTime() - a.pubDate.getTime();
 
 const allEntries = Object.values(entryManifest);
 
-const firstHalf = allEntries
-  .filter((e) => !e.vaultId || e.id === e.vaultId)
+// Standalone publications and vault roots first, then vault children.
+const topLevel = allEntries
+  .filter((entry) => !isVaultChild(entry))
   .sort(byNewestPubDate);
 
-const secondHalf = allEntries
-  .filter((e) => e.vaultId && e.id !== e.vaultId)
-  .sort(byNewestPubDate);
+const vaultChildren = allEntries.filter(isVaultChild).sort(byNewestPubDate);
 
-const catalog = [...firstHalf, ...secondHalf];
+const catalog = [...topLevel, ...vaultChildren];
 
 const publicationCount = catalog.length;
 const totalReadMinutes = catalog.reduce(
   (total, entry) => total + entry.readTime,
   0,
 );
-const totalReadHours = Math.floor(totalReadMinutes / 60);
-const remainingReadMinutes = totalReadMinutes % 60;
-const totalReadTime = `${totalReadHours}h${remainingReadMinutes > 0 ? ` ${remainingReadMinutes}m` : ""}`;
+const totalReadTime = formatDuration(totalReadMinutes);
 ---
 
 <BaseLayout siteManifest={sitesManifest["/thejournal/"]} image={image}>
@@ -44,7 +43,7 @@ const totalReadTime = `${totalReadHours}h${remainingReadMinutes > 0 ? ` ${remain
       catalog.length === 0 && (
         <div class="flex justify-center">
           <div class="alert alert-info max-w-md">
-            <span>No publications found. check back later!</span>
+            <span>No publications found. Check back later!</span>
           </div>
         </div>
       )

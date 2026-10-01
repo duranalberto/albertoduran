@@ -1,0 +1,27 @@
+---
+/**
+ * A titled section of a project landing page. The heading id is derived
+ * from `id` ("<id>-title") and labels the section.
+ */
+import SectionHeader from "bloomwright-ui/components/display/SectionHeader.astro";
+
+interface Props {
+  id: string;
+  title: string;
+  linkHref?: string;
+  linkLabel?: string;
+}
+
+const { id, title, linkHref, linkLabel } = Astro.props;
+const titleId = `${id}-title`;
+---
+
+<section id={id} class="w-full" aria-labelledby={titleId}>
+  <SectionHeader
+    id={titleId}
+    title={title}
+    {...linkHref ? { linkHref } : {}}
+    {...linkLabel ? { linkLabel } : {}}
+  />
+  <slot />
+</section>

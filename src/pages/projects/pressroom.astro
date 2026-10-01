@@ -1,13 +1,16 @@
 ---
-import type { ProjectPageConfig } from "@appTypes/project";
-import coverImage from "@assets/thejournal/stock/12.jpg";
 import Callout from "bloomwright-ui/components/display/Callout.astro";
-import SectionHeader from "bloomwright-ui/components/display/SectionHeader.astro";
-import Steps, { type StepItem } from "bloomwright-ui/components/display/Steps.astro";
+import Steps from "bloomwright-ui/components/display/Steps.astro";
 import MermaidDiagram from "bloomwright-ui/components/render/MermaidDiagram.astro";
 import { defineMermaidDiagram } from "bloomwright-ui/mermaid";
 import { defineJournalLinks } from "@content/define_journal_links";
 import ProjectLayout from "@layouts/ProjectLayout.astro";
+import { defineProjectPage } from "@data/project_page";
+import { completedSteps, stepMarker } from "@utils/steps";
+import ProjectSection from "@components/projects/sections/ProjectSection.astro";
+import OutcomeBanner from "@components/projects/sections/OutcomeBanner.astro";
+import ArrowLink from "@components/ui/navigation/ArrowLink.astro";
+import { githubRepoUrl } from "@data/identity";
 
 const journal = await defineJournalLinks(
   {
@@ -17,14 +20,10 @@ const journal = await defineJournalLinks(
   { owner: "Pressroom" },
 );
 
-const project: ProjectPageConfig = {
-  title: "Pressroom",
+const project = defineProjectPage("/projects/pressroom/", {
   eyebrow: "Local AI · Editorial Pipeline",
   description:
     "Nine AI agents turn a rough brief into an .mdx article with charts, diagrams, frontmatter, and an audit trail. The model runs locally through Ollama.",
-  image: coverImage,
-  imageAlt:
-    "An open handwritten notebook with a fountain pen resting on the page",
   facts: [
     { label: "Runtime", value: "LangGraph" },
     { label: "Model", value: "Ollama · local" },
@@ -41,61 +40,52 @@ const project: ProjectPageConfig = {
     { label: "ECharts", icon: "ts" },
   ],
   links: {
-    githubUrl: "https://github.com/duranalberto/pressroom",
+    githubUrl: githubRepoUrl("pressroom"),
   },
-};
+});
 
 const agents = [
   {
-    marker: "01",
     name: "Loader",
     description:
       "Reads every file in input/ plus the selected publication template into shared pipeline state.",
   },
   {
-    marker: "02",
     name: "Interview",
     description:
       "Reads the brief and asks a few clarifying questions, without rerunning when a paused pipeline resumes.",
   },
   {
-    marker: "03",
     name: "Outline Designer",
     description:
       "Uses the answers to build a section plan and reserve places for charts, diagrams, or UI blocks.",
   },
   {
-    marker: "04",
     name: "Visualizer",
     description:
       "Fills chart templates from extracted data, then asks the model for Mermaid diagrams and UI components when the article needs them.",
   },
   {
-    marker: "05",
     name: "Writer",
     description:
       "Writes the MDX draft from the outline and revises it whenever the reviewer sends the piece back.",
   },
   {
-    marker: "06",
     name: "Reviewer",
     description:
       "Runs mechanical checks and editorial criteria, then returns specific issues to the writer.",
   },
   {
-    marker: "07",
     name: "Humanizer",
     description:
       "Removes recognizable AI patterns and adjusts the rhythm while keeping the article structure intact.",
   },
   {
-    marker: "08",
     name: "Metadata",
     description:
       "Writes the frontmatter title, description, and tags from the publication template.",
   },
   {
-    marker: "09",
     name: "Publisher",
     description:
       "Replaces visual placeholders, merges imports, and writes the final .mdx file.",
@@ -123,17 +113,17 @@ const configuration = [
   },
 ];
 
-const pipelineSteps: StepItem[] = [
-  { label: "Load", marker: "1", color: "success" },
-  { label: "Interview", marker: "2", color: "success" },
-  { label: "Outline", marker: "3", color: "success" },
-  { label: "Visualize", marker: "4", color: "success" },
-  { label: "Write", marker: "5", color: "success" },
-  { label: "Review", marker: "6", color: "success" },
-  { label: "Humanize", marker: "7", color: "success" },
-  { label: "Metadata", marker: "8", color: "success" },
-  { label: "Publish", marker: "9", color: "success" },
-];
+const pipelineSteps = completedSteps([
+  "Load",
+  "Interview",
+  "Outline",
+  "Visualize",
+  "Write",
+  "Review",
+  "Humanize",
+  "Metadata",
+  "Publish",
+]);
 
 const pipelineFlow = defineMermaidDiagram(String.raw`
 flowchart TD
@@ -185,8 +175,7 @@ flowchart LR
 ---
 
 <ProjectLayout project={project}>
-  <section id="overview" class="w-full" aria-labelledby="overview-title">
-    <SectionHeader id="overview-title" title="From rough brief to MDX" />
+  <ProjectSection id="overview" title="From rough brief to MDX">
 
     <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12">
       <div class="flex flex-col gap-5 lg:col-span-7">
@@ -219,13 +208,9 @@ flowchart LR
         </p>
       </Callout>
     </div>
-  </section>
+  </ProjectSection>
 
-  <section id="how" class="w-full" aria-labelledby="how-title">
-    <SectionHeader
-      id="how-title"
-      title="Nine agents with one human checkpoint"
-    />
+  <ProjectSection id="how" title="Nine agents with one human checkpoint">
     <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
       The workflow runs in order. It pauses after the interview agent asks its
       questions, then collects your answers or accepts the suggested defaults.
@@ -233,23 +218,19 @@ flowchart LR
       piece or reaches the iteration cap.
     </p>
     <MermaidDiagram code={pipelineFlow} />
-  </section>
+  </ProjectSection>
 
-  <section id="agents" class="w-full" aria-labelledby="agents-title">
-    <SectionHeader
-      id="agents-title"
-      title="What each agent contributes"
-    />
+  <ProjectSection id="agents" title="What each agent contributes">
 
     <div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
       {
-        agents.map((agent) => (
+        agents.map((agent, index) => (
           <article class="rounded-box border border-base-300 bg-base-100 p-6 text-base-content shadow-sm">
             <span
               class="mb-4 block font-mono text-sm font-bold text-primary"
               aria-hidden="true"
             >
-              {agent.marker}
+              {stepMarker(index)}
             </span>
             <h3 class="mb-3 font-display text-xl font-semibold">
               {agent.name}
@@ -261,13 +242,9 @@ flowchart LR
         ))
       }
     </div>
-  </section>
+  </ProjectSection>
 
-  <section id="loop" class="w-full" aria-labelledby="loop-title">
-    <SectionHeader
-      id="loop-title"
-      title="The writer and reviewer negotiate until the piece holds up"
-    />
+  <ProjectSection id="loop" title="The writer and reviewer negotiate until the piece holds up">
 
     <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-center">
       <div class="lg:col-span-7">
@@ -295,13 +272,9 @@ flowchart LR
         </p>
       </Callout>
     </div>
-  </section>
+  </ProjectSection>
 
-  <section id="pipeline" class="w-full" aria-labelledby="pipeline-title">
-    <SectionHeader
-      id="pipeline-title"
-      title="How a run moves through the pipeline"
-    />
+  <ProjectSection id="pipeline" title="How a run moves through the pipeline">
     <Steps
       items={pipelineSteps}
       aria-label="Pressroom publication pipeline"
@@ -316,13 +289,9 @@ flowchart LR
         machine.
       </p>
     </Callout>
-  </section>
+  </ProjectSection>
 
-  <section id="configuration" class="w-full" aria-labelledby="configuration-title">
-    <SectionHeader
-      id="configuration-title"
-      title="Configured by templates, not by editing code"
-    />
+  <ProjectSection id="configuration" title="Configured by templates, not by editing code">
 
     <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
       {
@@ -341,13 +310,9 @@ flowchart LR
         ))
       }
     </div>
-  </section>
+  </ProjectSection>
 
-  <section id="audit" class="w-full" aria-labelledby="audit-title">
-    <SectionHeader
-      id="audit-title"
-      title="Every file keeps its audit trail"
-    />
+  <ProjectSection id="audit" title="Every file keeps its audit trail">
 
     <div class="mb-10 grid grid-cols-1 gap-6 md:grid-cols-2">
       <div class="rounded-box border border-base-300 bg-base-100 p-7 shadow-sm">
@@ -372,15 +337,9 @@ flowchart LR
         </p>
       </div>
     </div>
-  </section>
+  </ProjectSection>
 
-  <section id="case-study" class="w-full" aria-labelledby="case-study-title">
-    <SectionHeader
-      id="case-study-title"
-      title="Case study, Oracle from analysis to article"
-      linkHref={journal.isOracleStockUndervalued.href}
-      linkLabel="Read the published article"
-    />
+  <ProjectSection id="case-study" title="Case study, Oracle from analysis to article" linkHref={journal.isOracleStockUndervalued.href} linkLabel="Read the published article">
     <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
       <a
         href={journal.isOracleStockUndervalued.href}
@@ -436,34 +395,17 @@ flowchart LR
       </p>
     </Callout>
 
-    <a
-      href={journal.threeProjectsOnePipeline.href}
-      class="mt-8 inline-flex font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
-    >
-      Read more about the full pipeline &rarr;
-    </a>
-  </section>
+    <ArrowLink href={journal.threeProjectsOnePipeline.href} class="mt-8">
+      Read more about the full pipeline
+    </ArrowLink>
+  </ProjectSection>
 
-  <section
-    id="outcome"
-    class="overflow-hidden rounded-box bg-primary p-8 text-primary-content shadow-xl md:p-12 lg:p-16"
-    aria-labelledby="outcome-title"
-  >
-    <p class="mb-4 text-xs font-bold uppercase tracking-[0.2em] opacity-70">
-      The outcome
-    </p>
-    <h2
-      id="outcome-title"
-      class="max-w-4xl font-display text-3xl font-bold leading-tight sm:text-4xl"
-    >
-      Pressroom turns a folder of source material into a finished, formatted
-      article and leaves a full audit trail behind it.
-    </h2>
+  <OutcomeBanner title="Pressroom turns a folder of source material into a finished, formatted article and leaves a full audit trail behind it.">
     <p class="mt-6 max-w-3xl text-lg leading-relaxed opacity-80">
       Deterministic visuals keep charts tied to their data. A bounded review
       loop keeps the run moving, and local models keep every draft on the
       machine. If an artifact is missing, Pressroom records the problem and
       keeps going instead of breaking the run.
     </p>
-  </section>
+  </OutcomeBanner>
 </ProjectLayout>

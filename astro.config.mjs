@@ -10,7 +10,6 @@ import {
 } from "bloomwright-mdx";
 import { mermaidRenderer } from "bloomwright-ui/mermaid-renderer";
 import { LIGHT_PALETTE, DARK_PALETTE } from "bloomwright-ui/mermaid";
-import { customHtmlMinifier } from "./src/integrations/html-minifier/plugin.ts";
 import { collectPublishableDocuments } from "./src/content/processors/publishable.ts";
 import { createMermaidRenderPipeline } from "./src/mermaid/render-pipeline.ts";
 
@@ -59,7 +58,6 @@ export default defineConfig({
       remoteCache: readEnv("MERMAID_DISABLE_REMOTE_CACHE") !== "true",
     }),
     mdx(),
-    customHtmlMinifier(),
   ],
 
   prefetch: {

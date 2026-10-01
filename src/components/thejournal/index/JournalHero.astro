@@ -1,4 +1,5 @@
 ---
+import PageHero from "@components/shared/PageHero.astro";
 import type { HTMLAttributes } from "astro/types";
 
 interface Props extends HTMLAttributes<"section"> {
@@ -9,68 +10,62 @@ interface Props extends HTMLAttributes<"section"> {
 const { publicationCount, totalReadTime, ...sectionProps } = Astro.props;
 ---
 
-<section class="hero-section font-sans overflow-hidden" {...sectionProps}>
-  <div class="hero-shell">
-    <div class="hero-grid">
-      <div class="hero-primary xl:col-span-7">
-        <div class="hero-eyebrow" aria-hidden="true">
-          <span class="hero-eyebrow-line"></span>
-          <p class="hero-eyebrow-label">Thoughts on Code & Growth</p>
-        </div>
+<PageHero
+  eyebrow="Thoughts on Code & Growth"
+  class="font-sans overflow-hidden"
+  primaryClass="xl:col-span-7"
+  {...sectionProps}
+>
+  <h1
+    class="hero-heading font-display text-5xl md:text-6xl xl:text-8xl mb-8"
+  >
+    <span class="text-primary">The</span>
+    <span class="text-base-content">Journal.</span>
+  </h1>
 
-        <h1
-          class="hero-heading font-display text-5xl md:text-6xl xl:text-8xl mb-8"
-        >
-          <span class="text-primary">The</span>
-          <span class="text-base-content">Journal.</span>
-        </h1>
+  <p
+    class="hero-description text-lg leading-relaxed text-neutral-content md:text-xl"
+  >
+    Writing about technical challenges, life lessons, and the things that
+    keep me overthinking. Like a blog, but with a cooler name.
+  </p>
 
-        <p
-          class="hero-description text-lg leading-relaxed text-neutral-content md:text-xl"
+  <div slot="aside" class="flex min-w-0 xl:justify-end xl:col-span-5">
+    <div
+      class="flex w-full max-w-sm flex-row border-l-2 border-primary/20 py-2 pl-5 xl:w-auto xl:max-w-none xl:flex-col"
+      role="group"
+      aria-label="Journal statistics"
+    >
+      <div
+        class="flex min-w-0 flex-1 flex-col pr-5 xl:flex-none xl:pb-5 xl:pr-0"
+      >
+        <span
+          class="font-display text-2xl font-black leading-none text-primary md:text-3xl"
+          data-journal-publication-count
         >
-          Writing about technical challenges, life lessons, and the things that
-          keep me overthinking. Like a blog, but with a cooler name.
-        </p>
+          {publicationCount}
+        </span>
+        <span
+          class="mt-2 text-xs font-bold uppercase tracking-widest text-neutral-content opacity-90"
+        >
+          Publications
+        </span>
       </div>
 
-      <div class="flex min-w-0 xl:justify-end xl:col-span-5">
-        <div
-          class="flex w-full max-w-sm flex-row border-l-2 border-primary/20 py-2 pl-5 xl:w-auto xl:max-w-none xl:flex-col"
-          role="group"
-          aria-label="Journal statistics"
+      <div
+        class="flex min-w-0 flex-1 flex-col border-l border-base-content/10 pl-5 xl:flex-none xl:border-l-0 xl:border-t xl:pl-0 xl:pt-5"
+      >
+        <span
+          class="font-display whitespace-nowrap text-2xl font-black leading-none text-base-content md:text-3xl"
         >
-          <div
-            class="flex min-w-0 flex-1 flex-col pr-5 xl:flex-none xl:pb-5 xl:pr-0"
-          >
-            <span
-              class="font-display text-2xl font-black leading-none text-primary md:text-3xl"
-              data-journal-publication-count
-            >
-              {publicationCount}
-            </span>
-            <span
-              class="mt-2 text-xs font-bold uppercase tracking-widest text-neutral-content opacity-90"
-            >
-              Publications
-            </span>
-          </div>
-
-          <div
-            class="flex min-w-0 flex-1 flex-col border-l border-base-content/10 pl-5 xl:flex-none xl:border-l-0 xl:border-t xl:pl-0 xl:pt-5"
-          >
-            <span
-              class="font-display whitespace-nowrap text-2xl font-black leading-none text-base-content md:text-3xl"
-            >
-              {totalReadTime}
-            </span>
-            <span
-              class="mt-2 text-xs font-bold uppercase tracking-widest text-neutral-content opacity-90"
-            >
-              Total read time
-            </span>
-          </div>
-        </div>
+          {totalReadTime}
+        </span>
+        <span
+          class="mt-2 text-xs font-bold uppercase tracking-widest text-neutral-content opacity-90"
+        >
+          Total read time
+        </span>
       </div>
-    </div>
   </div>
-</section>
+  </div>
+</PageHero>

@@ -1,0 +1,29 @@
+---
+import type { TerminalLine } from "@data/project_visuals";
+
+interface Props {
+  lines: readonly TerminalLine[];
+}
+
+const { lines } = Astro.props;
+const isBlank = (line: TerminalLine) =>
+  line.length === 0 || (line.length === 1 && line[0] === "");
+---
+
+<div class="project-visual-term">
+  {
+    lines.map((line) => (
+      <span class="project-visual-line">
+        {isBlank(line)
+          ? " "
+          : line.map((segment) =>
+              typeof segment === "string" ? (
+                segment
+              ) : (
+                <span class={`project-visual-${segment[1]}`}>{segment[0]}</span>
+              ),
+            )}
+      </span>
+    ))
+  }
+</div>

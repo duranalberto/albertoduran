@@ -4,28 +4,18 @@ export interface Props {
   class?: string;
   as?: "div" | "section" | "article" | "nav" | "main" | "header";
   maxWidth?: string;
-  px?: number;
-  py?: number;
 }
 
+// Horizontal gutters only; callers own vertical padding through `class`.
+// Classes stay literal so Tailwind can see them.
 const {
   id,
   class: className,
   as: Tag = "div",
   maxWidth = "max-w-screen-2xl",
-  px = 8,
-  py = 24,
 } = Astro.props;
-
-const mobilePx = Math.floor(px / 2);
-const mobilePy = Math.floor(py / 2);
-
-const paddingClasses = `px-${mobilePx} py-${mobilePy} md:px-${px} md:py-${py}`;
 ---
 
-<Tag
-  id={id}
-  class:list={["mx-auto w-full", maxWidth, paddingClasses, className]}
->
+<Tag id={id} class:list={["mx-auto w-full px-4 md:px-8", maxWidth, className]}>
   <slot />
 </Tag>

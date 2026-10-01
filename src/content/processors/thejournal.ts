@@ -5,7 +5,7 @@ import type {
 } from "@appTypes/content_context";
 import { getCollection } from "astro:content";
 import {
-  buildJournalManifest,
+  buildManifest,
   filterPublishedJournalEntries,
 } from "./thejournal-manifest.ts";
 
@@ -14,8 +14,7 @@ async function loadManifest(): Promise<
 > {
   const rawEntries = await getCollection("thejournal");
   const publishedEntries = filterPublishedJournalEntries(rawEntries);
-  const [entryManifest, vaultsManifest] =
-    buildJournalManifest(publishedEntries);
+  const [entryManifest, vaultsManifest] = buildManifest(publishedEntries);
 
   return [entryManifest, vaultsManifest, publishedEntries];
 }

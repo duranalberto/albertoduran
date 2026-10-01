@@ -60,7 +60,7 @@ type ChartOption = EChartsCoreOption; // from "echarts/core"
 
 ```mdx
 import EChart from "@components/ui/mdx/EChart.astro";
-import { lineChartOption } from "@integrations/echarts/options";
+import { lineChartOption } from "bloomwright-ui/echarts";
 
 <EChart
   title="Quarterly revenue"
@@ -155,7 +155,7 @@ formatter callbacks in the browser.
 
 ## Option builders
 
-All builders live in `@integrations/echarts/options`. They return `ChartOption` objects ready to pass to `EChart.astro`. Authors may also pass raw ECharts option objects for one-off charts.
+All builders live in `bloomwright-ui/echarts`. They return `ChartOption` objects ready to pass to `EChart.astro`. Authors may also pass raw ECharts option objects for one-off charts.
 
 ### Common charts
 

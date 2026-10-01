@@ -3,6 +3,7 @@ import type { BuiltWith, SocialLink } from "@appTypes/footer";
 import AlbertoDuran from "@components/ui/primitive/AlbertoDuran.astro";
 import SVGIcon from "bloomwright-ui/components/primitive/SVGIcon.astro";
 import { social } from "@data/icons";
+import { socialLinks as profiles } from "@data/identity";
 import packageJson from "../../../package.json";
 
 const packageVersion = packageJson.version;
@@ -14,16 +15,16 @@ const builtWith: BuiltWith[] = [
 
 const socialLinks: SocialLink[] = [
   {
-    label: "LinkedIn Profile",
-    href: "https://www.linkedin.com/in/duranalberto/",
-    icon: social.linked_in,
-    display: "in/duranalberto",
+    label: profiles.linkedIn.label,
+    href: profiles.linkedIn.href,
+    icon: social.linkedIn,
+    display: profiles.linkedIn.handle,
   },
   {
-    label: "GitHub Profile",
-    href: "https://github.com/duranalberto",
+    label: profiles.github.label,
+    href: profiles.github.href,
     icon: social.github,
-    display: "@duranalberto",
+    display: profiles.github.handle,
   },
 ];
 ---

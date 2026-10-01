@@ -1,6 +1,9 @@
 ---
 import ProjectCard from "@components/projects/ProjectCard.astro";
+import { withResolvedStats } from "@content/project_stats";
 import { featuredProjects } from "@data/projects";
+
+const projects = withResolvedStats(featuredProjects);
 ---
 
 <div
@@ -8,7 +11,7 @@ import { featuredProjects } from "@data/projects";
   data-project-grid
 >
   {
-    featuredProjects.map((project, index) => (
+    projects.map((project, index) => (
       <ProjectCard project={project} wide={index === 0 || index === 3} />
     ))
   }

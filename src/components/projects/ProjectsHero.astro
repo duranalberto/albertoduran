@@ -1,4 +1,5 @@
 ---
+import PageHero from "@components/shared/PageHero.astro";
 interface Props {
   projectCount?: number;
   [key: string]: unknown;
@@ -8,43 +9,37 @@ const { projectCount = 0, ...sectionProps } = Astro.props as Props;
 const formattedProjectCount = String(projectCount).padStart(2, "0");
 ---
 
-<section class="hero-section overflow-hidden font-sans" {...sectionProps}>
-  <div class="hero-shell">
-    <div class="hero-grid">
-      <div class="hero-primary xl:col-span-7">
-        <div class="hero-eyebrow" aria-hidden="true">
-          <span class="hero-eyebrow-line"></span>
-          <p class="hero-eyebrow-label">Projects</p>
-        </div>
+<PageHero
+  eyebrow="Projects"
+  class="overflow-hidden font-sans"
+  primaryClass="xl:col-span-7"
+  {...sectionProps}
+>
+  <h1
+    class="hero-heading mb-8 font-display text-5xl text-base-content md:text-6xl xl:text-8xl"
+  >
+    <span class="text-primary">My</span>
+    {" "}
+    <span>Projects</span>
+  </h1>
 
-        <h1
-          class="hero-heading mb-8 font-display text-5xl text-base-content md:text-6xl xl:text-8xl"
-        >
-          <span class="text-primary">My</span>
-          {" "}
-          <span>Projects</span>
-        </h1>
+  <p class="hero-description text-lg leading-relaxed text-neutral-content md:text-xl">
+    Projects shaped by different problems: publishing technical knowledge,
+    reasoning about uncertain financial data, operating resilient
+    scrapers, and building distributed writing platforms.
+  </p>
 
-        <p class="hero-description text-lg leading-relaxed text-neutral-content md:text-xl">
-          Projects shaped by different problems: publishing technical knowledge,
-          reasoning about uncertain financial data, operating resilient
-          scrapers, and building distributed writing platforms.
-        </p>
-      </div>
-
-      <div class="flex min-w-0 xl:col-span-5 xl:justify-end">
-        <div class="flex flex-col border-l-2 border-primary/20 py-2 pl-6">
-          <span class="mb-1 text-xs font-bold uppercase tracking-widest text-neutral-content opacity-90">
-            Projects
-          </span>
-          <span class="font-display text-4xl font-black text-primary">
-            {formattedProjectCount}
-          </span>
-          <span class="font-display text-sm uppercase text-base-content">
-            Complete case studies
-          </span>
-        </div>
-      </div>
-    </div>
+  <div slot="aside" class="flex min-w-0 xl:col-span-5 xl:justify-end">
+    <div class="flex flex-col border-l-2 border-primary/20 py-2 pl-6">
+      <span class="mb-1 text-xs font-bold uppercase tracking-widest text-neutral-content opacity-90">
+        Projects
+      </span>
+      <span class="font-display text-4xl font-black text-primary">
+        {formattedProjectCount}
+      </span>
+      <span class="font-display text-sm uppercase text-base-content">
+        Complete case studies
+      </span>
   </div>
-</section>
+  </div>
+</PageHero>

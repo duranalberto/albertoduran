@@ -175,5 +175,3 @@ export class ProjectMedia extends HTMLElement {
 if (typeof window !== "undefined" && !customElements.get("project-media")) {
   customElements.define("project-media", ProjectMedia);
 }
-
-export {};

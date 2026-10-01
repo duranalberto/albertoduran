@@ -1,5 +1,6 @@
 ---
 import type ProfessionalMetric from "@appTypes/profile_view";
+import { identity } from "@data/identity";
 import GlassPanel from "bloomwright-ui/components/primitive/GlassPanel.astro";
 import StripBackground from "@components/ui/display/StripBackground.astro";
 import Button from "bloomwright-ui/components/primitive/Button.astro";
@@ -8,7 +9,7 @@ import ParallaxHero from "@layouts/ParallaxHero.astro";
 const metrics: ProfessionalMetric[] = [
   {
     label: "Experience",
-    highlights: ["6+ Years"],
+    highlights: [`${identity.yearsOfExperience}+ Years`],
     details: ["Oracle", "TCS USAA"],
   },
   {

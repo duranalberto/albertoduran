@@ -19,27 +19,17 @@ import streamVaultHomeShot from "@assets/thejournal/pub/streamvault_home.png";
 import streamVaultVideoShot from "@assets/thejournal/pub/streamvault_video.png";
 import vodCatalogShot from "@assets/thejournal/pub/vod_catalog.png";
 import type { ProjectTech } from "@appTypes/project";
-import type { ProjectLandingRoute } from "@data/project_pages";
+import type { ProjectVisualId } from "@data/project_visuals";
 import type { ImageMetadata } from "astro";
 
 export type { ProjectTech };
 
-/** Code-drawn slides for projects whose work has no screen to capture. */
-export type ProjectVisual =
-  | "eve-ranges"
-  | "eve-cli"
-  | "pressroom-pipeline"
-  | "pressroom-mdx"
-  | "equilyze-agents"
-  | "equilyze-run"
-  | "mlscraper-alerts"
-  | "mlscraper-health";
+export type ProjectLandingRoute = `/projects/${string}/`;
 
 export type ProjectSlide = { caption: string; alt: string } & (
   | { kind: "image"; image: ImageMetadata }
-  | { kind: "visual"; visual: ProjectVisual }
+  | { kind: "visual"; visual: ProjectVisualId }
 );
-
 
 /** A static figure, or one counted at build time so it never goes stale. */
 export type ProjectStat =

@@ -1,9 +1,12 @@
 ---
 import type { EntryContext, VaultContext } from "@appTypes/content_context";
-import Button from "bloomwright-ui/components/primitive/Button.astro";
+import OutlineActionButton from "@components/ui/primitive/OutlineActionButton.astro";
 import SVGIcon from "bloomwright-ui/components/primitive/SVGIcon.astro";
 import { social, ui } from "@data/icons";
 import { Picture } from "astro:assets";
+import { formatDate, formatReadTime } from "@utils/format";
+import { journalHref } from "@utils/routes";
+import { githubRepoUrl } from "@data/identity";
 
 interface Props {
   entry: EntryContext;
@@ -20,19 +23,8 @@ const clockIcon = ui.clock;
 const tagIcon = ui.tag;
 const githubIcon = social.github;
 
-if (!calendarIcon || !clockIcon || !tagIcon) {
-  throw new Error(
-    "Required article header icons (calendar, clock, or tag) are missing from @data/icons",
-  );
-}
-
-const formattedDate = new Date(entry.pubDate).toLocaleDateString("en-US", {
-  year: "numeric",
-  month: "long",
-  day: "numeric",
-});
-
-const readTimeText = entry.readTime ? `${entry.readTime} min read` : null;
+const formattedDate = formatDate(entry.pubDate, "long");
+const readTimeText = formatReadTime(entry.readTime);
 ---
 
 <header
@@ -43,7 +35,7 @@ const readTimeText = entry.readTime ? `${entry.readTime} min read` : null;
       vaultContext && (
         <nav aria-label="Breadcrumb">
           <a
-            href={`/thejournal/${vaultContext.id}/`}
+            href={journalHref(vaultContext.id)}
             class="badge badge-outline h-auto min-h-8 px-3 py-2 text-xs font-bold tracking-widest uppercase transition-all hover:bg-primary hover:text-primary-content active:scale-95"
           >
             {vaultContext.title}
@@ -96,16 +88,15 @@ const readTimeText = entry.readTime ? `${entry.readTime} min read` : null;
       </div>
 
       {
-        github && githubIcon && (
+        github && (
           <div class="w-full sm:w-auto">
-            <Button
+            <OutlineActionButton
               icon={githubIcon}
               label="Repository"
-              variant="btn-outline"
-              href={`https://github.com/duranalberto/${github}`}
+              href={githubRepoUrl(github)}
               ariaLabel="Project repository"
               isExternal
-              class="group h-10 w-full border-base-300 transition-all hover:border-primary hover:bg-primary hover:text-primary-content sm:h-9 sm:w-auto"
+              class="group h-10 w-full transition-all sm:h-9 sm:w-auto"
             />
           </div>
         )

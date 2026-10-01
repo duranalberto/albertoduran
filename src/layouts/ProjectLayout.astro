@@ -3,6 +3,10 @@ import type { ProjectPageConfig } from "@appTypes/project";
 import ProjectHero from "@components/projects/ProjectHero.astro";
 import ProjectVaultSection from "@components/projects/ProjectVaultSection.astro";
 import { defineJournalLinks } from "@content/define_journal_links";
+import {
+  assertProjectJournalLink,
+  buildSiteManifest,
+} from "@data/project_page";
 import { vaultsManifest } from "@content/processors/thejournal";
 import BaseLayout from "@layouts/BaseLayout.astro";
 import FlexShell from "@layouts/FlexShell.astro";
@@ -12,12 +16,6 @@ interface Props {
 }
 
 const { project } = Astro.props;
-
-if (project.facts && project.facts.length > 4) {
-  throw new Error(
-    `[projects] "${project.title}" has ${project.facts.length} hero facts. Project pages support at most four facts.`,
-  );
-}
 
 const journalId = project.links?.journalId;
 const heroLink = journalId
@@ -29,20 +27,14 @@ const heroLink = journalId
     ).hero
   : undefined;
 
-if (heroLink?.vaultId && heroLink.id !== heroLink.vaultId) {
-  throw new Error(
-    `[projects] "${project.title}" references Journal child entry "${heroLink.id}". Project pages may reference only standalone publications or vault roots.`,
-  );
+if (heroLink) {
+  assertProjectJournalLink(heroLink, project.title);
 }
 
 const journalHref = heroLink?.href;
 const vault = heroLink?.vaultId ? vaultsManifest[heroLink.vaultId] : undefined;
 
-const siteManifest = {
-  label: project.title,
-  pageTitle: project.title,
-  description: project.description,
-};
+const siteManifest = buildSiteManifest(project);
 ---
 
 <BaseLayout siteManifest={siteManifest} image={project.image}>

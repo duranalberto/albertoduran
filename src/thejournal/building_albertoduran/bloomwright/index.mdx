@@ -41,7 +41,7 @@ Every page here answers the same three questions in order. What the thing is, wh
 - `ui_render_core` covers `bloomwright-ui` as a render core. The charter reversal from a dependency-free leaf into the package that owns build-time rendering, and the invariant that replaced the leaf rule.
 - `mdx_layer` covers `bloomwright-mdx`. One integration instead of three, the three fence plugins, and why the Mermaid path no longer renders anything itself.
 - `seams` covers the three inversions that made extraction possible. Each one names something a package refused to know.
-- `costs` is the counterweight. Duplicated CSS, version coupling through git references, and two bugs that only the consuming app's real build could find.
+- `costs` is the counterweight. Duplicated CSS (since retired), version coupling through git references, and two bugs that only the consuming app's real build could find.
 
 ---
 
@@ -69,7 +69,6 @@ integrations: [
   bloomwrightMdx({ selectSources: collectPublishableDocuments }),
   mermaidRenderer({ render, themes, selectSources, remoteCache }),
   mdx(),
-  customHtmlMinifier(),
 ]
 ```
 

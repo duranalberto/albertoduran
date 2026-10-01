@@ -1,32 +1,30 @@
 ---
 title: "What extraction actually cost"
-description: "The honest counterweight to the extraction story: duplicated CSS, git-ref versioning, source-shipped compilation, and two bugs only the real build found."
+description: "The honest counterweight to the extraction story: duplicated CSS (since retired), git-ref versioning, source-shipped compilation, and two bugs only the real build found."
 tags: ["bloomwright", "css", "architecture"]
 pubDate: 2026-08-03
+updatePubDate: 2026-09-30
 order: 60
 ---
 
-Every page in this section so far has argued for the extraction. This one argues against it, or at least tallies the bill. Pulling code into packages bought reuse and a clean dependency graph, and it charged for them. Some of the cost is duplicated CSS I have not resolved. Some is a versioning shortcut that trades safety for speed. And some arrived as two bugs that no amount of package testing could surface, because only a real consumer's build exercises the failing path. A case study that skipped this would be a sales pitch.
+Every page in this section so far has argued for the extraction. This one argues against it, or at least tallies the bill. Pulling code into packages bought reuse and a clean dependency graph, and it charged for them. Some of the cost was duplicated CSS, which I have since paid off. Some is a versioning shortcut that trades safety for speed. And some arrived as two bugs that no amount of package testing could surface, because only a real consumer's build exercises the failing path. A case study that skipped this would be a sales pitch.
 
 ---
 
-## Duplicated CSS that nobody imports
+## Duplicated CSS, paid off later
 
-`bloomwright-ui` ships a full stylesheet at `bloomwright-ui/styles.css`. The app never imports it. Instead, `src/styles/global.css` imports sixteen local partials and reproduces most of what the package already ships.
+`bloomwright-ui` ships a full stylesheet at `bloomwright-ui/styles.css`. For a while after the extraction the app never imported it. Instead, `src/styles/global.css` imported sixteen local partials that reproduced most of what the package already shipped, and an earlier version of this page reported that as an open seam.
 
-The comparison is uncomfortable when you run it. Six partials are byte-for-byte identical to their package versions. `_callout`, `_chat`, `_list`, `_steps`, `_mockup-browser`, and `_mockup-media` are pure duplication, maintained in two places for no reason beyond history. Seven more have drifted, which is arguably worse because now the app and the package disagree.
+The cost was real, but smaller than a line count suggested. Eight partials were byte-for-byte identical to their package versions. Of the eight that appeared to have drifted, seven differed only in their header comments. Just two files carried anything the app needed: a code font rule for articles and the profile timeline's column widths, which the package had left out on purpose because they are app-specific.
 
-| Partial | Difference from the package version |
+| Partial | What actually differed from the package |
 | --- | --- |
-| `_callout`, `_chat`, `_list`, `_steps`, `_mockup-browser`, `_mockup-media` | identical, pure duplication |
-| `_daisyui-overrides` | 17 lines diverge |
-| `_code-block` | 16 lines diverge |
-| `_glass` | 7 lines diverge |
-| `_heading-anchor` | 5 lines diverge |
-| `_echart`, `_panel` | 2 lines diverge |
-| `_prose-table` | 1 line diverges |
+| `_callout`, `_chat`, `_list`, `_steps`, four `_mockup-*` | nothing, byte-for-byte identical |
+| `_prose-table`, `_echart`, `_panel`, `_heading-anchor`, `_glass`, `_diagram` | header comments only |
+| `_code-block` | one app rule: the monospace font for article code |
+| `_daisyui-overrides` | the app's timeline override, which the package dropped as app-specific |
 
-This is a real seam I have not closed. The honest version is that the styles were extracted into the package but the app kept its own copies while other work took priority, and the divergences are small local tweaks that were never pushed back upstream. Naming it here is more useful than a clean story that is not true.
+The seam is now closed. The app imports the package stylesheet once, keeps the two real rules in files named after what they style, and every step of the switch was checked against the previous build: byte-identical CSS while copies were swapped for package imports, then the same rules in the same layers and matching screenshots for the final reorder. The lesson is narrower than "duplication is bad". The duplication cost little in bytes. It cost a lot in doubt, because nobody could tell which differences mattered until someone measured them.
 
 ---
 

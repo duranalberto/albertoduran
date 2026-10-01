@@ -12,19 +12,19 @@ The journal is not the only thing this site publishes. There are project landing
 
 ## A landing page in front of a vault
 
-A project like this one has two faces. There is the journal vault, the long-form case study, and there is a landing page that introduces it. The landing page at `/projects/albertoduran/` is the canonical front door for the `building_albertoduran` vault, and that link is not hand-written. A data file maps the vault id to its landing route.
+A project like this one has two faces. There is the journal vault, the long-form case study, and there is a landing page that introduces it. The landing page at `/projects/albertoduran/` is the front door for the `building_albertoduran` vault, and the link between them is not hand-written. The page names its vault by id.
 
 ```ts
-// src/data/project_pages.ts
-export const PROJECT_LANDING_ROUTES = {
-  building_albertoduran: "/projects/albertoduran/",
-  equity_valuation_engine: "/projects/equity-valuation-engine/",
-  mlscraper: "/projects/mlscraper/",
-  sin_pluma: "/projects/sin-pluma/",
-};
+// src/pages/projects/albertoduran.astro
+links: {
+  githubUrl: "https://github.com/duranalberto/albertoduran",
+  journalId: "building_albertoduran",
+},
 ```
 
-This is why the vault's top-level folder name is load-bearing. A helper resolves a vault's canonical destination through this map, so the project page becomes the front door for its vault. Rename the folder without updating this file and the front door points nowhere, which is why the `platform` section treats `building_albertoduran` as a fixed name.
+`ProjectLayout` resolves that id against the journal manifest at build time. It turns it into the hero's link to the case study and the grouped list of every publication in the vault. If the id matches no published entry, the build fails with a suggestion for the closest match. This is why the vault's top-level folder name is load-bearing: rename the folder without updating `journalId` and the build stops, which is why the `platform` section treats `building_albertoduran` as a fixed name.
+
+The link only runs one way. Journal cards always open the publication itself, never the landing page, so a reader browsing the journal stays in the journal.
 
 ---
 

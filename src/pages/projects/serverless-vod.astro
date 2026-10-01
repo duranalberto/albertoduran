@@ -1,34 +1,36 @@
 ---
-import type { ProjectPageConfig } from "@appTypes/project";
 import streamvaultHome from "@assets/thejournal/pub/streamvault_home.png";
 import streamvaultVideo from "@assets/thejournal/pub/streamvault_video.png";
 import vodCatalog from "@assets/thejournal/pub/vod_catalog.png";
 import vodLogin from "@assets/thejournal/pub/vod_login.png";
 import vodStart from "@assets/thejournal/pub/vod_recording_start_mediaconvert_job.png";
-import coverImage from "@assets/thejournal/stock/17.jpg";
 import VideoPlayer from "@components/ui/mdx/VideoPlayer.astro";
 import { defineJournalLinks } from "@content/define_journal_links";
 import ProjectLayout from "@layouts/ProjectLayout.astro";
+import { defineProjectPage } from "@data/project_page";
+import { completedSteps } from "@utils/steps";
+import ProjectSection from "@components/projects/sections/ProjectSection.astro";
+import OutcomeBanner from "@components/projects/sections/OutcomeBanner.astro";
+import { githubRepoUrl } from "@data/identity";
+import {
+  STREAM_VAULT_CATALOG_URL,
+  streamVaultVideoUrl,
+} from "@data/stream_vault";
 import Callout from "bloomwright-ui/components/display/Callout.astro";
 import MockupBrowser from "bloomwright-ui/components/display/MockupBrowser.astro";
-import SectionHeader from "bloomwright-ui/components/display/SectionHeader.astro";
-import Steps, { type StepItem } from "bloomwright-ui/components/display/Steps.astro";
+import Steps from "bloomwright-ui/components/display/Steps.astro";
 import MermaidDiagram from "bloomwright-ui/components/render/MermaidDiagram.astro";
 import { defineMermaidDiagram } from "bloomwright-ui/mermaid";
 import { Picture } from "astro:assets";
 
-const repositoryUrl = "https://github.com/duranalberto/stream-vault";
+const repositoryUrl = githubRepoUrl("stream-vault");
 const liveUrl = "https://duranalberto.github.io/stream-vault/";
 const featuredVideoId = "2026-07-12-16-22-18";
 
-const project: ProjectPageConfig = {
-  title: "Serverless VOD and StreamVault",
+const project = defineProjectPage("/projects/serverless-vod/", {
   eyebrow: "Serverless Video · AWS · Public Player",
   description:
     "My gameplay goes from a Switch capture to a shareable HLS stream through a serverless AWS pipeline, a private manager page, and a public site on GitHub Pages.",
-  image: coverImage,
-  imageAlt:
-    "Nintendo Switch Joy-Con, Xbox and PlayStation controllers, and headphones on a dark desk",
   facts: [
     { label: "Pipeline", value: "S3 · MediaConvert · Lambda" },
     { label: "Control", value: "Cognito · API Gateway" },
@@ -52,7 +54,7 @@ const project: ProjectPageConfig = {
     githubUrl: repositoryUrl,
     liveUrl,
   },
-};
+});
 
 const journal = await defineJournalLinks(
   {
@@ -95,14 +97,14 @@ const projects = [
   },
 ];
 
-const journeySteps: StepItem[] = [
-  { label: "Capture on Switch", marker: "1", color: "success" },
-  { label: "Upload to S3", marker: "2", color: "success" },
-  { label: "Start from the manager", marker: "3", color: "success" },
-  { label: "Transcode to HLS", marker: "4", color: "success" },
-  { label: "Verify and publish", marker: "5", color: "success" },
-  { label: "Watch on StreamVault", marker: "6", color: "success" },
-];
+const journeySteps = completedSteps([
+  "Capture on Switch",
+  "Upload to S3",
+  "Start from the manager",
+  "Transcode to HLS",
+  "Verify and publish",
+  "Watch on StreamVault",
+]);
 
 const controlPlaneCards = [
   {
@@ -281,8 +283,7 @@ const linkClass =
 ---
 
 <ProjectLayout project={project}>
-  <section id="overview" class="w-full" aria-labelledby="overview-title">
-    <SectionHeader id="overview-title" title="From a console capture to a shareable link" />
+  <ProjectSection id="overview" title="From a console capture to a shareable link">
 
     <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12">
       <div class="flex flex-col gap-5 lg:col-span-7">
@@ -315,7 +316,8 @@ const linkClass =
 
     <div class="mt-10 flex flex-col gap-4">
       <VideoPlayer
-        src={`https://d2mcml34hdlt3o.cloudfront.net/videos/${featuredVideoId}/master.m3u8`}
+        src={streamVaultVideoUrl(featuredVideoId)}
+        catalogUrl={STREAM_VAULT_CATALOG_URL}
         title="Splatoon 3 - Splatfest Turf War - 12 July 2026"
       />
       <p class="max-w-4xl leading-relaxed text-base-content/70">
@@ -332,10 +334,9 @@ const linkClass =
         </a>
       </p>
     </div>
-  </section>
+  </ProjectSection>
 
-  <section id="two-projects" class="w-full" aria-labelledby="two-projects-title">
-    <SectionHeader id="two-projects-title" title="Two projects, one product" />
+  <ProjectSection id="two-projects" title="Two projects, one product">
 
     <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
       {
@@ -368,10 +369,9 @@ const linkClass =
         either side can change on its own schedule.
       </p>
     </Callout>
-  </section>
+  </ProjectSection>
 
-  <section id="journey" class="w-full" aria-labelledby="journey-title">
-    <SectionHeader id="journey-title" title="A recording's path to a viewer" />
+  <ProjectSection id="journey" title="A recording's path to a viewer">
     <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
       Every video follows the same six steps, and only the first three involve me.
     </p>
@@ -402,10 +402,9 @@ const linkClass =
         </p>
       </div>
     </div>
-  </section>
+  </ProjectSection>
 
-  <section id="architecture" class="w-full" aria-labelledby="architecture-title">
-    <SectionHeader id="architecture-title" title="Five boundaries around one catalog" />
+  <ProjectSection id="architecture" title="Five boundaries around one catalog">
     <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
       The system splits into a local admin plane, a control plane in AWS, the
       processing core, a playback edge, and a public client. Everything added
@@ -413,10 +412,9 @@ const linkClass =
       meets at the catalog file.
     </p>
     <MermaidDiagram code={architectureDiagram} />
-  </section>
+  </ProjectSection>
 
-  <section id="manager" class="w-full" aria-labelledby="manager-title">
-    <SectionHeader id="manager-title" title="A private door for the operator" />
+  <ProjectSection id="manager" title="A private door for the operator">
     <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
       The first version ran on <code>aws lambda invoke</code> and hand-written
       JSON. The manager page puts the same actions behind a login, validates
@@ -472,13 +470,9 @@ const linkClass =
       It can't upload files or delete source recordings. That's deliberate, and
       it keeps the page's permissions smaller than the command line it replaced.
     </p>
-  </section>
+  </ProjectSection>
 
-  <section id="control-plane" class="w-full" aria-labelledby="control-plane-title">
-    <SectionHeader
-      id="control-plane-title"
-      title="Every request is checked before code runs"
-    />
+  <ProjectSection id="control-plane" title="Every request is checked before code runs">
     <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
       The browser calls the API directly, so the API is public at the network
       level. Cognito and API Gateway decide who gets in before any Lambda starts.
@@ -503,10 +497,9 @@ const linkClass =
         ))
       }
     </div>
-  </section>
+  </ProjectSection>
 
-  <section id="pipeline" class="w-full" aria-labelledby="pipeline-title">
-    <SectionHeader id="pipeline-title" title="Asynchronous from upload to publish" />
+  <ProjectSection id="pipeline" title="Asynchronous from upload to publish">
     <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
       A job moves through a short lifecycle, and only one path ends with a video
       in the catalog. Failures are logged and leave the catalog untouched.
@@ -537,10 +530,9 @@ const linkClass =
     <a href={journal.partOne.href} class={`mt-8 ${linkClass}`}>
       See how the pipeline is built &rarr;
     </a>
-  </section>
+  </ProjectSection>
 
-  <section id="cors" class="w-full" aria-labelledby="cors-title">
-    <SectionHeader id="cors-title" title="The bug curl couldn't see" />
+  <ProjectSection id="cors" title="The bug curl couldn't see">
 
     <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-start">
       <div class="flex flex-col gap-6 lg:col-span-7">
@@ -571,10 +563,9 @@ const linkClass =
         <span class="mt-5 block font-bold">Read the incident &rarr;</span>
       </a>
     </div>
-  </section>
+  </ProjectSection>
 
-  <section id="streamvault" class="w-full" aria-labelledby="streamvault-title">
-    <SectionHeader id="streamvault-title" title="The public vault" />
+  <ProjectSection id="streamvault" title="The public vault">
 
     <MockupBrowser
       url="duranalberto.github.io/stream-vault/"
@@ -637,10 +628,9 @@ const linkClass =
         </span>
       </MockupBrowser>
     </div>
-  </section>
+  </ProjectSection>
 
-  <section id="go-deeper" class="w-full" aria-labelledby="go-deeper-title">
-    <SectionHeader id="go-deeper-title" title="Read the full build" />
+  <ProjectSection id="go-deeper" title="Read the full build">
     <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
       This page is the overview. The two articles cover the private pipeline and
       manager in detail, including the decisions and the mistakes.
@@ -675,26 +665,13 @@ const linkClass =
         ))
       }
     </div>
-  </section>
+  </ProjectSection>
 
-  <section
-    id="outcome"
-    class="overflow-hidden rounded-box bg-primary p-8 text-primary-content shadow-xl md:p-12 lg:p-16"
-    aria-labelledby="outcome-title"
-  >
-    <p class="mb-4 text-xs font-bold uppercase tracking-[0.2em] opacity-70">
-      The outcome
-    </p>
-    <h2
-      id="outcome-title"
-      class="max-w-4xl font-display text-3xl font-bold leading-tight sm:text-4xl"
-    >
-      A private pipeline and a public player that meet at one JSON file.
-    </h2>
+  <OutcomeBanner title="A private pipeline and a public player that meet at one JSON file.">
     <p class="mt-6 max-w-3xl text-lg leading-relaxed opacity-80">
       Recordings stay private, playback stays public, and nothing runs between
       uploads. Each side can change on its own schedule as long as the catalog
       keeps its shape.
     </p>
-  </section>
+  </OutcomeBanner>
 </ProjectLayout>

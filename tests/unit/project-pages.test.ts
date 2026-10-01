@@ -1,8 +1,4 @@
-import {
-  getProjectEntryHref,
-  type ProjectLandingRoute,
-} from "@data/project_pages";
-import { projectStack, skills } from "@data/icons";
+import { projectStack } from "@data/icons";
 import { featuredProjects, projectCatalog } from "@data/projects";
 import { describe, expect, it } from "vitest";
 
@@ -44,40 +40,5 @@ describe("project page routing", () => {
         }
       }
     }
-  });
-
-  it("keeps project-only icons out of the skills ribbon", () => {
-    expect(skills.dynamodb).toBeUndefined();
-    expect(projectStack.dynamodb).toBeDefined();
-  });
-
-  it("namespaces icon ids so gradients cannot collide", () => {
-    expect(projectStack.next?.content).toContain('id="next-');
-    expect(projectStack.python?.content).toContain("url(#python-");
-  });
-
-  it.each([
-    ["building_albertoduran", "/projects/albertoduran/"],
-    ["equity_valuation_engine", "/projects/equity-valuation-engine/"],
-    ["mlscraper", "/projects/mlscraper/"],
-    ["sin_pluma", "/projects/sin-pluma/"],
-  ])("registers %s at %s", (journalId, expectedRoute) => {
-    expect(getProjectEntryHref(journalId)).toBe(expectedRoute);
-  });
-
-  it("uses a registered landing page as the canonical project destination", () => {
-    const routes: Record<string, ProjectLandingRoute> = {
-      example_project: "/projects/example/",
-    };
-
-    expect(getProjectEntryHref("example_project", routes)).toBe(
-      "/projects/example/",
-    );
-  });
-
-  it("falls back to the Journal route for an unmigrated project", () => {
-    expect(getProjectEntryHref("unmigrated_project", {})).toBe(
-      "/thejournal/unmigrated_project/",
-    );
   });
 });

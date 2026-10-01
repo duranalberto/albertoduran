@@ -6,7 +6,7 @@ export default getViteConfig({
   test: {
     environment: "node",
     globals: true,
-    include: ["tests/unit/**/*.test.ts"],
+    include: ["tests/unit/**/*.test.ts", "tests/component/**/*.test.ts"],
     coverage: {
       provider: "v8",
       reporter: ["text", "html"],

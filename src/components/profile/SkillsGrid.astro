@@ -17,13 +17,13 @@ const { skills } = Astro.props;
           {skill.category}
         </h3>
         <div class="grid grid-cols-[repeat(auto-fit,minmax(5.5rem,1fr))] gap-x-8 gap-y-10">
-          {skill.skills_icons.map((skill_icon) => (
+          {skill.icons.map((icon) => (
             <div class="flex w-full min-w-0 max-w-24 flex-col items-center gap-4 justify-self-center">
               <div class="text-neutral-content opacity-90">
-                <SVGIcon icon={skill_icon} class="h-20 w-20" />
+                <SVGIcon icon={icon} class="h-20 w-20" />
               </div>
               <span class="text-xs font-bold uppercase tracking-widest text-neutral-content opacity-90 text-center leading-tight">
-                {skill_icon.text}
+                {icon.text}
               </span>
             </div>
           ))}

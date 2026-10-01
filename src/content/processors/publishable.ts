@@ -17,28 +17,14 @@
  */
 import { parseFrontmatter } from "@astrojs/internal-helpers/frontmatter";
 import type { SourceDocument } from "bloomwright-ui/mermaid";
+import { journalEntryIdFromPath } from "../journal_paths.ts";
 import {
   filterPublishedJournalEntries,
-  type JournalManifestSourceEntry,
+  type PublishFilterEntry,
 } from "./thejournal-manifest.ts";
-
-const JOURNAL_CONTENT_PREFIX = "src/thejournal/";
 
 function normalizeSourcePath(filePath: string): string {
   return filePath.replaceAll("\\", "/");
-}
-
-function getJournalEntryId(filePath: string): string | null {
-  const normalizedPath = normalizeSourcePath(filePath);
-  if (!normalizedPath.startsWith(JOURNAL_CONTENT_PREFIX)) return null;
-  if (!/\.mdx?$/.test(normalizedPath)) return null;
-
-  const withoutPrefix = normalizedPath.slice(JOURNAL_CONTENT_PREFIX.length);
-  const withoutExtension = withoutPrefix.replace(/\.mdx?$/, "");
-
-  return withoutExtension.endsWith("/index")
-    ? withoutExtension.slice(0, -"/index".length)
-    : withoutExtension;
 }
 
 function getDraftFlag(content: string): boolean | undefined {
@@ -56,7 +42,7 @@ export function collectPublishableDocuments(
   documents: SourceDocument[],
 ): SourceDocument[] {
   const journalDocuments = new Map<string, SourceDocument>();
-  const journalEntries: JournalManifestSourceEntry[] = [];
+  const journalEntries: PublishFilterEntry[] = [];
   const publishableDocuments: SourceDocument[] = [];
 
   for (const document of documents) {
@@ -65,7 +51,7 @@ export function collectPublishableDocuments(
       ...document,
       filePath: normalizedPath,
     };
-    const journalEntryId = getJournalEntryId(normalizedPath);
+    const journalEntryId = journalEntryIdFromPath(normalizedPath);
 
     if (!journalEntryId) {
       publishableDocuments.push(normalizedDocument);
@@ -76,11 +62,7 @@ export function collectPublishableDocuments(
     journalEntries.push({
       id: journalEntryId,
       filePath: normalizedPath,
-      body: document.content,
-      data: {
-        title: journalEntryId,
-        draft: getDraftFlag(document.content),
-      },
+      data: { draft: getDraftFlag(document.content) },
     });
   }
 

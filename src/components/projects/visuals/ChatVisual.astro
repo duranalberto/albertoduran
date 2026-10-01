@@ -1,0 +1,42 @@
+---
+import type { ChatSegment, ProjectVisualSpec } from "@data/project_visuals";
+
+type Props = Omit<Extract<ProjectVisualSpec, { kind: "chat" }>, "kind">;
+
+const { head, messages, note } = Astro.props;
+const isPlain = (segment: ChatSegment): segment is string =>
+  typeof segment === "string";
+---
+
+<div class="project-visual-chat">
+  <p class="project-visual-head">
+    <span>{head[0]}</span>
+    <span>{head[1]}</span>
+  </p>
+  {
+    messages.map((message) => (
+      <div class="chat chat-start">
+        <div class="chat-header">{message.author}</div>
+        <div class="chat-bubble">
+          {message.lines.map((line, index) => (
+            <Fragment>
+              {index > 0 && <br />}
+              {line.map((segment) =>
+                isPlain(segment) ? (
+                  segment
+                ) : segment[1] === "strike" ? (
+                  <s>{segment[0]}</s>
+                ) : segment[1] === "strong" ? (
+                  <strong>{segment[0]}</strong>
+                ) : (
+                  <span class={`project-visual-${segment[1]}`}>{segment[0]}</span>
+                ),
+              )}
+            </Fragment>
+          ))}
+        </div>
+      </div>
+    ))
+  }
+  <p class="project-visual-note">{note}</p>
+</div>

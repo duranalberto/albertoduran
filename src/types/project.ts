@@ -1,3 +1,4 @@
+import type { ProjectStackIconKey } from "@data/icons";
 import type { ImageMetadata } from "astro";
 
 export interface ProjectFact {
@@ -5,10 +6,10 @@ export interface ProjectFact {
   value: string;
 }
 
-/** `icon` is a key of `projectStack` in @data/icons; without one a monogram renders. */
+/** Without an icon, a monogram renders. */
 export interface ProjectTech {
   label: string;
-  icon?: string;
+  icon?: ProjectStackIconKey;
   monogram?: string;
 }
 
@@ -18,13 +19,21 @@ export interface ProjectLinks {
   journalId?: string;
 }
 
+/** The hero shows at most four facts. */
+export type ProjectFacts =
+  | readonly []
+  | readonly [ProjectFact]
+  | readonly [ProjectFact, ProjectFact]
+  | readonly [ProjectFact, ProjectFact, ProjectFact]
+  | readonly [ProjectFact, ProjectFact, ProjectFact, ProjectFact];
+
 export interface ProjectPageConfig {
   title: string;
   description: string;
   image: ImageMetadata;
   imageAlt: string;
   eyebrow?: string;
-  facts?: ProjectFact[];
+  facts?: ProjectFacts;
   links?: ProjectLinks;
   /** Shown as the "Built with" grid under the hero image. */
   stack?: readonly ProjectTech[];

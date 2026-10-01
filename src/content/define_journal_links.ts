@@ -4,7 +4,10 @@ import {
   publishedEntries,
 } from "@content/processors/thejournal";
 import { render } from "astro:content";
-import { resolveJournalLinks, type ResolvedJournalLinks } from "./journal_links";
+import {
+  resolveJournalLinks,
+  type ResolvedJournalLinks,
+} from "./journal_links";
 
 const headingCache = new Map<string, Promise<ReadonlySet<string>>>();
 
@@ -36,5 +39,3 @@ export function defineJournalLinks<const T extends Record<string, JournalRef>>(
     onAnchorMismatch: import.meta.env.DEV ? "warn" : "error",
   });
 }
-
-export { journalHref, journalIndexHref } from "./journal_links";

@@ -64,7 +64,6 @@ Vitest currently covers:
 - Atlas loader normal schedule data, zero-record standings fallback, missing match behavior, failed fetch handling, and deterministic test mode.
 - The app-owned Mermaid seams: the injected `render-pipeline.ts` provider chain (Worker → mermaid.ink → placeholder) and the `publishable.ts` content selection. The HAST sanitation, registry lookup, asset emission, ID/reference rewriting, foreignObject cleanup, and theme merging now live in `bloomwright-ui`'s own suite.
 - Journal manifest build rules: standalone/vault image requirements, draft standalone and draft index subtree filtering, nested vault grouping, child image inheritance, sorted traversal, previous/next links, read time, and path context lookup.
-- HTML minification while preserving `<pre>`, `<code>`, and `<kbd>` fragments.
 
 Playwright currently covers:
 

@@ -3,7 +3,6 @@ import {
   type Certifications,
   type Education,
   type Experience,
-  type Projects,
   type Skills,
   type Strength,
 } from "@appTypes/about";
@@ -12,30 +11,30 @@ import { skills as icons } from "@data/icons";
 const skills: Skills[] = [
   {
     category: "Languages",
-    skills_icons: [icons.js!, icons.ts!, icons.python!, icons.java!],
+    icons: [icons.js, icons.ts, icons.python, icons.java],
   },
   {
     category: "Frameworks and libraries",
-    skills_icons: [
-      icons.react!,
-      icons.preact!,
-      icons.oracle_jet!,
-      icons.fastapi!,
-      icons.astro!,
-      icons.next!,
-      icons.unity!,
+    icons: [
+      icons.react,
+      icons.preact,
+      icons.oracle_jet,
+      icons.fastapi,
+      icons.astro,
+      icons.next,
+      icons.unity,
     ],
   },
   {
     category: "DevOps and platforms",
-    skills_icons: [
-      icons.aws!,
-      icons.docker!,
-      icons.git!,
-      icons.jenkins!,
-      icons.jira!,
-      icons.oracle_infrastructure!,
-      icons.oracle_apex!,
+    icons: [
+      icons.aws,
+      icons.docker,
+      icons.git,
+      icons.jenkins,
+      icons.jira,
+      icons.oracle_infrastructure,
+      icons.oracle_apex,
     ],
   },
 ];
@@ -167,33 +166,6 @@ const awards: Awards[] = [
   },
 ];
 
-const projects: Projects[] = [
-  {
-    name: "Equity Valuation Engine",
-    tech: "Python, CLI",
-    desc: "Equity valuation engine vault covering data loading, suitability checks, valuation models, assumptions, CLI output, and tests.",
-    link: "/thejournal/equity_valuation_engine/",
-    github_link: "github.com/duranalberto/equity-valuation-engine",
-    image: "/a.jpg",
-  },
-  {
-    name: "Product Tracker (MLScraper)",
-    tech: "Python, FastAPI",
-    desc: "Scheduled product tracking vault covering provider loops, YAML jobs, health checks, persistence, and Telegram alerts.",
-    link: "/thejournal/mlscraper/",
-    github_link: "github.com/duranalberto/MLScraper",
-    image: "/a.jpg",
-  },
-  {
-    name: "Scalable Microservices System",
-    tech: "Docker, Nginx, Python, React",
-    desc: "High-concurrency system using Flask, React.js, InnoDB Cluster, Minio, and Redis.",
-    link: "/project/SinPluma",
-    github_link: "github.com/duranalberto/SinPluma",
-    image: "/a.jpg",
-  },
-];
-
 export default {
   skills,
   strengths,
@@ -201,5 +173,4 @@ export default {
   education,
   certifications,
   awards,
-  projects,
 };

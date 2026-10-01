@@ -1,0 +1,18 @@
+/* =========================================================
+   CODE FONT
+   App typography for code inside articles. Loaded just before
+   bloomwright-ui's code-block partial, which styles the
+   mockup-code frame and Shiki line numbers.
+   ========================================================= */
+
+.prose-journal code,
+.prose-journal pre,
+kbd,
+samp {
+  font-family: var(--font-mono);
+  font-variant-ligatures: common-ligatures contextual;
+  font-feature-settings:
+    "liga" 1,
+    "calt" 1;
+  text-rendering: optimizeLegibility;
+}

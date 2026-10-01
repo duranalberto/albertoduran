@@ -50,7 +50,7 @@ Read `repository_shape` first if you want to locate code. Read `workspace` if yo
 
 The four repositories converge on one output. Astro builds the app into a `dist/` directory, and Cloudflare Workers Static Assets serves that directory. There is no application server assembling pages at request time. The packages contribute code, the Worker contributes rendered diagrams during the build, and all of it settles into finished files before anything deploys.
 
-That convergence is the reason the build does so much. Content validation, manifest policy, diagram rendering, chart rendering, image optimization, and HTML minification all run before deploy, because the production host serves files and nothing else. The `delivery` page picks up what that host actually receives, and the `rendering/` and `authoring/` sections cover the work that fills the folder.
+That convergence is the reason the build does so much. Content validation, manifest policy, diagram rendering, chart rendering, image optimization, and HTML compression all run before deploy, because the production host serves files and nothing else. The `delivery` page picks up what that host actually receives, and the `rendering/` and `authoring/` sections cover the work that fills the folder.
 
 ---
 

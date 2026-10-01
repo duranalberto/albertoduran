@@ -1,5 +1,6 @@
 ---
 import { type EntryContext } from "@appTypes/content_context";
+import { journalHref } from "@utils/routes";
 
 interface Props {
   prevEntry: EntryContext | null;
@@ -21,7 +22,7 @@ const labelClasses =
   {
     prevEntry ? (
       <a
-        href={`/thejournal/${prevEntry.id}/`}
+        href={journalHref(prevEntry.id)}
         class={cardClasses}
         data-astro-prefetch
       >
@@ -48,7 +49,7 @@ const labelClasses =
   {
     nextEntry ? (
       <a
-        href={`/thejournal/${nextEntry.id}/`}
+        href={journalHref(nextEntry.id)}
         class={cardClasses}
         data-astro-prefetch
       >

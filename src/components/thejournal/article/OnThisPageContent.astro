@@ -14,8 +14,12 @@ const {
   compact = false,
   preserveOverlayScroll = false,
 } = Astro.props;
+
+const Wrapper = tracked ? "on-this-page" : Fragment;
 ---
 
+{/* Tracked lists are driven by the <on-this-page> element (scroll spy). */}
+<Wrapper {...tracked ? { class: "block" } : {}}>
 <nav class:list={[tracked && "onthispage-nav"]} aria-label="On this page">
   <ul class="w-full p-0 flex flex-col">
     {
@@ -44,3 +48,4 @@ const {
     }
   </ul>
 </nav>
+</Wrapper>

@@ -7,6 +7,7 @@ import MockupPhone from "bloomwright-ui/components/display/MockupPhone.astro";
 import MockupWindow from "bloomwright-ui/components/display/MockupWindow.astro";
 import EChart from "bloomwright-ui/components/render/EChart.astro";
 import BaseLayout from "@layouts/BaseLayout.astro";
+import { buildSiteManifest } from "@data/project_page";
 import browserPreview from "@assets/thejournal/pub/sinpluma_03.png";
 import mobilePreview from "@assets/thejournal/pub/sinpluma_08.png";
 import windowPreview from "@assets/thejournal/pub/sinpluma_01.png";
@@ -17,22 +18,23 @@ import {
   pieChartOption,
 } from "bloomwright-ui/echarts";
 import { Image } from "astro:assets";
+import OverlayPanel from "bloomwright-ui/components/primitive/OverlayPanel.astro";
 
 export function getStaticPaths() {
   if (process.env.ALBERTODURAN_TEST_MODE !== "true") return [];
 
-  return ["charts", "components"].map((fixture) => ({
+  return ["charts", "components", "overlays"].map((fixture) => ({
     params: { fixture },
   }));
 }
 
 const fixture = Astro.params.fixture;
+const untitledOverlayToggleId = "untitled-overlay-test-modal";
 
-const siteManifest = {
+const siteManifest = buildSiteManifest({
+  title: "ECharts Fixture",
   description: "Test-only ECharts fixture page.",
-  pageTitle: "ECharts Fixture",
-  label: "ECharts Fixture",
-};
+});
 
 const revenueOption = lineChartOption({
   title: "Quarterly revenue",
@@ -108,7 +110,20 @@ const componentItems: ListItem[] = [
   <div class="py-8 px-4">
     <Article>
       {
-        fixture === "charts" ? (
+        fixture === "overlays" ? (
+          <Fragment>
+            <h1>Overlay Fixture</h1>
+            <label
+              for={untitledOverlayToggleId}
+              role="button"
+              tabindex="0"
+              aria-haspopup="dialog"
+              class="btn btn-sm"
+            >
+              Open untitled overlay test
+            </label>
+          </Fragment>
+        ) : fixture === "charts" ? (
           <Fragment>
             <h1>ECharts Fixture</h1>
 
@@ -219,4 +234,28 @@ const componentItems: ListItem[] = [
       }
     </Article>
   </div>
+
+  <Fragment slot="overlays">
+    {
+      fixture === "overlays" && (
+        <OverlayPanel
+          toggleId={untitledOverlayToggleId}
+          ariaLabel="Untitled overlay test"
+          closeLabel="Close untitled overlay test"
+          maxWidthClass="sm:max-w-lg"
+        >
+          <div class="space-y-6" data-untitled-overlay-body>
+            <p>Untitled overlay body starts at the top of the panel.</p>
+            {Array.from({ length: 24 }, (_, index) => (
+              <p>
+                Scroll fixture row {index + 1}: enough content to verify the
+                floating close button stays anchored while the panel body
+                scrolls.
+              </p>
+            ))}
+          </div>
+        </OverlayPanel>
+      )
+    }
+  </Fragment>
 </BaseLayout>

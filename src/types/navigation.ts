@@ -11,28 +11,3 @@ export interface CurrentSite {
   isRoot: boolean;
   path: string;
 }
-
-export const getCurrentSite = (path: string): CurrentSite => {
-  const normalizedPath = path.endsWith("/") ? path : `${path}/`;
-
-  const specificSites: Exclude<Sites, "/">[] = [
-    "/thejournal/",
-    "/projects/",
-    "/profile/",
-  ];
-
-  const match = specificSites.find((site) => normalizedPath.startsWith(site));
-
-  const site: Sites = match ?? "/";
-  const isRoot = normalizedPath === site;
-
-  return {
-    site,
-    isRoot,
-    path: normalizedPath,
-  };
-};
-
-export const isTheJourneyPublication = (current: CurrentSite) => {
-  return current.site === "/thejournal/" && !current.isRoot;
-};

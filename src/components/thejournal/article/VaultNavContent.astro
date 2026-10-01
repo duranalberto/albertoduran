@@ -5,9 +5,11 @@ import VaultTreeNode from "./VaultTreeNode.astro";
 interface Props {
   vault: VaultContext;
   currentEntryId: string;
+  /** Static trees (the mobile overlay) never draw the active side line. */
+  isStatic?: boolean;
 }
 
-const { vault, currentEntryId } = Astro.props;
+const { vault, currentEntryId, isStatic = true } = Astro.props;
 ---
 
 <ul class="menu menu-sm w-full p-0">
@@ -17,8 +19,7 @@ const { vault, currentEntryId } = Astro.props;
         <VaultTreeNode
           item={item}
           currentEntryId={currentEntryId}
-          level={0}
-          isStatic={true}
+          isStatic={isStatic}
         />
       </li>
     ))

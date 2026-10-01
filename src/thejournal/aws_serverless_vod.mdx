@@ -9,6 +9,7 @@ author: "Alberto Duran"
 ---
 
 import VideoPlayer from "@components/ui/mdx/VideoPlayer.astro";
+import { STREAM_VAULT_CATALOG_URL, streamVaultVideoUrl } from "@data/stream_vault";
 
 Uploading a video sounds like the easy part until the browser has to play it. A single video in a bucket is fine for storage, but it does not answer adaptive playback, private source files, publishable metadata, browser CORS, cache behavior, or how the system learns that a transcode finished. This project solves that with a small AWS workflow that turns operator-managed recordings into HLS streams and a static catalog.
 
@@ -29,7 +30,8 @@ Uploading a video sounds like the easy part until the browser has to play it. A 
 See a live example of the final result. Also, you will be able to see me win in Splatoon Rainmaker. Waith till the end! 👀
 
 <VideoPlayer
-  src="https://d2mcml34hdlt3o.cloudfront.net/videos/2026-07-02-v1/master.m3u8"
+  src={streamVaultVideoUrl("2026-07-02-v1")}
+  catalogUrl={STREAM_VAULT_CATALOG_URL}
   title="See My Splatoon win in Rainmaker 👀"
 />
 

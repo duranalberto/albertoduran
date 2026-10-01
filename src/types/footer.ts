@@ -3,9 +3,11 @@ export interface BuiltWith {
   href: string;
 }
 
+import type { Icon } from "./icon";
+
 export interface SocialLink {
   label: string;
   href: string;
-  icon: any;
+  icon: Icon;
   display: string;
 }

@@ -1,13 +1,16 @@
 ---
-import type { ProjectPageConfig } from "@appTypes/project";
-import coverImage from "@assets/thejournal/stock/13.jpg";
 import Callout from "bloomwright-ui/components/display/Callout.astro";
-import SectionHeader from "bloomwright-ui/components/display/SectionHeader.astro";
-import Steps, { type StepItem } from "bloomwright-ui/components/display/Steps.astro";
+import Steps from "bloomwright-ui/components/display/Steps.astro";
 import MermaidDiagram from "bloomwright-ui/components/render/MermaidDiagram.astro";
 import { defineMermaidDiagram } from "bloomwright-ui/mermaid";
 import { defineJournalLinks } from "@content/define_journal_links";
 import ProjectLayout from "@layouts/ProjectLayout.astro";
+import { defineProjectPage } from "@data/project_page";
+import { completedSteps } from "@utils/steps";
+import ProjectSection from "@components/projects/sections/ProjectSection.astro";
+import OutcomeBanner from "@components/projects/sections/OutcomeBanner.astro";
+import ArrowLink from "@components/ui/navigation/ArrowLink.astro";
+import { githubRepoUrl } from "@data/identity";
 
 const journal = await defineJournalLinks(
   {
@@ -17,14 +20,10 @@ const journal = await defineJournalLinks(
   { owner: "Equilyze" },
 );
 
-const project: ProjectPageConfig = {
-  title: "Equilyze",
+const project = defineProjectPage("/projects/equilyze/", {
   eyebrow: "Local AI · Equity Research",
   description:
     "Give Equilyze a public company and it runs the valuation engine, reads the market context, checks recent news, and writes an investment report. It runs locally through Ollama.",
-  image: coverImage,
-  imageAlt:
-    "A glass jar full of coins with a small green plant growing out of it",
   facts: [
     { label: "Runtime", value: "LangChain" },
     { label: "Engine", value: "6 models" },
@@ -38,9 +37,9 @@ const project: ProjectPageConfig = {
     { label: "yfinance", icon: "python" },
   ],
   links: {
-    githubUrl: "https://github.com/duranalberto/equilyze",
+    githubUrl: githubRepoUrl("equilyze"),
   },
-};
+});
 
 const valuationModels = [
   {
@@ -146,16 +145,16 @@ const configuration = [
   },
 ];
 
-const pipelineSteps: StepItem[] = [
-  { label: "Ticker", marker: "1", color: "success" },
-  { label: "Valuation", marker: "2", color: "success" },
-  { label: "Contextualize", marker: "3", color: "success" },
-  { label: "News", marker: "4", color: "success" },
-  { label: "Recommend", marker: "5", color: "success" },
-  { label: "Questions", marker: "6", color: "success" },
-  { label: "Sections", marker: "7", color: "success" },
-  { label: "Review", marker: "8", color: "success" },
-];
+const pipelineSteps = completedSteps([
+  "Ticker",
+  "Valuation",
+  "Contextualize",
+  "News",
+  "Recommend",
+  "Questions",
+  "Sections",
+  "Review",
+]);
 
 const pipelineFlow = defineMermaidDiagram(String.raw`
 flowchart TD
@@ -229,8 +228,7 @@ flowchart LR
 ---
 
 <ProjectLayout project={project}>
-  <section id="overview" class="w-full" aria-labelledby="overview-title">
-    <SectionHeader id="overview-title" title="Equity, analyzed" />
+  <ProjectSection id="overview" title="Equity, analyzed">
 
     <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12">
       <div class="flex flex-col gap-5 lg:col-span-7">
@@ -262,13 +260,9 @@ flowchart LR
         </p>
       </Callout>
     </div>
-  </section>
+  </ProjectSection>
 
-  <section id="how" class="w-full" aria-labelledby="how-title">
-    <SectionHeader
-      id="how-title"
-      title="From a ticker to a finished report"
-    />
+  <ProjectSection id="how" title="From a ticker to a finished report">
     <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
       You type a company name or symbol. Equilyze resolves the ticker, runs the
       valuation engine, then hands the numbers to a chain of agents that add
@@ -276,15 +270,9 @@ flowchart LR
       follow-up questions, and review the report before saving it.
     </p>
     <MermaidDiagram code={pipelineFlow} />
-  </section>
+  </ProjectSection>
 
-  <section id="models" class="w-full" aria-labelledby="models-title">
-    <SectionHeader
-      id="models-title"
-      title="Six valuation models, three scenarios each"
-      linkHref="/projects/equity-valuation-engine/"
-      linkLabel="See the valuation engine"
-    />
+  <ProjectSection id="models" title="Six valuation models, three scenarios each" linkHref="/projects/equity-valuation-engine/" linkLabel="See the valuation engine">
     <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
       Equilyze runs the <strong>Equity Valuation Engine</strong> across six
       valuation models. Each model is estimated under Bear, Base, and Bull
@@ -312,13 +300,9 @@ flowchart LR
         ))
       }
     </div>
-  </section>
+  </ProjectSection>
 
-  <section id="agents" class="w-full" aria-labelledby="agents-title">
-    <SectionHeader
-      id="agents-title"
-      title="Six agents, running one at a time"
-    />
+  <ProjectSection id="agents" title="Six agents, running one at a time">
     <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
       The valuation numbers feed a sequence of agents. Some gather context and
       news. Others turn that material into sections, ask follow-up questions,
@@ -342,13 +326,9 @@ flowchart LR
         ))
       }
     </div>
-  </section>
+  </ProjectSection>
 
-  <section id="pipeline" class="w-full" aria-labelledby="pipeline-title">
-    <SectionHeader
-      id="pipeline-title"
-      title="How a report is assembled"
-    />
+  <ProjectSection id="pipeline" title="How a report is assembled">
     <Steps
       items={pipelineSteps}
       aria-label="Equilyze report pipeline"
@@ -362,13 +342,9 @@ flowchart LR
         back to the numbers behind it.
       </p>
     </Callout>
-  </section>
+  </ProjectSection>
 
-  <section id="artifacts" class="w-full" aria-labelledby="artifacts-title">
-    <SectionHeader
-      id="artifacts-title"
-      title="Every run leaves four artifacts behind"
-    />
+  <ProjectSection id="artifacts" title="Every run leaves four artifacts behind">
     <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
       The report is only the visible output. Under <code>reports/TICK/</code>,
       Equilyze also saves the structured data each agent worked from. Those
@@ -402,15 +378,9 @@ flowchart LR
         That is what happens in the case study below.
       </p>
     </Callout>
-  </section>
+  </ProjectSection>
 
-  <section id="case-study" class="w-full" aria-labelledby="case-study-title">
-    <SectionHeader
-      id="case-study-title"
-      title="Case study, from Oracle analysis to article"
-      linkHref={journal.isOracleStockUndervalued.href}
-      linkLabel="Read the published article"
-    />
+  <ProjectSection id="case-study" title="Case study, from Oracle analysis to article" linkHref={journal.isOracleStockUndervalued.href} linkLabel="Read the published article">
     <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
       <a
         href={journal.isOracleStockUndervalued.href}
@@ -450,19 +420,12 @@ flowchart LR
       </Callout>
     </div>
 
-    <a
-      href={journal.threeProjectsOnePipeline.href}
-      class="mt-8 inline-flex font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
-    >
-      Read more about the full pipeline &rarr;
-    </a>
-  </section>
+    <ArrowLink href={journal.threeProjectsOnePipeline.href} class="mt-8">
+      Read more about the full pipeline
+    </ArrowLink>
+  </ProjectSection>
 
-  <section id="configuration" class="w-full" aria-labelledby="configuration-title">
-    <SectionHeader
-      id="configuration-title"
-      title="Configured for local, memory-aware inference"
-    />
+  <ProjectSection id="configuration" title="Configured for local, memory-aware inference">
 
     <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
       {
@@ -481,28 +444,14 @@ flowchart LR
         ))
       }
     </div>
-  </section>
+  </ProjectSection>
 
-  <section
-    id="outcome"
-    class="overflow-hidden rounded-box bg-primary p-8 text-primary-content shadow-xl md:p-12 lg:p-16"
-    aria-labelledby="outcome-title"
-  >
-    <p class="mb-4 text-xs font-bold uppercase tracking-[0.2em] opacity-70">
-      The outcome
-    </p>
-    <h2
-      id="outcome-title"
-      class="max-w-4xl font-display text-3xl font-bold leading-tight sm:text-4xl"
-    >
-      Equilyze pairs a six-model valuation engine with a chain of agents to turn
-      a single ticker into a report that shows its work.
-    </h2>
+  <OutcomeBanner title="Equilyze pairs a six-model valuation engine with a chain of agents to turn a single ticker into a report that shows its work.">
     <p class="mt-6 max-w-3xl text-lg leading-relaxed opacity-80">
       Quantitative models set the anchor. Agents add context, challenge the
       draft, and sign off using the JSON snapshots saved next to every report.
       The report closes with a disclaimer, because Equilyze studies companies.
       It does not give advice.
     </p>
-  </section>
+  </OutcomeBanner>
 </ProjectLayout>

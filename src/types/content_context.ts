@@ -20,7 +20,8 @@ export interface EntryContext extends BaseContext {
   pubDate: Date;
   updatedDate?: Date;
   filepath: string;
-  vaultId: string;
+  /** The top-level vault this entry belongs to; absent for standalone entries. */
+  vaultId?: string;
 }
 
 export interface NestedGroup extends BaseContext {
@@ -35,6 +36,3 @@ export interface VaultContext extends BaseContext {
   items: VaultItem[];
   itemCount: number;
 }
-
-export const isNestedGroup = (item: VaultItem): item is NestedGroup =>
-  "items" in item;

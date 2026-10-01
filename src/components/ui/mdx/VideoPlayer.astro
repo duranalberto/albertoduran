@@ -2,26 +2,36 @@
 /**
  * Pure HLS video player. The placeholder box reserves a full HD (1920x1080)
  * aspect ratio up front so the layout doesn't shift once playback starts.
- * hls.js and the enhancement script are declared here, not in a shared
- * layout, so they only ship on pages that actually render this component.
+ * The enhancement script is declared here, not in a shared layout, so it only
+ * ships on pages that render this component; it loads hls.js from the CDN on
+ * demand (see src/runtime/video/hls-loader.ts).
  */
+import { stableHash } from "@utils/hash";
 
 export interface Props {
   src: string;
   poster?: string;
   title?: string;
+  /** catalog.json with this video's title, description and tags, if any. */
+  catalogUrl?: string;
   class?: string;
 }
 
-const { src, poster, title = "Video player", class: className } =
-  Astro.props;
+const {
+  src,
+  poster,
+  title = "Video player",
+  catalogUrl,
+  class: className,
+} = Astro.props;
 
-const qualityId = `video-quality-${crypto.randomUUID().replace(/-/g, "").slice(0, 8)}`;
+const qualityId = `video-quality-${stableHash(src)}`;
 ---
 
 <video-player-shell
   class:list={["video-player not-prose block", className]}
   data-video-src={src}
+  data-catalog-url={catalogUrl}
 >
   <div
     class="w-full max-w-[1920px] overflow-hidden rounded-box bg-black"
@@ -70,7 +80,6 @@ const qualityId = `video-quality-${crypto.randomUUID().replace(/-/g, "").slice(0
   </div>
 </video-player-shell>
 
-<script src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js" is:inline></script>
 <script>
   import "@runtime/elements/video-player-shell";
 </script>

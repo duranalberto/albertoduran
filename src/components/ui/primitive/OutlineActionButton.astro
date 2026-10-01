@@ -1,0 +1,21 @@
+---
+/**
+ * bloomwright-ui Button in the site's outline style: a quiet border that
+ * fills with the primary color on hover. Used for hero and header actions.
+ */
+import type { ComponentProps } from "astro/types";
+import Button from "bloomwright-ui/components/primitive/Button.astro";
+
+type Props = Omit<ComponentProps<typeof Button>, "variant">;
+
+const { class: className, ...buttonProps } = Astro.props;
+---
+
+<Button
+  variant="btn-outline"
+  class:list={[
+    "border-base-300 hover:border-primary hover:bg-primary hover:text-primary-content",
+    className,
+  ]}
+  {...buttonProps}
+/>

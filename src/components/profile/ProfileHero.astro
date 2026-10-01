@@ -1,50 +1,45 @@
 ---
+import PageHero from "@components/shared/PageHero.astro";
 import SocialTire from "@components/ui/primitive/SocialTire.astro";
 
 const props = Astro.props;
 ---
 
-<section class="hero-section relative overflow-hidden font-sans" {...props}>
-  <div class="hero-shell">
-    <div class="hero-grid">
-      <div class="hero-primary xl:col-span-9">
-        <div class="hero-eyebrow" aria-hidden="true">
-          <span class="hero-eyebrow-line"></span>
-          <p class="hero-eyebrow-label">How I build software</p>
-        </div>
+<PageHero
+  eyebrow="How I build software"
+  class="relative overflow-hidden font-sans"
+  primaryClass="xl:col-span-9"
+  {...props}
+>
+  <h1
+    class="hero-heading font-display text-4xl sm:text-5xl md:text-6xl xl:text-8xl select-none mb-8"
+  >
+    <span class="text-primary">Alberto</span>
+    <span class="text-base-content">Duran</span>
+  </h1>
 
-        <h1
-          class="hero-heading font-display text-4xl sm:text-5xl md:text-6xl xl:text-8xl select-none mb-8"
-        >
-          <span class="text-primary">Alberto</span>
-          <span class="text-base-content">Duran</span>
-        </h1>
+  <p
+    class="mb-6 font-display text-xl font-bold leading-snug text-base-content sm:text-2xl"
+  >
+    Software Engineer <span class="text-primary">|</span> Python · Java · TypeScript
+  </p>
 
-        <p
-          class="mb-6 font-display text-xl font-bold leading-snug text-base-content sm:text-2xl"
-        >
-          Software Engineer <span class="text-primary">|</span> Python · Java · TypeScript
-        </p>
-
-        <div
-          class="hero-description mb-8 space-y-5 text-lg leading-relaxed text-neutral-content md:text-xl"
-        >
-          <p>
-            I have spent the past six years working at Oracle and TCS. My work
-            has included enterprise Java, Python migration tools, TypeScript and
-            JavaScript applications, and production reliability fixes. I often
-            worked directly with stakeholders and stayed involved through
-            testing and maintenance.
-          </p>
-          <p>
-            I am looking for full-stack or backend-oriented roles where I can
-            take responsibility for more of the system and keep growing toward
-            software architecture.
-          </p>
-        </div>
-
-        <SocialTire />
-      </div>
-    </div>
+  <div
+    class="hero-description mb-8 space-y-5 text-lg leading-relaxed text-neutral-content md:text-xl"
+  >
+    <p>
+      I have spent the past six years working at Oracle and TCS. My work
+      has included enterprise Java, Python migration tools, TypeScript and
+      JavaScript applications, and production reliability fixes. I often
+      worked directly with stakeholders and stayed involved through
+      testing and maintenance.
+    </p>
+    <p>
+      I am looking for full-stack or backend-oriented roles where I can
+      take responsibility for more of the system and keep growing toward
+      software architecture.
+    </p>
   </div>
-</section>
+
+  <SocialTire />
+</PageHero>

@@ -9,12 +9,10 @@
       "@utils/*": ["src/utils/*"],
       "@appTypes/*": ["src/types/*"],
       "@layouts/*": ["src/layouts/*"],
-      "@pages/*": ["src/pages/*"],
       "@data/*": ["src/data/*"],
       "@components/*": ["src/components/*"],
       "@assets/*": ["src/assets/*"],
       "@styles/*": ["src/styles/*"],
-      "@integrations/*": ["src/integrations/*"],
       "@content/*": ["src/content/*"],
       "@runtime/*": ["src/runtime/*"]
     }

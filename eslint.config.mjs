@@ -30,7 +30,7 @@ export default tseslint.config(
       },
     },
     rules: {
-      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-explicit-any": "warn",
       "no-empty": ["error", { allowEmptyCatch: true }],
     },
   },
@@ -38,6 +38,14 @@ export default tseslint.config(
     files: ["**/*.{ts,astro}"],
     rules: {
       "no-undef": "off",
+    },
+  },
+  {
+    // The Atlas section is parked for later reactivation and kept untouched;
+    // its loader still types Astro's loader context as any.
+    files: ["src/utils/atlas_loader.ts"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
     },
   },
 );

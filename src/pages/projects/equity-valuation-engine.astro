@@ -1,13 +1,16 @@
 ---
-import type { ProjectPageConfig } from "@appTypes/project";
-import coverImage from "@assets/thejournal/stock/06.avif";
 import Callout from "bloomwright-ui/components/display/Callout.astro";
-import SectionHeader from "bloomwright-ui/components/display/SectionHeader.astro";
-import Steps, { type StepItem } from "bloomwright-ui/components/display/Steps.astro";
+import Steps from "bloomwright-ui/components/display/Steps.astro";
 import MermaidDiagram from "bloomwright-ui/components/render/MermaidDiagram.astro";
 import { defineMermaidDiagram } from "bloomwright-ui/mermaid";
 import { defineJournalLinks } from "@content/define_journal_links";
 import ProjectLayout from "@layouts/ProjectLayout.astro";
+import { defineProjectPage } from "@data/project_page";
+import { completedSteps, stepMarker } from "@utils/steps";
+import ProjectSection from "@components/projects/sections/ProjectSection.astro";
+import OutcomeBanner from "@components/projects/sections/OutcomeBanner.astro";
+import ArrowLink from "@components/ui/navigation/ArrowLink.astro";
+import { githubRepoUrl } from "@data/identity";
 
 const journal = await defineJournalLinks(
   {
@@ -24,14 +27,10 @@ const journal = await defineJournalLinks(
   { owner: "Equity Valuation Engine", vault: "equity_valuation_engine" },
 );
 
-const project: ProjectPageConfig = {
-  title: "Equity Valuation Engine",
+const project = defineProjectPage("/projects/equity-valuation-engine/", {
   eyebrow: "Finance · Decision Support",
   description:
     "A Python engine I built to evaluate companies more deliberately as I expand my portfolio, with model fit, assumptions, and uncertainty kept beside every estimate.",
-  image: coverImage,
-  imageAlt:
-    "A financial market chart with candlesticks and trend lines on a dark display",
   facts: [
     { label: "Interface", value: "CLI · JSON" },
     { label: "Data", value: "yfinance" },
@@ -44,28 +43,25 @@ const project: ProjectPageConfig = {
     { label: "pytest", icon: "pytest" },
   ],
   links: {
-    githubUrl: "https://github.com/duranalberto/equity-valuation-engine",
+    githubUrl: githubRepoUrl("equity-valuation-engine"),
     journalId: "equity_valuation_engine",
   },
-};
+});
 
 const foundations = [
   {
-    marker: "01",
     title: "Run a valuation before studying the formulas",
     description:
       "Start with the CLI, learn the output order, and see why a skipped model can be more useful than another per-share estimate.",
     href: journal.firstValuationRun.href,
   },
   {
-    marker: "02",
     title: "Choose a model that fits the business",
     description:
       "Match cash flow, earnings, revenue, dividends, returns, and assets to the question each valuation method can answer.",
     href: journal.choosingAValuationModel.href,
   },
   {
-    marker: "03",
     title: "Check the inputs behind the result",
     description:
       "Follow provider fields into StockMetrics, inspect selected missing-value reasons, and understand the currency boundary that still needs work.",
@@ -94,13 +90,13 @@ const modelFamilies = [
   },
 ];
 
-const valuationSteps: StepItem[] = [
-  { label: "Normalize", marker: "1", color: "success" },
-  { label: "Diagnose", marker: "2", color: "success" },
-  { label: "Qualify", marker: "3", color: "success" },
-  { label: "Value", marker: "4", color: "success" },
-  { label: "Explain", marker: "5", color: "success" },
-];
+const valuationSteps = completedSteps([
+  "Normalize",
+  "Diagnose",
+  "Qualify",
+  "Value",
+  "Explain",
+]);
 
 const valuationFlow = defineMermaidDiagram(String.raw`
 flowchart LR
@@ -131,11 +127,7 @@ flowchart LR
 ---
 
 <ProjectLayout project={project}>
-  <section id="overview" class="w-full" aria-labelledby="overview-title">
-    <SectionHeader
-      id="overview-title"
-      title="A more disciplined way to invest"
-    />
+  <ProjectSection id="overview" title="A more disciplined way to invest">
 
     <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12">
       <div class="flex flex-col gap-5 lg:col-span-7">
@@ -166,38 +158,22 @@ flowchart LR
         </p>
       </Callout>
     </div>
-  </section>
+  </ProjectSection>
 
-  <section
-    id="valuation-flow"
-    class="w-full"
-    aria-labelledby="valuation-flow-title"
-  >
-    <SectionHeader
-      id="valuation-flow-title"
-      title="From ticker symbol to valuation report"
-    />
+  <ProjectSection id="valuation-flow" title="From ticker symbol to valuation report">
     <p class="mb-8 max-w-4xl text-lg leading-relaxed text-base-content/75">
       The pipeline separates data loading, domain modeling, model policy,
       calculation, and presentation. Each layer passes a structured result to
       the next one instead of quietly repeating earlier work.
     </p>
     <MermaidDiagram code={valuationFlow} />
-  </section>
+  </ProjectSection>
 
-  <section
-    id="analytical-foundations"
-    class="w-full"
-    aria-labelledby="analytical-foundations-title"
-  >
-    <SectionHeader
-      id="analytical-foundations-title"
-      title="Start with the result, then inspect the evidence"
-    />
+  <ProjectSection id="analytical-foundations" title="Start with the result, then inspect the evidence">
 
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
       {
-        foundations.map((item) => (
+        foundations.map((item, index) => (
           <a
             href={item.href}
             aria-label={`Read ${item.title}`}
@@ -205,7 +181,7 @@ flowchart LR
           >
             <article class="card-body gap-5">
               <span class="font-mono text-sm font-bold text-primary" aria-hidden="true">
-                {item.marker}
+                {stepMarker(index)}
               </span>
               <h3 class="card-title font-display text-xl transition-colors group-hover:text-primary">
                 {item.title}
@@ -221,10 +197,9 @@ flowchart LR
         ))
       }
     </div>
-  </section>
+  </ProjectSection>
 
-  <section id="models" class="w-full" aria-labelledby="models-title">
-    <SectionHeader id="models-title" title="Different models answer different questions" />
+  <ProjectSection id="models" title="Different models answer different questions">
 
     <div class="mb-10 grid grid-cols-1 gap-6 lg:grid-cols-12">
       <p class="text-xl leading-relaxed text-base-content lg:col-span-7">
@@ -255,23 +230,16 @@ flowchart LR
     </div>
 
     <div class="mt-6 flex flex-wrap gap-x-6 gap-y-3">
-      <a
-        href={journal.dcfAndReverseDcf.href}
-        class="inline-flex font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
-      >
-        Work through DCF and Reverse DCF &rarr;
-      </a>
-      <a
-        href={journal.otherValuationModels.href}
-        class="inline-flex font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
-      >
-        Compare the other valuation models &rarr;
-      </a>
+      <ArrowLink href={journal.dcfAndReverseDcf.href}>
+        Work through DCF and Reverse DCF
+      </ArrowLink>
+      <ArrowLink href={journal.otherValuationModels.href}>
+        Compare the other valuation models
+      </ArrowLink>
     </div>
-  </section>
+  </ProjectSection>
 
-  <section id="scenarios" class="w-full" aria-labelledby="scenarios-title">
-    <SectionHeader id="scenarios-title" title="Assumptions remain part of the output" />
+  <ProjectSection id="scenarios" title="Assumptions remain part of the output">
 
     <div class="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:items-center">
       <div>
@@ -304,10 +272,9 @@ flowchart LR
         <span class="mt-5 block font-bold">Read the decision path &rarr;</span>
       </a>
     </div>
-  </section>
+  </ProjectSection>
 
-  <section id="delivery" class="w-full" aria-labelledby="delivery-title">
-    <SectionHeader id="delivery-title" title="One run, five visible stages" />
+  <ProjectSection id="delivery" title="One run, five visible stages">
     <Steps
       items={valuationSteps}
       aria-label="Equity valuation lifecycle"
@@ -337,28 +304,16 @@ flowchart LR
     </div>
 
     <div class="mt-6 flex flex-wrap gap-x-6 gap-y-3">
-      <a
-        href={journal.readingTheResults.href}
-        class="inline-flex font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
-      >
-        Learn how to read the final output &rarr;
-      </a>
-      <a
-        href={journal.extendingTheEngine.href}
-        class="inline-flex font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
-      >
-        Follow the extension contracts &rarr;
-      </a>
+      <ArrowLink href={journal.readingTheResults.href}>
+        Learn how to read the final output
+      </ArrowLink>
+      <ArrowLink href={journal.extendingTheEngine.href}>
+        Follow the extension contracts
+      </ArrowLink>
     </div>
-  </section>
+  </ProjectSection>
 
-  <section id="pipeline" class="w-full" aria-labelledby="pipeline-title">
-    <SectionHeader
-      id="pipeline-title"
-      title="The foundation of a larger pipeline"
-      linkHref={journal.threeProjectsOnePipeline.href}
-      linkLabel="Read the full story"
-    />
+  <ProjectSection id="pipeline" title="The foundation of a larger pipeline" linkHref={journal.threeProjectsOnePipeline.href} linkLabel="Read the full story">
 
     <div class="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-center">
       <div class="lg:col-span-7">
@@ -368,12 +323,9 @@ flowchart LR
           agents on top to write investment analysis, and Pressroom then turns
           that analysis into a finished, published article.
         </p>
-        <a
-          href={journal.threeProjectsOnePipeline.href}
-          class="inline-flex font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
-        >
-          Read more: how three projects merge into one pipeline &rarr;
-        </a>
+        <ArrowLink href={journal.threeProjectsOnePipeline.href}>
+          Read more: how three projects merge into one pipeline
+        </ArrowLink>
       </div>
       <Callout
         variant="information"
@@ -387,23 +339,13 @@ flowchart LR
         </p>
       </Callout>
     </div>
-  </section>
+  </ProjectSection>
 
-  <section
-    id="outcome"
-    class="overflow-hidden rounded-box bg-primary p-8 text-primary-content shadow-xl md:p-12 lg:p-16"
-    aria-labelledby="outcome-title"
-  >
-    <p class="mb-4 text-xs font-bold uppercase tracking-[0.2em] opacity-70">
-      The outcome
-    </p>
-    <h2 id="outcome-title" class="max-w-4xl font-display text-3xl font-bold leading-tight sm:text-4xl">
-      A valuation run that can be questioned, traced, and compared instead of merely quoted.
-    </h2>
+  <OutcomeBanner title="A valuation run that can be questioned, traced, and compared instead of merely quoted.">
     <p class="mt-6 max-w-3xl text-lg leading-relaxed opacity-80">
       The estimates are analytical tools, not investment advice. Use them to
       inspect assumptions, compare models, and find weaknesses in the input
       data.
     </p>
-  </section>
+  </OutcomeBanner>
 </ProjectLayout>

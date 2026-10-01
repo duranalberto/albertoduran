@@ -1,26 +1,21 @@
 ---
-import { type VaultItem, isNestedGroup } from "@appTypes/content_context";
+import type { VaultItem } from "@appTypes/content_context";
+import { isNestedGroup } from "@content/entry_kind";
+import { journalHref } from "@utils/routes";
 
 interface Props {
   item: VaultItem;
   currentEntryId: string;
-  level: number;
+  /** Static trees (the mobile overlay) never draw the active side line. */
   isStatic?: boolean;
-  classNames?: string;
 }
 
-const {
-  item,
-  currentEntryId,
-  level,
-  isStatic = false,
-  classNames,
-} = Astro.props;
+const { item, currentEntryId, isStatic = false } = Astro.props;
 
 const folder = isNestedGroup(item);
 const id = folder ? item.index.id : item.id;
 const isActive = currentEntryId === id;
-const href = `/thejournal/${id}/`;
+const href = journalHref(id);
 ---
 
 <a
@@ -28,11 +23,9 @@ const href = `/thejournal/${id}/`;
   aria-current={isActive ? "page" : undefined}
   data-state={isActive ? "active" : "inactive"}
   class:list={[
-    "vault-tree-node journal-nav-item group flex items-center relative w-full py-2.5 pr-4",
+    "vault-tree-node journal-nav-item nav-item group flex items-center relative w-full py-2.5 pr-4",
     "text-sm font-medium leading-snug select-none whitespace-normal",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-inset",
-    "nav-item py-2.5 pr-4 text-sm font-medium leading-snug whitespace-normal",
-    classNames,
   ]}
   data-astro-prefetch
 >
@@ -57,7 +50,7 @@ const href = `/thejournal/${id}/`;
           <Astro.self
             item={child}
             currentEntryId={currentEntryId}
-            level={level + 1}
+            isStatic={isStatic}
           />
         </li>
       ))}

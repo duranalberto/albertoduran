@@ -27,7 +27,6 @@ A high-performance personal portfolio and publishing site built with Astro 7, Ta
 │  ├─ components/           # Astro UI, layout, profile, and journal components
 │  ├─ content/              # Build-time content processors
 │  ├─ data/                 # Site, profile, and icon data
-│  ├─ integrations/         # HTML minifier build integration
 │  ├─ layouts/              # Shared Astro layouts
 │  ├─ mermaid/              # Mermaid render pipeline (Worker / offline fixtures)
 │  ├─ pages/                # File-based routes

@@ -7,7 +7,7 @@ import { ui } from "@data/icons";
 ---
 
 <BaseLayout siteManifest={sitesManifest["404"]}>
-  <main
+  <section
     class="relative flex flex-col items-center justify-center min-h-dvh px-8 text-center bg-base-100 overflow-hidden isolate"
   >
     <div
@@ -56,12 +56,12 @@ import { ui } from "@data/icons";
           style="--js-only-display: inline-flex"
         >
           <SVGIcon
-            icon={ui.arrowLeft!}
+            icon={ui.arrowLeft}
             class="size-4 transition-transform group-hover:-translate-x-2"
           />
           Go Back
         </button>
       </div>
     </div>
-  </main>
+  </section>
 </BaseLayout>

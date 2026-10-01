@@ -1,0 +1,54 @@
+---
+/**
+ * A text link that ends in an arrow.
+ * - `inline`: bold primary text with the arrow inline ("Read more →").
+ * - `action`: small link whose arrow nudges right on hover ("View award →").
+ */
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends HTMLAttributes<"a"> {
+  href: string;
+  variant?: "inline" | "action";
+  /** Open in a new tab with rel="noopener noreferrer". */
+  external?: boolean;
+}
+
+const {
+  variant = "inline",
+  external = false,
+  class: className,
+  ...anchorProps
+} = Astro.props;
+
+const variantClass = {
+  inline:
+    "inline-flex font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary",
+  action:
+    "group inline-flex items-center gap-1 text-sm font-semibold tracking-wide text-primary transition-all hover:gap-2",
+}[variant];
+
+// Trimmed so the call site's line breaks don't become spaces around the text.
+const label = (await Astro.slots.render("default")).trim();
+---
+
+<a
+  class:list={[variantClass, className]}
+  {...external ? { target: "_blank", rel: "noopener noreferrer" } : {}}
+  {...anchorProps}
+>
+  {
+    variant === "inline" ? (
+      <Fragment set:html={`${label} &rarr;`} />
+    ) : (
+      <Fragment>
+        <Fragment set:html={label} />
+        <span
+          class="transition-transform group-hover:translate-x-0.5"
+          aria-hidden="true"
+        >
+          →
+        </span>
+      </Fragment>
+    )
+  }
+</a>

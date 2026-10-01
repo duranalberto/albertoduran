@@ -5,11 +5,7 @@ import type {
   ResolvedJournalLink,
 } from "@appTypes/journal_links";
 
-export const journalIndexHref = "/thejournal/";
-
-export function journalHref(id: string, anchor?: string): string {
-  return `${journalIndexHref}${id}/${anchor ? `#${anchor}` : ""}`;
-}
+import { journalHref } from "@utils/routes";
 
 export interface JournalLinkContext {
   owner: string;

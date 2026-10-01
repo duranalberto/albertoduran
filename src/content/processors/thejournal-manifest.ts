@@ -3,12 +3,29 @@ import type {
   VaultContext,
   VaultItem,
 } from "@appTypes/content_context";
-import type { Sites } from "@appTypes/navigation";
 import type { ImageMetadata } from "astro";
+import { isNestedGroup } from "../entry_kind.ts";
+import { DEFAULT_DESCRIPTION, DEFAULT_ORDER } from "../journal_defaults.ts";
+import { journalIndexScope, journalRelativePath } from "../journal_paths.ts";
+import { journalIndexHref } from "../../utils/routes.ts";
+import {
+  enforce,
+  isIndexFileFor,
+  requiresChildEntry,
+  requiresRootImage,
+  requiresRootIndex,
+  requiresSectionIndex,
+  requiresStandaloneImage,
+} from "./vault_rules.ts";
 
-const site: Sites = "/thejournal/";
+/** The fields the publish filter reads. */
+export interface PublishFilterEntry {
+  id: string;
+  filePath?: string | undefined;
+  data: { draft?: boolean | undefined };
+}
 
-export interface JournalManifestSourceEntry {
+export interface JournalManifestSourceEntry extends PublishFilterEntry {
   id: string;
   filePath?: string | undefined;
   body?: string | undefined;
@@ -25,19 +42,10 @@ export interface JournalManifestSourceEntry {
   };
 }
 
+/** Path below src/thejournal/, or the input unchanged if it is elsewhere. */
 export function normalizeJournalFilePath(filePath?: string): string {
   if (!filePath) return "";
-
-  const cleanSite = site.endsWith("/") ? site.slice(0, -1) : site;
-  const marker = `src${cleanSite}/`;
-
-  const index = filePath.indexOf(marker);
-
-  if (index === -1) {
-    return filePath;
-  }
-
-  return filePath.slice(index + marker.length);
+  return journalRelativePath(filePath) ?? filePath;
 }
 
 export function getVaultDirectory(filepath?: string): string | null {
@@ -93,45 +101,17 @@ export function measureReadTime(entry: JournalManifestSourceEntry): number {
   return Math.max(1, Math.ceil(totalMinutes));
 }
 
-function addEntryToList(
-  list: EntryContext[],
-  entry: EntryContext,
-  expectedIndexPath: string,
-): void {
-  if (isIndexFileForPath(entry.filepath, expectedIndexPath)) {
-    list.unshift(entry);
-  } else {
-    list.push(entry);
-  }
+function getIndexScope(entry: PublishFilterEntry): string | null {
+  return entry.filePath ? journalIndexScope(entry.filePath) : null;
 }
 
-function isIndexFileForPath(
-  filepath: string,
-  expectedIndexPath: string,
-): boolean {
-  return (
-    filepath === `${expectedIndexPath}/index.mdx` ||
-    filepath === `${expectedIndexPath}/index.md`
-  );
-}
-
-function getIndexScope(entry: JournalManifestSourceEntry): string | null {
-  const normalizedPath = normalizeJournalFilePath(entry.filePath);
-  const match = normalizedPath.match(/^(.*)\/index\.mdx?$/);
-
-  return match?.[1] ?? null;
-}
-
-function isEntryInScope(
-  entry: JournalManifestSourceEntry,
-  scope: string,
-): boolean {
+function isEntryInScope(entry: PublishFilterEntry, scope: string): boolean {
   return entry.id === scope || entry.id.startsWith(`${scope}/`);
 }
 
-export function filterPublishedJournalEntries<
-  T extends JournalManifestSourceEntry,
->(rawEntries: T[]): T[] {
+export function filterPublishedJournalEntries<T extends PublishFilterEntry>(
+  rawEntries: T[],
+): T[] {
   const draftIndexScopes = rawEntries
     .filter((entry) => entry.data.draft === true)
     .map(getIndexScope)
@@ -146,242 +126,229 @@ export function filterPublishedJournalEntries<
   });
 }
 
-function linkVaultEntries(vault: VaultContext) {
-  let prevEntry: EntryContext = vault.index;
+/** Contexts grouped by top-level vault folder, each with its index first. */
+function groupByVault(contexts: EntryContext[]): Map<string, EntryContext[]> {
+  const vaults = new Map<string, EntryContext[]>();
 
-  const traverse = (items: VaultItem[]) => {
-    for (const item of items) {
-      let currentEntry: EntryContext;
-      let children: VaultItem[] | undefined;
-      if ("items" in item) {
-        currentEntry = item.index;
-        children = item.items;
-      } else {
-        currentEntry = item;
-      }
-
-      prevEntry.next = currentEntry.id;
-      currentEntry.previous = prevEntry.id;
-      prevEntry = currentEntry;
-
-      if (children) {
-        traverse(children);
-      }
-    }
-  };
-
-  traverse(vault.items);
-}
-
-export function buildJournalManifest(
-  rawEntries: JournalManifestSourceEntry[],
-): [Record<string, EntryContext>, Record<string, VaultContext>] {
-  const publishedEntries = filterPublishedJournalEntries(rawEntries);
-  const entryManifest: Record<string, EntryContext> = {};
-  const rootVaults: Record<string, EntryContext[]> = {};
-
-  for (const entry of publishedEntries) {
-    const context = mapEntryToContext(entry);
-    entryManifest[context.id] = context;
-
+  for (const context of contexts) {
     const vaultId = getVaultDirectory(context.filepath);
+    if (!vaultId) continue;
 
-    if (vaultId) {
-      if (!rootVaults[vaultId]) {
-        rootVaults[vaultId] = [];
-      }
-
-      addEntryToList(rootVaults[vaultId], context, vaultId);
-    }
+    const entries = vaults.get(vaultId) ?? [];
+    if (isIndexFileFor(context.filepath, vaultId)) entries.unshift(context);
+    else entries.push(context);
+    vaults.set(vaultId, entries);
   }
 
-  const vaultsManifest: Record<string, VaultContext> = {};
-
-  for (const [vaultId, entries] of Object.entries(rootVaults)) {
-    const rootIndex = entries[0];
-
-    if (!rootIndex || !isIndexFileForPath(rootIndex.filepath, vaultId)) {
-      throw new Error(
-        `[thejournal] Vault "${vaultId}" is missing a required root index. ` +
-          `Add ${vaultId}/index.mdx or ${vaultId}/index.md before adding entries under this folder.`,
-      );
-    }
-
-    if (!rootIndex.image) {
-      throw new Error(
-        `[thejournal] Vault root entry "${rootIndex.id}" is missing a required image. ` +
-          `Every vault root index (${vaultId}/index.mdx or ${vaultId}/index.md) must declare an image in its frontmatter.`,
-      );
-    }
-
-    for (const entry of entries) {
-      entry.vaultId = vaultId;
-    }
-
-    assertVaultHasChildEntries(entries, vaultId);
-
-    vaultsManifest[vaultId] = {
-      id: vaultId,
-      title: rootIndex.title,
-      order: rootIndex.order,
-      index: rootIndex,
-      items: buildNestedStructure(entries, vaultId),
-      itemCount: entries.length,
-    };
-
-    linkVaultEntries(vaultsManifest[vaultId]);
-  }
-
-  for (const [id, entry] of Object.entries(entryManifest)) {
-    const isStandalone = !entry.vaultId;
-    const isVaultRoot = !!entry.vaultId && entry.id === entry.vaultId;
-    const isVaultChild = !!entry.vaultId && entry.id !== entry.vaultId;
-
-    if (isStandalone || isVaultRoot) {
-      if (!entry.image) {
-        throw new Error(
-          `[thejournal] Entry "${id}" is missing a required image. ` +
-            `${isStandalone ? "Standalone publications" : "Vault root indexes"} ` +
-            `must declare an image in their frontmatter.`,
-        );
-      }
-    } else if (isVaultChild) {
-      const vault = vaultsManifest[entry.vaultId];
-
-      // Vault children inherit the root index's image and GitHub repository
-      // unless they declare their own, so the whole vault shares one repo link.
-      if (!entry.image && vault?.index?.image) {
-        entry.image = vault.index.image;
-      }
-
-      if (!entry.github && vault?.index?.github) {
-        entry.github = vault.index.github;
-      }
-    }
-  }
-
-  return [entryManifest, vaultsManifest];
+  return vaults;
 }
 
-function buildNestedStructure(
+/**
+ * The vault's entries with `vaultId` set. Children inherit the root's image
+ * and GitHub repository unless they declare their own, so a vault shares one
+ * cover and one repo link.
+ */
+function withVaultFields(
   entries: EntryContext[],
-  currentPath: string,
-): VaultItem[] {
-  const currentIndex = entries[0];
+  vaultId: string,
+): EntryContext[] {
+  const root = entries[0]!;
 
-  if (
-    !currentIndex ||
-    !isIndexFileForPath(currentIndex.filepath, currentPath)
-  ) {
-    throw new Error(
-      `[thejournal] Vault section "${currentPath}" is missing a required index. ` +
-        `Add ${currentPath}/index.mdx or ${currentPath}/index.md before adding entries under this folder.`,
-    );
-  }
+  return entries.map((entry) => {
+    const isChild = entry.id !== vaultId;
+    return {
+      ...entry,
+      vaultId,
+      ...(isChild && !entry.image && root.image ? { image: root.image } : {}),
+      ...(isChild && !entry.github && root.github
+        ? { github: root.github }
+        : {}),
+    };
+  });
+}
 
-  assertVaultHasChildEntries(entries, currentPath, "Vault section");
+/**
+ * The items below a folder's index: its own entries plus one group per
+ * subfolder, sorted by order then title. `entries[0]` is the folder's index.
+ */
+function buildTree(entries: EntryContext[], path: string): VaultItem[] {
+  enforce(requiresChildEntry(entries, path, "Vault section"));
 
   const items: VaultItem[] = [];
-  const subfolderBuckets: Record<string, EntryContext[]> = {};
+  const subfolders = new Map<string, EntryContext[]>();
 
-  for (let i = 1; i < entries.length; i++) {
-    const entry = entries[i];
-    if (!entry) continue;
-
-    const relative = entry.filepath.slice(currentPath.length + 1);
-    const parts = relative.split("/");
-
-    if (parts.length === 1) {
+  for (const entry of entries.slice(1)) {
+    const [first, ...rest] = entry.filepath.slice(path.length + 1).split("/");
+    if (rest.length === 0 || !first) {
       items.push(entry);
-    } else {
-      const subDir = parts[0];
-      if (subDir) {
-        if (!subfolderBuckets[subDir]) {
-          subfolderBuckets[subDir] = [];
-        }
-
-        addEntryToList(
-          subfolderBuckets[subDir]!,
-          entry,
-          `${currentPath}/${subDir}`,
-        );
-      }
+      continue;
     }
+
+    const subPath = `${path}/${first}`;
+    const bucket = subfolders.get(first) ?? [];
+    if (isIndexFileFor(entry.filepath, subPath)) bucket.unshift(entry);
+    else bucket.push(entry);
+    subfolders.set(first, bucket);
   }
 
-  for (const [subDir, subEntries] of Object.entries(subfolderBuckets)) {
-    const subIndex = subEntries[0];
-    const subPath = `${currentPath}/${subDir}`;
+  for (const [subDir, subEntries] of subfolders) {
+    const subPath = `${path}/${subDir}`;
+    enforce(requiresSectionIndex(subEntries, subPath));
 
-    if (!subIndex || !isIndexFileForPath(subIndex.filepath, subPath)) {
-      throw new Error(
-        `[thejournal] Vault section "${subPath}" is missing a required index. ` +
-          `Add ${subPath}/index.mdx or ${subPath}/index.md before adding entries under this folder.`,
-      );
-    }
-
+    const index = subEntries[0]!;
     items.push({
       id: subPath,
-      title: subIndex.title,
-      order: subIndex.order,
-      index: subIndex,
-      items: buildNestedStructure(subEntries, subPath),
+      title: index.title,
+      order: index.order,
+      index,
+      items: buildTree(subEntries, subPath),
     });
   }
 
   return items.sort(sortByOrderThenTitle);
 }
 
-function assertVaultHasChildEntries(
-  entries: EntryContext[],
-  path: string,
-  label = "Vault",
-): void {
-  if (entries.length > 1) {
-    return;
+/** Entry ids in reading order: the root, then each item depth-first. */
+function readingOrder(rootId: string, items: VaultItem[]): string[] {
+  const walk = (list: VaultItem[]): string[] =>
+    list.flatMap((item) =>
+      isNestedGroup(item) ? [item.index.id, ...walk(item.items)] : [item.id],
+    );
+  return [rootId, ...walk(items)];
+}
+
+/** Each entry with `previous`/`next` set from its neighbours in `order`. */
+function linkInOrder(
+  byId: ReadonlyMap<string, EntryContext>,
+  order: string[],
+): Map<string, EntryContext> {
+  return new Map(
+    order.map((id, position) => {
+      const previous = order[position - 1];
+      const next = order[position + 1];
+      return [
+        id,
+        {
+          ...byId.get(id)!,
+          ...(previous ? { previous } : {}),
+          ...(next ? { next } : {}),
+        },
+      ];
+    }),
+  );
+}
+
+/** The same tree with every entry replaced by its linked version. */
+function relinkTree(
+  items: VaultItem[],
+  linked: ReadonlyMap<string, EntryContext>,
+): VaultItem[] {
+  return items.map((item) =>
+    isNestedGroup(item)
+      ? {
+          ...item,
+          index: linked.get(item.index.id)!,
+          items: relinkTree(item.items, linked),
+        }
+      : linked.get(item.id)!,
+  );
+}
+
+function buildVault(
+  vaultId: string,
+  grouped: EntryContext[],
+): { vault: VaultContext; entries: Map<string, EntryContext> } {
+  enforce(requiresRootIndex(grouped, vaultId));
+  enforce(
+    requiresRootImage(grouped[0]!, vaultId),
+    requiresChildEntry(grouped, vaultId, "Vault"),
+  );
+
+  const entries = withVaultFields(grouped, vaultId);
+  const root = entries[0]!;
+  const tree = buildTree(entries, vaultId);
+  const linked = linkInOrder(
+    new Map(entries.map((entry) => [entry.id, entry])),
+    readingOrder(root.id, tree),
+  );
+
+  return {
+    vault: {
+      id: vaultId,
+      title: root.title,
+      order: root.order,
+      index: linked.get(root.id)!,
+      items: relinkTree(tree, linked),
+      itemCount: entries.length,
+    },
+    entries: linked,
+  };
+}
+
+/** Manifests for entries that are already published (see buildJournalManifest). */
+export function buildManifest(
+  publishedEntries: JournalManifestSourceEntry[],
+): [Record<string, EntryContext>, Record<string, VaultContext>] {
+  const contexts = publishedEntries.map(mapEntryToContext);
+  const vaultsManifest: Record<string, VaultContext> = {};
+  const vaultEntries = new Map<string, EntryContext>();
+
+  for (const [vaultId, grouped] of groupByVault(contexts)) {
+    const { vault, entries } = buildVault(vaultId, grouped);
+    vaultsManifest[vaultId] = vault;
+    for (const [id, entry] of entries) vaultEntries.set(id, entry);
   }
 
-  throw new Error(
-    `[thejournal] ${label} "${path}" contains only an index entry. ` +
-      `Add at least one child publication, or make it a standalone publication at src/thejournal/${path}.mdx.`,
-  );
+  const entryManifest: Record<string, EntryContext> = {};
+  for (const context of contexts) {
+    const entry = vaultEntries.get(context.id) ?? context;
+    if (!entry.vaultId) enforce(requiresStandaloneImage(entry));
+    entryManifest[entry.id] = entry;
+  }
+
+  return [entryManifest, vaultsManifest];
+}
+
+/** Entry and vault manifests for the published subset of `rawEntries`. */
+export function buildJournalManifest(
+  rawEntries: JournalManifestSourceEntry[],
+): [Record<string, EntryContext>, Record<string, VaultContext>] {
+  return buildManifest(filterPublishedJournalEntries(rawEntries));
 }
 
 export function mapEntryToContext(
   entry: JournalManifestSourceEntry,
 ): EntryContext {
-  const normalizedPath = normalizeJournalFilePath(entry.filePath);
-  const indexScope = getIndexScope(entry);
-  const id = indexScope ?? entry.id;
+  const { pubDate, updatePubDate } = entry.data;
 
-  if (entry.data.updatePubDate && !entry.data.pubDate) {
+  if (updatePubDate && !pubDate) {
     throw new Error(
       `[thejournal] Entry "${entry.id}" has updatePubDate set but is missing pubDate. ` +
         `updatePubDate requires pubDate to be present.`,
     );
   }
+  if (!pubDate) {
+    throw new Error(`[thejournal] Entry "${entry.id}" is missing pubDate.`);
+  }
 
   return {
-    id,
-    filepath: normalizedPath,
+    id: getIndexScope(entry) ?? entry.id,
+    filepath: normalizeJournalFilePath(entry.filePath),
     title: entry.data.title,
     readTime: measureReadTime(entry),
-    description: entry.data.description ?? "Without description available.",
+    description: entry.data.description ?? DEFAULT_DESCRIPTION,
     tags: entry.data.tags ?? [],
-    order: entry.data.order ?? 100,
-    vaultId: "",
-    pubDate: entry.data.pubDate as Date,
+    order: entry.data.order ?? DEFAULT_ORDER,
+    pubDate,
     ...(entry.data.image ? { image: entry.data.image } : {}),
     ...(entry.data.github ? { github: entry.data.github } : {}),
-    ...(entry.data.updatePubDate
-      ? { updatedDate: entry.data.updatePubDate }
-      : {}),
+    ...(updatePubDate ? { updatedDate: updatePubDate } : {}),
   };
 }
 
 function sortByOrderThenTitle(a: VaultItem, b: VaultItem) {
-  const orderA = a.order ?? 100;
-  const orderB = b.order ?? 100;
+  const orderA = a.order ?? DEFAULT_ORDER;
+  const orderB = b.order ?? DEFAULT_ORDER;
 
   return orderA - orderB || a.title.localeCompare(b.title);
 }
@@ -391,8 +358,9 @@ export function resolveJournalContext(
   entryManifest: Record<string, EntryContext>,
   vaultsManifest: Record<string, VaultContext>,
 ): [EntryContext | null, VaultContext | null] {
-  const cleanSite = site.replace(/\/$/, "");
-  const id = path.replace(new RegExp(`^${cleanSite}/?`), "").replace(/\/$/, "");
+  const id = path
+    .replace(new RegExp(`^${journalIndexHref.replace(/\/$/, "")}/?`), "")
+    .replace(/\/$/, "");
 
   const entry = entryManifest[id] ?? null;
   if (!entry) {

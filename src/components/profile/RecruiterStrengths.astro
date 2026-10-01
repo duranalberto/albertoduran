@@ -29,7 +29,7 @@ const constants = strengths.filter((strength) => strength.everyStep);
         return (
           <li class="relative flex flex-col gap-3 pl-16 lg:pl-0 lg:pr-6 lg:pt-20">
             <span class="absolute left-0 top-0 z-[1] grid size-12 place-items-center rounded-full border-2 border-primary bg-base-100 text-primary">
-              {icon && <SVGIcon icon={icon} label="" class="size-6" />}
+              <SVGIcon icon={icon} label="" class="size-6" />
             </span>
             <span class="font-mono text-xs font-medium text-primary" aria-hidden="true">
               {String(index + 1).padStart(2, "0")}
@@ -59,7 +59,7 @@ const constants = strengths.filter((strength) => strength.everyStep);
         <div class="grid gap-3 rounded-box bg-base-200 p-6 md:grid-cols-[auto_1fr] md:items-center md:gap-8">
           <div class="flex items-center gap-4">
             <span class="grid size-12 shrink-0 place-items-center rounded-full bg-primary/15 text-primary">
-              {icon && <SVGIcon icon={icon} label="" class="size-6" />}
+              <SVGIcon icon={icon} label="" class="size-6" />
             </span>
             <div>
               <p class="text-xs font-bold uppercase tracking-widest text-base-content/60">

@@ -39,6 +39,8 @@ interface MermaidRendererConfig {
 
 const deflateAsync = promisify(zlibDeflate);
 const WORKER_RENDER_TIMEOUT_MS = 90_000;
+/** Stay under the Worker's request body limit (1 MB) with some headroom. */
+const WORKER_MAX_PAYLOAD_BYTES = 900 * 1024;
 
 const themeCache = new WeakMap<
   MermaidPalette,
@@ -56,10 +58,25 @@ function getCachedTheme(
   return cached;
 }
 
+/**
+ * Mermaid config shared by both providers. With a palette it themes the
+ * diagram; without one Mermaid's defaults apply.
+ */
+function buildMermaidConfig(
+  palette: MermaidPalette | null,
+): Record<string, unknown> {
+  return {
+    ...(palette
+      ? { theme: "base", themeVariables: getCachedTheme(palette) }
+      : {}),
+    flowchart: { htmlLabels: true, useMaxWidth: true },
+    securityLevel: "loose",
+  };
+}
+
 function resolveFontFamily(themes: Map<string, MermaidPalette>): string {
   const firstPalette = themes.values().next().value as
-    | MermaidPalette
-    | undefined;
+    MermaidPalette | undefined;
   return firstPalette?.fontFamily ?? "sans-serif";
 }
 
@@ -67,27 +84,24 @@ function resolveFontFamily(themes: Map<string, MermaidPalette>): string {
 class CloudflareWorkerRenderer implements MermaidRenderer {
   name = RenderService.CloudflareWorker;
 
-  constructor(private readonly config: MermaidRendererConfig) {}
+  constructor(
+    private readonly url: string,
+    private readonly apiKey: string | undefined,
+  ) {}
 
   isEnabled(): boolean {
-    return this.config.disableWorker !== true && !!this.config.url;
+    return true;
   }
 
   async render(
     diagrams: Array<{ id: string; code: string }>,
     themes: Map<string, MermaidPalette>,
   ): Promise<RenderResult> {
-    const workerUrl = this.config.url!;
-    const apiKey = this.config.apiKey;
-
     const themesPayload: Record<string, unknown> = {};
     for (const [name, palette] of themes) {
       themesPayload[name] = {
-        theme: "base",
-        themeVariables: getCachedTheme(palette),
-        flowchart: { htmlLabels: true, useMaxWidth: true },
+        ...buildMermaidConfig(palette),
         sequence: { useMaxWidth: true },
-        securityLevel: "loose",
       };
     }
 
@@ -98,15 +112,15 @@ class CloudflareWorkerRenderer implements MermaidRenderer {
     if (Object.keys(themesPayload).length > 0) body["themes"] = themesPayload;
 
     const requestBody = JSON.stringify(body);
-    if (Buffer.byteLength(requestBody, "utf8") > 900 * 1024) {
+    if (Buffer.byteLength(requestBody, "utf8") > WORKER_MAX_PAYLOAD_BYTES) {
       throw new Error("Payload too large for Cloudflare Worker");
     }
 
-    const response = await fetch(workerUrl, {
+    const response = await fetch(this.url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+        ...(this.apiKey ? { Authorization: `Bearer ${this.apiKey}` } : {}),
       },
       body: requestBody,
       signal: AbortSignal.timeout(WORKER_RENDER_TIMEOUT_MS),
@@ -129,6 +143,7 @@ class CloudflareWorkerRenderer implements MermaidRenderer {
 
 // ── mermaid.ink (serialized fetches, fallback) ───────────────────────────────
 const INK_INTER_REQUEST_DELAY_MS = 1_200;
+const INK_FETCH_TIMEOUT_MS = 30_000;
 const INK_MAX_RETRIES = 4;
 
 class MermaidInkRenderer implements MermaidRenderer {
@@ -154,7 +169,10 @@ class MermaidInkRenderer implements MermaidRenderer {
         diagramResults.set("default", await this.fetchSingle(d.code, null));
       } else {
         for (const [themeName, palette] of themeEntries) {
-          diagramResults.set(themeName, await this.fetchSingle(d.code, palette));
+          diagramResults.set(
+            themeName,
+            await this.fetchSingle(d.code, palette),
+          );
         }
       }
     }
@@ -178,18 +196,10 @@ class MermaidInkRenderer implements MermaidRenderer {
     code: string,
     palette: MermaidPalette | null,
   ): Promise<string> {
-    const config: Record<string, unknown> = palette
-      ? {
-          theme: "base",
-          themeVariables: getCachedTheme(palette),
-          fontFamily: palette.fontFamily,
-          flowchart: { htmlLabels: true, useMaxWidth: true },
-          securityLevel: "loose",
-        }
-      : {
-          flowchart: { htmlLabels: true, useMaxWidth: true },
-          securityLevel: "loose",
-        };
+    const config = {
+      ...buildMermaidConfig(palette),
+      ...(palette ? { fontFamily: palette.fontFamily } : {}),
+    };
 
     const cleanCode = code.replace(/^---[\s\S]*?---/m, "").trim();
     const payload = JSON.stringify({
@@ -209,7 +219,9 @@ class MermaidInkRenderer implements MermaidRenderer {
     const url = `https://mermaid.ink/svg/pako:${encoded}`;
 
     for (let attempt = 0; attempt <= INK_MAX_RETRIES; attempt++) {
-      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+      const res = await fetch(url, {
+        signal: AbortSignal.timeout(INK_FETCH_TIMEOUT_MS),
+      });
 
       if (res.ok) {
         const svg = await res.text();
@@ -242,16 +254,16 @@ const PLACEHOLDER_SVG = `<svg id="mermaid-placeholder" viewBox="0 0 200 60" xmln
 export function createMermaidRenderPipeline(
   config: MermaidRendererConfig,
 ): MermaidRenderPipeline {
-  const inkRenderer = new MermaidInkRenderer();
+  // Built once: the ink renderer's request queue spans every pipeline call.
+  const providers: MermaidRenderer[] = [
+    ...(config.url && config.disableWorker !== true
+      ? [new CloudflareWorkerRenderer(config.url, config.apiKey)]
+      : []),
+    new MermaidInkRenderer(),
+  ];
 
   return async (diagrams, themes) => {
-    const providers: MermaidRenderer[] = [
-      new CloudflareWorkerRenderer(config),
-      inkRenderer,
-    ];
-
     for (const provider of providers) {
-      if (!provider.isEnabled()) continue;
       try {
         return await provider.render(diagrams, themes);
       } catch (err) {

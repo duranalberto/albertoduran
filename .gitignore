@@ -13,10 +13,9 @@ build/
 .astro/
 *.log
 
-# Preact / JS build artifacts
+# Build artifacts
 *.tgz
 .eslintcache
-.prettierrc
 
 # Environment variables
 .env
@@ -43,7 +42,6 @@ playwright-report/
 test-results/
 
 # Other files
-./gitignore
 .cache/mermaid
 
 # Local agent/developer context
@@ -52,3 +50,7 @@ test-results/
 
 # Agents
 .claude/
+
+# Visual regression baselines are platform-specific and large (~70 MB);
+# they are recorded locally with `npm run test:visual:update`.
+tests/e2e/*-snapshots/

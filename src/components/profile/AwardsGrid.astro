@@ -1,5 +1,6 @@
 ---
 import { type Awards } from "@appTypes/about";
+import ArrowLink from "@components/ui/navigation/ArrowLink.astro";
 
 interface Props {
   awards: Awards[];
@@ -25,20 +26,14 @@ const { awards } = Astro.props;
         </p>
 
         {award.link && (
-          <a
+          <ArrowLink
             href={award.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="group mt-auto inline-flex items-center gap-1 pt-4 text-sm font-semibold tracking-wide text-primary transition-all hover:gap-2"
+            variant="action"
+            external
+            class="mt-auto pt-4"
           >
             View award
-            <span
-              class="transition-transform group-hover:translate-x-0.5"
-              aria-hidden="true"
-            >
-              →
-            </span>
-          </a>
+          </ArrowLink>
         )}
       </div>
     ))

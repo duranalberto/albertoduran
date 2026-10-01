@@ -1,33 +1,24 @@
 ---
 import type { EntryContext } from "@appTypes/content_context";
-import { vaultsManifest } from "@content/processors/thejournal";
+import { formatDate, formatReadTime } from "@utils/format";
+import { journalHref } from "@utils/routes";
+import { entryKind } from "@content/entry_kind";
 import { Picture } from "astro:assets";
 
 interface Props {
   entry: EntryContext;
-  href?: string | undefined;
+  /** Title of the entry's vault, shown on vault children. */
+  vaultTitle?: string | undefined;
 }
 
-const { entry, href: hrefOverride } = Astro.props;
+const { entry, vaultTitle = "Vault" } = Astro.props;
 
-const href = hrefOverride ?? `/thejournal/${entry.id}/`;
-const isVault = !!entry.vaultId;
-const isVaultRoot = isVault && entry.id === entry.vaultId;
-const isVaultItem = isVault && entry.id !== entry.vaultId;
-const vaultInfo = entry.vaultId ? vaultsManifest[entry.vaultId] : null;
-const vaultTitle = vaultInfo?.title ?? "Vault";
+// Journal cards always open the publication, never a project landing page.
+const href = journalHref(entry.id);
+const kind = entryKind(entry);
 
-const formattedDate = entry.pubDate
-  ? new Date(entry.pubDate).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    })
-  : null;
-
-const readTimeText = entry.readTime
-  ? `${entry.readTime} min${entry.readTime > 1 ? "s" : ""} read`
-  : null;
+const formattedDate = formatDate(entry.pubDate, "short");
+const readTimeText = formatReadTime(entry.readTime);
 ---
 
 <a
@@ -44,7 +35,7 @@ const readTimeText = entry.readTime
             class="font-display absolute inset-0 flex items-center justify-center text-4xl font-bold text-base-content/10 transition-transform duration-200 group-hover:scale-105"
             aria-hidden="true"
           >
-            {entry.title?.charAt(0)}
+            {entry.title.charAt(0)}
           </div>
           <Picture
             src={entry.image}
@@ -68,16 +59,12 @@ const readTimeText = entry.readTime
           class="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest"
         >
           <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-            {
-              formattedDate && (
-                <time
-                  datetime={new Date(entry.pubDate).toISOString()}
-                  class="rounded-sm bg-base-300 px-1.5 py-0.5 whitespace-nowrap text-base-content"
-                >
-                  {formattedDate}
-                </time>
-              )
-            }
+            <time
+              datetime={entry.pubDate.toISOString()}
+              class="rounded-sm bg-base-300 px-1.5 py-0.5 whitespace-nowrap text-base-content"
+            >
+              {formattedDate}
+            </time>
 
             {
               readTimeText && (
@@ -88,7 +75,7 @@ const readTimeText = entry.readTime
             }
 
             {
-              isVaultItem && entry.vaultId && (
+              kind === "vaultChild" && (
                 <>
                   <span
                     class="hidden h-1 w-1 rounded-full bg-base-content/20 sm:block"
@@ -102,7 +89,7 @@ const readTimeText = entry.readTime
             }
 
             {
-              isVaultRoot && (
+              kind === "vaultRoot" && (
                 <div class="flex items-center gap-1.5">
                   <span
                     class="h-1.5 w-1.5 animate-pulse rounded-full bg-primary"
@@ -130,7 +117,7 @@ const readTimeText = entry.readTime
         <div class="flex flex-wrap items-center gap-2">
           {
             entry.tags
-              ?.slice(0, 3)
+              .slice(0, 3)
               .map((tag) => (
                 <span class="badge badge-ghost badge-sm border-base-300 py-2 font-medium">
                   #{tag}

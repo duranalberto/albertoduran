@@ -1,0 +1,42 @@
+---
+/**
+ * Shared hero frame for top-level pages: the hero-section/shell/grid
+ * structure, the decorative eyebrow, and slots for the page's own content.
+ *
+ * Slots: default (primary column, after the eyebrow), `aside` (second grid
+ * column), `footer` (full width, below the grid).
+ */
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends HTMLAttributes<"section"> {
+  eyebrow: string;
+  /** Column span of the primary column, e.g. "xl:col-span-7". */
+  primaryClass?: string;
+  /** Extra classes for the grid, e.g. "items-center". */
+  gridClass?: string;
+}
+
+const {
+  eyebrow,
+  primaryClass,
+  gridClass,
+  class: className,
+  ...sectionProps
+} = Astro.props;
+---
+
+<section class:list={["hero-section", className]} {...sectionProps}>
+  <div class="hero-shell">
+    <div class:list={["hero-grid", gridClass]}>
+      <div class:list={["hero-primary", primaryClass]}>
+        <div class="hero-eyebrow" aria-hidden="true">
+          <span class="hero-eyebrow-line"></span>
+          <p class="hero-eyebrow-label">{eyebrow}</p>
+        </div>
+        <slot />
+      </div>
+      <slot name="aside" />
+    </div>
+    <slot name="footer" />
+  </div>
+</section>

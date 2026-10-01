@@ -1,25 +1,15 @@
 ---
-import {
-  type CurrentSite,
-  getCurrentSite,
-  type Sites,
-} from "@appTypes/navigation";
+import type { CurrentSite, Sites } from "@appTypes/navigation";
 import ThemeToggle from "@components/ui/navigation/ThemeToggle.astro";
 import AlbertoDuran from "@components/ui/primitive/AlbertoDuran.astro";
 import SVGIcon from "bloomwright-ui/components/primitive/SVGIcon.astro";
 import { ui } from "@data/icons";
 import { sitesManifest } from "@data/site_manifest";
-
-const rawPath = Astro.url.pathname;
-const normalizedPath = rawPath.endsWith("/") ? rawPath : `${rawPath}/`;
+import { getCurrentSite } from "@utils/navigation";
 
 const navSites: Sites[] = ["/profile/", "/projects/", "/thejournal/"];
-const currentSite: CurrentSite = getCurrentSite(normalizedPath);
+const currentSite: CurrentSite = getCurrentSite(Astro.url.pathname);
 const menuIcon = ui.menu;
-
-if (!menuIcon) {
-  throw new Error("The 'menu' icon is missing from the ui data manifest.");
-}
 ---
 
 <header

@@ -1,228 +1,33 @@
 ---
-import type { ProjectVisual } from "@data/projects";
+import ChatVisual from "@components/projects/visuals/ChatVisual.astro";
+import FlowVisual from "@components/projects/visuals/FlowVisual.astro";
+import RangesVisual from "@components/projects/visuals/RangesVisual.astro";
+import TerminalVisual from "@components/projects/visuals/TerminalVisual.astro";
+import {
+  projectVisuals,
+  type ProjectVisualId,
+  type ProjectVisualSpec,
+} from "@data/project_visuals";
 
 interface Props {
-  visual: ProjectVisual;
+  visual: ProjectVisualId;
 }
 
 const { visual } = Astro.props;
-
-// Frozen teaching sample from the equity_valuation_engine vault
-// (first_valuation_run, reading_the_results): bear, base, bull per model.
-const valuationSample = [
-  ["DCF", 42, 58, 74],
-  ["ROE", 44, 53, 63],
-  ["EV/EBITDA", 39, 48, 57],
-  ["P/S", 48, 62, 76],
-  ["NAV", 28, 35, 42],
-] as const;
-const samplePrice = 50;
-const scaleMin = 25;
-const scaleMax = 80;
-const toPercent = (value: number) =>
-  `${(((value - scaleMin) / (scaleMax - scaleMin)) * 100).toFixed(2)}%`;
-const money = (value: number) => `$${value.toFixed(2)}`;
-
-type Tone = "prompt" | "dim" | "accent" | "ok" | "warn";
-type Line = readonly (string | readonly [string, Tone])[];
-
-const terminals: Partial<Record<ProjectVisual, readonly Line[]>> = {
-  "eve-cli": [
-    [["$", "prompt"], " python -m cli.main DEMO --cli"],
-    [["Model          Bear      Base      Bull", "dim"]],
-    ...valuationSample.map(
-      ([model, bear, base, bull]): Line => [
-        `${model.padEnd(11)}${money(bear).padStart(8)}  `,
-        [money(base).padStart(8), "accent"],
-        `  ${money(bull).padStart(8)}`,
-      ],
-    ),
-    [["--------------------------------------", "dim"]],
-    ["Composite, equal weight      ", ["$51.20", "accent"]],
-    ["Dispersion band     $41.83 - $60.57"],
-  ],
-  "pressroom-mdx": [
-    [["output/serverless-vod.mdx", "dim"]],
-    [["---", "accent"]],
-    ['title: "AWS serverless video on demand"'],
-    ["tags: [aws, serverless, video]"],
-    [["---", "accent"]],
-    [""],
-    ["## Why nothing runs between uploads"],
-    [""],
-    [["<EChart", "prompt"], ' data="./costs.json" ', ["/>", "prompt"]],
-    [["<Mermaid", "prompt"], ' id="pipeline" ', ["/>", "prompt"]],
-    [["# illustrative excerpt", "dim"]],
-  ],
-  "equilyze-run": [
-    [["$", "prompt"], " equilyze DEMO"],
-    [["[engine]  ", "dim"], "6 models x 3 scenarios   ", ["done", "ok"]],
-    ...[
-      "Contextualizer",
-      "News & Sentiment",
-      "Synthesizer",
-      "Curious Investor",
-    ].map(
-      (agent, index): Line => [
-        [`[agent ${index + 1}] `, "dim"],
-        agent.padEnd(25),
-        ["done", "ok"],
-      ],
-    ),
-    [["[agent 5] ", "dim"], "Section Writer x3        ", ["...", "accent"]],
-    [["[agent 6] ", "dim"], "Final Reviewer"],
-    [["-> reports/DEMO/report.md  # illustrative", "dim"]],
-  ],
-  "mlscraper-health": [
-    [["$", "prompt"], " curl localhost:8000/health"],
-    ["{"],
-    ['  "status": ', ['"ok"', "ok"], ","],
-    ['  "providers": {'],
-    ['    "amazon":       ', ['"running"', "ok"], ","],
-    ['    "liverpool":    ', ['"running"', "ok"], ","],
-    ['    "mercadolibre": ', ['"running"', "ok"], ","],
-    ['    "palacio":      ', ['"backoff"', "warn"]],
-    ["  },"],
-    ['  "jobs": { "active": 6, "queued": 1 }'],
-    ["}  ", ["# illustrative", "dim"]],
-  ],
-};
-
-const flows: Partial<Record<ProjectVisual, { head: [string, string]; steps: string[]; checkpoint?: string }>> = {
-  "pressroom-pipeline": {
-    head: ["LangGraph, 9 agents, local Ollama", "brief to .mdx"],
-    steps: [
-      "Loader",
-      "Interview",
-      "Outline Designer",
-      "Visualizer",
-      "Writer",
-      "Reviewer",
-      "Humanizer",
-      "Metadata",
-      "Publisher",
-    ],
-    checkpoint: "Interview",
-  },
-  "equilyze-agents": {
-    head: ["LangChain, 6 agents, local Ollama", "ticker to report"],
-    steps: [
-      "Contextualizer",
-      "News & Sentiment",
-      "Synthesizer",
-      "Curious Investor",
-      "Section Writer x3",
-      "Final Reviewer",
-    ],
-  },
-};
-
-const terminal = terminals[visual];
-const flow = flows[visual];
+const spec: ProjectVisualSpec = projectVisuals[visual];
 ---
 
 <div class="project-visual" data-project-visual={visual} aria-hidden="true">
+  {spec.kind === "terminal" && <TerminalVisual lines={spec.lines} />}
   {
-    visual === "eve-ranges" && (
-      <>
-        <p class="project-visual-head">
-          <span>Per-share value, bear to bull</span>
-        </p>
-        <dl class="project-visual-ranges">
-          {valuationSample.map(([model, bear, base, bull]) => (
-            <div>
-              <dt>{model}</dt>
-              <dd>
-                <span
-                  class="project-visual-range"
-                  style={`left:${toPercent(bear)};width:calc(${toPercent(bull)} - ${toPercent(bear)})`}
-                />
-                <span class="project-visual-base" style={`left:${toPercent(base)}`} />
-                <span class="project-visual-price" style={`left:${toPercent(samplePrice)}`} />
-              </dd>
-            </div>
-          ))}
-          <div class="project-visual-axis">
-            <span>${scaleMin}</span>
-            <span>$40</span>
-            <span>$55</span>
-            <span>${scaleMax}</span>
-          </div>
-        </dl>
-        <p class="project-visual-legend">
-          <span><i class="project-visual-key-range" />bear to bull</span>
-          <span><i class="project-visual-key-base" />base</span>
-          <span><i class="project-visual-key-price" />price ${samplePrice}</span>
-          <span>composite $51.20, sample data</span>
-        </p>
-      </>
+    spec.kind === "flow" && (
+      <FlowVisual
+        head={spec.head}
+        steps={spec.steps}
+        {...spec.checkpoint ? { checkpoint: spec.checkpoint } : {}}
+      />
     )
   }
-
-  {
-    terminal && (
-      <div class="project-visual-term">
-        {terminal.map((line) => (
-          <span class="project-visual-line">
-            {line.length === 0 || (line.length === 1 && line[0] === "")
-              ? " "
-              : line.map((segment) =>
-                  typeof segment === "string" ? (
-                    segment
-                  ) : (
-                    <span class={`project-visual-${segment[1]}`}>{segment[0]}</span>
-                  ),
-                )}
-          </span>
-        ))}
-      </div>
-    )
-  }
-
-  {
-    flow && (
-      <>
-        <p class="project-visual-head">
-          <span>{flow.head[0]}</span>
-          <span>{flow.head[1]}</span>
-        </p>
-        <ol class="project-visual-flow">
-          {flow.steps.map((step, index) => (
-            <li data-checkpoint={step === flow.checkpoint ? "" : undefined}>
-              <span>{String(index + 1).padStart(2, "0")}</span>
-              {step}
-              {step === flow.checkpoint && <em>human check</em>}
-            </li>
-          ))}
-        </ol>
-      </>
-    )
-  }
-
-  {
-    visual === "mlscraper-alerts" && (
-      <div class="project-visual-chat">
-        <p class="project-visual-head">
-          <span>Telegram, MLScraper bot</span>
-          <span>drops of 14% or more</span>
-        </p>
-        <div class="chat chat-start">
-          <div class="chat-header">MLScraper</div>
-          <div class="chat-bubble">
-            Price drop · Liverpool
-            <br />
-            Watch: consoles
-            <br />
-            <s>$12,000</s> → <strong>$10,000</strong>{" "}
-            <span class="project-visual-ok">-16.67%</span>
-          </div>
-        </div>
-        <div class="chat chat-start">
-          <div class="chat-header">MLScraper</div>
-          <div class="chat-bubble">New item · Amazon · Watch: consoles</div>
-        </div>
-        <p class="project-visual-note">Illustrative messages based on the vault example</p>
-      </div>
-    )
-  }
+  {spec.kind === "ranges" && <RangesVisual {...spec} />}
+  {spec.kind === "chat" && <ChatVisual {...spec} />}
 </div>

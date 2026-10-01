@@ -3,7 +3,7 @@
   "type": "module",
   "version": "0.5.0",
   "engines": {
-    "node": ">=22.13.0"
+    "node": ">=22.22.3"
   },
   "scripts": {
     "dev": "astro dev",
@@ -12,6 +12,7 @@
     "dev:status": "astro dev status",
     "dev:logs": "astro dev logs --follow",
     "build": "astro build",
+    "postbuild": "node scripts/check-build-output.mjs",
     "build:test": "ALBERTODURAN_TEST_MODE=true MERMAID_RENDERER_FIXTURE=true astro build",
     "check:bundle": "node scripts/check-bundle-size.mjs",
     "preview": "astro preview",

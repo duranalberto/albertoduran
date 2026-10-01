@@ -12,6 +12,9 @@ import { mermaidRenderer } from "bloomwright-ui/mermaid-renderer";
 import { LIGHT_PALETTE, DARK_PALETTE } from "bloomwright-ui/mermaid";
 import { collectPublishableDocuments } from "./src/content/processors/publishable.ts";
 import { createMermaidRenderPipeline } from "./src/mermaid/render-pipeline.ts";
+import { buildKeepAlive } from "./src/integrations/build-keepalive.ts";
+import { track, trackedCache } from "./src/integrations/pending-work.ts";
+import { createDiskCacheStore } from "bloomwright-ui/cache";
 
 // Caller-owned Mermaid render pipeline. build:test sets
 // MERMAID_RENDERER_FIXTURE=true → omit `render` so bloomwright-ui's
@@ -19,14 +22,21 @@ import { createMermaidRenderPipeline } from "./src/mermaid/render-pipeline.ts";
 // Worker/ink pipeline from .env + shell env (shell precedence).
 const mermaidEnv = loadEnv(process.env.NODE_ENV ?? "production", process.cwd(), "");
 const readEnv = (key) => process.env[key] ?? mermaidEnv[key];
+// Tracked so a stalled build can report which render call it is waiting on.
+function trackedRender(render) {
+  return (diagrams, themes) =>
+    track(`mermaid render (${diagrams.length} diagram(s))`, render(diagrams, themes));
+}
 const mermaidRenderPipeline =
   readEnv("MERMAID_RENDERER_FIXTURE") === "true"
     ? undefined
-    : createMermaidRenderPipeline({
-        url: readEnv("MERMAID_RENDERER_URL"),
-        apiKey: readEnv("MERMAID_RENDERER_API_KEY"),
-        disableWorker: readEnv("MERMAID_DISABLE_WORKER") === "true",
-      });
+    : trackedRender(
+        createMermaidRenderPipeline({
+          url: readEnv("MERMAID_RENDERER_URL"),
+          apiKey: readEnv("MERMAID_RENDERER_API_KEY"),
+          disableWorker: readEnv("MERMAID_DISABLE_WORKER") === "true",
+        }),
+      );
 const mermaidThemes = new Map([
   ["light", LIGHT_PALETTE],
   ["dark", DARK_PALETTE],
@@ -42,6 +52,8 @@ export default defineConfig({
   },
 
   integrations: [
+    // First, so its build:start hook runs before the Mermaid prepass awaits.
+    buildKeepAlive(),
     // Fence extraction (daisyui + echart + mermaid → component/HTML). MUST come
     // before mdx() so its config:setup augments the Markdown processor.
     bloomwrightMdx({
@@ -54,6 +66,8 @@ export default defineConfig({
     mermaidRenderer({
       render: mermaidRenderPipeline,
       themes: mermaidThemes,
+      // The default disk store, tracked for buildKeepAlive()'s stall report.
+      cache: trackedCache(createDiskCacheStore),
       selectSources: collectPublishableDocuments,
       remoteCache: readEnv("MERMAID_DISABLE_REMOTE_CACHE") !== "true",
     }),

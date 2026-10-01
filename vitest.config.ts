@@ -7,6 +7,8 @@ export default getViteConfig({
     environment: "node",
     globals: true,
     include: ["tests/unit/**/*.test.ts", "tests/component/**/*.test.ts"],
+    // Loads the content collections a fresh checkout does not have yet.
+    globalSetup: ["tests/setup/content-store.ts"],
     coverage: {
       provider: "v8",
       reporter: ["text", "html"],

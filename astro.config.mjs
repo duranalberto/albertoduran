@@ -70,6 +70,9 @@ export default defineConfig({
       cache: trackedCache(createDiskCacheStore),
       selectSources: collectPublishableDocuments,
       remoteCache: readEnv("MERMAID_DISABLE_REMOTE_CACHE") !== "true",
+      // The 22s inter-chunk pause rate-limits the real Worker. Fixtures render
+      // offline, so build:test skips it (~110s for 85 diagrams).
+      batching: mermaidRenderPipeline ? undefined : { interChunkDelayMs: 0 },
     }),
     mdx(),
   ],

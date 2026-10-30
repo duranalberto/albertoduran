@@ -53,7 +53,9 @@ export default defineConfig({
 
   integrations: [
     // First, so its build:start hook runs before the Mermaid prepass awaits.
-    buildKeepAlive(),
+    // Cloudflare's clean install wipes the image cache in node_modules/.astro,
+    // so every variant is re-encoded (~10 min). Stay under its 20 min limit.
+    buildKeepAlive({ timeoutMs: 18 * 60_000 }),
     // Fence extraction (daisyui + echart + mermaid → component/HTML). MUST come
     // before mdx() so its config:setup augments the Markdown processor.
     bloomwrightMdx({
